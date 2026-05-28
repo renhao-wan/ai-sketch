@@ -16,8 +16,12 @@ import * as api from '@/lib/api-client';
 import { isConfigValid } from '@/lib/config-validator';
 import { getStrategy } from '@/lib/strategies/registry';
 import { runMigrationIfNeeded } from '@/lib/migration';
-import type { LLMConfig, HistoryItem, NotificationState, AIActionId } from '@/types';
+import type { LLMConfig, HistoryItem, NotificationState, AIActionId, ConversationMessage } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
+
+function generateMessageId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
 
 function EditorContent() {
   const searchParams = useSearchParams();
@@ -42,6 +46,11 @@ function EditorContent() {
     type: 'info',
   });
 
+  // Conversation state
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
+
   const loadConfig = useCallback(async () => {
     try {
       const data = await api.fetchConfigs();
@@ -63,7 +72,6 @@ function EditorContent() {
     const formatParam = searchParams.get('format') as DiagramFormat | null;
     const source = searchParams.get('source');
 
-    // Set diagram format from URL param
     if (formatParam && ['excalidraw', 'mermaid', 'drawio'].includes(formatParam)) {
       setFormat(formatParam);
     }
@@ -98,7 +106,6 @@ function EditorContent() {
     }
   }, [searchParams]);
 
-  // Get strategy for current format (memoized via format state)
   const strategy = getStrategy(format);
 
   const handleSendMessage = useCallback(async (userMessage: string | { text?: string; image?: unknown }, chartType: string = 'auto', sourceType: string = 'text') => {
@@ -108,20 +115,34 @@ function EditorContent() {
       return;
     }
 
-    setCurrentInput(typeof userMessage === 'string' ? userMessage : (userMessage.text || ''));
+    const userContent = typeof userMessage === 'string' ? userMessage : (userMessage.text || '');
+    const hasImage = typeof userMessage === 'object' && 'image' in userMessage && userMessage.image;
+
+    setCurrentInput(userContent);
     setCurrentChartType(chartType);
     setIsGenerating(true);
+    setIsStreaming(true);
     setApiError(null);
     setJsonError(null);
 
-    // Get strategy at call time to use current format
+    // Optimistic: add user message to local state
+    const optimisticUserMsg: ConversationMessage = {
+      id: generateMessageId(),
+      conversationId: conversationId || '',
+      role: 'user',
+      content: userContent,
+      sourceType: sourceType as 'text' | 'file' | 'image',
+      createdAt: Date.now(),
+    };
+    setMessages(prev => [...prev, optimisticUserMsg]);
+
     const currentStrategy = getStrategy(format);
 
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ configId: config!.id, userInput: userMessage, chartType, format }),
+        body: JSON.stringify({ configId: config!.id, userInput: userMessage, chartType, format, conversationId }),
       });
 
       if (!response.ok) {
@@ -129,7 +150,7 @@ function EditorContent() {
         try {
           const errorData = await response.json();
           if (errorData.error) errorMessage = errorData.error;
-        } catch (e) {
+        } catch {
           switch (response.status) {
             case 400: errorMessage = '请求参数错误，请检查输入内容'; break;
             case 401: case 403: errorMessage = 'API 密钥无效或权限不足，请检查配置'; break;
@@ -145,6 +166,7 @@ function EditorContent() {
       const decoder = new TextDecoder();
       let accumulatedCode = '';
       let buffer = '';
+      let activeConvId = conversationId;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -158,13 +180,30 @@ function EditorContent() {
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              if (data.content) {
+
+              if (data.type === 'meta' && data.conversationId) {
+                activeConvId = data.conversationId;
+                setConversationId(data.conversationId);
+                // Update the optimistic user message with the real conversationId
+                setMessages(prev => prev.map(m =>
+                  m.id === optimisticUserMsg.id ? { ...m, conversationId: data.conversationId } : m
+                ));
+              } else if (data.type === 'content' && data.content) {
                 accumulatedCode += data.content;
                 const processedCode = currentStrategy.postProcess(accumulatedCode);
                 setGeneratedCode(processedCode);
-              } else if (data.error) { throw new Error(data.error); }
+              } else if (data.type === 'error') {
+                throw new Error(data.error);
+              } else if (data.content) {
+                // Backward compatibility: old format without type field
+                accumulatedCode += data.content;
+                const processedCode = currentStrategy.postProcess(accumulatedCode);
+                setGeneratedCode(processedCode);
+              }
             } catch (e) {
-              if ((e as Error).message && !(e as Error).message.includes('Unexpected')) setApiError('数据流解析错误：' + (e as Error).message);
+              if ((e as Error).message && !(e as Error).message.includes('Unexpected')) {
+                setApiError('数据流解析错误：' + (e as Error).message);
+              }
             }
           }
         }
@@ -176,20 +215,37 @@ function EditorContent() {
       setGeneratedCode(optimizedCode);
       tryParseAndApply(optimizedCode, currentStrategy);
 
-      if (sourceType === 'text' && userMessage && optimizedCode) {
-        const userInputText = typeof userMessage === 'object' ? ((userMessage as { text?: string }).text || '') : userMessage;
+      // Add assistant message to local state
+      const assistantMsg: ConversationMessage = {
+        id: generateMessageId(),
+        conversationId: activeConvId || '',
+        role: 'assistant',
+        content: optimizedCode,
+        sourceType: 'text',
+        createdAt: Date.now(),
+      };
+      setMessages(prev => [...prev, assistantMsg]);
+
+      // Save to history (backward compatibility)
+      if (sourceType === 'text' && userContent && optimizedCode) {
         await api.addHistory({
-          chartType, format, userInput: userInputText, generatedCode: optimizedCode,
+          chartType, format, userInput: userContent, generatedCode: optimizedCode,
           config: { name: config?.name || config?.type, model: config?.model },
         });
       }
     } catch (error) {
-      if ((error as Error).message === 'Failed to fetch' || (error as Error).name === 'TypeError') setApiError('网络连接失败，请检查网络连接');
-      else setApiError((error as Error).message);
+      if ((error as Error).message === 'Failed to fetch' || (error as Error).name === 'TypeError') {
+        setApiError('网络连接失败，请检查网络连接');
+      } else {
+        setApiError((error as Error).message);
+      }
+      // Remove optimistic user message on error
+      setMessages(prev => prev.filter(m => m.id !== optimisticUserMsg.id));
     } finally {
       setIsGenerating(false);
+      setIsStreaming(false);
     }
-  }, [config, format]);
+  }, [config, format, conversationId]);
 
   const tryParseAndApply = (code: string, strat?: ReturnType<typeof getStrategy>) => {
     const s = strat || strategy;
@@ -220,6 +276,46 @@ function EditorContent() {
 
   const handleConfigSelect = (selectedConfig: LLMConfig | null) => { if (selectedConfig) setConfig(selectedConfig); };
 
+  const handleLoadConversation = useCallback(async (id: string) => {
+    try {
+      const conv = await api.getConversation(id);
+      setConversationId(conv.id);
+      setMessages(conv.messages);
+      setCurrentChartType(conv.chartType);
+      if (conv.format && ['excalidraw', 'mermaid', 'drawio'].includes(conv.format)) {
+        setFormat(conv.format);
+      }
+      setGeneratedCode(conv.currentCode);
+      const strat = getStrategy(conv.format);
+      if (conv.currentCode) {
+        const result = strat.validate(conv.currentCode);
+        if (result.valid) {
+          setRenderData(result.data);
+          setJsonError(null);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load conversation:', err);
+      setApiError('Failed to load conversation');
+    }
+  }, []);
+
+  const handleNewConversation = useCallback(() => {
+    setConversationId(null);
+    setMessages([]);
+    setGeneratedCode('');
+    setRenderData([]);
+    setCurrentInput('');
+    setJsonError(null);
+    setApiError(null);
+  }, []);
+
+  const handleDeleteConversation = useCallback((id: string) => {
+    if (id === conversationId) {
+      handleNewConversation();
+    }
+  }, [conversationId, handleNewConversation]);
+
   const handleApplyHistory = (history: HistoryItem) => {
     const userInputText = typeof history.userInput === 'object' ? ((history.userInput as { text?: string }).text || '图片上传生成') : history.userInput;
     setCurrentInput(userInputText);
@@ -228,7 +324,6 @@ function EditorContent() {
       setFormat(history.format);
     }
     setGeneratedCode(history.generatedCode);
-    // Use the history format's strategy for validation
     const historyStrategy = history.format ? getStrategy(history.format) : strategy;
     const result = historyStrategy.validate(history.generatedCode);
     if (result.valid) {
@@ -264,6 +359,12 @@ function EditorContent() {
       <div className="h-full flex relative overflow-hidden">
         {/* AI Copilot Panel (Left) */}
         <AICopilotPanel
+          conversationId={conversationId}
+          messages={messages}
+          isStreaming={isStreaming}
+          onLoadConversation={handleLoadConversation}
+          onNewConversation={handleNewConversation}
+          onDeleteConversation={handleDeleteConversation}
           onSendMessage={handleSendMessage}
           isGenerating={isGenerating}
           currentInput={currentInput}

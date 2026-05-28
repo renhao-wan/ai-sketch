@@ -109,3 +109,34 @@ export interface GenerateRequest {
   chartType: string;
   format?: import('./diagram-strategy').DiagramFormat;
 }
+
+/** Conversation metadata */
+export interface Conversation {
+  id: string;
+  title: string;
+  chartType: string;
+  format: import('./diagram-strategy').DiagramFormat;
+  configName?: string;
+  configModel?: string;
+  currentCode: string;
+  messageCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Single message within a conversation */
+export interface ConversationMessage {
+  id: string;
+  conversationId: string;
+  role: 'user' | 'assistant';
+  content: string;
+  imageData?: string;
+  imageMimeType?: string;
+  sourceType?: SourceType;
+  createdAt: number;
+}
+
+/** Conversation with its messages loaded */
+export interface ConversationWithMessages extends Conversation {
+  messages: ConversationMessage[];
+}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { callLLM } from '@/lib/llm-client';
 import { configManager } from '@/lib/config-manager';
+import { conversationManager } from '@/lib/conversation-manager';
 import { getStrategy } from '@/lib/strategies/registry';
 import type { LLMConfig, LLMMessage, ImageData } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
@@ -8,18 +9,26 @@ import type { DiagramFormat } from '@/types/diagram-strategy';
 /**
  * POST /api/generate
  * Generate diagram code based on user input and format.
- * Supports two modes:
- *   - { configId, userInput, chartType, format } — server looks up config by ID (secure)
- *   - { config, userInput, chartType, format } — client sends full config (backward compat)
+ * Supports conversation context via optional conversationId.
+ *
+ * Request body:
+ *   { configId?, config?, userInput, chartType, format?, conversationId? }
+ *
+ * SSE stream events:
+ *   data: {"type":"meta","conversationId":"..."}
+ *   data: {"type":"content","content":"..."}
+ *   ...
+ *   data: [DONE]
  */
 export async function POST(request: Request) {
   try {
-    const { configId, config: configBody, userInput, chartType, format } = await request.json() as {
+    const { configId, config: configBody, userInput, chartType, format, conversationId } = await request.json() as {
       configId?: string;
       config?: LLMConfig;
       userInput: string | { text?: string; image?: ImageData };
       chartType: string;
       format?: DiagramFormat;
+      conversationId?: string;
     };
 
     let config: LLMConfig | undefined;
@@ -43,28 +52,57 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get strategy for the requested format (default to excalidraw for backward compat)
     const diagramFormat: DiagramFormat = format || 'excalidraw';
     const strategy = getStrategy(diagramFormat);
 
-    // Build messages array using strategy
-    let userMessage: LLMMessage;
+    // ── Conversation management ──
+    let activeConversationId = conversationId || null;
 
-    // Handle different input types
+    // Create conversation if none exists
+    if (!activeConversationId) {
+      const userInputText = typeof userInput === 'string' ? userInput : (userInput.text || '');
+      const title = userInputText.length > 50 ? userInputText.substring(0, 50) + '...' : userInputText || 'Image Generation';
+      const conv = await conversationManager.create({
+        title,
+        chartType,
+        format: diagramFormat,
+        configName: config.name || config.type,
+        configModel: config.model,
+      });
+      activeConversationId = conv.id;
+    }
+
+    // Save user message to conversation
+    const userContent = typeof userInput === 'string' ? userInput : (userInput.text || '');
+    const userImageData = typeof userInput === 'object' && userInput.image ? userInput.image.data : undefined;
+    const userImageMimeType = typeof userInput === 'object' && userInput.image ? userInput.image.mimeType : undefined;
+    const sourceType = userImageData ? 'image' : 'text';
+
+    await conversationManager.addMessage({
+      conversationId: activeConversationId,
+      role: 'user',
+      content: userContent,
+      imageData: userImageData,
+      imageMimeType: userImageMimeType,
+      sourceType,
+    });
+
+    // ── Build LLM messages with context ──
+    const contextMessages = await conversationManager.buildContextMessages(activeConversationId);
+
+    // Build the new user message for LLM
+    let newUserMessage: LLMMessage;
     if (typeof userInput === 'object' && userInput.image) {
-      // Image input with text and image data
-      const { text, image } = userInput;
-      userMessage = {
+      newUserMessage = {
         role: 'user',
-        content: strategy.getUserPrompt(text || '', chartType),
+        content: strategy.getUserPrompt(userInput.text || '', chartType),
         image: {
-          data: image.data,
-          mimeType: image.mimeType,
+          data: userInput.image.data,
+          mimeType: userInput.image.mimeType,
         },
       };
     } else {
-      // Regular text input
-      userMessage = {
+      newUserMessage = {
         role: 'user',
         content: strategy.getUserPrompt(
           typeof userInput === 'string' ? userInput : (userInput.text || ''),
@@ -73,28 +111,50 @@ export async function POST(request: Request) {
       };
     }
 
+    // Replace the last user message (raw content) with the strategy-formatted version
+    if (contextMessages.length > 0 && contextMessages[contextMessages.length - 1].role === 'user') {
+      contextMessages[contextMessages.length - 1] = newUserMessage;
+    } else {
+      contextMessages.push(newUserMessage);
+    }
+
     const fullMessages: LLMMessage[] = [
       { role: 'system', content: strategy.getSystemPrompt() },
-      userMessage,
+      ...contextMessages,
     ];
 
-    // Create a readable stream for SSE
+    // ── SSE stream ──
     const encoder = new TextEncoder();
+    let accumulatedCode = '';
+
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          await callLLM(config, fullMessages, (chunk) => {
-            // Send each chunk as SSE
-            const data = `data: ${JSON.stringify({ content: chunk })}\n\n`;
+          // Send meta event first
+          const metaEvent = `data: ${JSON.stringify({ type: 'meta', conversationId: activeConversationId })}\n\n`;
+          controller.enqueue(encoder.encode(metaEvent));
+
+          await callLLM(config!, fullMessages, (chunk) => {
+            accumulatedCode += chunk;
+            const data = `data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`;
             controller.enqueue(encoder.encode(data));
           });
 
-          // Send done signal
+          // Save assistant message after stream completes
+          const processedCode = strategy.postProcess(accumulatedCode);
+          await conversationManager.addMessage({
+            conversationId: activeConversationId!,
+            role: 'assistant',
+            content: processedCode,
+            sourceType: 'text',
+          });
+          await conversationManager.updateCurrentCode(activeConversationId!, processedCode);
+
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
         } catch (error) {
           console.error('Error in stream:', error);
-          const errorData = `data: ${JSON.stringify({ error: (error as Error).message })}\n\n`;
+          const errorData = `data: ${JSON.stringify({ type: 'error', error: (error as Error).message })}\n\n`;
           controller.enqueue(encoder.encode(errorData));
           controller.close();
         }

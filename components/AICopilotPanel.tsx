@@ -17,14 +17,23 @@ import {
   X,
   CheckCircle,
   AlertCircle,
+  Plus,
 } from 'lucide-react';
 import { AppIcon } from './TopBar';
 import { CHART_TYPES } from '@/lib/constants';
 import { generateImagePrompt } from '@/lib/image-utils';
 import ImageUpload from './ImageUpload';
-import type { SourceType, ImageObject, ImageData } from '@/types';
+import MessageBubble from './MessageBubble';
+import ConversationList from './ConversationList';
+import type { SourceType, ImageObject, ConversationMessage } from '@/types';
 
 interface AICopilotPanelProps {
+  conversationId: string | null;
+  messages: ConversationMessage[];
+  isStreaming: boolean;
+  onLoadConversation: (id: string) => void;
+  onNewConversation: () => void;
+  onDeleteConversation: (id: string) => void;
   onSendMessage: (message: string | { text: string; image: unknown }, chartType: string, source: SourceType) => void;
   isGenerating: boolean;
   currentInput: string;
@@ -44,6 +53,12 @@ const SUGGESTION_CHIPS = [
 ];
 
 export default function AICopilotPanel({
+  conversationId,
+  messages,
+  isStreaming,
+  onLoadConversation,
+  onNewConversation,
+  onDeleteConversation,
   onSendMessage,
   isGenerating,
   currentInput,
@@ -60,6 +75,7 @@ export default function AICopilotPanel({
   const [showImageUpload, setShowImageUpload] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileContent, setFileContent] = useState('');
@@ -67,6 +83,11 @@ export default function AICopilotPanel({
   const [fileError, setFileError] = useState('');
 
   const [selectedImage, setSelectedImage] = useState<(ImageObject & { previewUrl: string; file: File }) | null>(null);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   useEffect(() => {
     if (currentInput !== undefined) setPrompt(currentInput);
@@ -103,6 +124,12 @@ export default function AICopilotPanel({
     } else if (prompt.trim()) {
       onSendMessage(prompt.trim(), chartType, 'text');
     }
+
+    // Clear input after send
+    setPrompt('');
+    handleClearFile();
+    setShowImageUpload(false);
+    setSelectedImage(null);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -115,8 +142,7 @@ export default function AICopilotPanel({
   const handleChipClick = (label: string) => {
     setShowImageUpload(false);
     handleClearFile();
-    setPrompt(label);
-    setTimeout(() => onSendMessage(label, chartType, 'text'), 50);
+    onSendMessage(label, chartType, 'text');
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -207,20 +233,36 @@ export default function AICopilotPanel({
     );
   }
 
+  const hasMessages = messages.length > 0;
+
   return (
     <div className="h-full flex flex-col bg-white/65 backdrop-blur-2xl border-r border-white/10 w-[360px] min-w-[360px] relative z-10">
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-14 border-b border-black/5 flex-shrink-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <AppIcon size={22} />
-          <span className="text-sm font-semibold text-[var(--fg)]">AI 助手</span>
+          <ConversationList
+            currentId={conversationId}
+            onSelect={onLoadConversation}
+            onDelete={onDeleteConversation}
+            onNew={onNewConversation}
+          />
         </div>
-        <button
-          onClick={() => setIsCollapsed(true)}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 transition-all duration-200"
-        >
-          <ChevronLeft size={16} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onNewConversation}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 transition-all duration-200"
+            title="New Conversation"
+          >
+            <Plus size={16} />
+          </button>
+          <button
+            onClick={() => setIsCollapsed(true)}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 transition-all duration-200"
+          >
+            <ChevronLeft size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Error Banner */}
@@ -235,11 +277,61 @@ export default function AICopilotPanel({
         </div>
       )}
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Chart Type */}
-        {!showImageUpload && (
-          <div className="px-4 pt-4 pb-2">
+      {/* Message List or Empty State */}
+      {hasMessages ? (
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-thin">
+          {messages.map((msg) => (
+            <MessageBubble
+              key={msg.id}
+              message={msg}
+              isStreaming={isStreaming && msg.role === 'assistant' && msg.id === messages[messages.length - 1]?.id}
+            />
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center px-6 overflow-auto">
+          <div className="w-12 h-12 rounded-2xl bg-[var(--accent-indigo)]/10 flex items-center justify-center mb-4">
+            <Sparkles size={20} className="text-[var(--accent-indigo)]" />
+          </div>
+          <p className="text-sm font-medium text-[var(--fg)] mb-1">AI Diagram Assistant</p>
+          <p className="text-xs text-[var(--muted)] text-center mb-6">Describe the diagram you want to create</p>
+
+          {/* Chart Type */}
+          <div className="w-full mb-4">
+            <select
+              value={chartType}
+              onChange={(e) => setChartType(e.target.value)}
+              className="w-full px-3 py-2 text-xs bg-black/4 border border-black/5 rounded-xl text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-indigo)]/30 appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_8px_center] pr-7"
+            >
+              {Object.entries(CHART_TYPES).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Suggestion Chips */}
+          <div className="flex flex-wrap gap-1.5 justify-center">
+            {SUGGESTION_CHIPS.map((chip) => (
+              <button
+                key={chip.label}
+                onClick={() => handleChipClick(chip.label)}
+                disabled={isGenerating}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--muted)] bg-black/4 hover:bg-black/8 rounded-full transition-all duration-200 disabled:opacity-50"
+              >
+                <chip.icon size={12} />
+                <span>{chip.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Input Area */}
+      <div className="border-t border-black/5 flex-shrink-0">
+        {/* Chart Type (when has messages) */}
+        {hasMessages && !showImageUpload && (
+          <div className="px-4 pt-3 pb-1">
             <select
               value={chartType}
               onChange={(e) => setChartType(e.target.value)}
@@ -253,9 +345,9 @@ export default function AICopilotPanel({
         )}
 
         {/* Text Input or Image Upload */}
-        <div className="flex-1 overflow-auto px-4">
+        <div className="px-4 pt-2">
           {showImageUpload ? (
-            <div className="py-2 min-h-[200px] flex flex-col">
+            <div className="min-h-[120px] flex flex-col">
               <ImageUpload
                 onImageSelect={setSelectedImage}
                 isGenerating={isGenerating}
@@ -271,8 +363,8 @@ export default function AICopilotPanel({
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={(selectedFile || selectedImage) ? '补充指令（可选）...' : '描述你想要创建的图表...'}
-                className="w-full resize-none bg-transparent text-sm leading-relaxed text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none min-h-[80px]"
+                placeholder={hasMessages ? 'Follow up on the diagram...' : 'Describe the diagram you want to create...'}
+                className="w-full resize-none bg-transparent text-sm leading-relaxed text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none min-h-[60px] max-h-[160px]"
               />
 
               {/* File Status */}
@@ -294,7 +386,7 @@ export default function AICopilotPanel({
         </div>
 
         {/* Action Buttons */}
-        <div className="px-4 pb-3 pt-2 flex items-center gap-2">
+        <div className="px-4 py-3 flex items-center gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -329,28 +421,30 @@ export default function AICopilotPanel({
             {isGenerating ? (
               <><Loader2 size={13} className="animate-spin" /><span>生成中</span></>
             ) : (
-              <><Send size={13} /><span>生成</span></>
+              <><Send size={13} /><span>{hasMessages ? '发送' : '生成'}</span></>
             )}
           </button>
         </div>
 
-        {/* Suggestion Chips */}
-        <div className="px-4 pb-4">
-          <p className="text-[11px] text-[var(--muted)] mb-2">快捷操作</p>
-          <div className="flex flex-wrap gap-1.5">
-            {SUGGESTION_CHIPS.map((chip) => (
-              <button
-                key={chip.label}
-                onClick={() => handleChipClick(chip.label)}
-                disabled={isGenerating}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--muted)] bg-black/4 hover:bg-black/8 rounded-full transition-all duration-200 disabled:opacity-50"
-              >
-                <chip.icon size={12} />
-                <span>{chip.label}</span>
-              </button>
-            ))}
+        {/* Suggestion Chips (only when no messages) */}
+        {!hasMessages && (
+          <div className="px-4 pb-4">
+            <p className="text-[11px] text-[var(--muted)] mb-2">快捷操作</p>
+            <div className="flex flex-wrap gap-1.5">
+              {SUGGESTION_CHIPS.map((chip) => (
+                <button
+                  key={chip.label}
+                  onClick={() => handleChipClick(chip.label)}
+                  disabled={isGenerating}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--muted)] bg-black/4 hover:bg-black/8 rounded-full transition-all duration-200 disabled:opacity-50"
+                >
+                  <chip.icon size={12} />
+                  <span>{chip.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Bottom Actions */}

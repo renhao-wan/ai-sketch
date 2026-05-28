@@ -1,4 +1,4 @@
-import type { LLMConfig, TestConnectionResult, HistoryItem } from '@/types';
+import type { LLMConfig, TestConnectionResult, HistoryItem, Conversation, ConversationWithMessages } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
 interface AddHistoryData {
@@ -129,4 +129,24 @@ export async function migrateFromLocalStorage(data: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
+}
+
+// ── Conversation operations ──
+
+export async function fetchConversations(limit?: number): Promise<Conversation[]> {
+  const url = limit ? `/api/conversations?limit=${limit}` : '/api/conversations';
+  const data = await request<{ conversations: Conversation[] }>(url);
+  return data.conversations;
+}
+
+export async function getConversation(id: string): Promise<ConversationWithMessages> {
+  return request(`/api/conversations/${id}`);
+}
+
+export async function deleteConversation(id: string): Promise<void> {
+  await request<{ success: boolean }>(`/api/conversations/${id}`, { method: 'DELETE' });
+}
+
+export async function clearAllConversations(): Promise<void> {
+  await request<{ success: boolean }>('/api/conversations', { method: 'DELETE' });
 }
