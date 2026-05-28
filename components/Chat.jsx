@@ -5,7 +5,6 @@ import ImageUpload from './ImageUpload';
 import LoadingOverlay from './LoadingOverlay';
 import { generateImagePrompt } from '@/lib/image-utils';
 import { CHART_TYPES } from '@/lib/constants';
-import { track } from '@vercel/analytics';
 
 export default function Chat({ onSendMessage, isGenerating, initialInput = '', initialChartType = 'auto' }) {
   const [activeTab, setActiveTab] = useState('text'); // 'text', 'file', or 'image'
@@ -41,7 +40,6 @@ export default function Chat({ onSendMessage, isGenerating, initialInput = '', i
   const handleSubmit = (e) => {
     e.preventDefault();
     if (input.trim() && !isGenerating) {
-      track('text_submit');
       lastSubmitSourceRef.current = 'text';
       onSendMessage(input.trim(), chartType, 'text');
       // Don't clear input - keep it for user reference
@@ -125,7 +123,6 @@ export default function Chat({ onSendMessage, isGenerating, initialInput = '', i
 
   const handleFileGenerate = () => {
     if (fileContent && !isGenerating) {
-      track('file_submit');
       // Mark source as file to avoid syncing file content into text input
       lastSubmitSourceRef.current = 'file';
       onSendMessage(fileContent, chartType, 'file');
@@ -147,7 +144,6 @@ export default function Chat({ onSendMessage, isGenerating, initialInput = '', i
 
   const handleImageSubmit = () => {
     if (selectedImage && !isGenerating) {
-      track('image_submit');
       // Mark source as image to avoid syncing into text input
       lastSubmitSourceRef.current = 'image';
       // 生成针对图片的提示词
