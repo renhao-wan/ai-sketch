@@ -1,20 +1,35 @@
 import { NextResponse } from 'next/server';
 import { fetchModels } from '@/lib/llm-client';
+import { configManager } from '@/lib/config-manager';
 
 /**
  * GET /api/models
  * Fetch available models from the configured provider
+ * Supports two modes:
+ *   - ?configId=xxx — server looks up config by ID
+ *   - ?type=...&baseUrl=...&apiKey=... — direct params (backward compat)
  */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type');
-    const baseUrl = searchParams.get('baseUrl');
-    const apiKey = searchParams.get('apiKey');
+    const configId = searchParams.get('configId');
+    let type = searchParams.get('type');
+    let baseUrl = searchParams.get('baseUrl');
+    let apiKey = searchParams.get('apiKey');
+
+    if (configId) {
+      const config = await configManager.getConfig(configId);
+      if (!config) {
+        return NextResponse.json({ error: `配置不存在: ${configId}` }, { status: 404 });
+      }
+      type = config.type;
+      baseUrl = config.baseUrl;
+      apiKey = config.apiKey;
+    }
 
     if (!type || !baseUrl || !apiKey) {
       return NextResponse.json(
-        { error: 'Missing required parameters: type, baseUrl, apiKey' },
+        { error: 'Missing required parameters: configId or type, baseUrl, apiKey' },
         { status: 400 },
       );
     }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { historyManager } from '@/lib/history-manager';
+import * as api from '@/lib/api-client';
 import { CHART_TYPES } from '@/lib/constants';
 import ConfirmDialog from './ConfirmDialog';
 import { Trash2, Clock, ArrowRight } from 'lucide-react';
@@ -19,21 +19,34 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
 
   useEffect(() => { if (isOpen) loadHistories(); }, [isOpen]);
 
-  const loadHistories = () => setHistories(historyManager.getHistories());
+  const loadHistories = async () => {
+    try {
+      const data = await api.fetchHistories();
+      setHistories(data);
+    } catch (err) {
+      console.error('Failed to load histories:', err);
+    }
+  };
 
   const handleApply = (history: HistoryItem) => { onApply?.(history); onClose(); };
 
   const handleDelete = (id: string) => {
     setConfirmDialog({
       isOpen: true, title: '确认删除', message: '确定要删除这条历史记录吗？',
-      onConfirm: () => { historyManager.deleteHistory(id); loadHistories(); },
+      onConfirm: async () => {
+        await api.deleteHistory(id);
+        await loadHistories();
+      },
     });
   };
 
   const handleClearAll = () => {
     setConfirmDialog({
       isOpen: true, title: '确认清空', message: '确定要清空所有历史记录吗？此操作不可恢复。',
-      onConfirm: () => { historyManager.clearAll(); loadHistories(); },
+      onConfirm: async () => {
+        await api.clearAllHistory();
+        await loadHistories();
+      },
     });
   };
 

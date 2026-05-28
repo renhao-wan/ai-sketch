@@ -1,3 +1,4 @@
+import { getDb, saveToDisk } from './db';
 import type { HistoryItem, LLMConfig } from '@/types';
 
 interface AddHistoryData {
@@ -7,71 +8,93 @@ interface AddHistoryData {
   config: Partial<LLMConfig>;
 }
 
+interface HistoryRow {
+  id: string;
+  chart_type: string;
+  user_input: string;
+  generated_code: string;
+  config_name: string | null;
+  config_model: string | null;
+  timestamp: number;
+}
+
+function rowToHistoryItem(row: HistoryRow): HistoryItem {
+  return {
+    id: row.id,
+    chartType: row.chart_type,
+    userInput: row.user_input,
+    generatedCode: row.generated_code,
+    config: {
+      name: row.config_name || undefined,
+      model: row.config_model || undefined,
+    },
+    timestamp: row.timestamp,
+  };
+}
+
 class HistoryManager {
-  private STORAGE_KEY = 'smart-excalidraw-history';
-  private histories: HistoryItem[] = [];
-  private loaded = false;
-
-  ensureLoaded(): void {
-    if (typeof window === 'undefined') return;
-    if (!this.loaded) {
-      this.loadHistories();
-      this.loaded = true;
-    }
-  }
-
-  private loadHistories(): void {
-    try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
-      this.histories = stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      console.error('Failed to load histories:', error);
-      this.histories = [];
-    }
-  }
-
-  private saveHistories(): void {
-    try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.histories));
-    } catch (error) {
-      console.error('Failed to save histories:', error);
-    }
-  }
-
   private generateId(): string {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 
-  addHistory(data: AddHistoryData): HistoryItem {
-    this.ensureLoaded();
-    const history: HistoryItem = {
-      id: this.generateId(),
+  async addHistory(data: AddHistoryData): Promise<HistoryItem> {
+    const db = await getDb();
+    const id = this.generateId();
+    const timestamp = Date.now();
+
+    db.run(
+      `INSERT INTO history (id, chart_type, user_input, generated_code, config_name, config_model, timestamp)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        data.chartType,
+        data.userInput,
+        data.generatedCode,
+        data.config.name || null,
+        data.config.model || null,
+        timestamp,
+      ],
+    );
+
+    saveToDisk();
+
+    return {
+      id,
       chartType: data.chartType,
       userInput: data.userInput,
       generatedCode: data.generatedCode,
       config: data.config,
-      timestamp: Date.now(),
+      timestamp,
     };
-    this.histories.unshift(history);
-    this.saveHistories();
-    return history;
   }
 
-  getHistories(): HistoryItem[] {
-    this.ensureLoaded();
-    return [...this.histories];
+  async getHistories(): Promise<HistoryItem[]> {
+    const db = await getDb();
+    const result = db.exec('SELECT * FROM history ORDER BY timestamp DESC');
+    if (result.length === 0) return [];
+    return result[0].values.map((row: unknown[]) =>
+      rowToHistoryItem({
+        id: row[0] as string,
+        chart_type: row[1] as string,
+        user_input: row[2] as string,
+        generated_code: row[3] as string,
+        config_name: row[4] as string | null,
+        config_model: row[5] as string | null,
+        timestamp: row[6] as number,
+      }),
+    );
   }
 
-  deleteHistory(id: string): void {
-    this.ensureLoaded();
-    this.histories = this.histories.filter(h => h.id !== id);
-    this.saveHistories();
+  async deleteHistory(id: string): Promise<void> {
+    const db = await getDb();
+    db.run('DELETE FROM history WHERE id = ?', [id]);
+    saveToDisk();
   }
 
-  clearAll(): void {
-    this.ensureLoaded();
-    this.histories = [];
-    this.saveHistories();
+  async clearAll(): Promise<void> {
+    const db = await getDb();
+    db.run('DELETE FROM history');
+    saveToDisk();
   }
 }
 

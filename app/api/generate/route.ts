@@ -1,23 +1,42 @@
 import { NextResponse } from 'next/server';
 import { callLLM } from '@/lib/llm-client';
+import { configManager } from '@/lib/config-manager';
 import { SYSTEM_PROMPT, USER_PROMPT_TEMPLATE } from '@/lib/prompts';
 import type { LLMConfig, LLMMessage, ImageData } from '@/types';
 
 /**
  * POST /api/generate
  * Generate Excalidraw code based on user input
+ * Supports two modes:
+ *   - { configId, userInput, chartType } — server looks up config by ID (secure)
+ *   - { config, userInput, chartType } — client sends full config (backward compat)
  */
 export async function POST(request: Request) {
   try {
-    const { config, userInput, chartType } = await request.json() as {
-      config: LLMConfig;
+    const { configId, config: configBody, userInput, chartType } = await request.json() as {
+      configId?: string;
+      config?: LLMConfig;
       userInput: string | { text?: string; image?: ImageData };
       chartType: string;
     };
 
+    let config: LLMConfig | undefined;
+
+    if (configId) {
+      config = await configManager.getConfig(configId);
+      if (!config) {
+        return NextResponse.json(
+          { error: `配置不存在: ${configId}` },
+          { status: 404 },
+        );
+      }
+    } else if (configBody) {
+      config = configBody;
+    }
+
     if (!config || !userInput) {
       return NextResponse.json(
-        { error: 'Missing required parameters: config, userInput' },
+        { error: 'Missing required parameters: config/configId, userInput' },
         { status: 400 },
       );
     }

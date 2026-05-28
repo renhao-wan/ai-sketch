@@ -11,10 +11,11 @@ import CodeEditor from '@/components/CodeEditor';
 import ConfigManager from '@/components/ConfigManager';
 import HistoryModal from '@/components/HistoryModal';
 import Notification from '@/components/Notification';
-import { getConfig, isConfigValid } from '@/lib/config';
+import * as api from '@/lib/api-client';
+import { isConfigValid } from '@/lib/config-validator';
 import { optimizeExcalidrawCode } from '@/lib/optimizeArrows';
-import { historyManager } from '@/lib/history-manager';
 import { repairJsonClosure } from '@/lib/json-repair';
+import { runMigrationIfNeeded } from '@/lib/migration';
 import type { LLMConfig, HistoryItem, NotificationState, AIActionId, ExcalidrawElement } from '@/types';
 
 const ExcalidrawCanvas = dynamic(() => import('@/components/ExcalidrawCanvas'), {
@@ -43,22 +44,21 @@ function EditorContent() {
     type: 'info',
   });
 
-  useEffect(() => {
-    const savedConfig = getConfig();
-    if (savedConfig) setConfig(savedConfig);
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'smart-excalidraw-active-config' || e.key === 'smart-excalidraw-configs') {
-        setConfig(getConfig());
+  const loadConfig = useCallback(async () => {
+    try {
+      const data = await api.fetchConfigs();
+      if (data.activeConfigId) {
+        const active = data.configs.find(c => c.id === data.activeConfigId);
+        if (active) setConfig(active);
       }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
+    } catch (err) {
+      console.error('Failed to load config:', err);
+    }
   }, []);
+
+  useEffect(() => {
+    runMigrationIfNeeded().then(() => loadConfig());
+  }, [loadConfig]);
 
   useEffect(() => {
     const prompt = searchParams.get('prompt');
@@ -145,12 +145,10 @@ function EditorContent() {
     setJsonError(null);
 
     try {
-      const headers = { 'Content-Type': 'application/json' };
-
       const response = await fetch('/api/generate', {
         method: 'POST',
-        headers,
-        body: JSON.stringify({ config, userInput: userMessage, chartType }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ configId: config!.id, userInput: userMessage, chartType }),
       });
 
       if (!response.ok) {
@@ -207,7 +205,7 @@ function EditorContent() {
 
       if (sourceType === 'text' && userMessage && optimizedCode) {
         const userInputText = typeof userMessage === 'object' ? ((userMessage as { text?: string }).text || '') : userMessage;
-        historyManager.addHistory({
+        await api.addHistory({
           chartType, userInput: userInputText, generatedCode: optimizedCode,
           config: { name: config?.name || config?.type, model: config?.model },
         });

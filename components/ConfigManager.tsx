@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { configManager } from '@/lib/config-manager';
+import * as api from '@/lib/api-client';
 import Notification from './Notification';
 import ConfirmDialog from './ConfirmDialog';
 import { Settings, Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2 } from 'lucide-react';
@@ -33,47 +33,78 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
 
   useEffect(() => { if (isOpen) loadConfigs(); }, [isOpen]);
 
-  const loadConfigs = () => {
-    try { setConfigs(configManager.getAllConfigs()); setActiveConfigId(configManager.getActiveConfigId()); }
-    catch (err) { setError('加载配置失败: ' + (err as Error).message); }
+  const loadConfigs = async () => {
+    try {
+      const data = await api.fetchConfigs();
+      setConfigs(data.configs);
+      setActiveConfigId(data.activeConfigId);
+    } catch (err) {
+      setError('加载配置失败: ' + (err as Error).message);
+    }
   };
 
   const handleCreateNew = () => { setIsCreating(true); setEditingConfig({ name: '', type: 'openai', baseUrl: '', apiKey: '', model: '', description: '' }); };
   const handleEdit = (config: LLMConfig) => { setIsCreating(false); setEditingConfig({ ...config }); };
 
   const handleDelete = async (configId: string) => {
-    setConfirmDialog({ isOpen: true, title: '确认删除', message: '确定要删除这个配置吗？此操作不可恢复。',
-      onConfirm: async () => { try { configManager.deleteConfig(configId); loadConfigs(); setError(''); setNotification({ isOpen: true, title: '删除成功', message: '配置已成功删除', type: 'success' }); } catch (err) { setError('删除配置失败: ' + (err as Error).message); } },
+    setConfirmDialog({
+      isOpen: true, title: '确认删除', message: '确定要删除这个配置吗？此操作不可恢复。',
+      onConfirm: async () => {
+        try {
+          await api.deleteConfig(configId);
+          await loadConfigs();
+          setError('');
+          setNotification({ isOpen: true, title: '删除成功', message: '配置已成功删除', type: 'success' });
+        } catch (err) { setError('删除配置失败: ' + (err as Error).message); }
+      },
     });
   };
 
-  const handleClone = (config: LLMConfig) => { try { configManager.cloneConfig(config.id!, `${config.name} (副本)`); loadConfigs(); setError(''); } catch (err) { setError('克隆配置失败: ' + (err as Error).message); } };
+  const handleClone = async (config: LLMConfig) => {
+    try {
+      await api.cloneConfig(config.id!, `${config.name} (副本)`);
+      await loadConfigs();
+      setError('');
+    } catch (err) { setError('克隆配置失败: ' + (err as Error).message); }
+  };
 
   const handleSetActive = async (configId: string) => {
-    try { configManager.setActiveConfig(configId); loadConfigs(); onConfigSelect?.(configManager.getActiveConfig()); setError(''); }
-    catch (err) { setError('切换配置失败: ' + (err as Error).message); }
+    try {
+      await api.setActiveConfig(configId);
+      await loadConfigs();
+      onConfigSelect?.(configs.find(c => c.id === configId) || null);
+      setError('');
+    } catch (err) { setError('切换配置失败: ' + (err as Error).message); }
   };
 
   const handleTestConnection = async (config: LLMConfig) => {
     setIsLoading(true); setError('');
     try {
-      const result = await configManager.testConnection(config);
+      const result = await api.testConnection(config);
       setNotification({ isOpen: true, title: result.success ? '连接测试成功' : '连接测试失败', message: result.message, type: result.success ? 'success' : 'error' });
     } catch (err) { setNotification({ isOpen: true, title: '连接测试失败', message: (err as Error).message, type: 'error' }); }
     finally { setIsLoading(false); }
   };
 
-  const handleSaveConfig = (configData: Partial<LLMConfig>) => {
+  const handleSaveConfig = async (configData: Partial<LLMConfig>) => {
     try {
-      if (isCreating) { const newConfig = configManager.createConfig(configData); if (configs.length === 0) onConfigSelect?.(newConfig); }
-      else { configManager.updateConfig(editingConfig!.id!, configData); if (editingConfig!.id === activeConfigId) onConfigSelect?.(configManager.getConfig(editingConfig!.id!) || null); }
-      setEditingConfig(null); setIsCreating(false); loadConfigs(); setError('');
+      if (isCreating) {
+        const newConfig = await api.createConfig(configData);
+        if (configs.length === 0) onConfigSelect?.(newConfig);
+      } else {
+        await api.updateConfig(editingConfig!.id!, configData);
+        if (editingConfig!.id === activeConfigId) {
+          onConfigSelect?.({ ...editingConfig!, ...configData } as LLMConfig);
+        }
+      }
+      setEditingConfig(null); setIsCreating(false); await loadConfigs(); setError('');
     } catch (err) { setError('保存配置失败: ' + (err as Error).message); }
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     try {
-      const blob = new Blob([configManager.exportConfigs()], { type: 'application/json' });
+      const json = await api.exportConfigs();
+      const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'llm-configs.json'; a.click(); URL.revokeObjectURL(url);
     } catch (err) { setError('导出配置失败: ' + (err as Error).message); }
   };
@@ -82,13 +113,25 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
     const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0]; if (!file) return;
-      try { const text = await file.text(); const result = configManager.importConfigs(text); if (result.success) { setNotification({ isOpen: true, title: '导入成功', message: `成功导入 ${result.count} 个配置`, type: 'success' }); loadConfigs(); } else { setError('导入配置失败: ' + result.message); } }
-      catch (err) { setError('导入配置失败: ' + (err as Error).message); }
+      try {
+        const text = await file.text();
+        const result = await api.importConfigs(text);
+        if (result.success) {
+          setNotification({ isOpen: true, title: '导入成功', message: `成功导入 ${result.count} 个配置`, type: 'success' });
+          await loadConfigs();
+        } else { setError('导入配置失败: ' + result.message); }
+      } catch (err) { setError('导入配置失败: ' + (err as Error).message); }
     };
     input.click();
   };
 
-  const filteredConfigs = searchQuery ? configManager.searchConfigs(searchQuery) : configs;
+  const filteredConfigs = searchQuery
+    ? configs.filter(c =>
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.type.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : configs;
 
   if (!isOpen) return null;
 

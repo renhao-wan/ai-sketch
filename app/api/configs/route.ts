@@ -1,32 +1,48 @@
 import { NextResponse } from 'next/server';
-import { testConnection } from '@/lib/llm-client';
+import { configManager } from '@/lib/config-manager';
 import type { LLMConfig } from '@/types';
 
 /**
+ * GET /api/configs
+ * List all configs and active config ID
+ */
+export async function GET() {
+  try {
+    const configs = await configManager.getAllConfigs();
+    const activeConfigId = await configManager.getActiveConfigId();
+    return NextResponse.json({ configs, activeConfigId });
+  } catch (error) {
+    console.error('Error fetching configs:', error);
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+  }
+}
+
+/**
  * POST /api/configs
- * Test connection to a provider API
+ * Create a new config or test connection
+ * Body: { action: 'create', config } or { action: 'test', config } or { config } (backward compat = test)
  */
 export async function POST(request: Request) {
   try {
-    const { config } = await request.json() as { config: LLMConfig };
+    const body = await request.json();
+    const { action, config } = body as { action?: string; config: LLMConfig };
 
     if (!config) {
-      return NextResponse.json(
-        { error: 'Missing required parameter: config' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Missing required parameter: config' }, { status: 400 });
     }
 
-    const result = await testConnection(config);
+    if (action === 'create') {
+      const newConfig = await configManager.createConfig(config);
+      return NextResponse.json(newConfig);
+    }
 
+    // Default: test connection (backward compat)
+    const result = await configManager.testConnectionAction(config);
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error testing connection:', error);
+    console.error('Error in POST /api/configs:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: (error as Error).message || '连接测试失败',
-      },
+      { success: false, message: (error as Error).message || '操作失败' },
       { status: 500 },
     );
   }

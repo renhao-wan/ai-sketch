@@ -7,7 +7,8 @@ import AIPromptBox from '@/components/AIPromptBox';
 import ConfigManager from '@/components/ConfigManager';
 import HistoryModal from '@/components/HistoryModal';
 import { Settings, History, FileText } from 'lucide-react';
-import { historyManager } from '@/lib/history-manager';
+import * as api from '@/lib/api-client';
+import { runMigrationIfNeeded } from '@/lib/migration';
 import type { HistoryItem } from '@/types';
 
 const CHART_TYPE_NAMES: Record<string, string> = {
@@ -31,8 +32,14 @@ export default function HomePage() {
   const [recentItems, setRecentItems] = useState<HistoryItem[]>([]);
 
   useEffect(() => {
-    historyManager.ensureLoaded();
-    setRecentItems(historyManager.getHistories().slice(0, 5));
+    runMigrationIfNeeded().then(async () => {
+      try {
+        const histories = await api.fetchHistories(5);
+        setRecentItems(histories);
+      } catch (err) {
+        console.error('Failed to load histories:', err);
+      }
+    });
   }, []);
 
   const handleApplyHistory = (item: HistoryItem) => {
