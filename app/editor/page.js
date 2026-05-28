@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import TopBar, { AppIcon } from '@/components/TopBar';
+import { AppIcon } from '@/components/TopBar';
 import AICopilotPanel from '@/components/AICopilotPanel';
 import FloatingAIActions from '@/components/FloatingAIActions';
 import BottomContextPanel from '@/components/BottomContextPanel';
@@ -77,7 +77,27 @@ function EditorContent() {
   useEffect(() => {
     const prompt = searchParams.get('prompt');
     const format = searchParams.get('format');
-    if (prompt) {
+    const source = searchParams.get('source');
+
+    if (source === 'file' || source === 'image') {
+      try {
+        const raw = sessionStorage.getItem('ai-sketch-init-data');
+        if (raw) {
+          const init = JSON.parse(raw);
+          sessionStorage.removeItem('ai-sketch-init-data');
+          if (init.type === 'file' && init.data) {
+            setCurrentInput(init.data);
+            setCurrentChartType(init.format || 'auto');
+            setTimeout(() => handleSendMessage(init.data, init.format || 'auto', 'file'), 300);
+          } else if (init.type === 'image' && init.data) {
+            setCurrentChartType(init.format || 'auto');
+            setTimeout(() => handleSendMessage(init.data, init.format || 'auto', 'image'), 300);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to read init data:', e);
+      }
+    } else if (prompt) {
       setCurrentInput(prompt);
       if (format) setCurrentChartType(format);
       setTimeout(() => {
@@ -277,15 +297,8 @@ function EditorContent() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Top Bar */}
-      <TopBar
-        onOpenConfig={() => setIsConfigManagerOpen(true)}
-        onOpenHistory={() => setIsHistoryModalOpen(true)}
-        onExport={handleExport}
-      />
-
-      <div className="flex-1 flex relative overflow-hidden">
+    <>
+      <div className="h-full flex relative overflow-hidden">
         {/* AI Copilot Panel (Left) */}
         <AICopilotPanel
           onSendMessage={handleSendMessage}
@@ -332,7 +345,7 @@ function EditorContent() {
       <HistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} onApply={handleApplyHistory} />
       <AccessPasswordModal isOpen={isAccessPasswordModalOpen} onClose={() => setIsAccessPasswordModalOpen(false)} />
       <Notification isOpen={notification.isOpen} onClose={() => setNotification({ ...notification, isOpen: false })} title={notification.title} message={notification.message} type={notification.type} />
-    </div>
+    </>
   );
 }
 

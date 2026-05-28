@@ -15,9 +15,13 @@ import {
   FileText,
   Loader2,
   X,
+  CheckCircle,
+  AlertCircle,
 } from 'lucide-react';
 import { AppIcon } from './TopBar';
 import { CHART_TYPES } from '@/lib/constants';
+import { generateImagePrompt } from '@/lib/image-utils';
+import ImageUpload from './ImageUpload';
 
 const SUGGESTION_CHIPS = [
   { icon: FileText, label: '生成架构图' },
@@ -40,9 +44,18 @@ export default function AICopilotPanel({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [prompt, setPrompt] = useState(currentInput || '');
   const [chartType, setChartType] = useState(currentChartType || 'auto');
-  const [activeTab, setActiveTab] = useState('text'); // text | file | image
+  const [showImageUpload, setShowImageUpload] = useState(false);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // File upload state
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [fileContent, setFileContent] = useState('');
+  const [fileStatus, setFileStatus] = useState('');
+  const [fileError, setFileError] = useState('');
+
+  // Image upload state
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     if (currentInput !== undefined) setPrompt(currentInput);
@@ -60,9 +73,26 @@ export default function AICopilotPanel({
     }
   }, [prompt]);
 
+  // --- Send ---
+  const canSend = () => {
+    if (isGenerating) return false;
+    return !!(prompt.trim() || (fileStatus === 'success' && fileContent) || (showImageUpload && selectedImage));
+  };
+
   const handleSend = () => {
-    if (!prompt.trim() || isGenerating) return;
-    onSendMessage(prompt.trim(), chartType, 'text');
+    if (!canSend()) return;
+
+    if (showImageUpload && selectedImage) {
+      const text = prompt.trim() || generateImagePrompt(chartType);
+      onSendMessage({ text, image: selectedImage }, chartType, 'image');
+    } else if (fileStatus === 'success' && fileContent) {
+      const combined = prompt.trim()
+        ? `用户指令：\n${prompt.trim()}\n\n参考内容：\n${fileContent}`
+        : fileContent;
+      onSendMessage(combined, chartType, 'file');
+    } else if (prompt.trim()) {
+      onSendMessage(prompt.trim(), chartType, 'text');
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -73,16 +103,75 @@ export default function AICopilotPanel({
   };
 
   const handleChipClick = (label) => {
+    setShowImageUpload(false);
+    handleClearFile();
     setPrompt(label);
-    setTimeout(() => handleSend(), 50);
+    setTimeout(() => onSendMessage(label, chartType, 'text'), 50);
   };
 
-  const handleFileUpload = async (e) => {
+  // --- File upload ---
+  const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const text = await file.text();
-    setPrompt(text);
-    setActiveTab('text');
+
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!['.md', '.txt'].includes(ext)) {
+      setFileError('请选择 .md 或 .txt 文件');
+      setFileStatus('error');
+      return;
+    }
+    if (file.size > 1024 * 1024) {
+      setFileError('文件大小不能超过 1MB');
+      setFileStatus('error');
+      return;
+    }
+
+    setShowImageUpload(false);
+    setSelectedFile(file);
+    setFileStatus('parsing');
+    setFileError('');
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const content = (reader.result || '').trim();
+      if (content) {
+        setFileContent(content);
+        setFileStatus('success');
+      } else {
+        setFileError('文件内容为空');
+        setFileStatus('error');
+      }
+    };
+    reader.onerror = () => {
+      setFileError('文件读取失败');
+      setFileStatus('error');
+    };
+    reader.readAsText(file);
+  };
+
+  const handleClearFile = () => {
+    setSelectedFile(null);
+    setFileContent('');
+    setFileStatus('');
+    setFileError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // --- Image upload ---
+  const handleImageSubmit = () => {
+    if (!selectedImage || isGenerating) return;
+    const imagePrompt = generateImagePrompt(chartType);
+    onSendMessage({ text: imagePrompt, image: selectedImage }, chartType, 'image');
+  };
+
+  const handleToggleImage = () => {
+    if (showImageUpload) {
+      setShowImageUpload(false);
+      setSelectedImage(null);
+    } else {
+      setShowImageUpload(true);
+      handleClearFile();
+    }
   };
 
   if (isCollapsed) {
@@ -111,7 +200,7 @@ export default function AICopilotPanel({
   }
 
   return (
-    <div className="h-full flex flex-col bg-white/65 backdrop-blur-2xl border-r border-white/10 w-[360px] min-w-[360px]">
+    <div className="h-full flex flex-col bg-white/65 backdrop-blur-2xl border-r border-white/10 w-[360px] min-w-[360px] relative z-10">
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-14 border-b border-black/5 flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -138,73 +227,95 @@ export default function AICopilotPanel({
         </div>
       )}
 
-      {/* Input Area */}
+      {/* Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Tab Selector */}
-        <div className="flex items-center gap-1 px-4 pt-4 pb-2">
-          {[
-            { key: 'text', label: '文本' },
-            { key: 'file', label: '文件' },
-            { key: 'image', label: '图片' },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => tab.key === 'file' ? fileInputRef.current?.click() : setActiveTab(tab.key)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${
-                activeTab === tab.key
-                  ? 'bg-black/8 text-[var(--fg)]'
-                  : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5'
-              }`}
+        {/* Chart Type */}
+        {!showImageUpload && (
+          <div className="px-4 pt-4 pb-2">
+            <select
+              value={chartType}
+              onChange={(e) => setChartType(e.target.value)}
+              className="w-full px-3 py-2 text-xs bg-black/4 border border-black/5 rounded-xl text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-indigo)]/30 appearance-none cursor-pointer"
             >
-              {tab.label}
-            </button>
-          ))}
+              {Object.entries(CHART_TYPES).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Text Input or Image Upload */}
+        <div className="flex-1 overflow-auto px-4">
+          {showImageUpload ? (
+            <div className="py-2 min-h-[200px] flex flex-col">
+              <ImageUpload
+                onImageSelect={setSelectedImage}
+                isGenerating={isGenerating}
+                chartType={chartType}
+                onChartTypeChange={setChartType}
+                onImageGenerate={handleImageSubmit}
+              />
+            </div>
+          ) : (
+            <>
+              <textarea
+                ref={textareaRef}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={(selectedFile || selectedImage) ? '补充指令（可选）...' : '描述你想要创建的图表...'}
+                className="w-full resize-none bg-transparent text-sm leading-relaxed text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none min-h-[80px]"
+              />
+
+              {/* File Status */}
+              {selectedFile && (
+                <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-black/[0.03] border border-black/[0.06]">
+                  {fileStatus === 'parsing' && <Loader2 size={13} className="animate-spin text-[var(--muted)] flex-shrink-0" />}
+                  {fileStatus === 'success' && <CheckCircle size={13} className="text-emerald-500 flex-shrink-0" />}
+                  {fileStatus === 'error' && <AlertCircle size={13} className="text-red-500 flex-shrink-0" />}
+                  <span className="text-xs text-[var(--fg)] truncate flex-1">{selectedFile.name}</span>
+                  {fileStatus === 'success' && <span className="text-[10px] text-[var(--muted)]/60 flex-shrink-0">{fileContent.length} 字符</span>}
+                  {fileStatus === 'error' && <span className="text-[10px] text-red-500 flex-shrink-0">{fileError}</span>}
+                  <button onClick={handleClearFile} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
+                    <X size={13} />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="px-4 pb-3 pt-2 flex items-center gap-2">
           <input
             ref={fileInputRef}
             type="file"
             accept=".md,.txt"
             className="hidden"
-            onChange={handleFileUpload}
+            onChange={handleFileChange}
           />
-        </div>
-
-        {/* Chart Type Selector */}
-        <div className="px-4 pb-2">
-          <select
-            value={chartType}
-            onChange={(e) => setChartType(e.target.value)}
-            className="w-full px-3 py-2 text-xs bg-black/4 border border-black/5 rounded-xl text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-indigo)]/30 appearance-none cursor-pointer"
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isGenerating}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 transition-all duration-200 disabled:opacity-40"
+            title="上传文件"
           >
-            {Object.entries(CHART_TYPES).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Textarea */}
-        <div className="flex-1 px-4 overflow-auto">
-          <textarea
-            ref={textareaRef}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="描述你想要创建的图表..."
-            className="w-full resize-none bg-transparent text-sm leading-relaxed text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none min-h-[80px]"
-          />
-        </div>
-
-        {/* Send Button */}
-        <div className="px-4 pb-3 flex items-center gap-2">
-          <button className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 transition-all duration-200">
             <Paperclip size={15} />
           </button>
-          <button className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 transition-all duration-200">
+          <button
+            onClick={handleToggleImage}
+            disabled={isGenerating}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 disabled:opacity-40 ${
+              showImageUpload ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5'
+            }`}
+            title="上传图片"
+          >
             <Image size={15} />
           </button>
           <div className="flex-1" />
           <button
             onClick={handleSend}
-            disabled={!prompt.trim() || isGenerating}
+            disabled={!canSend()}
             className="h-8 px-4 flex items-center gap-1.5 bg-[var(--primary)] text-white text-xs font-medium rounded-lg hover:bg-[var(--primary)]/90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
           >
             {isGenerating ? (
@@ -215,7 +326,7 @@ export default function AICopilotPanel({
             ) : (
               <>
                 <Send size={13} />
-                <span>发送</span>
+                <span>生成</span>
               </>
             )}
           </button>

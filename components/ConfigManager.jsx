@@ -100,10 +100,6 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }) {
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-7 pb-6 scrollbar-thin">
           {error && <div className="mb-4 px-4 py-3 bg-red-500/10 rounded-xl"><p className="text-sm text-red-700">{error}</p></div>}
-          <div className="mb-4 px-4 py-3 rounded-xl bg-[var(--accent-indigo)]/5 border border-[var(--accent-indigo)]/10">
-            <p className="text-xs text-[var(--accent-indigo)]">提示：如果启用了访问密码，将优先使用服务器端配置</p>
-          </div>
-
           {/* Actions */}
           <div className="mb-5 flex flex-wrap gap-2">
             <button onClick={handleCreateNew} className="flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 font-medium">

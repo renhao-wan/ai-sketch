@@ -55,10 +55,6 @@ export default function ConfigModal({ isOpen, onClose, onSave, initialConfig, sh
 
         <div className="px-7 pb-6 space-y-4">
           {error && <div className="px-4 py-3 bg-red-500/10 rounded-xl"><p className="text-sm text-red-700">{error}</p></div>}
-          <div className="px-4 py-3 rounded-xl bg-[var(--accent-indigo)]/5 border border-[var(--accent-indigo)]/10">
-            <p className="text-xs text-[var(--accent-indigo)]">提示：如果启用了访问密码，将优先使用服务器端配置</p>
-          </div>
-
           <div><label className="block text-sm font-medium text-[var(--fg)] mb-1.5">提供商名称</label><input type="text" value={config.name} onChange={(e) => setConfig({ ...config, name: e.target.value })} placeholder="例如：我的 OpenAI" className={inputClass} /></div>
           <div><label className="block text-sm font-medium text-[var(--fg)] mb-1.5">提供商类型 <span className="text-red-500">*</span></label><select value={config.type} onChange={(e) => setConfig({ ...config, type: e.target.value, model: '' })} className={inputClass}><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option></select></div>
           <div><label className="block text-sm font-medium text-[var(--fg)] mb-1.5">基础 URL <span className="text-red-500">*</span></label><input type="text" value={config.baseUrl} onChange={(e) => setConfig({ ...config, baseUrl: e.target.value })} placeholder={config.type === 'openai' ? 'https://api.openai.com/v1' : 'https://api.anthropic.com/v1'} className={inputClass} /></div>
