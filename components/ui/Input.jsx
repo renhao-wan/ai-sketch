@@ -14,7 +14,7 @@ export default function Input({
       onChange={onChange}
       placeholder={placeholder}
       disabled={disabled}
-      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed ${className}`}
+      className={`w-full px-4 py-2.5 text-sm bg-black/4 border border-black/5 rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 focus:border-[var(--accent-indigo)]/30 disabled:bg-black/2 disabled:cursor-not-allowed transition-all duration-200 ${className}`}
       {...props}
     />
   );

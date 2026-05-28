@@ -11,24 +11,22 @@ export default function ConfirmDialog({
   message,
   confirmText = '确认',
   cancelText = '取消',
-  type = 'warning'
+  type = 'warning',
 }) {
-  const typeStyles = {
-    warning: { message: 'text-yellow-700', variant: 'primary' },
-    danger: { message: 'text-red-700', variant: 'danger' },
-    info: { message: 'text-blue-700', variant: 'primary' }
+  const variantMap = {
+    warning: 'primary',
+    danger: 'danger',
+    info: 'primary',
   };
-
-  const styles = typeStyles[type] || typeStyles.warning;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-md">
-      <p className={`text-sm ${styles.message} mb-6`}>{message}</p>
+      <p className="text-sm text-[var(--muted)] mb-6">{message}</p>
       <div className="flex justify-end gap-3">
-        <Button variant="secondary" onClick={onClose}>
+        <Button variant="ghost" onClick={onClose}>
           {cancelText}
         </Button>
-        <Button variant={styles.variant} onClick={onConfirm}>
+        <Button variant={variantMap[type] || 'primary'} onClick={onConfirm}>
           {confirmText}
         </Button>
       </div>

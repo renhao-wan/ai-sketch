@@ -1,6 +1,7 @@
 'use client';
 
 import { Component } from 'react';
+import { AlertTriangle } from 'lucide-react';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -19,26 +20,24 @@ export default class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
-            <div className="flex items-center gap-3 mb-4">
-              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <h2 className="text-xl font-semibold text-gray-900">出错了</h2>
+        <div className="min-h-screen flex items-center justify-center bg-[var(--bg)] p-4 noise-overlay">
+          <div className="relative bg-white/80 backdrop-blur-2xl rounded-3xl border border-white/15 shadow-[0_20px_60px_rgba(15,23,42,0.12)] p-8 max-w-md w-full text-center">
+            <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={24} className="text-red-500" />
             </div>
-            <p className="text-gray-600 mb-4">应用程序遇到了一个错误。请刷新页面重试。</p>
+            <h2 className="text-lg font-semibold text-[var(--fg)] mb-2">出错了</h2>
+            <p className="text-sm text-[var(--muted)] mb-4">应用程序遇到了一个错误。请刷新页面重试。</p>
             {this.state.error && (
-              <details className="mb-4">
-                <summary className="text-sm text-gray-500 cursor-pointer">错误详情</summary>
-                <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-auto">
+              <details className="mb-4 text-left">
+                <summary className="text-xs text-[var(--muted)] cursor-pointer hover:text-[var(--fg)] transition-colors">错误详情</summary>
+                <pre className="mt-2 text-[11px] font-mono bg-black/4 p-3 rounded-xl overflow-auto text-red-600">
                   {this.state.error.toString()}
                 </pre>
               </details>
             )}
             <button
               onClick={() => window.location.reload()}
-              className="w-full bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+              className="w-full bg-[var(--primary)] text-white px-4 py-2.5 rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 text-sm font-medium"
             >
               刷新页面
             </button>
@@ -46,7 +45,6 @@ export default class ErrorBoundary extends Component {
         </div>
       );
     }
-
     return this.props.children;
   }
 }

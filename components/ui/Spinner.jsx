@@ -1,5 +1,3 @@
-// 统一的加载动画组件
-
 export default function Spinner({ size = 'md', color = 'white' }) {
   const sizeClasses = {
     sm: 'w-3 h-3',
@@ -9,9 +7,9 @@ export default function Spinner({ size = 'md', color = 'white' }) {
   };
 
   const colorClasses = {
-    white: 'border-white border-t-transparent',
-    gray: 'border-gray-700 border-t-transparent',
-    primary: 'border-gray-900 border-t-transparent',
+    white: 'border-white/30 border-t-white',
+    gray: 'border-[var(--muted)]/20 border-t-[var(--muted)]',
+    primary: 'border-[var(--accent-indigo)]/20 border-t-[var(--accent-indigo)]',
   };
 
   return (
