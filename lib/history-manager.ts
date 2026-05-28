@@ -1,8 +1,10 @@
 import { getDb, saveToDisk } from './db';
 import type { HistoryItem, LLMConfig } from '@/types';
+import type { DiagramFormat } from '@/types/diagram-strategy';
 
 interface AddHistoryData {
   chartType: string;
+  format?: DiagramFormat;
   userInput: string;
   generatedCode: string;
   config: Partial<LLMConfig>;
@@ -16,12 +18,14 @@ interface HistoryRow {
   config_name: string | null;
   config_model: string | null;
   timestamp: number;
+  format: string | null;
 }
 
 function rowToHistoryItem(row: HistoryRow): HistoryItem {
   return {
     id: row.id,
     chartType: row.chart_type,
+    format: (row.format as DiagramFormat) || 'excalidraw',
     userInput: row.user_input,
     generatedCode: row.generated_code,
     config: {
@@ -43,8 +47,8 @@ class HistoryManager {
     const timestamp = Date.now();
 
     db.run(
-      `INSERT INTO history (id, chart_type, user_input, generated_code, config_name, config_model, timestamp)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO history (id, chart_type, user_input, generated_code, config_name, config_model, timestamp, format)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         data.chartType,
@@ -53,6 +57,7 @@ class HistoryManager {
         data.config.name || null,
         data.config.model || null,
         timestamp,
+        data.format || 'excalidraw',
       ],
     );
 
@@ -61,6 +66,7 @@ class HistoryManager {
     return {
       id,
       chartType: data.chartType,
+      format: data.format || 'excalidraw',
       userInput: data.userInput,
       generatedCode: data.generatedCode,
       config: data.config,
@@ -81,6 +87,7 @@ class HistoryManager {
         config_name: row[4] as string | null,
         config_model: row[5] as string | null,
         timestamp: row[6] as number,
+        format: (row[7] as string) || null,
       }),
     );
   }

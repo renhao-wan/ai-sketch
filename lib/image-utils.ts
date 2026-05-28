@@ -4,6 +4,8 @@
  */
 
 import type { ImageValidationResult, ImageObject } from '@/types';
+import type { DiagramFormat } from '@/types/diagram-strategy';
+import { getStrategy } from '@/lib/strategies/registry';
 
 // 支持的图片格式
 export const SUPPORTED_IMAGE_TYPES: Record<string, string> = {
@@ -155,58 +157,9 @@ export async function createImageObject(file: File): Promise<ImageObject> {
 }
 
 /**
- * 获取图表类型名称
+ * 生成图片描述提示词（格式感知）
  */
-function getChartTypeName(chartType: string): string {
-  const typeNames: Record<string, string> = {
-    flowchart: '流程图',
-    mindmap: '思维导图',
-    orgchart: '组织架构图',
-    sequence: '时序图',
-    class: 'UML类图',
-    er: 'ER图',
-    gantt: '甘特图',
-    timeline: '时间线',
-    tree: '树形图',
-    network: '网络拓扑图',
-    architecture: '架构图',
-    dataflow: '数据流图',
-    state: '状态图',
-    swimlane: '泳道图',
-    concept: '概念图',
-    fishbone: '鱼骨图',
-    swot: 'SWOT分析图',
-    pyramid: '金字塔图',
-    funnel: '漏斗图',
-    venn: '韦恩图',
-    matrix: '矩阵图',
-  };
-
-  return typeNames[chartType] || '自动';
-}
-
-/**
- * 生成图片描述提示词
- */
-export function generateImagePrompt(chartType: string): string {
-  const chartTypeText = chartType && chartType !== 'auto'
-    ? `请将图片内容转换为${getChartTypeName(chartType)}类型的Excalidraw图表。`
-    : '请分析图片内容并选择合适的图表类型转换为Excalidraw图表。';
-
-  return `${chartTypeText}
-
-请仔细分析图片中的：
-1. 文字内容和标签
-2. 图形元素和结构
-3. 流程或连接关系
-4. 布局和层次关系
-5. 数据或数值信息
-
-基于分析结果，创建清晰、准确的Excalidraw图表，确保：
-- 保留图片中的所有关键信息
-- 使用合适的图表类型展示内容
-- 保持逻辑关系和结构
-- 添加必要的文字说明
-
-将图片里的内容转换为excalidraw`;
+export function generateImagePrompt(chartType: string, diagramFormat: DiagramFormat = 'excalidraw'): string {
+  const strategy = getStrategy(diagramFormat);
+  return strategy.generateImagePrompt(chartType);
 }

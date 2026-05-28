@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { historyManager } from '@/lib/history-manager';
+import type { DiagramFormat } from '@/types/diagram-strategy';
 
 /**
  * GET /api/history
@@ -23,13 +24,14 @@ export async function GET(request: Request) {
 /**
  * POST /api/history
  * Create a new history entry
- * Body: { chartType, userInput, generatedCode, config: { name, model } }
+ * Body: { chartType, format?, userInput, generatedCode, config: { name, model } }
  */
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    const { chartType, userInput, generatedCode, config } = data as {
+    const { chartType, format, userInput, generatedCode, config } = data as {
       chartType: string;
+      format?: DiagramFormat;
       userInput: string;
       generatedCode: string;
       config: { name?: string; model?: string };
@@ -41,6 +43,7 @@ export async function POST(request: Request) {
 
     const history = await historyManager.addHistory({
       chartType,
+      format,
       userInput,
       generatedCode,
       config: config || {},

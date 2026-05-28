@@ -14,9 +14,10 @@ interface CodeEditorProps {
   isGenerating: boolean;
   isApplyingCode: boolean;
   isOptimizingCode: boolean;
+  language?: string;
 }
 
-export default function CodeEditor({ code, onChange, onApply, onOptimize, onClear, jsonError, onClearJsonError, isGenerating, isApplyingCode, isOptimizingCode }: CodeEditorProps) {
+export default function CodeEditor({ code, onChange, onApply, onOptimize, onClear, jsonError, onClearJsonError, isGenerating, isApplyingCode, isOptimizingCode, language = 'javascript' }: CodeEditorProps) {
   return (
     <div className="flex flex-col h-full relative">
       {/* Header */}
@@ -66,7 +67,7 @@ export default function CodeEditor({ code, onChange, onApply, onOptimize, onClea
       <div className="flex-1 min-h-0">
         <Editor
           height="100%"
-          defaultLanguage="javascript"
+          defaultLanguage={language}
           value={code}
           onChange={onChange}
           theme="vs-light"

@@ -46,12 +46,14 @@ export default function ConfigModal({ isOpen, onClose, onSave, initialConfig }: 
   if (!isOpen) return null;
 
   const inputClass = "w-full px-4 py-2.5 text-sm bg-black/4 border border-black/5 rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200";
+  const selectClass = inputClass + " appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_12px_center] pr-9";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white/80 backdrop-blur-2xl rounded-3xl border border-white/15 shadow-[0_20px_60px_rgba(15,23,42,0.12)] w-full max-w-md max-h-[90vh] overflow-y-auto animate-slide-up">
-        <div className="flex items-center justify-between px-7 pt-6 pb-4">
+      <div className="relative bg-white/80 backdrop-blur-2xl rounded-3xl border border-white/15 shadow-[0_20px_60px_rgba(15,23,42,0.12)] w-full max-w-md max-h-[78vh] flex flex-col animate-slide-up">
+        {/* Fixed Header */}
+        <div className="flex items-center justify-between px-7 pt-6 pb-4 flex-shrink-0">
           <div className="flex items-center gap-2">
             <Settings size={18} className="text-[var(--muted)]" />
             <h2 className="text-lg font-semibold tracking-tight text-[var(--fg)]">LLM 配置</h2>
@@ -61,10 +63,11 @@ export default function ConfigModal({ isOpen, onClose, onSave, initialConfig }: 
           </button>
         </div>
 
-        <div className="px-7 pb-6 space-y-4">
+        {/* Scrollable Body */}
+        <div className="px-7 pb-6 space-y-4 overflow-y-auto scrollbar-hide flex-1 min-h-0">
           {error && <div className="px-4 py-3 bg-red-500/10 rounded-xl"><p className="text-sm text-red-700">{error}</p></div>}
           <div><label className="block text-sm font-medium text-[var(--fg)] mb-1.5">提供商名称</label><input type="text" value={config.name || ''} onChange={(e) => setConfig({ ...config, name: e.target.value })} placeholder="例如：我的 OpenAI" className={inputClass} /></div>
-          <div><label className="block text-sm font-medium text-[var(--fg)] mb-1.5">提供商类型 <span className="text-red-500">*</span></label><select value={config.type} onChange={(e) => setConfig({ ...config, type: e.target.value as 'openai' | 'anthropic', model: '' })} className={inputClass}><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option></select></div>
+          <div><label className="block text-sm font-medium text-[var(--fg)] mb-1.5">提供商类型 <span className="text-red-500">*</span></label><select value={config.type} onChange={(e) => setConfig({ ...config, type: e.target.value as 'openai' | 'anthropic', model: '' })} className={selectClass}><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option></select></div>
           <div><label className="block text-sm font-medium text-[var(--fg)] mb-1.5">基础 URL <span className="text-red-500">*</span></label><input type="text" value={config.baseUrl || ''} onChange={(e) => setConfig({ ...config, baseUrl: e.target.value })} placeholder={config.type === 'openai' ? 'https://api.openai.com/v1' : 'https://api.anthropic.com/v1'} className={inputClass} /></div>
           <div><label className="block text-sm font-medium text-[var(--fg)] mb-1.5">API 密钥 <span className="text-red-500">*</span></label><input type="password" value={config.apiKey || ''} onChange={(e) => setConfig({ ...config, apiKey: e.target.value })} placeholder="sk-..." className={inputClass} /></div>
           <div><button onClick={handleLoadModels} disabled={loading} className="w-full px-4 py-2.5 text-sm text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-xl transition-all duration-200 font-medium disabled:opacity-50">{loading ? '加载模型中...' : '加载可用模型'}</button></div>
@@ -77,12 +80,13 @@ export default function ConfigModal({ isOpen, onClose, onSave, initialConfig }: 
                 <label className="flex items-center gap-2 cursor-pointer"><input type="radio" checked={useCustomModel} onChange={() => { setUseCustomModel(true); setConfig({ ...config, model: '' }); }} /><span className="text-sm text-[var(--fg)]">手动输入</span></label>
               </div>
             )}
-            {models.length > 0 && !useCustomModel && <select value={config.model || ''} onChange={(e) => setConfig({ ...config, model: e.target.value })} className={inputClass}>{models.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select>}
+            {models.length > 0 && !useCustomModel && <select value={config.model || ''} onChange={(e) => setConfig({ ...config, model: e.target.value })} className={selectClass}>{models.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select>}
             {(useCustomModel || models.length === 0) && <input type="text" value={config.model || ''} onChange={(e) => setConfig({ ...config, model: e.target.value })} placeholder="例如：gpt-4、claude-3-opus" className={inputClass} />}
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 px-7 py-4 border-t border-black/5">
+        {/* Fixed Footer */}
+        <div className="flex justify-end gap-3 px-7 py-4 border-t border-black/5 flex-shrink-0">
           <button onClick={onClose} className="px-4 py-2 text-sm text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-xl transition-all duration-200">取消</button>
           <button onClick={handleSave} className="px-5 py-2 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 font-medium">保存配置</button>
         </div>

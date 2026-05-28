@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import * as api from '@/lib/api-client';
 import Notification from './Notification';
 import ConfirmDialog from './ConfirmDialog';
+import ScrollToTop from './ScrollToTop';
 import { Settings, Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2 } from 'lucide-react';
 import type { LLMConfig, ModelInfo, NotificationState, ConfirmDialogState } from '@/types';
 
@@ -125,13 +126,14 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
     input.click();
   };
 
-  const filteredConfigs = searchQuery
+  const filteredConfigs = (searchQuery
     ? configs.filter(c =>
         c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (c.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.type.toLowerCase().includes(searchQuery.toLowerCase()),
       )
-    : configs;
+    : configs
+  ).sort((a, b) => (a.id === activeConfigId ? -1 : b.id === activeConfigId ? 1 : 0));
 
   if (!isOpen) return null;
 
@@ -144,7 +146,7 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white/80 backdrop-blur-2xl rounded-3xl border border-white/15 shadow-[0_20px_60px_rgba(15,23,42,0.12)] w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-slide-up">
         {/* Header */}
-        <div className="flex items-center justify-between px-7 pt-6 pb-4">
+        <div className="flex items-center justify-between px-7 pt-6 pb-4 flex-shrink-0">
           <div className="flex items-center gap-2">
             <Settings size={18} className="text-[var(--muted)]" />
             <h2 className="text-lg font-semibold tracking-tight text-[var(--fg)]">配置管理</h2>
@@ -154,11 +156,10 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
           </button>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-7 pb-6 scrollbar-thin">
-          {error && <div className="mb-4 px-4 py-3 bg-red-500/10 rounded-xl"><p className="text-sm text-red-700">{error}</p></div>}
-          {/* Actions */}
-          <div className="mb-5 flex flex-wrap gap-2">
+        {/* Fixed Actions + Search */}
+        <div className="px-7 pb-3 flex-shrink-0 space-y-3">
+          {error && <div className="px-4 py-3 bg-red-500/10 rounded-xl"><p className="text-sm text-red-700">{error}</p></div>}
+          <div className="flex flex-wrap gap-2">
             <button onClick={handleCreateNew} className="flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 font-medium">
               <Plus size={14} /><span>新建配置</span>
             </button>
@@ -169,14 +170,14 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
               <Upload size={14} /><span>导入</span>
             </button>
           </div>
-
-          {/* Search */}
-          <div className="mb-4 relative">
+          <div className="relative">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)]/50" />
             <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="搜索配置..." className="w-full pl-10 pr-4 py-2.5 text-sm bg-black/4 border border-black/5 rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200" />
           </div>
+        </div>
 
-          {/* Config List */}
+        {/* Scrollable List */}
+        <ScrollToTop className="px-7 pb-6 scrollbar-thin">
           <div className="space-y-2">
             {filteredConfigs.length === 0 ? (
               <div className="text-center py-12 text-sm text-[var(--muted)]">{searchQuery ? '没有找到匹配的配置' : '暂无配置，点击"新建配置"创建第一个配置'}</div>
@@ -220,7 +221,7 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
               </div>
             ))}
           </div>
-        </div>
+        </ScrollToTop>
       </div>
 
       <Notification isOpen={notification.isOpen} onClose={() => setNotification({ ...notification, isOpen: false })} title={notification.title} message={notification.message} type={notification.type} />
@@ -256,19 +257,22 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
   };
 
   const inputClass = "w-full px-4 py-2.5 text-sm bg-black/4 border border-black/5 rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200";
+  const selectClass = inputClass + " appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_12px_center] pr-9";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative bg-white/80 backdrop-blur-2xl rounded-3xl border border-white/15 shadow-[0_20px_60px_rgba(15,23,42,0.12)] w-full max-w-md max-h-[90vh] overflow-y-auto animate-slide-up">
-        <div className="flex items-center justify-between px-7 pt-6 pb-4">
+      <div className="relative bg-white/80 backdrop-blur-2xl rounded-3xl border border-white/15 shadow-[0_20px_60px_rgba(15,23,42,0.12)] w-full max-w-md max-h-[78vh] flex flex-col animate-slide-up">
+        {/* Fixed Header */}
+        <div className="flex items-center justify-between px-7 pt-6 pb-4 flex-shrink-0">
           <h2 className="text-lg font-semibold tracking-tight text-[var(--fg)]">{isCreating ? '新建配置' : '编辑配置'}</h2>
           <button onClick={onCancel} className="w-8 h-8 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 transition-all duration-200">
             <X size={18} />
           </button>
         </div>
 
-        <div className="px-7 pb-6 space-y-4">
+        {/* Scrollable Body */}
+        <div className="px-7 pb-6 space-y-4 overflow-y-auto scrollbar-hide flex-1 min-h-0">
           {error && <div className="px-4 py-3 bg-red-500/10 rounded-xl"><p className="text-sm text-red-700">{error}</p></div>}
 
           <div>
@@ -281,7 +285,7 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
           </div>
           <div>
             <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">提供商类型 <span className="text-red-500">*</span></label>
-            <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value as 'openai' | 'anthropic', model: '' })} className={inputClass}>
+            <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value as 'openai' | 'anthropic', model: '' })} className={selectClass}>
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
             </select>
@@ -308,7 +312,7 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
               </div>
             )}
             {models.length > 0 && !useCustomModel && (
-              <select value={formData.model || ''} onChange={(e) => setFormData({ ...formData, model: e.target.value })} className={inputClass}>
+              <select value={formData.model || ''} onChange={(e) => setFormData({ ...formData, model: e.target.value })} className={selectClass}>
                 {models.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
               </select>
             )}
@@ -318,7 +322,7 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 px-7 py-4 border-t border-black/5">
+        <div className="flex justify-end gap-3 px-7 py-4 border-t border-black/5 flex-shrink-0">
           <button onClick={onCancel} className="px-4 py-2 text-sm text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-xl transition-all duration-200">取消</button>
           <button onClick={handleSave} className="px-5 py-2 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 font-medium">{isCreating ? '创建' : '保存'}</button>
         </div>

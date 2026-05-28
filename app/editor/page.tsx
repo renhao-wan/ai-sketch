@@ -11,16 +11,13 @@ import CodeEditor from '@/components/CodeEditor';
 import ConfigManager from '@/components/ConfigManager';
 import HistoryModal from '@/components/HistoryModal';
 import Notification from '@/components/Notification';
+import DiagramCanvas from '@/components/DiagramCanvas';
 import * as api from '@/lib/api-client';
 import { isConfigValid } from '@/lib/config-validator';
-import { optimizeExcalidrawCode } from '@/lib/optimizeArrows';
-import { repairJsonClosure } from '@/lib/json-repair';
+import { getStrategy } from '@/lib/strategies/registry';
 import { runMigrationIfNeeded } from '@/lib/migration';
-import type { LLMConfig, HistoryItem, NotificationState, AIActionId, ExcalidrawElement } from '@/types';
-
-const ExcalidrawCanvas = dynamic(() => import('@/components/ExcalidrawCanvas'), {
-  ssr: false,
-});
+import type { LLMConfig, HistoryItem, NotificationState, AIActionId } from '@/types';
+import type { DiagramFormat } from '@/types/diagram-strategy';
 
 function EditorContent() {
   const searchParams = useSearchParams();
@@ -28,7 +25,8 @@ function EditorContent() {
   const [isConfigManagerOpen, setIsConfigManagerOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [generatedCode, setGeneratedCode] = useState('');
-  const [elements, setElements] = useState<ExcalidrawElement[]>([]);
+  const [format, setFormat] = useState<DiagramFormat>('excalidraw');
+  const [renderData, setRenderData] = useState<unknown>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isApplyingCode, setIsApplyingCode] = useState(false);
   const [isOptimizingCode, setIsOptimizingCode] = useState(false);
@@ -62,8 +60,13 @@ function EditorContent() {
 
   useEffect(() => {
     const prompt = searchParams.get('prompt');
-    const format = searchParams.get('format');
+    const formatParam = searchParams.get('format') as DiagramFormat | null;
     const source = searchParams.get('source');
+
+    // Set diagram format from URL param
+    if (formatParam && ['excalidraw', 'mermaid', 'drawio'].includes(formatParam)) {
+      setFormat(formatParam);
+    }
 
     if (source === 'file' || source === 'image') {
       try {
@@ -71,6 +74,9 @@ function EditorContent() {
         if (raw) {
           const init = JSON.parse(raw);
           sessionStorage.removeItem('ai-sketch-init-data');
+          if (init.format && ['excalidraw', 'mermaid', 'drawio'].includes(init.format)) {
+            setFormat(init.format);
+          }
           if (init.type === 'file' && init.data) {
             setCurrentInput(init.data);
             setCurrentChartType(init.format || 'auto');
@@ -85,51 +91,15 @@ function EditorContent() {
       }
     } else if (prompt) {
       setCurrentInput(prompt);
-      if (format) setCurrentChartType(format);
+      if (formatParam) setCurrentChartType(formatParam);
       setTimeout(() => {
-        handleSendMessage(prompt, format || 'auto', 'text');
+        handleSendMessage(prompt, formatParam || 'auto', 'text');
       }, 300);
     }
   }, [searchParams]);
 
-  const postProcessExcalidrawCode = (code: string): string => {
-    if (!code || typeof code !== 'string') return code;
-    let processed = code.trim();
-    processed = processed.replace(/^```(?:json|javascript|js)?\s*\n?/i, '');
-    processed = processed.replace(/\n?```\s*$/, '');
-    processed = processed.trim();
-    processed = repairJsonClosure(processed);
-    try {
-      JSON.parse(processed);
-      return processed;
-    } catch (e) {
-      processed = fixUnescapedQuotes(processed);
-      processed = repairJsonClosure(processed);
-      return processed;
-    }
-  };
-
-  const fixUnescapedQuotes = (jsonString: string): string => {
-    let result = '';
-    let inString = false;
-    let escapeNext = false;
-    for (let i = 0; i < jsonString.length; i++) {
-      const char = jsonString[i];
-      if (escapeNext) { result += char; escapeNext = false; continue; }
-      if (char === '\\') { result += char; escapeNext = true; continue; }
-      if (char === '"') {
-        if (!inString) { inString = true; result += char; }
-        else {
-          const nextNonWhitespace = jsonString.slice(i + 1).match(/^\s*(.)/);
-          const nextChar = nextNonWhitespace ? nextNonWhitespace[1] : '';
-          if (nextChar === ':' || nextChar === ',' || nextChar === '}' || nextChar === ']' || nextChar === '') {
-            inString = false; result += char;
-          } else { result += '\\"'; }
-        }
-      } else { result += char; }
-    }
-    return result;
-  };
+  // Get strategy for current format (memoized via format state)
+  const strategy = getStrategy(format);
 
   const handleSendMessage = useCallback(async (userMessage: string | { text?: string; image?: unknown }, chartType: string = 'auto', sourceType: string = 'text') => {
     if (!isConfigValid(config)) {
@@ -144,11 +114,14 @@ function EditorContent() {
     setApiError(null);
     setJsonError(null);
 
+    // Get strategy at call time to use current format
+    const currentStrategy = getStrategy(format);
+
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ configId: config!.id, userInput: userMessage, chartType }),
+        body: JSON.stringify({ configId: config!.id, userInput: userMessage, chartType, format }),
       });
 
       if (!response.ok) {
@@ -187,7 +160,7 @@ function EditorContent() {
               const data = JSON.parse(line.slice(6));
               if (data.content) {
                 accumulatedCode += data.content;
-                const processedCode = postProcessExcalidrawCode(accumulatedCode);
+                const processedCode = currentStrategy.postProcess(accumulatedCode);
                 setGeneratedCode(processedCode);
               } else if (data.error) { throw new Error(data.error); }
             } catch (e) {
@@ -197,16 +170,16 @@ function EditorContent() {
         }
       }
 
-      const processedCode = postProcessExcalidrawCode(accumulatedCode);
-      tryParseAndApply(processedCode);
-      const optimizedCode = optimizeExcalidrawCode(processedCode);
+      const processedCode = currentStrategy.postProcess(accumulatedCode);
+      tryParseAndApply(processedCode, currentStrategy);
+      const optimizedCode = currentStrategy.optimize(processedCode);
       setGeneratedCode(optimizedCode);
-      tryParseAndApply(optimizedCode);
+      tryParseAndApply(optimizedCode, currentStrategy);
 
       if (sourceType === 'text' && userMessage && optimizedCode) {
         const userInputText = typeof userMessage === 'object' ? ((userMessage as { text?: string }).text || '') : userMessage;
         await api.addHistory({
-          chartType, userInput: userInputText, generatedCode: optimizedCode,
+          chartType, format, userInput: userInputText, generatedCode: optimizedCode,
           config: { name: config?.name || config?.type, model: config?.model },
         });
       }
@@ -216,19 +189,16 @@ function EditorContent() {
     } finally {
       setIsGenerating(false);
     }
-  }, [config]);
+  }, [config, format]);
 
-  const tryParseAndApply = (code: string) => {
-    try {
+  const tryParseAndApply = (code: string, strat?: ReturnType<typeof getStrategy>) => {
+    const s = strat || strategy;
+    const result = s.validate(code);
+    if (result.valid) {
+      setRenderData(result.data);
       setJsonError(null);
-      const cleanedCode = code.trim();
-      const arrayMatch = cleanedCode.match(/\[[\s\S]*\]/);
-      if (!arrayMatch) { setJsonError('代码中未找到有效的 JSON 数组'); return; }
-      const parsed = JSON.parse(arrayMatch[0]);
-      if (Array.isArray(parsed)) { setElements(parsed); setJsonError(null); }
-    } catch (error) {
-      if (error instanceof SyntaxError) setJsonError('JSON 语法错误：' + error.message);
-      else setJsonError('解析失败：' + (error as Error).message);
+    } else {
+      setJsonError(result.error);
     }
   };
 
@@ -242,7 +212,7 @@ function EditorContent() {
     setIsOptimizingCode(true);
     try {
       await new Promise(r => setTimeout(r, 500));
-      const optimizedCode = optimizeExcalidrawCode(generatedCode);
+      const optimizedCode = strategy.optimize(generatedCode);
       setGeneratedCode(optimizedCode);
       tryParseAndApply(optimizedCode);
     } finally { setIsOptimizingCode(false); }
@@ -254,8 +224,19 @@ function EditorContent() {
     const userInputText = typeof history.userInput === 'object' ? ((history.userInput as { text?: string }).text || '图片上传生成') : history.userInput;
     setCurrentInput(userInputText);
     setCurrentChartType(history.chartType);
+    if (history.format && ['excalidraw', 'mermaid', 'drawio'].includes(history.format)) {
+      setFormat(history.format);
+    }
     setGeneratedCode(history.generatedCode);
-    tryParseAndApply(history.generatedCode);
+    // Use the history format's strategy for validation
+    const historyStrategy = history.format ? getStrategy(history.format) : strategy;
+    const result = historyStrategy.validate(history.generatedCode);
+    if (result.valid) {
+      setRenderData(result.data);
+      setJsonError(null);
+    } else {
+      setJsonError(result.error);
+    }
   };
 
   const handleAIAction = (actionId: AIActionId) => {
@@ -269,10 +250,12 @@ function EditorContent() {
   };
 
   const handleExport = () => {
-    const blob = new Blob([generatedCode], { type: 'application/json' });
+    const blob = strategy.createExportBlob(generatedCode);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'diagram.json'; a.click();
+    a.href = url;
+    a.download = `diagram.${strategy.fileExtension}`;
+    a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -299,7 +282,7 @@ function EditorContent() {
 
           {/* Canvas */}
           <div className="flex-1 relative">
-            <ExcalidrawCanvas elements={elements} />
+            <DiagramCanvas format={format} data={renderData} />
           </div>
 
           {/* Bottom Context Panel */}
@@ -315,6 +298,7 @@ function EditorContent() {
               isGenerating={isGenerating}
               isApplyingCode={isApplyingCode}
               isOptimizingCode={isOptimizingCode}
+              language={strategy.codeLanguage}
             />
           </BottomContextPanel>
         </div>

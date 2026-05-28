@@ -18,6 +18,7 @@ import {
   getImagePreviewUrl,
   generateImagePrompt,
 } from '@/lib/image-utils';
+import type { DiagramFormat } from '@/types/diagram-strategy';
 
 const FORMATS = [
   { key: 'excalidraw', label: 'Excalidraw' },
@@ -48,7 +49,7 @@ export default function AIPromptBox() {
     const el = textareaRef.current;
     if (el) {
       el.style.height = 'auto';
-      el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+      el.style.height = Math.min(el.scrollHeight, 140) + 'px';
     }
   }, [prompt]);
 
@@ -92,7 +93,7 @@ export default function AIPromptBox() {
         const imageObject = await createImageObject(selectedImage);
         const previewUrl = await getImagePreviewUrl(selectedImage);
         const imageData = { ...imageObject, previewUrl };
-        const text = prompt.trim() || generateImagePrompt(activeFormat === 'excalidraw' ? 'auto' : activeFormat);
+        const text = prompt.trim() || generateImagePrompt('auto', activeFormat as DiagramFormat);
         sessionStorage.setItem('ai-sketch-init-data', JSON.stringify({
           type: 'image',
           data: { text, image: imageData },

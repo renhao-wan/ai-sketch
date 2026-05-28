@@ -1,23 +1,25 @@
 import { NextResponse } from 'next/server';
 import { callLLM } from '@/lib/llm-client';
 import { configManager } from '@/lib/config-manager';
-import { SYSTEM_PROMPT, USER_PROMPT_TEMPLATE } from '@/lib/prompts';
+import { getStrategy } from '@/lib/strategies/registry';
 import type { LLMConfig, LLMMessage, ImageData } from '@/types';
+import type { DiagramFormat } from '@/types/diagram-strategy';
 
 /**
  * POST /api/generate
- * Generate Excalidraw code based on user input
+ * Generate diagram code based on user input and format.
  * Supports two modes:
- *   - { configId, userInput, chartType } — server looks up config by ID (secure)
- *   - { config, userInput, chartType } — client sends full config (backward compat)
+ *   - { configId, userInput, chartType, format } — server looks up config by ID (secure)
+ *   - { config, userInput, chartType, format } — client sends full config (backward compat)
  */
 export async function POST(request: Request) {
   try {
-    const { configId, config: configBody, userInput, chartType } = await request.json() as {
+    const { configId, config: configBody, userInput, chartType, format } = await request.json() as {
       configId?: string;
       config?: LLMConfig;
       userInput: string | { text?: string; image?: ImageData };
       chartType: string;
+      format?: DiagramFormat;
     };
 
     let config: LLMConfig | undefined;
@@ -41,7 +43,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Build messages array
+    // Get strategy for the requested format (default to excalidraw for backward compat)
+    const diagramFormat: DiagramFormat = format || 'excalidraw';
+    const strategy = getStrategy(diagramFormat);
+
+    // Build messages array using strategy
     let userMessage: LLMMessage;
 
     // Handle different input types
@@ -50,7 +56,7 @@ export async function POST(request: Request) {
       const { text, image } = userInput;
       userMessage = {
         role: 'user',
-        content: USER_PROMPT_TEMPLATE(text || '', chartType),
+        content: strategy.getUserPrompt(text || '', chartType),
         image: {
           data: image.data,
           mimeType: image.mimeType,
@@ -60,7 +66,7 @@ export async function POST(request: Request) {
       // Regular text input
       userMessage = {
         role: 'user',
-        content: USER_PROMPT_TEMPLATE(
+        content: strategy.getUserPrompt(
           typeof userInput === 'string' ? userInput : (userInput.text || ''),
           chartType,
         ),
@@ -68,7 +74,7 @@ export async function POST(request: Request) {
     }
 
     const fullMessages: LLMMessage[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: strategy.getSystemPrompt() },
       userMessage,
     ];
 

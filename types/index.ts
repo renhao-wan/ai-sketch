@@ -29,6 +29,7 @@ export interface ImageData {
 export interface HistoryItem {
   id: string;
   chartType: string;
+  format?: import('./diagram-strategy').DiagramFormat;
   userInput: string;
   generatedCode: string;
   config: Partial<LLMConfig>;
@@ -106,4 +107,5 @@ export interface GenerateRequest {
   config: LLMConfig;
   userInput: string | { text?: string; image?: ImageData };
   chartType: string;
+  format?: import('./diagram-strategy').DiagramFormat;
 }

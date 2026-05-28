@@ -1,7 +1,9 @@
 import type { LLMConfig, TestConnectionResult, HistoryItem } from '@/types';
+import type { DiagramFormat } from '@/types/diagram-strategy';
 
 interface AddHistoryData {
   chartType: string;
+  format?: DiagramFormat;
   userInput: string;
   generatedCode: string;
   config: Partial<LLMConfig>;

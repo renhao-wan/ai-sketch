@@ -48,9 +48,17 @@ export async function getDb(): Promise<Database> {
       generated_code TEXT NOT NULL,
       config_name TEXT,
       config_model TEXT,
-      timestamp INTEGER NOT NULL
+      timestamp INTEGER NOT NULL,
+      format TEXT DEFAULT 'excalidraw'
     )
   `);
+
+  // Migration: add format column if it doesn't exist (for existing databases)
+  try {
+    dbInstance.run(`ALTER TABLE history ADD COLUMN format TEXT DEFAULT 'excalidraw'`);
+  } catch {
+    // Column already exists, ignore
+  }
 
   dbInstance.run(`
     CREATE TABLE IF NOT EXISTS meta (
