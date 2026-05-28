@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import Chat from '@/components/Chat';
 import CodeEditor from '@/components/CodeEditor';
 import ConfigManager from '@/components/ConfigManager';
-import ContactModal from '@/components/ContactModal';
 import HistoryModal from '@/components/HistoryModal';
 import AccessPasswordModal from '@/components/AccessPasswordModal';
 import Notification from '@/components/Notification';
@@ -22,10 +21,8 @@ const ExcalidrawCanvas = dynamic(() => import('@/components/ExcalidrawCanvas'), 
 export default function Home() {
   const [config, setConfig] = useState(null);
   const [isConfigManagerOpen, setIsConfigManagerOpen] = useState(false);
-  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isAccessPasswordModalOpen, setIsAccessPasswordModalOpen] = useState(false);
-  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(true);
   const [generatedCode, setGeneratedCode] = useState('');
   const [elements, setElements] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -552,7 +549,7 @@ export default function Home() {
           <span>AI 驱动的智能图表生成工具</span>
           <span className="text-gray-400">|</span>
           <a
-            href="https://github.com/liujuntao123/smart-excalidraw-next"
+            href="https://github.com/renhao-wan/ai-sketch"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center space-x-1 hover:text-gray-900 transition-colors"
@@ -562,19 +559,6 @@ export default function Home() {
             </svg>
             <span>GitHub</span>
           </a>
-          <span className="text-gray-400">|</span>
-          <button
-            onClick={() => setIsContactModalOpen(true)}
-            className="flex items-center space-x-1 hover:text-gray-900 transition-colors text-blue-600 hover:text-blue-700"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            <span>联系作者</span>
-          </button>
-          {/* <button onClick={() => setIsContactModalOpen(true)} >
-          <span className="text-orange-500 font-medium">🎁 进群限时领取免费 claude-4.5-sonnet key</span>
-          </button> */}
         </div>
       </footer>
 
@@ -591,12 +575,6 @@ export default function Home() {
         onClose={() => setIsAccessPasswordModalOpen(false)}
       />
 
-      {/* Contact Modal */}
-      <ContactModal
-        isOpen={isContactModalOpen}
-        onClose={() => setIsContactModalOpen(false)}
-      />
-
       {/* Notification */}
       <Notification
         isOpen={notification.isOpen}
@@ -605,38 +583,6 @@ export default function Home() {
         message={notification.message}
         type={notification.type}
       />
-
-      {/* Announcement Modal */}
-      {isAnnouncementModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
-            <div className="px-6 py-4 bg-blue-600">
-              <h2 className="text-xl font-semibold text-white">公告</h2>
-            </div>
-            <div className="px-6 py-6">
-              <p className="text-gray-700 text-base leading-relaxed">
-                本网站将迁移至更全面强大的新版本：
-                <a
-                  href="https://ai-draw-nexus.aizhi.site/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 font-medium underline ml-1"
-                >
-                  AI-Draw-Nexus
-                </a>
-              </p>
-            </div>
-            <div className="px-6 py-4 bg-gray-50 flex justify-end">
-              <button
-                onClick={() => setIsAnnouncementModalOpen(false)}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-              >
-                我知道了
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
