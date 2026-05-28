@@ -10,7 +10,6 @@ import BottomContextPanel from '@/components/BottomContextPanel';
 import CodeEditor from '@/components/CodeEditor';
 import ConfigManager from '@/components/ConfigManager';
 import HistoryModal from '@/components/HistoryModal';
-import AccessPasswordModal from '@/components/AccessPasswordModal';
 import Notification from '@/components/Notification';
 import { getConfig, isConfigValid } from '@/lib/config';
 import { optimizeExcalidrawCode } from '@/lib/optimizeArrows';
@@ -26,7 +25,6 @@ function EditorContent() {
   const [config, setConfig] = useState(null);
   const [isConfigManagerOpen, setIsConfigManagerOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-  const [isAccessPasswordModalOpen, setIsAccessPasswordModalOpen] = useState(false);
   const [generatedCode, setGeneratedCode] = useState('');
   const [elements, setElements] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -36,7 +34,6 @@ function EditorContent() {
   const [jsonError, setJsonError] = useState(null);
   const [currentInput, setCurrentInput] = useState('');
   const [currentChartType, setCurrentChartType] = useState('auto');
-  const [usePassword, setUsePassword] = useState(false);
   const [bottomPanelContent, setBottomPanelContent] = useState(null);
   const [notification, setNotification] = useState({
     isOpen: false,
@@ -49,28 +46,16 @@ function EditorContent() {
     const savedConfig = getConfig();
     if (savedConfig) setConfig(savedConfig);
 
-    const passwordEnabled = localStorage.getItem('smart-excalidraw-use-password') === 'true';
-    setUsePassword(passwordEnabled);
-
     const handleStorageChange = (e) => {
       if (e.key === 'smart-excalidraw-active-config' || e.key === 'smart-excalidraw-configs') {
         setConfig(getConfig());
       }
-      if (e.key === 'smart-excalidraw-use-password') {
-        setUsePassword(localStorage.getItem('smart-excalidraw-use-password') === 'true');
-      }
-    };
-
-    const handlePasswordSettingsChanged = (e) => {
-      setUsePassword(e.detail.usePassword);
     };
 
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('password-settings-changed', handlePasswordSettingsChanged);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('password-settings-changed', handlePasswordSettingsChanged);
     };
   }, []);
 
@@ -146,11 +131,8 @@ function EditorContent() {
   };
 
   const handleSendMessage = useCallback(async (userMessage, chartType = 'auto', sourceType = 'text') => {
-    const usePassword = typeof window !== 'undefined' && localStorage.getItem('smart-excalidraw-use-password') === 'true';
-    const accessPassword = typeof window !== 'undefined' ? localStorage.getItem('smart-excalidraw-access-password') : '';
-
-    if (!usePassword && !isConfigValid(config)) {
-      setNotification({ isOpen: true, title: '配置提醒', message: '请先配置您的 LLM 提供商或启用访问密码', type: 'warning' });
+    if (!isConfigValid(config)) {
+      setNotification({ isOpen: true, title: '配置提醒', message: '请先配置您的 LLM 提供商', type: 'warning' });
       setIsConfigManagerOpen(true);
       return;
     }
@@ -163,12 +145,11 @@ function EditorContent() {
 
     try {
       const headers = { 'Content-Type': 'application/json' };
-      if (usePassword && accessPassword) headers['x-access-password'] = accessPassword;
 
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ config: usePassword ? null : config, userInput: userMessage, chartType }),
+        body: JSON.stringify({ config, userInput: userMessage, chartType }),
       });
 
       if (!response.ok) {
@@ -343,7 +324,6 @@ function EditorContent() {
       {/* Modals */}
       <ConfigManager isOpen={isConfigManagerOpen} onClose={() => setIsConfigManagerOpen(false)} onConfigSelect={handleConfigSelect} />
       <HistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} onApply={handleApplyHistory} />
-      <AccessPasswordModal isOpen={isAccessPasswordModalOpen} onClose={() => setIsAccessPasswordModalOpen(false)} />
       <Notification isOpen={notification.isOpen} onClose={() => setNotification({ ...notification, isOpen: false })} title={notification.title} message={notification.message} type={notification.type} />
     </>
   );
