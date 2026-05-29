@@ -330,7 +330,7 @@ export default function AICopilotPanel({
 
           {/* Format Selector */}
           <div className="w-full mb-3">
-            <div className="segmented-control">
+            <div className="segmented-control w-full">
               {FORMATS.map((f) => (
                 <button
                   key={f.key}
@@ -355,7 +355,7 @@ export default function AICopilotPanel({
         {/* Format & Chart Type (when has messages) */}
         {hasMessages && !showImageUpload && (
           <div className="px-4 pt-3 pb-1 space-y-2">
-            <div className="segmented-control">
+            <div className="segmented-control w-full">
               {FORMATS.map((f) => (
                 <button
                   key={f.key}

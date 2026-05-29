@@ -154,7 +154,6 @@ function EditorContent() {
 
     const userContent = typeof userMessage === 'string' ? userMessage : (userMessage.text || '');
 
-    setCurrentInput(userContent);
     setCurrentChartType(chartType);
     setIsGenerating(true);
     setIsStreaming(true);

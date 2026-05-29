@@ -271,8 +271,7 @@ html, body {
    ============================================ */
 
 .segmented-control {
-  display: flex;
-  width: 100%;
+  display: inline-flex;
   background: rgba(28, 25, 23, 0.04);
   border-radius: 12px;
   padding: 3px;
