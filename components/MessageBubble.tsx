@@ -1,24 +1,12 @@
 'use client';
 
-import { User, Bot, Image as ImageIcon, FileText, Type } from 'lucide-react';
+import { User, Bot } from 'lucide-react';
 import { useLocale } from '@/locales';
 import type { ConversationMessage } from '@/types';
 
 interface MessageBubbleProps {
   message: ConversationMessage;
   isStreaming?: boolean;
-}
-
-function formatTime(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function SourceIcon({ sourceType }: { sourceType?: string }) {
-  switch (sourceType) {
-    case 'image': return <ImageIcon size={12} />;
-    case 'file': return <FileText size={12} />;
-    default: return <Type size={12} />;
-  }
 }
 
 export default function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
@@ -78,12 +66,6 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
               )}
             </div>
           )}
-        </div>
-
-        {/* Meta */}
-        <div className={`flex items-center gap-1.5 mt-1 px-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
-          <SourceIcon sourceType={message.sourceType} />
-          <span className="text-[10px] text-[var(--muted)]">{formatTime(message.createdAt)}</span>
         </div>
       </div>
     </div>

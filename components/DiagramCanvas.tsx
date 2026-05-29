@@ -11,12 +11,21 @@ const DrawioCanvas = dynamic(() => import('./DrawioCanvas'), { ssr: false });
 interface DiagramCanvasProps {
   format: DiagramFormat;
   data: unknown;
+  isStreaming?: boolean;
 }
 
-export default function DiagramCanvas({ format, data }: DiagramCanvasProps) {
+export default function DiagramCanvas({ format, data, isStreaming }: DiagramCanvasProps) {
   const { t } = useLocale();
 
-  if (data === null || data === undefined) {
+  // Normalize: extract array from wrapper objects
+  let normalized: unknown = data;
+  if (data !== null && data !== undefined && typeof data === 'object' && !Array.isArray(data) && 'elements' in (data as Record<string, unknown>)) {
+    normalized = (data as Record<string, unknown>).elements;
+  }
+
+  const isEmpty = normalized === null || normalized === undefined;
+
+  if (isEmpty && !isStreaming) {
     return (
       <div className="w-full h-full flex items-center justify-center canvas-grid-bg">
         <p className="text-sm text-[var(--muted)]">{t('canvas.emptyState')}</p>
@@ -24,18 +33,32 @@ export default function DiagramCanvas({ format, data }: DiagramCanvasProps) {
     );
   }
 
-  switch (format) {
-    case 'excalidraw':
-      return <ExcalidrawCanvas elements={Array.isArray(data) ? data : []} />;
-    case 'mermaid':
-      return <MermaidCanvas code={typeof data === 'string' ? data : ''} />;
-    case 'drawio':
-      return <DrawioCanvas code={typeof data === 'string' ? data : ''} />;
-    default:
-      return (
-        <div className="w-full h-full flex items-center justify-center canvas-grid-bg">
-          <p className="text-sm text-[var(--muted)]">{t('canvas.unsupportedFormat')} {format}</p>
+  return (
+    <div className="w-full h-full canvas-grid-bg relative">
+      {isStreaming && isEmpty && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <div className="px-5 py-3 rounded-2xl bg-[var(--surface-warm)] backdrop-blur-xl border border-[var(--accent-violet)]/15 shadow-[var(--shadow-floating)] flex items-center gap-3">
+            <div className="relative w-5 h-5">
+              <div className="absolute inset-0 rounded-full border-2 border-[var(--accent-violet)]/20" />
+              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[var(--accent-violet)] animate-spin" />
+            </div>
+            <span className="text-sm font-medium text-[var(--fg)]">{t('canvas.generating')}</span>
+          </div>
         </div>
-      );
-  }
+      )}
+
+      {!isEmpty && (
+        <>
+          {format === 'excalidraw' && <ExcalidrawCanvas elements={Array.isArray(normalized) ? normalized : []} />}
+          {format === 'mermaid' && <MermaidCanvas code={typeof normalized === 'string' ? normalized : ''} />}
+          {format === 'drawio' && <DrawioCanvas code={typeof normalized === 'string' ? normalized : ''} />}
+          {!['excalidraw', 'mermaid', 'drawio'].includes(format) && (
+            <div className="w-full h-full flex items-center justify-center">
+              <p className="text-sm text-[var(--muted)]">{t('canvas.unsupportedFormat')} {format}</p>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
 }

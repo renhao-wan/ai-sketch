@@ -200,6 +200,7 @@ export const zh = {
   // Diagram Canvas
   'canvas.unsupportedFormat': '不支持的格式:',
   'canvas.emptyState': '描述图表内容，AI 将为你生成',
+  'canvas.generating': 'AI 正在生成图表...',
 
   // Excalidraw Canvas
   'excalidraw.convertError': '元素转换失败',

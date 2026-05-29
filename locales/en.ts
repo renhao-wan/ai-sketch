@@ -202,6 +202,7 @@ export const en: TranslationDict = {
   // Diagram Canvas
   'canvas.unsupportedFormat': 'Unsupported format:',
   'canvas.emptyState': 'Describe a diagram and AI will generate it',
+  'canvas.generating': 'AI is generating diagram...',
 
   // Excalidraw Canvas
   'excalidraw.convertError': 'Element conversion failed',

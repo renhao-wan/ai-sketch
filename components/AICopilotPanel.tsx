@@ -100,7 +100,7 @@ export default function AICopilotPanel({
     if (container) {
       container.scrollTop = container.scrollHeight;
     }
-  }, [messages.length]);
+  }, [messages]);
 
   useEffect(() => {
     if (currentInput !== undefined) setPrompt(currentInput);

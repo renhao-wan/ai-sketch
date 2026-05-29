@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import dynamic from 'next/dynamic';
 import { AppIcon } from '@/components/TopBar';
 import AICopilotPanel from '@/components/AICopilotPanel';
 import FloatingAIActions from '@/components/FloatingAIActions';
@@ -47,6 +46,7 @@ function EditorContent() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  useEffect(() => { isStreamingRef.current = isStreaming; }, [isStreaming]);
 
   // Panel width (not persisted — resets on refresh/navigate)
   const [panelWidth, setPanelWidth] = useState(360);
@@ -106,6 +106,7 @@ function EditorContent() {
   const formatRef = useRef(format);
   useEffect(() => { formatRef.current = format; }, [format]);
   const isFirstFormatRef = useRef(true);
+  const isStreamingRef = useRef(false);
   useEffect(() => {
     if (isFirstFormatRef.current) { isFirstFormatRef.current = false; return; }
     setGeneratedCode('');
@@ -133,7 +134,6 @@ function EditorContent() {
     if (!isStreaming) return;
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        console.debug('[stream] Tab hidden during active stream');
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -160,7 +160,7 @@ function EditorContent() {
     setApiError(null);
     setJsonError(null);
 
-    // Optimistic: add user message to local state
+    // Optimistic: add user + assistant messages to local state
     const optimisticUserMsg: ConversationMessage = {
       id: generateId(),
       conversationId: conversationId || '',
@@ -169,7 +169,15 @@ function EditorContent() {
       sourceType: sourceType as 'text' | 'file' | 'image',
       createdAt: Date.now(),
     };
-    setMessages(prev => [...prev, optimisticUserMsg]);
+    const optimisticAssistantMsg: ConversationMessage = {
+      id: generateId(),
+      conversationId: conversationId || '',
+      role: 'assistant',
+      content: '',
+      sourceType: 'text',
+      createdAt: Date.now(),
+    };
+    setMessages(prev => [...prev, optimisticUserMsg, optimisticAssistantMsg]);
 
     try {
       const response = await fetch('/api/generate', {
@@ -228,18 +236,26 @@ function EditorContent() {
                 activeConvId = data.conversationId;
                 setConversationId(data.conversationId);
                 setMessages(prev => prev.map(m =>
-                  m.id === optimisticUserMsg.id ? { ...m, conversationId: data.conversationId } : m
+                  (m.id === optimisticUserMsg.id || m.id === optimisticAssistantMsg.id) ? { ...m, conversationId: data.conversationId } : m
                 ));
               } else if (data.type === 'content' && data.content) {
                 accumulatedCode += data.content;
-                // Lightweight: just strip code fences during streaming, defer heavy postProcess
-                setGeneratedCode(stripCodeFences(accumulatedCode));
+                const stripped = stripCodeFences(accumulatedCode);
+                setGeneratedCode(stripped);
+                // Update streaming assistant message in sidebar
+                setMessages(prev => prev.map(m =>
+                  m.id === optimisticAssistantMsg.id ? { ...m, content: stripped } : m
+                ));
               } else if (data.type === 'error') {
                 throw new Error(data.error);
               } else if (data.content) {
                 // Backward compatibility: old format without type field
                 accumulatedCode += data.content;
-                setGeneratedCode(stripCodeFences(accumulatedCode));
+                const stripped = stripCodeFences(accumulatedCode);
+                setGeneratedCode(stripped);
+                setMessages(prev => prev.map(m =>
+                  m.id === optimisticAssistantMsg.id ? { ...m, content: stripped } : m
+                ));
               }
             } catch (e) {
               if (e instanceof SyntaxError) {
@@ -260,21 +276,15 @@ function EditorContent() {
       setGeneratedCode(optimizedCode);
       tryParseAndApply(optimizedCode, currentStrategy);
 
-      // Add assistant message to local state
-      const assistantMsg: ConversationMessage = {
-        id: generateId(),
-        conversationId: activeConvId || '',
-        role: 'assistant',
-        content: optimizedCode,
-        sourceType: 'text',
-        createdAt: Date.now(),
-      };
-      setMessages(prev => [...prev, assistantMsg]);
+      // Update streaming assistant message with final post-processed code
+      setMessages(prev => prev.map(m =>
+        m.id === optimisticAssistantMsg.id ? { ...m, content: optimizedCode, conversationId: activeConvId || m.conversationId } : m
+      ));
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
-        // User cancelled — no error to show
         return;
       }
+      console.error('[stream] error:', error);
       if (error instanceof TypeError || (error as Error).message === 'Failed to fetch') {
         setApiError(t('editor.networkError'));
       } else {
@@ -302,7 +312,31 @@ function EditorContent() {
     } else if (init.type === 'image' && data) {
       handleSendMessage(data as { text?: string; images?: unknown[] }, 'auto', 'image');
     }
+    setCurrentInput('');
   }, [config, handleSendMessage]);
+
+  // Streaming preview (Mermaid/Drawio only — Excalidraw renders after stream ends)
+  const streamTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!isStreaming || !generatedCode) return;
+    if (streamTimerRef.current) return;
+    streamTimerRef.current = setTimeout(() => {
+      streamTimerRef.current = null;
+      if (!isStreamingRef.current) return;
+      const fmt = formatRef.current;
+      if (fmt === 'mermaid') {
+        const result = getStrategy('mermaid').validate(generatedCode);
+        if (result.valid) { setRenderData(result.data); setJsonError(null); }
+      } else if (fmt === 'drawio') {
+        const cleaned = stripCodeFences(generatedCode);
+        if (cleaned.includes('<mxGraphModel') || cleaned.includes('<mxfile')) {
+          setRenderData(cleaned); setJsonError(null);
+        }
+      }
+    }, 200);
+    return () => {};
+  }, [generatedCode, isStreaming]);
+  useEffect(() => () => { if (streamTimerRef.current) clearTimeout(streamTimerRef.current); }, []);
 
   const tryParseAndApply = (code: string, strat?: ReturnType<typeof getStrategy>) => {
     const s = strat || strategy;
@@ -433,7 +467,7 @@ function EditorContent() {
 
           {/* Canvas */}
           <div className="flex-1 relative">
-            <DiagramCanvas format={format} data={renderData} />
+            <DiagramCanvas format={format} data={renderData} isStreaming={isStreaming} />
           </div>
 
           {/* Bottom Context Panel */}
