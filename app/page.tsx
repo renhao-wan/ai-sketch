@@ -13,28 +13,28 @@ import { timeAgo } from '@/lib/time-ago';
 import { Settings, History, FileText, PenTool } from 'lucide-react';
 import * as api from '@/lib/api-client';
 import { runMigrationIfNeeded } from '@/lib/migration';
-import type { HistoryItem } from '@/types';
+import type { Conversation } from '@/types';
 
 export default function HomePage() {
   const router = useRouter();
   const { t } = useLocale();
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [recentItems, setRecentItems] = useState<HistoryItem[]>([]);
+  const [recentItems, setRecentItems] = useState<Conversation[]>([]);
 
   useEffect(() => {
     runMigrationIfNeeded().then(async () => {
       try {
-        const histories = await api.fetchHistories(5);
-        setRecentItems(histories);
+        const conversations = await api.fetchConversations(5);
+        setRecentItems(conversations);
       } catch (err) {
-        console.error('Failed to load histories:', err);
+        console.error('Failed to load conversations:', err);
       }
     });
   }, []);
 
-  const handleApplyHistory = (item: HistoryItem) => {
-    setInitData({ type: 'text', data: item.userInput, format: (item.format || 'excalidraw') as import('@/types/diagram-strategy').DiagramFormat });
+  const handleApplyConversation = (item: Conversation) => {
+    setInitData({ type: 'text', data: item.title, format: item.format || 'excalidraw' });
     router.push('/editor?source=text');
   };
 
@@ -134,20 +134,17 @@ export default function HomePage() {
           {recentItems.length > 0 && (
             <div className="flex flex-wrap items-center justify-center gap-2">
               <span className="text-[11px] text-[var(--muted)]/50 mr-1">{t('home.recent')}</span>
-              {recentItems.slice(0, 3).map((item) => {
-                const label = typeof item.userInput === 'object' ? ((item.userInput as { text?: string }).text || t('home.imageGenerated')) : item.userInput;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleApplyHistory(item)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-[var(--muted)] bg-[var(--bg-glass)]/50 backdrop-blur border border-[var(--border)]/50 rounded-full hover:bg-[var(--bg-glass)] hover:text-[var(--fg)] transition-all duration-200"
-                  >
-                    <FileText size={11} className="text-[var(--accent-indigo)]/50" />
-                    <span className="max-w-[120px] truncate">{label}</span>
-                    <span className="text-[var(--muted)]/40">{timeAgo(item.timestamp, t)}</span>
-                  </button>
-                );
-              })}
+              {recentItems.slice(0, 3).map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleApplyConversation(item)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-[var(--muted)] bg-[var(--bg-glass)]/50 backdrop-blur border border-[var(--border)]/50 rounded-full hover:bg-[var(--bg-glass)] hover:text-[var(--fg)] transition-all duration-200"
+                >
+                  <FileText size={11} className="text-[var(--accent-indigo)]/50" />
+                  <span className="max-w-[120px] truncate">{item.title}</span>
+                  <span className="text-[var(--muted)]/40">{timeAgo(item.updatedAt, t)}</span>
+                </button>
+              ))}
             </div>
           )}
         </div>
@@ -155,7 +152,7 @@ export default function HomePage() {
 
       {/* Modals */}
       <ConfigManager isOpen={isConfigOpen} onClose={() => setIsConfigOpen(false)} onConfigSelect={() => {}} />
-      <HistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} onApply={handleApplyHistory} />
+      <HistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} onApply={handleApplyConversation} />
     </div>
   );
 }

@@ -64,7 +64,6 @@ export const zh = {
   // AI Copilot Panel
   'copilot.expandPanel': '展开面板',
   'copilot.aiChat': 'AI 对话',
-  'copilot.history': '历史记录',
   'copilot.export': '导出',
   'copilot.backHome': '返回首页',
   'copilot.newConversation': '新建对话',
@@ -142,7 +141,7 @@ export const zh = {
   'config.loadModelFailed': '加载模型失败',
   'config.fillAllRequired': '请填写所有必填字段',
 
-  // History Modal
+  // History
   'history.title': '历史记录',
   'history.clearAll': '清空全部',
   'history.empty': '暂无历史记录',
@@ -152,7 +151,6 @@ export const zh = {
   'history.confirmClearMsg': '确定要清空所有历史记录吗？此操作不可恢复。',
   'history.apply': '应用',
   'history.modelPrefix': '模型:',
-  'history.imageUploadGenerated': '图片上传生成',
 
   // Conversation List
   'conversation.list': '对话列表',

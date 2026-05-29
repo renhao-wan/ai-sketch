@@ -1,24 +1,21 @@
 import { NextResponse } from 'next/server';
 import { configManager } from '@/lib/config-manager';
-import { historyManager } from '@/lib/history-manager';
-import type { LLMConfig, HistoryItem } from '@/types';
+import type { LLMConfig } from '@/types';
 
 /**
  * POST /api/migrate
  * Migrate localStorage data to SQLite
- * Body: { configs?, activeConfigId?, histories? }
+ * Body: { configs?, activeConfigId? }
  */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { configs, activeConfigId, histories } = body as {
+    const { configs, activeConfigId } = body as {
       configs?: LLMConfig[];
       activeConfigId?: string;
-      histories?: HistoryItem[];
     };
 
     let migratedConfigs = 0;
-    let migratedHistories = 0;
 
     if (configs && Array.isArray(configs)) {
       for (const configData of configs) {
@@ -42,20 +39,8 @@ export async function POST(request: Request) {
       }
     }
 
-    if (histories && Array.isArray(histories)) {
-      for (const item of histories) {
-        await historyManager.addHistory({
-          chartType: item.chartType,
-          userInput: item.userInput,
-          generatedCode: item.generatedCode,
-          config: item.config || {},
-        });
-        migratedHistories++;
-      }
-    }
-
     return NextResponse.json({
-      migrated: { configs: migratedConfigs, histories: migratedHistories },
+      migrated: { configs: migratedConfigs },
     });
   } catch (error) {
     console.error('Error during migration:', error);

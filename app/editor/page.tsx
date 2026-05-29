@@ -8,7 +8,6 @@ import FloatingAIActions from '@/components/FloatingAIActions';
 import BottomContextPanel from '@/components/BottomContextPanel';
 import CodeEditor from '@/components/CodeEditor';
 import ConfigManager from '@/components/ConfigManager';
-import HistoryModal from '@/components/HistoryModal';
 import Notification from '@/components/Notification';
 import DiagramCanvas from '@/components/DiagramCanvas';
 import * as api from '@/lib/api-client';
@@ -17,7 +16,7 @@ import { getStrategy } from '@/lib/strategies/registry';
 import { consumeInitData } from '@/lib/init-data';
 import { runMigrationIfNeeded } from '@/lib/migration';
 import { useLocale } from '@/locales';
-import type { LLMConfig, HistoryItem, NotificationState, AIActionId, ConversationMessage } from '@/types';
+import type { LLMConfig, NotificationState, AIActionId, ConversationMessage } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
 import { generateId } from '@/lib/utils';
@@ -26,7 +25,6 @@ function EditorContent() {
   const { t } = useLocale();
   const [config, setConfig] = useState<LLMConfig | null>(null);
   const [isConfigManagerOpen, setIsConfigManagerOpen] = useState(false);
-  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [generatedCode, setGeneratedCode] = useState('');
   const [format, setFormat] = useState<DiagramFormat>('excalidraw');
   const [renderData, setRenderData] = useState<unknown>([]);
@@ -221,14 +219,6 @@ function EditorContent() {
         createdAt: Date.now(),
       };
       setMessages(prev => [...prev, assistantMsg]);
-
-      // Save to history (backward compatibility)
-      if (sourceType === 'text' && userContent && optimizedCode) {
-        await api.addHistory({
-          chartType, format, userInput: userContent, generatedCode: optimizedCode,
-          config: { name: config?.name || config?.type, model: config?.model },
-        });
-      }
     } catch (error) {
       if ((error as Error).message === 'Failed to fetch' || (error as Error).name === 'TypeError') {
         setApiError(t('editor.networkError'));
@@ -329,24 +319,6 @@ function EditorContent() {
     }
   }, [conversationId, handleNewConversation]);
 
-  const handleApplyHistory = (history: HistoryItem) => {
-    const userInputText = typeof history.userInput === 'object' ? ((history.userInput as { text?: string }).text || t('editor.imageUploadGenerated')) : history.userInput;
-    setCurrentInput(userInputText);
-    setCurrentChartType(history.chartType);
-    if (history.format && ['excalidraw', 'mermaid', 'drawio'].includes(history.format)) {
-      setFormat(history.format);
-    }
-    setGeneratedCode(history.generatedCode);
-    const historyStrategy = history.format ? getStrategy(history.format) : strategy;
-    const result = historyStrategy.validate(history.generatedCode);
-    if (result.valid) {
-      setRenderData(result.data);
-      setJsonError(null);
-    } else {
-      setJsonError(result.error);
-    }
-  };
-
   const handleAIAction = (actionId: AIActionId) => {
     switch (actionId) {
       case 'optimize': handleOptimizeCode(); break;
@@ -387,7 +359,6 @@ function EditorContent() {
           isGenerating={isGenerating}
           currentInput={currentInput}
           currentChartType={currentChartType}
-          onOpenHistory={() => setIsHistoryModalOpen(true)}
           onOpenConfig={() => setIsConfigManagerOpen(true)}
           onExport={handleExport}
           apiError={apiError}
@@ -427,7 +398,6 @@ function EditorContent() {
 
       {/* Modals */}
       <ConfigManager isOpen={isConfigManagerOpen} onClose={() => setIsConfigManagerOpen(false)} onConfigSelect={handleConfigSelect} />
-      <HistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} onApply={handleApplyHistory} />
       <Notification isOpen={notification.isOpen} onClose={() => setNotification({ ...notification, isOpen: false })} title={notification.title} message={notification.message} type={notification.type} />
     </>
   );

@@ -41,26 +41,6 @@ export async function getDb(): Promise<Database> {
   `);
 
   dbInstance.run(`
-    CREATE TABLE IF NOT EXISTS history (
-      id TEXT PRIMARY KEY,
-      chart_type TEXT NOT NULL,
-      user_input TEXT NOT NULL,
-      generated_code TEXT NOT NULL,
-      config_name TEXT,
-      config_model TEXT,
-      timestamp INTEGER NOT NULL,
-      format TEXT DEFAULT 'excalidraw'
-    )
-  `);
-
-  // Migration: add format column if it doesn't exist (for existing databases)
-  try {
-    dbInstance.run(`ALTER TABLE history ADD COLUMN format TEXT DEFAULT 'excalidraw'`);
-  } catch {
-    // Column already exists, ignore
-  }
-
-  dbInstance.run(`
     CREATE TABLE IF NOT EXISTS meta (
       key TEXT PRIMARY KEY,
       value TEXT
@@ -98,39 +78,6 @@ export async function getDb(): Promise<Database> {
 
   dbInstance.run(`CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, created_at)`);
   dbInstance.run(`CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at DESC)`);
-
-  // Migrate existing history records to conversations
-  const migrated = dbInstance.exec("SELECT value FROM meta WHERE key = 'conversations_migrated'");
-  if (migrated.length === 0 || migrated[0].values.length === 0) {
-    const histories = dbInstance.exec('SELECT id, chart_type, user_input, generated_code, config_name, config_model, timestamp, format FROM history ORDER BY timestamp ASC');
-    if (histories.length > 0) {
-      for (const row of histories[0].values) {
-        const histId = row[0] as string;
-        const chartType = row[1] as string;
-        const userInput = row[2] as string;
-        const generatedCode = row[3] as string;
-        const configName = row[4] as string | null;
-        const configModel = row[5] as string | null;
-        const timestamp = row[6] as number;
-        const format = (row[7] as string) || 'excalidraw';
-        const convId = 'conv_' + histId;
-        const title = userInput.length > 50 ? userInput.substring(0, 50) + '...' : userInput;
-        dbInstance.run(
-          'INSERT INTO conversations (id, title, chart_type, format, config_name, config_model, current_code, message_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 2, ?, ?)',
-          [convId, title, chartType, format, configName, configModel, generatedCode, timestamp, timestamp]
-        );
-        dbInstance.run(
-          'INSERT INTO messages (id, conversation_id, role, content, source_type, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-          ['msg_u_' + histId, convId, 'user', userInput, 'text', timestamp]
-        );
-        dbInstance.run(
-          'INSERT INTO messages (id, conversation_id, role, content, source_type, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-          ['msg_a_' + histId, convId, 'assistant', generatedCode, 'text', timestamp]
-        );
-      }
-    }
-    dbInstance.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('conversations_migrated', 'true')");
-  }
 
   saveToDisk();
 

@@ -25,26 +25,6 @@ export interface ImageData {
   mimeType: string;
 }
 
-/** History record entry */
-export interface HistoryItem {
-  id: string;
-  chartType: string;
-  format?: import('./diagram-strategy').DiagramFormat;
-  userInput: string;
-  generatedCode: string;
-  config: Partial<LLMConfig>;
-  timestamp: number;
-}
-
-/** Data needed to create a history entry */
-export interface AddHistoryData {
-  chartType: string;
-  format?: import('./diagram-strategy').DiagramFormat;
-  userInput: string;
-  generatedCode: string;
-  config: Partial<LLMConfig>;
-}
-
 /** Notification component state */
 export interface NotificationState {
   isOpen: boolean;

@@ -66,7 +66,6 @@ export const en: TranslationDict = {
   // AI Copilot Panel
   'copilot.expandPanel': 'Expand Panel',
   'copilot.aiChat': 'AI Chat',
-  'copilot.history': 'History',
   'copilot.export': 'Export',
   'copilot.backHome': 'Back to Home',
   'copilot.newConversation': 'New Conversation',
@@ -144,7 +143,7 @@ export const en: TranslationDict = {
   'config.loadModelFailed': 'Failed to load models',
   'config.fillAllRequired': 'Please fill in all required fields',
 
-  // History Modal
+  // History
   'history.title': 'History',
   'history.clearAll': 'Clear All',
   'history.empty': 'No history records',
@@ -154,7 +153,6 @@ export const en: TranslationDict = {
   'history.confirmClearMsg': 'Are you sure you want to clear all history records? This action cannot be undone.',
   'history.apply': 'Apply',
   'history.modelPrefix': 'Model:',
-  'history.imageUploadGenerated': 'Generated from image',
 
   // Conversation List
   'conversation.list': 'Conversations',

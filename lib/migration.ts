@@ -1,4 +1,4 @@
-import type { LLMConfig, HistoryItem } from '@/types';
+import type { LLMConfig } from '@/types';
 
 const MIGRATION_FLAG = 'smart-excalidraw-migrated';
 
@@ -8,21 +8,17 @@ export async function runMigrationIfNeeded(): Promise<void> {
 
   const configsRaw = localStorage.getItem('smart-excalidraw-configs');
   const activeConfigId = localStorage.getItem('smart-excalidraw-active-config') || undefined;
-  const historyRaw = localStorage.getItem('smart-excalidraw-history');
 
-  if (!configsRaw && !historyRaw) {
+  if (!configsRaw) {
     localStorage.setItem(MIGRATION_FLAG, 'true');
     return;
   }
 
-  const payload: { configs?: LLMConfig[]; activeConfigId?: string; histories?: HistoryItem[] } = {};
+  const payload: { configs?: LLMConfig[]; activeConfigId?: string } = {};
   if (configsRaw) {
     try { payload.configs = JSON.parse(configsRaw); } catch { /* ignore */ }
   }
   if (activeConfigId) payload.activeConfigId = activeConfigId;
-  if (historyRaw) {
-    try { payload.histories = JSON.parse(historyRaw); } catch { /* ignore */ }
-  }
 
   try {
     await fetch('/api/migrate', {
@@ -37,7 +33,6 @@ export async function runMigrationIfNeeded(): Promise<void> {
   // Clean up localStorage regardless of migration success
   localStorage.removeItem('smart-excalidraw-configs');
   localStorage.removeItem('smart-excalidraw-active-config');
-  localStorage.removeItem('smart-excalidraw-history');
   localStorage.removeItem('smart-excalidraw-config'); // legacy key
   localStorage.setItem(MIGRATION_FLAG, 'true');
 }

@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  History,
   Download,
   Wand2,
   Loader2,
@@ -38,7 +37,6 @@ interface AICopilotPanelProps {
   isGenerating: boolean;
   currentInput: string;
   currentChartType: string;
-  onOpenHistory: () => void;
   onOpenConfig: () => void;
   onExport: () => void;
   apiError: string | null;
@@ -58,7 +56,6 @@ export default function AICopilotPanel({
   isGenerating,
   currentInput,
   currentChartType,
-  onOpenHistory,
   onOpenConfig,
   onExport,
   apiError,
@@ -225,9 +222,6 @@ export default function AICopilotPanel({
         <div className="flex-1 flex flex-col items-center justify-center gap-3 mt-8">
           <button className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200" title={t('copilot.aiChat')}>
             <Sparkles size={18} />
-          </button>
-          <button onClick={onOpenHistory} className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200" title={t('copilot.history')}>
-            <History size={18} />
           </button>
           <button onClick={onExport} className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200" title={t('copilot.export')}>
             <Download size={18} />
@@ -423,9 +417,6 @@ export default function AICopilotPanel({
 
       {/* Bottom Actions */}
       <div className="border-t border-[var(--surface-warm-hover)] px-4 py-3 flex items-center gap-1 flex-shrink-0">
-        <button onClick={onOpenHistory} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg transition-all duration-200">
-          <History size={13} /><span>{t('copilot.history')}</span>
-        </button>
         <button onClick={onOpenConfig} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg transition-all duration-200">
           <Wand2 size={13} /><span>{t('copilot.config')}</span>
         </button>

@@ -1,4 +1,4 @@
-import type { LLMConfig, TestConnectionResult, HistoryItem, Conversation, ConversationWithMessages, AddHistoryData } from '@/types';
+import type { LLMConfig, TestConnectionResult, Conversation, ConversationWithMessages } from '@/types';
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options);
@@ -84,37 +84,12 @@ export async function searchConfigs(query: string): Promise<LLMConfig[]> {
   });
 }
 
-// ── History operations ──
-
-export async function fetchHistories(limit?: number): Promise<HistoryItem[]> {
-  const url = limit ? `/api/history?limit=${limit}` : '/api/history';
-  const data = await request<{ histories: HistoryItem[] }>(url);
-  return data.histories;
-}
-
-export async function addHistory(data: AddHistoryData): Promise<HistoryItem> {
-  return request('/api/history', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-}
-
-export async function deleteHistory(id: string): Promise<void> {
-  await request<{ success: boolean }>(`/api/history/${id}`, { method: 'DELETE' });
-}
-
-export async function clearAllHistory(): Promise<void> {
-  await request<{ success: boolean }>('/api/history', { method: 'DELETE' });
-}
-
 // ── Migration ──
 
 export async function migrateFromLocalStorage(data: {
   configs?: LLMConfig[];
   activeConfigId?: string;
-  histories?: HistoryItem[];
-}): Promise<{ migrated: { configs: number; histories: number } }> {
+}): Promise<{ migrated: { configs: number } }> {
   return request('/api/migrate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
