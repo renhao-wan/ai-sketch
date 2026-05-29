@@ -417,6 +417,8 @@ function EditorContent() {
           isGenerating={isGenerating}
           currentInput={currentInput}
           currentChartType={currentChartType}
+          currentFormat={format}
+          onFormatChange={setFormat}
           onOpenConfig={() => setIsConfigManagerOpen(true)}
           onExport={handleExport}
           apiError={apiError}

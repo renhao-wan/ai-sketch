@@ -271,7 +271,8 @@ html, body {
    ============================================ */
 
 .segmented-control {
-  display: inline-flex;
+  display: flex;
+  width: 100%;
   background: rgba(28, 25, 23, 0.04);
   border-radius: 12px;
   padding: 3px;
@@ -279,6 +280,7 @@ html, body {
 }
 
 .segmented-control-item {
+  flex: 1;
   padding: 6px 14px;
   border-radius: 10px;
   font-size: 13px;
@@ -288,6 +290,7 @@ html, body {
   transition: all 200ms var(--ease-out-expo);
   border: none;
   background: transparent;
+  text-align: center;
 }
 
 .segmented-control-item:hover {

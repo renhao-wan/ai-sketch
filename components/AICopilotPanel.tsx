@@ -25,6 +25,13 @@ import MessageBubble from './MessageBubble';
 import ConversationList from './ConversationList';
 import { useLocale } from '@/locales';
 import type { SourceType, ImageObject, ConversationMessage } from '@/types';
+import type { DiagramFormat } from '@/types/diagram-strategy';
+
+const FORMATS = [
+  { key: 'excalidraw' as DiagramFormat, label: 'Excalidraw' },
+  { key: 'mermaid' as DiagramFormat, label: 'Mermaid' },
+  { key: 'drawio' as DiagramFormat, label: 'Draw.io' },
+];
 
 interface AICopilotPanelProps {
   conversationId: string | null;
@@ -38,6 +45,8 @@ interface AICopilotPanelProps {
   isGenerating: boolean;
   currentInput: string;
   currentChartType: string;
+  currentFormat: DiagramFormat;
+  onFormatChange: (format: DiagramFormat) => void;
   onOpenConfig: () => void;
   onExport: () => void;
   apiError: string | null;
@@ -58,6 +67,8 @@ export default function AICopilotPanel({
   isGenerating,
   currentInput,
   currentChartType,
+  currentFormat,
+  onFormatChange,
   onOpenConfig,
   onExport,
   apiError,
@@ -213,7 +224,7 @@ export default function AICopilotPanel({
 
   if (isCollapsed) {
     return (
-      <div className="h-full flex flex-col items-center py-4 bg-[var(--bg-glass)] backdrop-blur-2xl border-r border-[var(--border)] animate-fade-in">
+      <div className="h-full flex flex-col items-center py-4 bg-[var(--bg-glass)] backdrop-blur-2xl border-r border-[var(--accent-violet)]/20 animate-fade-in">
         <button
           onClick={() => setIsCollapsed(false)}
           className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
@@ -236,14 +247,14 @@ export default function AICopilotPanel({
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="h-full flex flex-col bg-[var(--bg-glass)] backdrop-blur-2xl border-r border-[var(--border)] relative z-10 animate-fade-in" style={{ width: panelWidth, minWidth: panelWidth }}>
+    <div className="h-full flex flex-col bg-[var(--bg-glass)] backdrop-blur-2xl relative z-10 animate-fade-in" style={{ width: panelWidth, minWidth: panelWidth }}>
       {/* Resize Handle */}
       {onPanelWidthChange && (
         <div
           onMouseDown={handleResizeStart}
           className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize z-20 group"
         >
-          <div className="w-0.5 h-full mx-auto bg-transparent group-hover:bg-[var(--accent-indigo)]/30 transition-colors duration-200" />
+          <div className="w-0.5 h-full mx-auto bg-[var(--accent-violet)]/10 group-hover:bg-[var(--accent-violet)]/40 transition-colors duration-200" />
         </div>
       )}
 
@@ -317,6 +328,21 @@ export default function AICopilotPanel({
           <p className="text-sm font-semibold text-[var(--fg)] mb-1 tracking-tight">{t('copilot.aiChartAssistant')}</p>
           <p className="text-xs text-[var(--muted)] text-center mb-6 leading-relaxed">{t('copilot.describeChart')}</p>
 
+          {/* Format Selector */}
+          <div className="w-full mb-3">
+            <div className="segmented-control">
+              {FORMATS.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => onFormatChange(f.key)}
+                  className={`segmented-control-item ${currentFormat === f.key ? 'active' : ''}`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Chart Type */}
           <div className="w-full">
             <ChartTypeSelect value={chartType} onChange={setChartType} />
@@ -326,9 +352,20 @@ export default function AICopilotPanel({
 
       {/* Input Area */}
       <div className="border-t border-[var(--surface-warm-hover)] flex-shrink-0">
-        {/* Chart Type (when has messages) */}
+        {/* Format & Chart Type (when has messages) */}
         {hasMessages && !showImageUpload && (
-          <div className="px-4 pt-3 pb-1">
+          <div className="px-4 pt-3 pb-1 space-y-2">
+            <div className="segmented-control">
+              {FORMATS.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => onFormatChange(f.key)}
+                  className={`segmented-control-item ${currentFormat === f.key ? 'active' : ''}`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
             <ChartTypeSelect value={chartType} onChange={setChartType} />
           </div>
         )}
