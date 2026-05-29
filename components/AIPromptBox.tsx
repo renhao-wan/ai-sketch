@@ -158,7 +158,7 @@ export default function AIPromptBox() {
       const file = attachments[0];
       const isImage = file.type.startsWith('image/');
       return (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/[0.03] border border-black/[0.06]">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)]">
           {attachStatus === 'processing' && <Loader2 size={13} className="animate-spin text-[var(--muted)] flex-shrink-0" />}
           {attachStatus === 'success' && <CheckCircle size={13} className="text-emerald-500 flex-shrink-0" />}
           {attachStatus === 'error' && <AlertCircle size={13} className="text-red-500 flex-shrink-0" />}
@@ -181,7 +181,7 @@ export default function AIPromptBox() {
     if (fileCount > 0) parts.push(`${fileCount} 个文件`);
 
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/[0.03] border border-black/[0.06]">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)]">
         {attachStatus === 'processing' && <Loader2 size={13} className="animate-spin text-[var(--muted)] flex-shrink-0" />}
         {attachStatus === 'success' && <CheckCircle size={13} className="text-emerald-500 flex-shrink-0" />}
         {attachStatus === 'error' && <AlertCircle size={13} className="text-red-500 flex-shrink-0" />}
@@ -197,7 +197,7 @@ export default function AIPromptBox() {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div
-        className="relative rounded-3xl bg-white/60 backdrop-blur-2xl border border-white/10 shadow-[0_10px_60px_rgba(0,0,0,0.08)] overflow-hidden"
+        className="relative rounded-3xl bg-[var(--surface-warm)] backdrop-blur-2xl border border-[var(--border)] shadow-[0_10px_60px_rgba(28,25,23,0.08)] overflow-hidden"
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -257,7 +257,7 @@ export default function AIPromptBox() {
             <button
               onClick={() => fileInputRef.current?.click()}
               className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 ${
-                hasAttachment ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5'
+                hasAttachment ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
               }`}
               title="上传文件"
             >
@@ -265,7 +265,7 @@ export default function AIPromptBox() {
             </button>
             <button
               onClick={() => imageInputRef.current?.click()}
-              className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 transition-all duration-200"
+              className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
               title="上传图片"
             >
               <Image size={18} />

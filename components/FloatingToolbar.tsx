@@ -39,7 +39,7 @@ const ACTIONS = [
 export default function FloatingToolbar({ activeTool, onToolChange }: FloatingToolbarProps) {
   return (
     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30">
-      <div className="flex items-center gap-1 px-2 py-1.5 rounded-full backdrop-blur-xl bg-white/70 border border-white/20 shadow-[0_10px_40px_rgba(15,23,42,0.1)]">
+      <div className="flex items-center gap-1 px-2 py-1.5 rounded-full backdrop-blur-xl bg-[var(--bg-glass)] border border-[var(--border)] shadow-[0_10px_40px_rgba(28,25,23,0.06)]">
         {/* Tools */}
         {TOOLS.map((tool) => (
           <button
@@ -49,7 +49,7 @@ export default function FloatingToolbar({ activeTool, onToolChange }: FloatingTo
             className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 ${
               activeTool === tool.id
                 ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]'
-                : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5'
+                : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
             }`}
           >
             <tool.icon size={16} />
@@ -64,7 +64,7 @@ export default function FloatingToolbar({ activeTool, onToolChange }: FloatingTo
           <button
             key={action.id}
             title={action.label}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 transition-all duration-200"
+            className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
           >
             <action.icon size={16} />
           </button>

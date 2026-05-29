@@ -23,18 +23,18 @@ const ACTIONS = [
 
 export default function FloatingAIActions({ onAction }: FloatingAIActionsProps) {
   return (
-    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-30">
+    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-30 animate-fade-in" style={{ animationDelay: '200ms' }}>
       <div className="flex flex-col gap-2">
         {ACTIONS.map((action) => (
           <button
             key={action.id}
             onClick={() => onAction?.(action.id)}
             title={action.label}
-            className="group relative w-10 h-10 flex items-center justify-center rounded-2xl backdrop-blur-xl bg-white/70 border border-white/20 shadow-[0_4px_20px_rgba(15,23,42,0.06)] hover:shadow-[0_0_30px_rgba(99,102,241,0.15)] transition-all duration-300 hover:-translate-y-px"
+            className="group relative w-10 h-10 flex items-center justify-center rounded-2xl backdrop-blur-xl bg-[var(--bg-glass)] border border-[var(--border)] shadow-[0_4px_20px_rgba(28,25,23,0.05)] hover:shadow-[0_0_30px_rgba(124,58,237,0.12)] hover:bg-[var(--card)] transition-all duration-300 hover:-translate-y-px hover-lift"
           >
             <action.icon size={17} className="text-[var(--muted)] group-hover:text-[var(--fg)] transition-colors duration-200" />
             {/* Tooltip */}
-            <div className="absolute right-full mr-3 px-2.5 py-1 rounded-lg bg-[var(--primary)] text-white text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
+            <div className="absolute right-full mr-3 px-3 py-1.5 rounded-xl bg-[var(--primary)] text-white text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 shadow-[0_4px_16px_rgba(28,25,23,0.12)]">
               {action.label}
             </div>
           </button>

@@ -1,6 +1,7 @@
 'use client';
 
 import { CHART_TYPES } from '@/lib/constants';
+import Dropdown from './ui/Dropdown';
 
 interface ChartTypeSelectProps {
   value: string;
@@ -9,18 +10,17 @@ interface ChartTypeSelectProps {
   id?: string;
 }
 
+const CHART_TYPE_OPTIONS = Object.entries(CHART_TYPES).map(([value, label]) => ({ value, label }));
+
 export default function ChartTypeSelect({ value, onChange, disabled, id }: ChartTypeSelectProps) {
   return (
-    <select
-      id={id}
+    <Dropdown
+      options={CHART_TYPE_OPTIONS}
       value={value}
-      onChange={(e) => onChange?.(e.target.value)}
-      className="chart-type-select"
+      onChange={(v) => onChange?.(v)}
       disabled={disabled}
-    >
-      {Object.entries(CHART_TYPES).map(([key, label]) => (
-        <option key={key} value={key}>{label}</option>
-      ))}
-    </select>
+      placeholder="选择图表类型"
+      className="px-3 py-2 text-xs"
+    />
   );
 }

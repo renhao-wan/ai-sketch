@@ -40,7 +40,7 @@ export default function CodeEditor({ code, onChange, onApply, onOptimize, onClea
             onClick={onClear}
             disabled={isGenerating || isApplyingCode || isOptimizingCode}
             title="清除"
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
           >
             <Trash2 size={14} />
           </button>
@@ -56,7 +56,7 @@ export default function CodeEditor({ code, onChange, onApply, onOptimize, onClea
             onClick={onApply}
             disabled={isGenerating || isApplyingCode || isOptimizingCode || !code?.trim()}
             title="应用到画布"
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
           >
             {isApplyingCode ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
           </button>

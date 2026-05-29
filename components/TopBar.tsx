@@ -8,7 +8,7 @@ interface AppIconProps {
 function AppIcon({ size = 28 }: AppIconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="28" height="28" rx="7" fill="#4F46E5" />
+      <rect width="28" height="28" rx="7" fill="#7C3AED" />
       <path
         d="M19.5 8.5L10 18L8.5 19.5L9.5 20.5L10 19L19.5 9.5L19.5 8.5Z"
         stroke="white"
@@ -23,7 +23,7 @@ function AppIcon({ size = 28 }: AppIconProps) {
         strokeWidth="1.5"
         strokeLinecap="round"
       />
-      <circle cx="21" cy="7" r="1.2" fill="#A5B4FC" />
+      <circle cx="21" cy="7" r="1.2" fill="#C4B5FD" />
     </svg>
   );
 }

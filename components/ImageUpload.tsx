@@ -88,7 +88,7 @@ export default function ImageUpload({ onImageSelect, isGenerating, chartType, on
           onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}
         >
           <div className="text-center mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-black/5 flex items-center justify-center mx-auto mb-3">
+            <div className="w-12 h-12 rounded-2xl bg-[var(--surface-warm-hover)] flex items-center justify-center mx-auto mb-3">
               <ImageIcon size={24} className="text-[var(--muted)]" />
             </div>
             <p className="text-sm text-[var(--fg)] mb-1">上传图片进行识别</p>
@@ -106,9 +106,9 @@ export default function ImageUpload({ onImageSelect, isGenerating, chartType, on
         </div>
       ) : (
         <div className="flex-1 flex flex-col">
-          <div className="flex-1 flex justify-center relative bg-black/3 rounded-2xl overflow-hidden border border-black/5">
+          <div className="flex-1 flex justify-center relative bg-[var(--surface-warm-hover)] rounded-2xl overflow-hidden border border-[var(--surface-warm-hover)]">
             {imagePreview && <img src={imagePreview} alt="预览" className="w-full object-contain" />}
-            <button onClick={handleClearImage} disabled={isGenerating || uploadStatus === 'uploading'} className="absolute top-3 right-3 w-8 h-8 bg-white/80 backdrop-blur rounded-xl flex items-center justify-center hover:bg-white transition-all duration-200 disabled:opacity-50" title="删除图片">
+            <button onClick={handleClearImage} disabled={isGenerating || uploadStatus === 'uploading'} className="absolute top-3 right-3 w-8 h-8 bg-[var(--surface-warm)] backdrop-blur rounded-xl flex items-center justify-center hover:bg-[var(--card)] transition-all duration-200 disabled:opacity-50" title="删除图片">
               <X size={14} className="text-[var(--fg)]" />
             </button>
             {uploadStatus === 'success' && (
@@ -117,7 +117,7 @@ export default function ImageUpload({ onImageSelect, isGenerating, chartType, on
               </div>
             )}
             {uploadStatus === 'uploading' && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+              <div className="absolute inset-0 flex items-center justify-center bg-[var(--surface-warm)] backdrop-blur-sm">
                 <Loader2 size={24} className="text-[var(--accent-indigo)] animate-spin" />
               </div>
             )}

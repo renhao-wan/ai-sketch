@@ -44,10 +44,10 @@ export default function BottomContextPanel({ generatedCode, children }: BottomCo
 
   if (isCollapsed) {
     return (
-      <div className="flex-shrink-0 border-t border-black/5 bg-white/60 backdrop-blur-xl">
+      <div className="flex-shrink-0 border-t border-black/[0.06] bg-[var(--bg-glass)] backdrop-blur-xl">
         <button
           onClick={() => setIsCollapsed(false)}
-          className="w-full flex items-center justify-center gap-2 py-2 text-xs text-[var(--muted)] hover:text-[var(--fg)] transition-colors duration-200"
+          className="w-full flex items-center justify-center gap-2 py-2.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] transition-all duration-200 hover:bg-[var(--surface-warm-hover)]"
         >
           <ChevronUp size={14} />
           <span>展开上下文面板</span>
@@ -58,14 +58,16 @@ export default function BottomContextPanel({ generatedCode, children }: BottomCo
 
   return (
     <div
-      className="flex-shrink-0 border-t border-black/5 bg-white/60 backdrop-blur-xl flex flex-col"
+      className="flex-shrink-0 border-t border-black/[0.06] bg-[var(--bg-glass)] backdrop-blur-xl flex flex-col"
       style={{ height: `${height}px` }}
     >
       {/* Resize Handle */}
       <div
         onMouseDown={handleMouseDown}
-        className="h-1 cursor-row-resize hover:bg-[var(--accent-indigo)]/20 transition-colors duration-200 flex-shrink-0"
-      />
+        className="h-1.5 cursor-row-resize hover:bg-gradient-to-r hover:from-[var(--accent-indigo)]/20 hover:via-[var(--accent-violet)]/20 hover:to-[var(--accent-cyan)]/20 transition-all duration-300 flex-shrink-0 group"
+      >
+        <div className="w-8 h-0.5 bg-black/10 rounded-full mx-auto mt-0.5 group-hover:bg-[var(--accent-indigo)]/40 transition-colors duration-200" />
+      </div>
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-10 flex-shrink-0">
@@ -76,8 +78,8 @@ export default function BottomContextPanel({ generatedCode, children }: BottomCo
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${
                 activeTab === tab.id
-                  ? 'bg-black/8 text-[var(--fg)]'
-                  : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5'
+                  ? 'bg-[var(--accent-indigo)]/8 text-[var(--accent-indigo)] shadow-sm'
+                  : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
               }`}
             >
               <tab.icon size={13} />
@@ -87,7 +89,7 @@ export default function BottomContextPanel({ generatedCode, children }: BottomCo
         </div>
         <button
           onClick={() => setIsCollapsed(true)}
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 transition-all duration-200"
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
         >
           <ChevronDown size={14} />
         </button>

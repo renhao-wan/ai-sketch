@@ -45,7 +45,7 @@ export default function HomePage() {
   return (
     <div className="h-screen flex flex-col bg-[var(--bg)] noise-overlay">
       {/* Header */}
-      <header className="h-12 flex items-center justify-between px-5 backdrop-blur-xl bg-white/70 border-b border-black/[0.06] flex-shrink-0 select-none">
+      <header className="h-12 flex items-center justify-between px-5 backdrop-blur-xl bg-[var(--bg-glass)] border-b border-black/[0.06] flex-shrink-0 select-none">
         <div className="flex items-center gap-2.5">
           <AppIcon size={26} />
           <span className="text-[13px] font-semibold tracking-tight text-[var(--fg)]">AI Sketch</span>
@@ -61,14 +61,14 @@ export default function HomePage() {
           </button>
           <button
             onClick={() => setIsHistoryOpen(true)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/[0.05] transition-colors duration-150"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
             title="历史记录"
           >
             <History size={15} />
           </button>
           <button
             onClick={() => setIsConfigOpen(true)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/[0.05] transition-colors duration-150"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
             title="设置"
           >
             <Settings size={15} />
@@ -120,7 +120,7 @@ export default function HomePage() {
                   setInitData({ type: 'text', data: t, format: 'excalidraw' });
                   router.push('/editor?source=text');
                 }}
-                className="px-4 py-2 text-xs text-[var(--muted)] bg-white/50 backdrop-blur border border-white/20 rounded-full hover:bg-white/70 hover:text-[var(--fg)] hover:border-[var(--accent-indigo)]/20 transition-all duration-200"
+                className="px-4 py-2 text-xs text-[var(--muted)] bg-[var(--bg-glass)] backdrop-blur border border-[var(--border)] rounded-full hover:bg-[var(--card)] hover:text-[var(--fg)] hover:border-[var(--accent-indigo)]/20 transition-all duration-200"
               >
                 {t}
               </button>
@@ -137,7 +137,7 @@ export default function HomePage() {
                   <button
                     key={item.id}
                     onClick={() => handleApplyHistory(item)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-[var(--muted)] bg-white/30 backdrop-blur border border-white/15 rounded-full hover:bg-white/50 hover:text-[var(--fg)] transition-all duration-200"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-[var(--muted)] bg-[var(--bg-glass)]/50 backdrop-blur border border-[var(--border)]/50 rounded-full hover:bg-[var(--bg-glass)] hover:text-[var(--fg)] transition-all duration-200"
                   >
                     <FileText size={11} className="text-[var(--accent-indigo)]/50" />
                     <span className="max-w-[120px] truncate">{label}</span>

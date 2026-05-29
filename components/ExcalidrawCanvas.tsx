@@ -59,7 +59,7 @@ export default function ExcalidrawCanvas({ elements }: ExcalidrawCanvasProps) {
         initialData={{
           elements: convertedElements,
           appState: {
-            viewBackgroundColor: '#F7F8FA',
+            viewBackgroundColor: '#FAF8F5',
             currentItemFontFamily: 1,
           },
           scrollToContent: true,

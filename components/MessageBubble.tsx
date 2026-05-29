@@ -29,7 +29,7 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
       <div className={`flex-shrink-0 w-7 h-7 rounded-xl flex items-center justify-center ${
         isUser
           ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]'
-          : 'bg-black/5 text-[var(--muted)]'
+          : 'bg-[var(--surface-warm-hover)] text-[var(--muted)]'
       }`}>
         {isUser ? <User size={14} /> : <Bot size={14} />}
       </div>
@@ -40,12 +40,12 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
         <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
           isUser
             ? 'bg-[var(--accent-indigo)] text-white rounded-br-md'
-            : 'bg-black/5 text-[var(--fg)] rounded-bl-md'
+            : 'bg-[var(--surface-warm-hover)] text-[var(--fg)] rounded-bl-md'
         }`}>
           {/* Image thumbnail for image messages */}
           {message.imageData && (
             <div className="mb-2">
-              <div className="w-32 h-24 rounded-lg overflow-hidden bg-black/10 flex items-center justify-center">
+              <div className="w-32 h-24 rounded-lg overflow-hidden bg-[var(--surface-warm-hover)] flex items-center justify-center">
                 <img
                   src={`data:${message.imageMimeType};base64,${message.imageData}`}
                   alt="Uploaded"
@@ -61,17 +61,17 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
           ) : (
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="text-[11px] font-medium text-[var(--muted)] uppercase tracking-wider">Generated Code</span>
+                <span className="text-[11px] font-medium text-[var(--muted)] uppercase tracking-wider">生成代码</span>
                 {isStreaming && (
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent-indigo)] animate-pulse" />
                 )}
               </div>
-              <pre className="text-xs font-mono bg-black/5 rounded-lg p-2.5 overflow-x-auto max-h-40 scrollbar-thin">
+              <pre className="text-xs font-mono bg-[var(--surface-warm-hover)] rounded-lg p-2.5 overflow-x-auto max-h-40 scrollbar-thin">
                 <code>{message.content.length > 300 ? message.content.substring(0, 300) + '...' : message.content}</code>
               </pre>
               {message.content.length > 300 && (
                 <p className="text-[11px] text-[var(--muted)] mt-1">
-                  {message.content.length} characters total
+                  共 {message.content.length} 个字符
                 </p>
               )}
             </div>

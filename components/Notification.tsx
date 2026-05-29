@@ -42,7 +42,7 @@ export default function Notification({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 pointer-events-none">
       <div className="pointer-events-auto max-w-sm w-full animate-slide-up">
-        <div className="bg-white/80 backdrop-blur-2xl rounded-2xl border border-white/15 shadow-[0_10px_40px_rgba(15,23,42,0.12)] p-4">
+        <div className="bg-[var(--surface-warm)] backdrop-blur-2xl rounded-2xl border border-[var(--border)] shadow-[0_10px_40px_rgba(28,25,23,0.10)] p-4">
           <div className="flex items-start gap-3">
             <div className={`w-8 h-8 rounded-xl ${config.bg} flex items-center justify-center flex-shrink-0`}>
               <Icon size={16} className={config.color} />
@@ -53,7 +53,7 @@ export default function Notification({
             </div>
             <button
               onClick={onClose}
-              className="w-6 h-6 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 transition-all duration-200 flex-shrink-0"
+              className="w-6 h-6 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200 flex-shrink-0"
             >
               <X size={14} />
             </button>

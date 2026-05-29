@@ -47,6 +47,13 @@ function EditorContent() {
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
 
+  // Panel width (not persisted — resets on refresh/navigate)
+  const [panelWidth, setPanelWidth] = useState(360);
+
+  const handlePanelWidthChange = useCallback((w: number) => {
+    setPanelWidth(Math.min(Math.max(w, 280), 600));
+  }, []);
+
   const loadConfig = useCallback(async () => {
     try {
       const data = await api.fetchConfigs();
@@ -360,7 +367,12 @@ function EditorContent() {
 
   return (
     <>
-      <div className="h-full flex relative overflow-hidden">
+      <div className="h-full flex relative overflow-hidden bg-[var(--bg)] noise-overlay">
+        {/* Decorative Blur Orbs */}
+        <div className="blur-orb blur-orb-indigo" style={{ width: 320, height: 320, top: '-60px', left: '-80px' }} />
+        <div className="blur-orb blur-orb-violet" style={{ width: 260, height: 260, bottom: '-40px', right: '10%' }} />
+        <div className="blur-orb blur-orb-cyan" style={{ width: 200, height: 200, top: '40%', right: '-40px' }} />
+
         {/* AI Copilot Panel (Left) */}
         <AICopilotPanel
           conversationId={conversationId}
@@ -378,6 +390,8 @@ function EditorContent() {
           onExport={handleExport}
           apiError={apiError}
           onClearError={() => setApiError(null)}
+          panelWidth={panelWidth}
+          onPanelWidthChange={handlePanelWidthChange}
         />
 
         {/* Main Canvas Area */}
@@ -420,12 +434,17 @@ function EditorContent() {
 export default function EditorPage() {
   return (
     <Suspense fallback={
-      <div className="h-full flex items-center justify-center bg-[var(--bg)]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-pulse rounded-[16px]">
-            <AppIcon size={40} />
+      <div className="h-full flex items-center justify-center bg-[var(--bg)] noise-overlay">
+        <div className="blur-orb blur-orb-indigo" style={{ width: 240, height: 240, top: '30%', left: '30%' }} />
+        <div className="blur-orb blur-orb-violet" style={{ width: 200, height: 200, bottom: '20%', right: '25%' }} />
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+          <div className="relative">
+            <div className="absolute inset-0 w-10 h-10 rounded-[16px] bg-gradient-to-br from-[var(--accent-indigo)] to-[var(--accent-violet)] blur-xl opacity-30 animate-pulse-glow" />
+            <div className="animate-pulse rounded-[16px] relative">
+              <AppIcon size={40} />
+            </div>
           </div>
-          <p className="text-sm text-[var(--muted)]">加载编辑器...</p>
+          <p className="text-sm text-[var(--muted)] font-medium">加载编辑器...</p>
         </div>
       </div>
     }>

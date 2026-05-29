@@ -30,7 +30,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-[var(--bg)] p-4 noise-overlay">
-          <div className="relative bg-white/80 backdrop-blur-2xl rounded-3xl border border-white/15 shadow-[0_20px_60px_rgba(15,23,42,0.12)] p-8 max-w-md w-full text-center">
+          <div className="relative bg-[var(--surface-warm)] backdrop-blur-2xl rounded-3xl border border-[var(--border)] shadow-[0_20px_60px_rgba(28,25,23,0.10)] p-8 max-w-md w-full text-center">
             <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-4">
               <AlertTriangle size={24} className="text-red-500" />
             </div>
@@ -39,7 +39,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             {this.state.error && (
               <details className="mb-4 text-left">
                 <summary className="text-xs text-[var(--muted)] cursor-pointer hover:text-[var(--fg)] transition-colors">错误详情</summary>
-                <pre className="mt-2 text-[11px] font-mono bg-black/4 p-3 rounded-xl overflow-auto text-red-600">
+                <pre className="mt-2 text-[11px] font-mono bg-[var(--surface-warm-hover)] p-3 rounded-xl overflow-auto text-red-600">
                   {this.state.error.toString()}
                 </pre>
               </details>

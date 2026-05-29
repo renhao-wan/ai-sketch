@@ -23,12 +23,12 @@ function timeAgo(timestamp: number): string {
   const now = Date.now();
   const diff = now - timestamp;
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1) return '刚刚';
+  if (minutes < 60) return `${minutes} 分钟前`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `${hours} 小时前`;
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return `${days} 天前`;
 }
 
 export default function ConversationList({ currentId, onSelect, onDelete, onNew }: ConversationListProps) {
@@ -61,30 +61,30 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-lg transition-all duration-200"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg transition-all duration-200"
       >
         <MessageSquare size={13} />
-        <span className="max-w-[120px] truncate">{current?.title || 'Conversations'}</span>
+        <span className="max-w-[120px] truncate">{current?.title || '对话列表'}</span>
         <ChevronDown size={12} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 z-50 w-72 bg-white/90 backdrop-blur-xl rounded-2xl border border-black/5 shadow-[0_10px_40px_rgba(15,23,42,0.12)] overflow-hidden animate-slide-up">
+          <div className="absolute top-full left-0 mt-1 z-50 w-72 bg-[var(--surface-warm)] backdrop-blur-xl rounded-2xl border border-[var(--border)] shadow-[0_10px_40px_rgba(28,25,23,0.10)] overflow-hidden animate-slide-up">
             {/* New chat button */}
             <button
               onClick={() => { onNew(); setIsOpen(false); }}
               className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 transition-colors border-b border-black/5"
             >
               <MessageSquare size={14} />
-              New Conversation
+              新建对话
             </button>
 
             {/* List */}
             <div className="max-h-64 overflow-y-auto scrollbar-thin">
               {conversations.length === 0 ? (
-                <div className="px-4 py-6 text-center text-sm text-[var(--muted)]">No conversations yet</div>
+                <div className="px-4 py-6 text-center text-sm text-[var(--muted)]">暂无对话</div>
               ) : (
                 conversations.map((conv) => {
                   const badge = FORMAT_BADGES[conv.format] || FORMAT_BADGES.excalidraw;
@@ -93,7 +93,7 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
                       key={conv.id}
                       onClick={() => { onSelect(conv.id); setIsOpen(false); }}
                       className={`group flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors ${
-                        conv.id === currentId ? 'bg-[var(--accent-indigo)]/5' : 'hover:bg-black/3'
+                        conv.id === currentId ? 'bg-[var(--accent-indigo)]/5' : 'hover:bg-[var(--surface-warm-hover)]'
                       }`}
                     >
                       <div className="flex-1 min-w-0">
@@ -104,7 +104,7 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
                           <span className="text-sm text-[var(--fg)] truncate">{conv.title}</span>
                         </div>
                         <div className="flex items-center gap-2 text-[11px] text-[var(--muted)]">
-                          <span>{conv.messageCount} messages</span>
+                          <span>{conv.messageCount} 条消息</span>
                           <span>{timeAgo(conv.updatedAt)}</span>
                         </div>
                       </div>

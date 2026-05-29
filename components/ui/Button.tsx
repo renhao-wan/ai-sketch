@@ -22,10 +22,10 @@ export default function Button({
 
   const variants: Record<string, string> = {
     primary: 'bg-[var(--primary)] text-white hover:bg-[var(--primary)]/90 rounded-xl',
-    secondary: 'bg-black/5 text-[var(--fg)] hover:bg-black/8 border border-black/5 rounded-xl',
+    secondary: 'bg-[var(--surface-warm-hover)] text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl',
     danger: 'bg-red-600 text-white hover:bg-red-700 rounded-xl',
-    ghost: 'bg-transparent text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-xl',
-    glass: 'bg-white/60 backdrop-blur-xl border border-white/10 text-[var(--fg)] hover:bg-white/80 rounded-xl',
+    ghost: 'bg-transparent text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-xl',
+    glass: 'bg-[var(--bg-glass)] backdrop-blur-xl border border-[var(--border)] text-[var(--fg)] hover:bg-[var(--card)] rounded-xl',
   };
 
   const sizes: Record<string, string> = {
