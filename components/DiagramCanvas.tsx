@@ -17,6 +17,14 @@ interface DiagramCanvasProps {
 export default function DiagramCanvas({ format, data }: DiagramCanvasProps) {
   const { t } = useLocale();
 
+  if (data === null || data === undefined) {
+    return (
+      <div className="w-full h-full flex items-center justify-center canvas-grid-bg">
+        <p className="text-sm text-[var(--muted)]">{t('canvas.emptyState')}</p>
+      </div>
+    );
+  }
+
   switch (format) {
     case 'excalidraw':
       return <ExcalidrawCanvas elements={(data as ExcalidrawElement[]) || []} />;

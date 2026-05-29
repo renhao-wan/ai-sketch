@@ -21,7 +21,7 @@ async function initMermaid() {
     mermaid.initialize({
       startOnLoad: false,
       theme: 'default',
-      securityLevel: 'loose',
+      securityLevel: 'strict',
       fontFamily: 'inherit',
     });
     mermaidInstance = mermaid;
@@ -56,7 +56,12 @@ export default function MermaidCanvas({ code }: MermaidCanvasProps) {
         }
       } catch (e) {
         if (currentRenderId !== renderIdRef.current) return;
-        const msg = (e as Error).message || t('mermaid.renderFailed');
+        const rawMsg = (e as Error).message || t('mermaid.renderFailed');
+        // Try to extract structured line/column info from Mermaid parse errors
+        const lineMatch = rawMsg.match(/Parse error on line (\d+)(?:, column (\d+))?/);
+        const msg = lineMatch
+          ? `Line ${lineMatch[1]}${lineMatch[2] ? `, Column ${lineMatch[2]}` : ''}: ${rawMsg.replace(lineMatch[0], '').trim()}`
+          : rawMsg;
         setError(msg);
         if (containerRef.current) {
           containerRef.current.innerHTML = '';

@@ -24,10 +24,21 @@ export default function DrawioCanvas({ code }: DrawioCanvasProps) {
   const [iframeReady, setIframeReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Timeout detection: if iframe fails to load within 15s, show error
+  useEffect(() => {
+    if (iframeReady) return;
+    const timeout = setTimeout(() => {
+      if (!iframeReady) {
+        setError(t('drawio.loadTimeout'));
+      }
+    }, 15000);
+    return () => clearTimeout(timeout);
+  }, [iframeReady, t]);
+
   const sendXml = useCallback(() => {
     if (!iframeRef.current || !code) return;
     try {
-      iframeRef.current.contentWindow?.postMessage(buildLoadPayload(code), '*');
+      iframeRef.current.contentWindow?.postMessage(buildLoadPayload(code), 'https://embed.diagrams.net');
       setError(null);
     } catch {
       setError(t('drawio.loadError'));
@@ -59,7 +70,7 @@ export default function DrawioCanvas({ code }: DrawioCanvasProps) {
         className="w-full h-full border-0"
         title="Draw.io Viewer"
         onLoad={handleLoad}
-        sandbox="allow-scripts allow-same-origin"
+        sandbox="allow-scripts"
       />
     </div>
   );

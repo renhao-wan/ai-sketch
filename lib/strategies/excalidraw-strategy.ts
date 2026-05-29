@@ -7,7 +7,7 @@ import type { DiagramStrategy, ValidationResult } from '@/types/diagram-strategy
 import { SYSTEM_PROMPT, USER_PROMPT_TEMPLATE } from '@/lib/prompts';
 import { CHART_TYPES } from '@/lib/constants';
 import { optimizeExcalidrawCode } from '@/lib/optimizeArrows';
-import { repairJsonClosure, stripCodeFences } from '@/lib/json-repair';
+import { repairJsonClosure, stripCodeFences, extractFirstJsonArray } from '@/lib/json-repair';
 import { createExportBlob, buildImagePrompt } from './helpers';
 
 class ExcalidrawStrategy implements DiagramStrategy {
@@ -46,9 +46,9 @@ class ExcalidrawStrategy implements DiagramStrategy {
   validate(code: string): ValidationResult {
     try {
       const cleaned = code.trim();
-      const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
-      if (!arrayMatch) return { valid: false, error: '代码中未找到有效的 JSON 数组' };
-      const parsed = JSON.parse(arrayMatch[0]);
+      const arrayStr = extractFirstJsonArray(cleaned);
+      if (!arrayStr) return { valid: false, error: '代码中未找到有效的 JSON 数组' };
+      const parsed = JSON.parse(arrayStr);
       if (!Array.isArray(parsed)) return { valid: false, error: '解析结果不是 JSON 数组' };
       return { valid: true, data: parsed };
     } catch (e) {

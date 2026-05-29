@@ -1,8 +1,9 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import '@excalidraw/excalidraw/index.css';
+import { useLocale } from '@/locales';
 import type { ExcalidrawElement } from '@/types';
 
 const Excalidraw = dynamic(
@@ -23,9 +24,12 @@ interface ExcalidrawCanvasProps {
 }
 
 export default function ExcalidrawCanvas({ elements }: ExcalidrawCanvasProps) {
+  const { t } = useLocale();
   const [convertToExcalidrawElements, setConvertFunction] = useState<ConvertFunction | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
+  const [conversionError, setConversionError] = useState<string | null>(null);
+  const canvasKeyRef = useRef(0);
 
   useEffect(() => {
     getConvertFunction().then(fn => setConvertFunction(() => fn));
@@ -34,9 +38,23 @@ export default function ExcalidrawCanvas({ elements }: ExcalidrawCanvasProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const convertedElements = useMemo((): any[] => {
     if (!elements || elements.length === 0 || !convertToExcalidrawElements) return [];
-    try { return convertToExcalidrawElements(elements); }
-    catch (error) { console.error('Failed to convert elements:', error); return []; }
-  }, [elements, convertToExcalidrawElements]);
+    try {
+      const result = convertToExcalidrawElements(elements);
+      setConversionError(null);
+      return result;
+    } catch (error) {
+      console.error('Failed to convert elements:', error);
+      setConversionError((error as Error).message || t('excalidraw.convertError'));
+      return [];
+    }
+  }, [elements, convertToExcalidrawElements, t]);
+
+  // Increment key when elements change to force remount
+  useEffect(() => {
+    if (convertedElements.length > 0) {
+      canvasKeyRef.current += 1;
+    }
+  }, [convertedElements]);
 
   useEffect(() => {
     if (excalidrawAPI && convertedElements.length > 0) {
@@ -46,15 +64,18 @@ export default function ExcalidrawCanvas({ elements }: ExcalidrawCanvasProps) {
     }
   }, [excalidrawAPI, convertedElements]);
 
-  const canvasKey = useMemo(() => {
-    if (convertedElements.length === 0) return 'empty';
-    return JSON.stringify(convertedElements.map((el: { id?: string }) => el.id)).slice(0, 50);
-  }, [convertedElements]);
-
   return (
-    <div className="w-full h-full canvas-grid-bg">
+    <div className="w-full h-full canvas-grid-bg relative">
+      {conversionError && (
+        <div className="absolute top-4 left-4 right-4 z-10">
+          <div className="px-4 py-3 rounded-xl bg-red-50/80 border border-red-200/50">
+            <p className="text-xs font-medium text-red-600 mb-1">{t('excalidraw.convertError')}</p>
+            <p className="text-[11px] text-red-500 break-words whitespace-pre-wrap">{conversionError}</p>
+          </div>
+        </div>
+      )}
       <Excalidraw
-        key={canvasKey}
+        key={canvasKeyRef.current.toString()}
         excalidrawAPI={(api: unknown) => setExcalidrawAPI(api)}
         initialData={{
           elements: convertedElements,

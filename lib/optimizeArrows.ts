@@ -3,6 +3,7 @@
  */
 
 import type { ExcalidrawElement } from '@/types';
+import { extractFirstJsonArray } from '@/lib/json-repair';
 
 type Edge = 'left' | 'right' | 'top' | 'bottom';
 
@@ -133,13 +134,13 @@ export function optimizeExcalidrawCode(codeString: string): string {
 
   try {
     const cleanedCode = codeString.trim();
-    const arrayMatch = cleanedCode.match(/\[[\s\S]*\]/);
-    if (!arrayMatch) {
+    const arrayStr = extractFirstJsonArray(cleanedCode);
+    if (!arrayStr) {
       console.error('No array found in code');
       return codeString;
     }
 
-    const elements = JSON.parse(arrayMatch[0]) as ExcalidrawElement[];
+    const elements = JSON.parse(arrayStr) as ExcalidrawElement[];
     if (!Array.isArray(elements)) {
       console.error('Parsed code is not an array');
       return codeString;

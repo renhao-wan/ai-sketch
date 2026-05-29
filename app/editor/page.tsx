@@ -28,7 +28,7 @@ function EditorContent() {
   const [isConfigManagerOpen, setIsConfigManagerOpen] = useState(false);
   const [generatedCode, setGeneratedCode] = useState('');
   const [format, setFormat] = useState<DiagramFormat>('excalidraw');
-  const [renderData, setRenderData] = useState<unknown>([]);
+  const [renderData, setRenderData] = useState<unknown>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isApplyingCode, setIsApplyingCode] = useState(false);
   const [isOptimizingCode, setIsOptimizingCode] = useState(false);
@@ -236,7 +236,9 @@ function EditorContent() {
                 setGeneratedCode(stripCodeFences(accumulatedCode));
               }
             } catch (e) {
-              if (!(e instanceof SyntaxError)) {
+              if (e instanceof SyntaxError) {
+                console.warn('[SSE] JSON parse error:', (e as SyntaxError).message, 'Raw:', line);
+              } else {
                 setApiError(t('editor.streamParseError') + (e as Error).message);
               }
             }
@@ -246,7 +248,6 @@ function EditorContent() {
 
       // Full postProcess + optimize + validate after stream completes
       const processedCode = currentStrategy.postProcess(accumulatedCode);
-      tryParseAndApply(processedCode, currentStrategy);
       const optimizedCode = currentStrategy.optimize(processedCode);
       setGeneratedCode(optimizedCode);
       tryParseAndApply(optimizedCode, currentStrategy);
@@ -353,7 +354,7 @@ function EditorContent() {
     setConversationId(null);
     setMessages([]);
     setGeneratedCode('');
-    setRenderData([]);
+    setRenderData(null);
     setCurrentInput('');
     setJsonError(null);
     setApiError(null);

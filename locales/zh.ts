@@ -199,10 +199,15 @@ export const zh = {
 
   // Diagram Canvas
   'canvas.unsupportedFormat': '不支持的格式:',
+  'canvas.emptyState': '描述图表内容，AI 将为你生成',
+
+  // Excalidraw Canvas
+  'excalidraw.convertError': '元素转换失败',
 
   // Drawio Canvas
   'drawio.loadError': '无法加载图表到 Draw.io 查看器',
   'drawio.renderError': 'Draw.io 渲染错误',
+  'drawio.loadTimeout': 'Draw.io 查看器加载超时，请检查网络连接',
 
   // Mermaid Canvas
   'mermaid.renderFailed': 'Mermaid 渲染失败',

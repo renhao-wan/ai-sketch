@@ -201,10 +201,15 @@ export const en: TranslationDict = {
 
   // Diagram Canvas
   'canvas.unsupportedFormat': 'Unsupported format:',
+  'canvas.emptyState': 'Describe a diagram and AI will generate it',
+
+  // Excalidraw Canvas
+  'excalidraw.convertError': 'Element conversion failed',
 
   // Drawio Canvas
   'drawio.loadError': 'Unable to load diagram into Draw.io viewer',
   'drawio.renderError': 'Draw.io Render Error',
+  'drawio.loadTimeout': 'Draw.io viewer failed to load. Please check your network connection.',
 
   // Mermaid Canvas
   'mermaid.renderFailed': 'Mermaid render failed',

@@ -190,10 +190,10 @@ class DrawioStrategy implements DiagramStrategy {
     let processed = stripCodeFences(rawCode);
 
     // Try to extract mxfile or mxGraphModel block if wrapped in other content
-    const mxfileMatch = processed.match(/<mxfile[\s\S]*<\/mxfile>/);
+    const mxfileMatch = processed.match(/<mxfile[\s\S]*?<\/mxfile>/);
     if (mxfileMatch) return mxfileMatch[0];
 
-    const mxGraphMatch = processed.match(/<mxGraphModel[\s\S]*<\/mxGraphModel>/);
+    const mxGraphMatch = processed.match(/<mxGraphModel[\s\S]*?<\/mxGraphModel>/);
     if (mxGraphMatch) return mxGraphMatch[0];
 
     return processed;
