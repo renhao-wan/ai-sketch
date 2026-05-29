@@ -1,6 +1,7 @@
 'use client';
 
 import { User, Bot, Image as ImageIcon, FileText, Type } from 'lucide-react';
+import { useLocale } from '@/locales';
 import type { ConversationMessage } from '@/types';
 
 interface MessageBubbleProps {
@@ -21,6 +22,7 @@ function SourceIcon({ sourceType }: { sourceType?: string }) {
 }
 
 export default function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
+  const { t } = useLocale();
   const isUser = message.role === 'user';
 
   return (
@@ -61,7 +63,7 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
           ) : (
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="text-[11px] font-medium text-[var(--muted)] uppercase tracking-wider">生成代码</span>
+                <span className="text-[11px] font-medium text-[var(--muted)] uppercase tracking-wider">{t('message.generatedCode')}</span>
                 {isStreaming && (
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent-indigo)] animate-pulse" />
                 )}
@@ -71,7 +73,7 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
               </pre>
               {message.content.length > 300 && (
                 <p className="text-[11px] text-[var(--muted)] mt-1">
-                  共 {message.content.length} 个字符
+                  {t('message.characters')} {message.content.length}
                 </p>
               )}
             </div>

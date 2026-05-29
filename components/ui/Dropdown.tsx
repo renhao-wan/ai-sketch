@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
+import { useLocale } from '@/locales';
 
 export interface DropdownOption {
   value: string;
@@ -23,10 +24,12 @@ export default function Dropdown({
   options,
   value,
   onChange,
-  placeholder = '请选择',
+  placeholder,
   disabled = false,
   className,
 }: DropdownProps) {
+  const { t } = useLocale();
+  const resolvedPlaceholder = placeholder ?? t('dropdown.placeholder');
   const [isOpen, setIsOpen] = useState(false);
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
@@ -151,7 +154,7 @@ export default function Dropdown({
         className={triggerClass}
       >
         <span className={`truncate ${selected ? '' : 'text-[var(--muted)]/50'}`}>
-          {selected?.label ?? placeholder}
+          {selected?.label ?? resolvedPlaceholder}
         </span>
         <ChevronDown
           size={14}

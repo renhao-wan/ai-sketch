@@ -2,12 +2,14 @@
 
 import { useState, type ReactNode, type MouseEvent } from 'react';
 import { ChevronDown, ChevronUp, Code2, Sparkles, GitCompare, Terminal } from 'lucide-react';
+import { useLocale } from '@/locales';
+import type { TranslationKey } from '@/locales';
 
-const TABS = [
-  { id: 'code', label: '生成代码', icon: Code2 },
-  { id: 'ai', label: 'AI 解释', icon: Sparkles },
-  { id: 'diff', label: '版本对比', icon: GitCompare },
-  { id: 'logs', label: '日志', icon: Terminal },
+const TABS: { id: string; labelKey: TranslationKey; icon: typeof Code2 }[] = [
+  { id: 'code', labelKey: 'panel.generatedCode', icon: Code2 },
+  { id: 'ai', labelKey: 'panel.aiExplanation', icon: Sparkles },
+  { id: 'diff', labelKey: 'panel.versionCompare', icon: GitCompare },
+  { id: 'logs', labelKey: 'panel.logs', icon: Terminal },
 ];
 
 interface BottomContextPanelProps {
@@ -16,6 +18,7 @@ interface BottomContextPanelProps {
 }
 
 export default function BottomContextPanel({ generatedCode, children }: BottomContextPanelProps) {
+  const { t } = useLocale();
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [activeTab, setActiveTab] = useState('code');
   const [height, setHeight] = useState(180);
@@ -50,7 +53,7 @@ export default function BottomContextPanel({ generatedCode, children }: BottomCo
           className="w-full flex items-center justify-center gap-2 py-2.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] transition-all duration-200 hover:bg-[var(--surface-warm-hover)]"
         >
           <ChevronUp size={14} />
-          <span>展开上下文面板</span>
+          <span>{t('panel.expandPanel')}</span>
         </button>
       </div>
     );
@@ -83,7 +86,7 @@ export default function BottomContextPanel({ generatedCode, children }: BottomCo
               }`}
             >
               <tab.icon size={13} />
-              <span>{tab.label}</span>
+              <span>{t(tab.labelKey)}</span>
             </button>
           ))}
         </div>
@@ -105,10 +108,10 @@ export default function BottomContextPanel({ generatedCode, children }: BottomCo
           </pre>
         ) : (
           <div className="flex items-center justify-center h-full text-xs text-[var(--muted)]/50">
-            {activeTab === 'ai' && 'AI 解释将在生成图表后显示'}
-            {activeTab === 'diff' && '版本对比功能即将上线'}
-            {activeTab === 'logs' && '暂无日志'}
-            {activeTab === 'code' && '生成代码后将在此显示'}
+            {activeTab === 'ai' && t('panel.aiExplanationEmpty')}
+            {activeTab === 'diff' && t('panel.versionCompareSoon')}
+            {activeTab === 'logs' && t('panel.noLogs')}
+            {activeTab === 'code' && t('panel.codeWillAppear')}
           </div>
         )}
       </div>

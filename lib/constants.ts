@@ -1,5 +1,7 @@
 // 统一的常量定义
 
+import type { TranslationKey } from '@/locales';
+
 // Chart type options
 // Must match CHART_TYPE_NAMES in lib/prompts.ts
 export const CHART_TYPES = {
@@ -27,3 +29,34 @@ export const CHART_TYPES = {
   matrix: '矩阵图',
   infographic: '信息图',
 } as const;
+
+const CHART_TYPE_KEY_MAP: Record<string, TranslationKey> = {
+  auto: 'chart.auto',
+  flowchart: 'chart.flowchart',
+  mindmap: 'chart.mindmap',
+  orgchart: 'chart.orgchart',
+  sequence: 'chart.sequence',
+  class: 'chart.class',
+  er: 'chart.er',
+  gantt: 'chart.gantt',
+  timeline: 'chart.timeline',
+  tree: 'chart.tree',
+  network: 'chart.network',
+  architecture: 'chart.architecture',
+  dataflow: 'chart.dataflow',
+  state: 'chart.state',
+  swimlane: 'chart.swimlane',
+  concept: 'chart.concept',
+  fishbone: 'chart.fishbone',
+  swot: 'chart.swot',
+  pyramid: 'chart.pyramid',
+  funnel: 'chart.funnel',
+  venn: 'chart.venn',
+  matrix: 'chart.matrix',
+  infographic: 'chart.infographic',
+};
+
+export function getChartTypeLabel(key: string, t: (k: TranslationKey) => string): string {
+  const translationKey = CHART_TYPE_KEY_MAP[key];
+  return translationKey ? t(translationKey) : key;
+}

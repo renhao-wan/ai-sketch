@@ -16,12 +16,14 @@ import { isConfigValid } from '@/lib/config-validator';
 import { getStrategy } from '@/lib/strategies/registry';
 import { consumeInitData } from '@/lib/init-data';
 import { runMigrationIfNeeded } from '@/lib/migration';
+import { useLocale } from '@/locales';
 import type { LLMConfig, HistoryItem, NotificationState, AIActionId, ConversationMessage } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
 import { generateId } from '@/lib/utils';
 
 function EditorContent() {
+  const { t } = useLocale();
   const [config, setConfig] = useState<LLMConfig | null>(null);
   const [isConfigManagerOpen, setIsConfigManagerOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -105,7 +107,7 @@ function EditorContent() {
 
   const handleSendMessage = useCallback(async (userMessage: string | { text?: string; images?: unknown[] }, chartType: string = 'auto', sourceType: string = 'text') => {
     if (!isConfigValid(config)) {
-      setNotification({ isOpen: true, title: '配置提醒', message: '请先配置您的 LLM 提供商', type: 'warning' });
+      setNotification({ isOpen: true, title: t('editor.configReminder'), message: t('editor.pleaseConfigLLM'), type: 'warning' });
       setIsConfigManagerOpen(true);
       return;
     }
@@ -140,17 +142,17 @@ function EditorContent() {
       });
 
       if (!response.ok) {
-        let errorMessage = '生成代码失败';
+        let errorMessage = t('editor.generateFailed');
         try {
           const errorData = await response.json();
           if (errorData.error) errorMessage = errorData.error;
         } catch {
           switch (response.status) {
-            case 400: errorMessage = '请求参数错误，请检查输入内容'; break;
-            case 401: case 403: errorMessage = 'API 密钥无效或权限不足，请检查配置'; break;
-            case 429: errorMessage = '请求过于频繁，请稍后再试'; break;
-            case 500: case 502: case 503: errorMessage = '服务器错误，请稍后重试'; break;
-            default: errorMessage = `请求失败 (${response.status})`;
+            case 400: errorMessage = t('editor.requestError'); break;
+            case 401: case 403: errorMessage = t('editor.apiKeyError'); break;
+            case 429: errorMessage = t('editor.rateLimit'); break;
+            case 500: case 502: case 503: errorMessage = t('editor.serverError'); break;
+            default: errorMessage = `${t('editor.requestFailed')} (${response.status})`;
           }
         }
         throw new Error(errorMessage);
@@ -196,7 +198,7 @@ function EditorContent() {
               }
             } catch (e) {
               if ((e as Error).message && !(e as Error).message.includes('Unexpected')) {
-                setApiError('数据流解析错误：' + (e as Error).message);
+                setApiError(t('editor.streamParseError') + (e as Error).message);
               }
             }
           }
@@ -229,7 +231,7 @@ function EditorContent() {
       }
     } catch (error) {
       if ((error as Error).message === 'Failed to fetch' || (error as Error).name === 'TypeError') {
-        setApiError('网络连接失败，请检查网络连接');
+        setApiError(t('editor.networkError'));
       } else {
         setApiError((error as Error).message);
       }
@@ -328,7 +330,7 @@ function EditorContent() {
   }, [conversationId, handleNewConversation]);
 
   const handleApplyHistory = (history: HistoryItem) => {
-    const userInputText = typeof history.userInput === 'object' ? ((history.userInput as { text?: string }).text || '图片上传生成') : history.userInput;
+    const userInputText = typeof history.userInput === 'object' ? ((history.userInput as { text?: string }).text || t('editor.imageUploadGenerated')) : history.userInput;
     setCurrentInput(userInputText);
     setCurrentChartType(history.chartType);
     if (history.format && ['excalidraw', 'mermaid', 'drawio'].includes(history.format)) {
@@ -348,10 +350,10 @@ function EditorContent() {
   const handleAIAction = (actionId: AIActionId) => {
     switch (actionId) {
       case 'optimize': handleOptimizeCode(); break;
-      case 'layout': setNotification({ isOpen: true, title: '自动布局', message: '布局优化中...', type: 'info' }); break;
-      case 'beautify': setNotification({ isOpen: true, title: '美化图表', message: '正在美化...', type: 'info' }); break;
+      case 'layout': setNotification({ isOpen: true, title: t('editor.layoutOptimize'), message: t('editor.layoutOptimizing'), type: 'info' }); break;
+      case 'beautify': setNotification({ isOpen: true, title: t('editor.beautifyChart'), message: t('editor.beautifying'), type: 'info' }); break;
       case 'explain': break;
-      case 'generate': setNotification({ isOpen: true, title: '生成节点', message: '请描述要添加的节点', type: 'info' }); break;
+      case 'generate': setNotification({ isOpen: true, title: t('editor.generateNode'), message: t('editor.describeNode'), type: 'info' }); break;
     }
   };
 
@@ -432,6 +434,7 @@ function EditorContent() {
 }
 
 export default function EditorPage() {
+  const { t } = useLocale();
   return (
     <Suspense fallback={
       <div className="h-full flex items-center justify-center bg-[var(--bg)] noise-overlay">
@@ -444,7 +447,7 @@ export default function EditorPage() {
               <AppIcon size={40} />
             </div>
           </div>
-          <p className="text-sm text-[var(--muted)] font-medium">加载编辑器...</p>
+          <p className="text-sm text-[var(--muted)] font-medium">{t('editor.loading')}</p>
         </div>
       </div>
     }>

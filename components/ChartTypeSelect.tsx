@@ -1,6 +1,7 @@
 'use client';
 
-import { CHART_TYPES } from '@/lib/constants';
+import { getChartTypeLabel } from '@/lib/constants';
+import { useLocale } from '@/locales';
 import Dropdown from './ui/Dropdown';
 
 interface ChartTypeSelectProps {
@@ -10,16 +11,28 @@ interface ChartTypeSelectProps {
   id?: string;
 }
 
-const CHART_TYPE_OPTIONS = Object.entries(CHART_TYPES).map(([value, label]) => ({ value, label }));
-
 export default function ChartTypeSelect({ value, onChange, disabled, id }: ChartTypeSelectProps) {
+  const { t } = useLocale();
+
+  const chartTypeKeys = [
+    'auto', 'flowchart', 'mindmap', 'orgchart', 'sequence', 'class', 'er',
+    'gantt', 'timeline', 'tree', 'network', 'architecture', 'dataflow',
+    'state', 'swimlane', 'concept', 'fishbone', 'swot', 'pyramid',
+    'funnel', 'venn', 'matrix', 'infographic',
+  ];
+
+  const options = chartTypeKeys.map((key) => ({
+    value: key,
+    label: getChartTypeLabel(key, t),
+  }));
+
   return (
     <Dropdown
-      options={CHART_TYPE_OPTIONS}
+      options={options}
       value={value}
       onChange={(v) => onChange?.(v)}
       disabled={disabled}
-      placeholder="选择图表类型"
+      placeholder={t('dropdown.selectChartType')}
       className="px-3 py-2 text-xs"
     />
   );

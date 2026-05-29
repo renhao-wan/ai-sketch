@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useLocale } from '@/locales';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 import type { ExcalidrawElement } from '@/types';
 
@@ -14,6 +15,8 @@ interface DiagramCanvasProps {
 }
 
 export default function DiagramCanvas({ format, data }: DiagramCanvasProps) {
+  const { t } = useLocale();
+
   switch (format) {
     case 'excalidraw':
       return <ExcalidrawCanvas elements={(data as ExcalidrawElement[]) || []} />;
@@ -24,7 +27,7 @@ export default function DiagramCanvas({ format, data }: DiagramCanvasProps) {
     default:
       return (
         <div className="w-full h-full flex items-center justify-center canvas-grid-bg">
-          <p className="text-sm text-[var(--muted)]">不支持的格式: {format}</p>
+          <p className="text-sm text-[var(--muted)]">{t('canvas.unsupportedFormat')} {format}</p>
         </div>
       );
   }

@@ -7,6 +7,7 @@ import ConfirmDialog from './ConfirmDialog';
 import ScrollToTop from './ScrollToTop';
 import { Settings, Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2 } from 'lucide-react';
 import Dropdown from './ui/Dropdown';
+import { useLocale } from '@/locales';
 import type { LLMConfig, ModelInfo, NotificationState, ConfirmDialogState } from '@/types';
 
 interface ConfigManagerProps {
@@ -23,6 +24,7 @@ interface ConfigEditorProps {
 }
 
 export default function ConfigManager({ isOpen, onClose, onConfigSelect }: ConfigManagerProps) {
+  const { t } = useLocale();
   const [configs, setConfigs] = useState<LLMConfig[]>([]);
   const [activeConfigId, setActiveConfigId] = useState<string | null>(null);
   const [editingConfig, setEditingConfig] = useState<Partial<LLMConfig> | null>(null);
@@ -41,7 +43,7 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
       setConfigs(data.configs);
       setActiveConfigId(data.activeConfigId);
     } catch (err) {
-      setError('加载配置失败: ' + (err as Error).message);
+      setError(t('config.loadFailed') + (err as Error).message);
     }
   };
 
@@ -50,24 +52,24 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
 
   const handleDelete = async (configId: string) => {
     setConfirmDialog({
-      isOpen: true, title: '确认删除', message: '确定要删除这个配置吗？此操作不可恢复。',
+      isOpen: true, title: t('config.confirmDelete'), message: t('config.confirmDeleteMsg'),
       onConfirm: async () => {
         try {
           await api.deleteConfig(configId);
           await loadConfigs();
           setError('');
-          setNotification({ isOpen: true, title: '删除成功', message: '配置已成功删除', type: 'success' });
-        } catch (err) { setError('删除配置失败: ' + (err as Error).message); }
+          setNotification({ isOpen: true, title: t('config.deleteSuccess'), message: t('config.deleteSuccessMsg'), type: 'success' });
+        } catch (err) { setError(t('config.deleteFailed') + (err as Error).message); }
       },
     });
   };
 
   const handleClone = async (config: LLMConfig) => {
     try {
-      await api.cloneConfig(config.id!, `${config.name} (副本)`);
+      await api.cloneConfig(config.id!, `${config.name} ${t('config.cloneSuffix')}`);
       await loadConfigs();
       setError('');
-    } catch (err) { setError('克隆配置失败: ' + (err as Error).message); }
+    } catch (err) { setError(t('config.cloneFailed') + (err as Error).message); }
   };
 
   const handleSetActive = async (configId: string) => {
@@ -76,15 +78,15 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
       await loadConfigs();
       onConfigSelect?.(configs.find(c => c.id === configId) || null);
       setError('');
-    } catch (err) { setError('切换配置失败: ' + (err as Error).message); }
+    } catch (err) { setError(t('config.switchFailed') + (err as Error).message); }
   };
 
   const handleTestConnection = async (config: LLMConfig) => {
     setIsLoading(true); setError('');
     try {
       const result = await api.testConnection(config);
-      setNotification({ isOpen: true, title: result.success ? '连接测试成功' : '连接测试失败', message: result.message, type: result.success ? 'success' : 'error' });
-    } catch (err) { setNotification({ isOpen: true, title: '连接测试失败', message: (err as Error).message, type: 'error' }); }
+      setNotification({ isOpen: true, title: result.success ? t('config.testSuccess') : t('config.testFailed'), message: result.message, type: result.success ? 'success' : 'error' });
+    } catch (err) { setNotification({ isOpen: true, title: t('config.testFailed'), message: (err as Error).message, type: 'error' }); }
     finally { setIsLoading(false); }
   };
 
@@ -100,7 +102,7 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
         }
       }
       setEditingConfig(null); setIsCreating(false); await loadConfigs(); setError('');
-    } catch (err) { setError('保存配置失败: ' + (err as Error).message); }
+    } catch (err) { setError(t('config.saveFailed') + (err as Error).message); }
   };
 
   const handleExport = async () => {
@@ -108,7 +110,7 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
       const json = await api.exportConfigs();
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'llm-configs.json'; a.click(); URL.revokeObjectURL(url);
-    } catch (err) { setError('导出配置失败: ' + (err as Error).message); }
+    } catch (err) { setError(t('config.exportFailed') + (err as Error).message); }
   };
 
   const handleImport = () => {
@@ -119,10 +121,10 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
         const text = await file.text();
         const result = await api.importConfigs(text);
         if (result.success) {
-          setNotification({ isOpen: true, title: '导入成功', message: `成功导入 ${result.count} 个配置`, type: 'success' });
+          setNotification({ isOpen: true, title: t('config.importSuccess'), message: `${t('config.imported')} ${result.count} ${t('config.importedCount')}`, type: 'success' });
           await loadConfigs();
-        } else { setError('导入配置失败: ' + result.message); }
-      } catch (err) { setError('导入配置失败: ' + (err as Error).message); }
+        } else { setError(t('config.importFailed') + result.message); }
+      } catch (err) { setError(t('config.importFailed') + (err as Error).message); }
     };
     input.click();
   };
@@ -150,7 +152,7 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
         <div className="flex items-center justify-between px-7 pt-6 pb-4 flex-shrink-0">
           <div className="flex items-center gap-2">
             <Settings size={18} className="text-[var(--muted)]" />
-            <h2 className="text-lg font-semibold tracking-tight text-[var(--fg)]">配置管理</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-[var(--fg)]">{t('config.title')}</h2>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200">
             <X size={18} />
@@ -162,18 +164,18 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
           {error && <div className="px-4 py-3 bg-red-500/10 rounded-xl"><p className="text-sm text-red-700">{error}</p></div>}
           <div className="flex flex-wrap gap-2">
             <button onClick={handleCreateNew} className="flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 font-medium">
-              <Plus size={14} /><span>新建配置</span>
+              <Plus size={14} /><span>{t('config.new')}</span>
             </button>
             <button onClick={handleExport} className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--surface-warm-hover)] rounded-xl transition-all duration-200">
-              <Download size={14} /><span>导出</span>
+              <Download size={14} /><span>{t('common.export')}</span>
             </button>
             <button onClick={handleImport} className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--surface-warm-hover)] rounded-xl transition-all duration-200">
-              <Upload size={14} /><span>导入</span>
+              <Upload size={14} /><span>{t('common.import')}</span>
             </button>
           </div>
           <div className="relative">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)]/50" />
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="搜索配置..." className="w-full pl-10 pr-4 py-2.5 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200" />
+            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={t('config.search')} className="w-full pl-10 pr-4 py-2.5 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200" />
           </div>
         </div>
 
@@ -181,39 +183,39 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
         <ScrollToTop className="px-7 pb-6 scrollbar-thin">
           <div className="space-y-2">
             {filteredConfigs.length === 0 ? (
-              <div className="text-center py-12 text-sm text-[var(--muted)]">{searchQuery ? '没有找到匹配的配置' : '暂无配置，点击"新建配置"创建第一个配置'}</div>
+              <div className="text-center py-12 text-sm text-[var(--muted)]">{searchQuery ? t('config.noMatch') : t('config.noConfig')}</div>
             ) : filteredConfigs.map((config) => (
               <div key={config.id} className={`group p-4 rounded-2xl border transition-all duration-200 ${config.id === activeConfigId ? 'border-[var(--accent-indigo)]/30 bg-[var(--accent-indigo)]/5' : 'border-transparent bg-[var(--surface-warm-hover)] hover:bg-[var(--surface-warm-hover)]'}`}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1.5">
                       <h3 className="text-sm font-semibold text-[var(--fg)]">{config.name}</h3>
-                      {config.id === activeConfigId && <span className="px-2 py-0.5 text-[11px] font-medium bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] rounded-lg">当前使用</span>}
+                      {config.id === activeConfigId && <span className="px-2 py-0.5 text-[11px] font-medium bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] rounded-lg">{t('config.active')}</span>}
                       <span className="px-2 py-0.5 text-[11px] bg-[var(--surface-warm-hover)] text-[var(--muted)] rounded-lg">{config.type}</span>
                     </div>
                     {config.description && <p className="text-xs text-[var(--muted)] mb-1.5">{config.description}</p>}
                     <div className="text-[11px] text-[var(--muted)]/70 space-y-0.5">
                       <div>URL: {config.baseUrl}</div>
-                      <div>模型: {config.model}</div>
+                      <div>{t('config.modelPrefix')} {config.model}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     {config.id !== activeConfigId && (
-                      <button onClick={() => handleSetActive(config.id!)} title="设为当前" className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 transition-all duration-200">
+                      <button onClick={() => handleSetActive(config.id!)} title={t('config.setActive')} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 transition-all duration-200">
                         <Check size={14} />
                       </button>
                     )}
-                    <button onClick={() => handleTestConnection(config)} disabled={isLoading} title="测试连接" className="w-8 h-8 flex items-center justify-center rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200 disabled:opacity-50">
+                    <button onClick={() => handleTestConnection(config)} disabled={isLoading} title={t('config.testConnection')} className="w-8 h-8 flex items-center justify-center rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200 disabled:opacity-50">
                       {isLoading ? <Loader2 size={14} className="animate-spin" /> : <TestTube size={14} />}
                     </button>
-                    <button onClick={() => handleEdit(config)} title="编辑" className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200">
+                    <button onClick={() => handleEdit(config)} title={t('common.edit')} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200">
                       <Edit3 size={14} />
                     </button>
-                    <button onClick={() => handleClone(config)} title="克隆" className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200">
+                    <button onClick={() => handleClone(config)} title={t('config.clone')} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200">
                       <Copy size={14} />
                     </button>
                     {configs.length > 1 && (
-                      <button onClick={() => handleDelete(config.id!)} title="删除" className="w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10 transition-all duration-200">
+                      <button onClick={() => handleDelete(config.id!)} title={t('common.delete')} className="w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10 transition-all duration-200">
                         <Trash2 size={14} />
                       </button>
                     )}
@@ -232,6 +234,7 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
 }
 
 function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProps) {
+  const { t } = useLocale();
   const [formData, setFormData] = useState<Partial<LLMConfig>>({ ...config });
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -241,19 +244,19 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
   useEffect(() => { if (formData.model) { if (models.length > 0) setUseCustomModel(!models.some(m => m.id === formData.model)); else setUseCustomModel(true); } }, [models, formData.model]);
 
   const handleLoadModels = async () => {
-    if (!formData.type || !formData.baseUrl || !formData.apiKey) { setError('请先填写提供商类型、基础 URL 和 API 密钥'); return; }
+    if (!formData.type || !formData.baseUrl || !formData.apiKey) { setError(t('config.fillRequired')); return; }
     setLoading(true); setError('');
     try {
       const params = new URLSearchParams({ type: formData.type, baseUrl: formData.baseUrl, apiKey: formData.apiKey });
       const response = await fetch(`/api/models?${params}`); const data = await response.json();
-      if (!response.ok) throw new Error(data.error || '加载模型失败');
+      if (!response.ok) throw new Error(data.error || t('config.loadModelFailed'));
       setModels(data.models);
     } catch (err) { setError((err as Error).message); setModels([]); }
     finally { setLoading(false); }
   };
 
   const handleSave = () => {
-    if (!formData.name || !formData.type || !formData.baseUrl || !formData.apiKey || !formData.model) { setError('请填写所有必填字段'); return; }
+    if (!formData.name || !formData.type || !formData.baseUrl || !formData.apiKey || !formData.model) { setError(t('config.fillAllRequired')); return; }
     onSave(formData);
   };
 
@@ -265,7 +268,7 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
       <div className="relative bg-[var(--surface-warm)] backdrop-blur-2xl rounded-3xl border border-[var(--border)] shadow-[0_20px_60px_rgba(28,25,23,0.10)] w-full max-w-md max-h-[78vh] flex flex-col animate-slide-up">
         {/* Fixed Header */}
         <div className="flex items-center justify-between px-7 pt-6 pb-4 flex-shrink-0">
-          <h2 className="text-lg font-semibold tracking-tight text-[var(--fg)]">{isCreating ? '新建配置' : '编辑配置'}</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-[var(--fg)]">{isCreating ? t('config.new') : t('config.edit')}</h2>
           <button onClick={onCancel} className="w-8 h-8 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200">
             <X size={18} />
           </button>
@@ -276,15 +279,15 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
           {error && <div className="px-4 py-3 bg-red-500/10 rounded-xl"><p className="text-sm text-red-700">{error}</p></div>}
 
           <div>
-            <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">配置名称 <span className="text-red-500">*</span></label>
-            <input type="text" value={formData.name || ''} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="例如：我的 OpenAI" className={inputClass} />
+            <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.configName')} <span className="text-red-500">*</span></label>
+            <input type="text" value={formData.name || ''} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder={t('config.configNamePlaceholder')} className={inputClass} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">描述</label>
-            <textarea value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="配置描述（可选）" rows={2} className={inputClass} />
+            <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.description')}</label>
+            <textarea value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder={t('config.descriptionPlaceholder')} rows={2} className={inputClass} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">提供商类型 <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.providerType')} <span className="text-red-500">*</span></label>
             <Dropdown
               options={[{ value: 'openai', label: 'OpenAI' }, { value: 'anthropic', label: 'Anthropic' }]}
               value={formData.type || 'openai'}
@@ -292,24 +295,24 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">基础 URL <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.baseUrl')} <span className="text-red-500">*</span></label>
             <input type="text" value={formData.baseUrl || ''} onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })} placeholder={formData.type === 'openai' ? 'https://api.openai.com/v1' : 'https://api.anthropic.com/v1'} className={inputClass} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">API 密钥 <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.apiKey')} <span className="text-red-500">*</span></label>
             <input type="password" value={formData.apiKey || ''} onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })} placeholder="sk-..." className={inputClass} />
           </div>
           <div>
             <button onClick={handleLoadModels} disabled={loading} className="w-full px-4 py-2.5 text-sm text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-xl transition-all duration-200 font-medium disabled:opacity-50">
-              {loading ? '加载模型中...' : '加载可用模型'}
+              {loading ? t('config.loadingModels') : t('config.loadModels')}
             </button>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">模型 <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.model')} <span className="text-red-500">*</span></label>
             {models.length > 0 && (
               <div className="mb-2 flex items-center gap-4">
-                <label className="flex items-center gap-2 cursor-pointer"><input type="radio" checked={!useCustomModel} onChange={() => { setUseCustomModel(false); if (models.length > 0) setFormData({ ...formData, model: models[0].id }); }} /><span className="text-sm text-[var(--fg)]">从列表选择</span></label>
-                <label className="flex items-center gap-2 cursor-pointer"><input type="radio" checked={useCustomModel} onChange={() => { setUseCustomModel(true); setFormData({ ...formData, model: '' }); }} /><span className="text-sm text-[var(--fg)]">手动输入</span></label>
+                <label className="flex items-center gap-2 cursor-pointer"><input type="radio" checked={!useCustomModel} onChange={() => { setUseCustomModel(false); if (models.length > 0) setFormData({ ...formData, model: models[0].id }); }} /><span className="text-sm text-[var(--fg)]">{t('config.selectFromList')}</span></label>
+                <label className="flex items-center gap-2 cursor-pointer"><input type="radio" checked={useCustomModel} onChange={() => { setUseCustomModel(true); setFormData({ ...formData, model: '' }); }} /><span className="text-sm text-[var(--fg)]">{t('config.manualInput')}</span></label>
               </div>
             )}
             {models.length > 0 && !useCustomModel && (
@@ -320,14 +323,14 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
               />
             )}
             {(useCustomModel || models.length === 0) && (
-              <input type="text" value={formData.model || ''} onChange={(e) => setFormData({ ...formData, model: e.target.value })} placeholder="例如：gpt-4、claude-3-opus" className={inputClass} />
+              <input type="text" value={formData.model || ''} onChange={(e) => setFormData({ ...formData, model: e.target.value })} placeholder={t('config.modelPlaceholder')} className={inputClass} />
             )}
           </div>
         </div>
 
         <div className="flex justify-end gap-3 px-7 py-4 border-t border-[var(--surface-warm-hover)] flex-shrink-0">
-          <button onClick={onCancel} className="px-4 py-2 text-sm text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-xl transition-all duration-200">取消</button>
-          <button onClick={handleSave} className="px-5 py-2 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 font-medium">{isCreating ? '创建' : '保存'}</button>
+          <button onClick={onCancel} className="px-4 py-2 text-sm text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-xl transition-all duration-200">{t('common.cancel')}</button>
+          <button onClick={handleSave} className="px-5 py-2 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 font-medium">{isCreating ? t('common.create') : t('common.save')}</button>
         </div>
       </div>
     </div>

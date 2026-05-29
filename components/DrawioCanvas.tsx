@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { useLocale } from '@/locales';
 
 interface DrawioCanvasProps {
   code: string;
@@ -18,6 +19,7 @@ function buildLoadPayload(xml: string) {
 }
 
 export default function DrawioCanvas({ code }: DrawioCanvasProps) {
+  const { t } = useLocale();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeReady, setIframeReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,9 +30,9 @@ export default function DrawioCanvas({ code }: DrawioCanvasProps) {
       iframeRef.current.contentWindow?.postMessage(buildLoadPayload(code), '*');
       setError(null);
     } catch {
-      setError('无法加载图表到 Draw.io 查看器');
+      setError(t('drawio.loadError'));
     }
-  }, [code]);
+  }, [code, t]);
 
   // Send XML whenever code changes AND iframe is ready
   useEffect(() => {
@@ -46,7 +48,7 @@ export default function DrawioCanvas({ code }: DrawioCanvasProps) {
       {error && (
         <div className="absolute top-4 left-4 right-4 z-10">
           <div className="px-4 py-3 rounded-xl bg-red-50/80 border border-red-200/50">
-            <p className="text-xs font-medium text-red-600 mb-1">Draw.io 渲染错误</p>
+            <p className="text-xs font-medium text-red-600 mb-1">{t('drawio.renderError')}</p>
             <p className="text-[11px] text-red-500">{error}</p>
           </div>
         </div>

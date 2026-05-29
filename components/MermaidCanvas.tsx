@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useLocale } from '@/locales';
 
 interface MermaidCanvasProps {
   code: string;
@@ -29,6 +30,7 @@ async function initMermaid() {
 }
 
 export default function MermaidCanvas({ code }: MermaidCanvasProps) {
+  const { t } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const renderIdRef = useRef(0);
@@ -54,7 +56,7 @@ export default function MermaidCanvas({ code }: MermaidCanvasProps) {
         }
       } catch (e) {
         if (currentRenderId !== renderIdRef.current) return;
-        const msg = (e as Error).message || 'Mermaid 渲染失败';
+        const msg = (e as Error).message || t('mermaid.renderFailed');
         setError(msg);
         if (containerRef.current) {
           containerRef.current.innerHTML = '';
@@ -63,14 +65,14 @@ export default function MermaidCanvas({ code }: MermaidCanvasProps) {
     };
 
     renderDiagram();
-  }, [code]);
+  }, [code, t]);
 
   return (
     <div className="w-full h-full overflow-auto canvas-grid-bg flex items-center justify-center">
       {error ? (
         <div className="p-6 max-w-lg">
           <div className="px-4 py-3 rounded-xl bg-red-50/80 border border-red-200/50">
-            <p className="text-xs font-medium text-red-600 mb-1">Mermaid 语法错误</p>
+            <p className="text-xs font-medium text-red-600 mb-1">{t('mermaid.syntaxError')}</p>
             <p className="text-[11px] font-mono text-red-500 break-words whitespace-pre-wrap">{error}</p>
           </div>
         </div>

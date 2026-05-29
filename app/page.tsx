@@ -7,21 +7,17 @@ import { setInitData } from '@/lib/init-data';
 import AIPromptBox from '@/components/AIPromptBox';
 import ConfigManager from '@/components/ConfigManager';
 import HistoryModal from '@/components/HistoryModal';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useLocale } from '@/locales';
+import { timeAgo } from '@/lib/time-ago';
 import { Settings, History, FileText, PenTool } from 'lucide-react';
 import * as api from '@/lib/api-client';
 import { runMigrationIfNeeded } from '@/lib/migration';
 import type { HistoryItem } from '@/types';
 
-function timeAgo(ts: number): string {
-  const diff = Date.now() - ts;
-  if (diff < 60000) return '刚刚';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`;
-  return `${Math.floor(diff / 86400000)} 天前`;
-}
-
 export default function HomePage() {
   const router = useRouter();
+  const { t } = useLocale();
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [recentItems, setRecentItems] = useState<HistoryItem[]>([]);
@@ -54,22 +50,23 @@ export default function HomePage() {
           <button
             onClick={() => router.push('/editor')}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5 hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors duration-150"
-            title="进入编辑器"
+            title={t('home.enterEditor')}
           >
             <PenTool size={13} />
-            <span>编辑器</span>
+            <span>{t('home.editor')}</span>
           </button>
+          <LanguageSwitcher />
           <button
             onClick={() => setIsHistoryOpen(true)}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
-            title="历史记录"
+            title={t('home.history')}
           >
             <History size={15} />
           </button>
           <button
             onClick={() => setIsConfigOpen(true)}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
-            title="设置"
+            title={t('home.settings')}
           >
             <Settings size={15} />
           </button>
@@ -95,14 +92,14 @@ export default function HomePage() {
               </div>
             </div>
             <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-[var(--fg)] leading-[1.1] mb-3">
-              用自然语言
+              {t('home.hero.line1')}
               <br />
               <span className="bg-gradient-to-r from-[var(--accent-indigo)] via-[var(--accent-violet)] to-[var(--accent-cyan)] bg-clip-text text-transparent">
-                设计图表
+                {t('home.hero.line2')}
               </span>
             </h1>
             <p className="text-base text-[var(--muted)] max-w-lg mx-auto leading-relaxed">
-              描述你的想法，AI 即时生成专业图表
+              {t('home.hero.subtitle')}
             </p>
           </div>
 
@@ -113,16 +110,22 @@ export default function HomePage() {
 
           {/* Quick Templates */}
           <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
-            {['微服务架构图', '用户登录流程', 'ER 数据模型', '系统部署图', '思维导图'].map((t) => (
+            {[
+              { key: 'home.template.microservice', label: t('home.template.microservice') },
+              { key: 'home.template.login', label: t('home.template.login') },
+              { key: 'home.template.er', label: t('home.template.er') },
+              { key: 'home.template.deploy', label: t('home.template.deploy') },
+              { key: 'home.template.mindmap', label: t('home.template.mindmap') },
+            ].map((tpl) => (
               <button
-                key={t}
+                key={tpl.key}
                 onClick={() => {
-                  setInitData({ type: 'text', data: t, format: 'excalidraw' });
+                  setInitData({ type: 'text', data: tpl.label, format: 'excalidraw' });
                   router.push('/editor?source=text');
                 }}
                 className="px-4 py-2 text-xs text-[var(--muted)] bg-[var(--bg-glass)] backdrop-blur border border-[var(--border)] rounded-full hover:bg-[var(--card)] hover:text-[var(--fg)] hover:border-[var(--accent-indigo)]/20 transition-all duration-200"
               >
-                {t}
+                {tpl.label}
               </button>
             ))}
           </div>
@@ -130,9 +133,9 @@ export default function HomePage() {
           {/* Recent Items */}
           {recentItems.length > 0 && (
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <span className="text-[11px] text-[var(--muted)]/50 mr-1">最近</span>
+              <span className="text-[11px] text-[var(--muted)]/50 mr-1">{t('home.recent')}</span>
               {recentItems.slice(0, 3).map((item) => {
-                const label = typeof item.userInput === 'object' ? ((item.userInput as { text?: string }).text || '图片生成') : item.userInput;
+                const label = typeof item.userInput === 'object' ? ((item.userInput as { text?: string }).text || t('home.imageGenerated')) : item.userInput;
                 return (
                   <button
                     key={item.id}
@@ -141,7 +144,7 @@ export default function HomePage() {
                   >
                     <FileText size={11} className="text-[var(--accent-indigo)]/50" />
                     <span className="max-w-[120px] truncate">{label}</span>
-                    <span className="text-[var(--muted)]/40">{timeAgo(item.timestamp)}</span>
+                    <span className="text-[var(--muted)]/40">{timeAgo(item.timestamp, t)}</span>
                   </button>
                 );
               })}

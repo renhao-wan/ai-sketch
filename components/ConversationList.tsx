@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { MessageSquare, Trash2, ChevronDown } from 'lucide-react';
 import * as api from '@/lib/api-client';
+import { useLocale } from '@/locales';
+import { timeAgo } from '@/lib/time-ago';
 import type { Conversation } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
@@ -19,19 +21,8 @@ const FORMAT_BADGES: Record<DiagramFormat, { label: string; color: string }> = {
   drawio: { label: 'DX', color: 'bg-orange-500/10 text-orange-600' },
 };
 
-function timeAgo(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp;
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return '刚刚';
-  if (minutes < 60) return `${minutes} 分钟前`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} 小时前`;
-  const days = Math.floor(hours / 24);
-  return `${days} 天前`;
-}
-
 export default function ConversationList({ currentId, onSelect, onDelete, onNew }: ConversationListProps) {
+  const { t } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
 
@@ -64,7 +55,7 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
         className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg transition-all duration-200"
       >
         <MessageSquare size={13} />
-        <span className="max-w-[120px] truncate">{current?.title || '对话列表'}</span>
+        <span className="max-w-[120px] truncate">{current?.title || t('conversation.list')}</span>
         <ChevronDown size={12} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -78,13 +69,13 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
               className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 transition-colors border-b border-black/5"
             >
               <MessageSquare size={14} />
-              新建对话
+              {t('conversation.new')}
             </button>
 
             {/* List */}
             <div className="max-h-64 overflow-y-auto scrollbar-thin">
               {conversations.length === 0 ? (
-                <div className="px-4 py-6 text-center text-sm text-[var(--muted)]">暂无对话</div>
+                <div className="px-4 py-6 text-center text-sm text-[var(--muted)]">{t('conversation.empty')}</div>
               ) : (
                 conversations.map((conv) => {
                   const badge = FORMAT_BADGES[conv.format] || FORMAT_BADGES.excalidraw;
@@ -104,8 +95,8 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
                           <span className="text-sm text-[var(--fg)] truncate">{conv.title}</span>
                         </div>
                         <div className="flex items-center gap-2 text-[11px] text-[var(--muted)]">
-                          <span>{conv.messageCount} 条消息</span>
-                          <span>{timeAgo(conv.updatedAt)}</span>
+                          <span>{conv.messageCount} {t('conversation.messages')}</span>
+                          <span>{timeAgo(conv.updatedAt, t)}</span>
                         </div>
                       </div>
                       <button

@@ -8,6 +8,7 @@ import {
   getImagePreviewUrl,
 } from '@/lib/image-utils';
 import ChartTypeSelect from './ChartTypeSelect';
+import { useLocale } from '@/locales';
 import type { ImageObject } from '@/types';
 
 interface ImageUploadProps {
@@ -19,6 +20,7 @@ interface ImageUploadProps {
 }
 
 export default function ImageUpload({ onImageSelect, isGenerating, chartType, onChartTypeChange, onImageGenerate }: ImageUploadProps) {
+  const { t } = useLocale();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<'' | 'uploading' | 'success' | 'error'>('');
@@ -91,8 +93,8 @@ export default function ImageUpload({ onImageSelect, isGenerating, chartType, on
             <div className="w-12 h-12 rounded-2xl bg-[var(--surface-warm-hover)] flex items-center justify-center mx-auto mb-3">
               <ImageIcon size={24} className="text-[var(--muted)]" />
             </div>
-            <p className="text-sm text-[var(--fg)] mb-1">上传图片进行识别</p>
-            <p className="text-xs text-[var(--muted)]">支持 JPG、PNG、WebP、GIF，最大 5MB</p>
+            <p className="text-sm text-[var(--fg)] mb-1">{t('imageUpload.uploadText')}</p>
+            <p className="text-xs text-[var(--muted)]">{t('imageUpload.formats')}</p>
           </div>
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileInputChange} className="hidden" disabled={isGenerating || uploadStatus === 'uploading'} />
           <button
@@ -100,15 +102,15 @@ export default function ImageUpload({ onImageSelect, isGenerating, chartType, on
             disabled={isGenerating || uploadStatus === 'uploading'}
             className="h-9 px-5 flex items-center gap-2 bg-[var(--primary)] text-white text-sm font-medium rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
           >
-            {uploadStatus === 'uploading' ? <><Loader2 size={14} className="animate-spin" /><span>处理中...</span></> : isGenerating ? <><Loader2 size={14} className="animate-spin" /><span>生成中...</span></> : <><Upload size={14} /><span>选择图片</span></>}
+            {uploadStatus === 'uploading' ? <><Loader2 size={14} className="animate-spin" /><span>{t('imageUpload.processing')}</span></> : isGenerating ? <><Loader2 size={14} className="animate-spin" /><span>{t('imageUpload.generating')}</span></> : <><Upload size={14} /><span>{t('imageUpload.selectImage')}</span></>}
           </button>
-          {isDragging && <p className="mt-3 text-sm text-[var(--accent-indigo)]">松开鼠标上传图片</p>}
+          {isDragging && <p className="mt-3 text-sm text-[var(--accent-indigo)]">{t('imageUpload.dropImage')}</p>}
         </div>
       ) : (
         <div className="flex-1 flex flex-col">
           <div className="flex-1 flex justify-center relative bg-[var(--surface-warm-hover)] rounded-2xl overflow-hidden border border-[var(--surface-warm-hover)]">
-            {imagePreview && <img src={imagePreview} alt="预览" className="w-full object-contain" />}
-            <button onClick={handleClearImage} disabled={isGenerating || uploadStatus === 'uploading'} className="absolute top-3 right-3 w-8 h-8 bg-[var(--surface-warm)] backdrop-blur rounded-xl flex items-center justify-center hover:bg-[var(--card)] transition-all duration-200 disabled:opacity-50" title="删除图片">
+            {imagePreview && <img src={imagePreview} alt={t('imageUpload.preview')} className="w-full object-contain" />}
+            <button onClick={handleClearImage} disabled={isGenerating || uploadStatus === 'uploading'} className="absolute top-3 right-3 w-8 h-8 bg-[var(--surface-warm)] backdrop-blur rounded-xl flex items-center justify-center hover:bg-[var(--card)] transition-all duration-200 disabled:opacity-50" title={t('imageUpload.deleteImage')}>
               <X size={14} className="text-[var(--fg)]" />
             </button>
             {uploadStatus === 'success' && (
@@ -130,12 +132,12 @@ export default function ImageUpload({ onImageSelect, isGenerating, chartType, on
           {errorMessage && <div className="mt-2 px-3 py-2 bg-red-50/80 rounded-xl"><p className="text-xs text-red-600">{errorMessage}</p></div>}
           {uploadStatus === 'success' && !isGenerating && (
             <button onClick={onImageGenerate} className="w-full mt-2 h-10 flex items-center justify-center gap-2 bg-[var(--primary)] text-white rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 text-sm font-medium">
-              <Upload size={16} /><span>开始生成</span>
+              <Upload size={16} /><span>{t('imageUpload.startGenerate')}</span>
             </button>
           )}
           {isGenerating && uploadStatus === 'success' && (
             <div className="mt-2 flex items-center justify-center gap-2 text-sm text-[var(--accent-indigo)]">
-              <Loader2 size={14} className="animate-spin" /><span>正在识别...</span>
+              <Loader2 size={14} className="animate-spin" /><span>{t('imageUpload.recognizing')}</span>
             </div>
           )}
         </div>

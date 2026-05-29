@@ -2,6 +2,7 @@
 
 import Modal from './ui/Modal';
 import Button from './ui/Button';
+import { useLocale } from '@/locales';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -18,12 +19,13 @@ export default function ConfirmDialog({
   isOpen,
   onClose,
   onConfirm,
-  title = '确认操作',
+  title,
   message,
-  confirmText = '确认',
-  cancelText = '取消',
+  confirmText,
+  cancelText,
   type = 'warning',
 }: ConfirmDialogProps) {
+  const { t } = useLocale();
   const variantMap: Record<string, 'primary' | 'danger'> = {
     warning: 'primary',
     danger: 'danger',
@@ -31,14 +33,14 @@ export default function ConfirmDialog({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-md">
+    <Modal isOpen={isOpen} onClose={onClose} title={title ?? t('confirm.title')} maxWidth="max-w-md">
       <p className="text-sm text-[var(--muted)] mb-6">{message}</p>
       <div className="flex justify-end gap-3">
         <Button variant="ghost" onClick={onClose}>
-          {cancelText}
+          {cancelText ?? t('confirm.cancel')}
         </Button>
         <Button variant={variantMap[type] || 'primary'} onClick={onConfirm}>
-          {confirmText}
+          {confirmText ?? t('confirm.confirm')}
         </Button>
       </div>
     </Modal>

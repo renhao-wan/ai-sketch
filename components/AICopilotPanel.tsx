@@ -24,6 +24,7 @@ import { imageStrategy, fileStrategy } from '@/lib/input-strategies/registry';
 import ImageUpload from './ImageUpload';
 import MessageBubble from './MessageBubble';
 import ConversationList from './ConversationList';
+import { useLocale } from '@/locales';
 import type { SourceType, ImageObject, ConversationMessage } from '@/types';
 
 interface AICopilotPanelProps {
@@ -66,6 +67,7 @@ export default function AICopilotPanel({
   onPanelWidthChange,
 }: AICopilotPanelProps) {
   const router = useRouter();
+  const { t } = useLocale();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [prompt, setPrompt] = useState(currentInput || '');
   const [chartType, setChartType] = useState(currentChartType || 'auto');
@@ -216,18 +218,18 @@ export default function AICopilotPanel({
         <button
           onClick={() => setIsCollapsed(false)}
           className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-          title="展开面板"
+          title={t('copilot.expandPanel')}
         >
           <ChevronRight size={18} />
         </button>
         <div className="flex-1 flex flex-col items-center justify-center gap-3 mt-8">
-          <button className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200" title="AI 对话">
+          <button className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200" title={t('copilot.aiChat')}>
             <Sparkles size={18} />
           </button>
-          <button onClick={onOpenHistory} className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200" title="历史记录">
+          <button onClick={onOpenHistory} className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200" title={t('copilot.history')}>
             <History size={18} />
           </button>
-          <button onClick={onExport} className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200" title="导出">
+          <button onClick={onExport} className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200" title={t('copilot.export')}>
             <Download size={18} />
           </button>
         </div>
@@ -255,7 +257,7 @@ export default function AICopilotPanel({
           <button
             onClick={() => router.push('/')}
             className="hover:opacity-80 transition-opacity duration-200 relative"
-            title="返回首页"
+            title={t('copilot.backHome')}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-indigo)] to-[var(--accent-violet)] rounded-lg blur-md opacity-20" />
             <div className="relative"><AppIcon size={22} /></div>
@@ -271,7 +273,7 @@ export default function AICopilotPanel({
           <button
             onClick={onNewConversation}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-            title="新建对话"
+            title={t('copilot.newConversation')}
           >
             <Plus size={16} />
           </button>
@@ -316,8 +318,8 @@ export default function AICopilotPanel({
               <Sparkles size={20} className="text-[var(--accent-indigo)]" />
             </div>
           </div>
-          <p className="text-sm font-semibold text-[var(--fg)] mb-1 tracking-tight">AI 图表助手</p>
-          <p className="text-xs text-[var(--muted)] text-center mb-6 leading-relaxed">描述你想要创建的图表</p>
+          <p className="text-sm font-semibold text-[var(--fg)] mb-1 tracking-tight">{t('copilot.aiChartAssistant')}</p>
+          <p className="text-xs text-[var(--muted)] text-center mb-6 leading-relaxed">{t('copilot.describeChart')}</p>
 
           {/* Chart Type */}
           <div className="w-full">
@@ -354,7 +356,7 @@ export default function AICopilotPanel({
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={hasMessages ? '继续描述图表...' : '描述你想要创建的图表...'}
+                placeholder={hasMessages ? t('copilot.continueDescribe') : t('copilot.describeChart') + '...'}
                 className="w-full resize-none bg-transparent text-sm leading-relaxed text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none min-h-[60px] max-h-[160px]"
               />
 
@@ -365,7 +367,7 @@ export default function AICopilotPanel({
                   {fileStatus === 'success' && <CheckCircle size={13} className="text-emerald-500 flex-shrink-0" />}
                   {fileStatus === 'error' && <AlertCircle size={13} className="text-red-500 flex-shrink-0" />}
                   <span className="text-xs text-[var(--fg)] truncate flex-1">{selectedFile.name}</span>
-                  {fileStatus === 'success' && <span className="text-[10px] text-[var(--muted)]/60 flex-shrink-0">{fileContent.length} 字符</span>}
+                  {fileStatus === 'success' && <span className="text-[10px] text-[var(--muted)]/60 flex-shrink-0">{fileContent.length} {t('copilot.characters')}</span>}
                   {fileStatus === 'error' && <span className="text-[10px] text-red-500 flex-shrink-0">{fileError}</span>}
                   <button onClick={handleClearFile} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
                     <X size={13} />
@@ -389,7 +391,7 @@ export default function AICopilotPanel({
             onClick={() => fileInputRef.current?.click()}
             disabled={isGenerating}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200 disabled:opacity-40"
-            title="上传文件"
+            title={t('copilot.uploadFile')}
           >
             <Paperclip size={15} />
           </button>
@@ -399,7 +401,7 @@ export default function AICopilotPanel({
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 disabled:opacity-40 ${
               showImageUpload ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
             }`}
-            title="上传图片"
+            title={t('copilot.uploadImage')}
           >
             <Image size={15} />
           </button>
@@ -410,9 +412,9 @@ export default function AICopilotPanel({
             className="h-8 px-4 flex items-center gap-1.5 bg-[var(--primary)] text-white text-xs font-medium rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-[0_2px_10px_rgba(28,25,23,0.08)]"
           >
             {isGenerating ? (
-              <><Loader2 size={13} className="animate-spin" /><span>生成中</span></>
+              <><Loader2 size={13} className="animate-spin" /><span>{t('copilot.generating')}</span></>
             ) : (
-              <><Send size={13} /><span>{hasMessages ? '发送' : '生成'}</span></>
+              <><Send size={13} /><span>{hasMessages ? t('copilot.send') : t('copilot.generate')}</span></>
             )}
           </button>
         </div>
@@ -422,14 +424,14 @@ export default function AICopilotPanel({
       {/* Bottom Actions */}
       <div className="border-t border-[var(--surface-warm-hover)] px-4 py-3 flex items-center gap-1 flex-shrink-0">
         <button onClick={onOpenHistory} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg transition-all duration-200">
-          <History size={13} /><span>历史记录</span>
+          <History size={13} /><span>{t('copilot.history')}</span>
         </button>
         <button onClick={onOpenConfig} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg transition-all duration-200">
-          <Wand2 size={13} /><span>配置</span>
+          <Wand2 size={13} /><span>{t('copilot.config')}</span>
         </button>
         <div className="flex-1" />
         <button onClick={onExport} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg transition-all duration-200">
-          <Download size={13} /><span>导出</span>
+          <Download size={13} /><span>{t('copilot.export')}</span>
         </button>
       </div>
     </div>

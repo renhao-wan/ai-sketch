@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { imageStrategy, orchestrator } from '@/lib/input-strategies/registry';
 import { setInitData } from '@/lib/init-data';
+import { useLocale } from '@/locales';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 import type { MessagePayload } from '@/types/input-strategy';
 
@@ -25,6 +26,7 @@ const FORMATS = [
 
 export default function AIPromptBox() {
   const router = useRouter();
+  const { t } = useLocale();
   const [prompt, setPrompt] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const dragCounterRef = useRef(0);
@@ -177,8 +179,8 @@ export default function AIPromptBox() {
     const imageCount = attachments.filter(f => f.type.startsWith('image/')).length;
     const fileCount = attachments.length - imageCount;
     const parts: string[] = [];
-    if (imageCount > 0) parts.push(`${imageCount} 张图片`);
-    if (fileCount > 0) parts.push(`${fileCount} 个文件`);
+    if (imageCount > 0) parts.push(`${imageCount} ${t('prompt.imageCount')}`);
+    if (fileCount > 0) parts.push(`${fileCount} ${t('prompt.fileCount')}`);
 
     return (
       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)]">
@@ -208,7 +210,7 @@ export default function AIPromptBox() {
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--accent-indigo)]/5 border-2 border-dashed border-[var(--accent-indigo)]/30 rounded-3xl pointer-events-none">
             <div className="flex flex-col items-center gap-2">
               <Upload size={24} className="text-[var(--accent-indigo)]" />
-              <span className="text-sm font-medium text-[var(--accent-indigo)]">拖放文件或图片到此处</span>
+              <span className="text-sm font-medium text-[var(--accent-indigo)]">{t('prompt.dragDrop')}</span>
             </div>
           </div>
         )}
@@ -220,7 +222,7 @@ export default function AIPromptBox() {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={hasAttachment ? '补充指令（可选）...' : '描述你想要创建的图表...'}
+            placeholder={hasAttachment ? t('prompt.placeholderAttachment') : t('prompt.placeholder')}
             rows={1}
             className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-[var(--fg)] placeholder:text-[var(--muted)]/60 focus:outline-none"
             style={{ minHeight: '48px' }}
@@ -251,7 +253,7 @@ export default function AIPromptBox() {
 
           {/* Right - Actions */}
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-[var(--muted)]/40">附件</span>
+            <span className="text-[10px] text-[var(--muted)]/40">{t('prompt.attachments')}</span>
             <input ref={fileInputRef} type="file" accept=".md,.txt" multiple className="hidden" onChange={handleFileChange} />
             <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
             <button
@@ -259,14 +261,14 @@ export default function AIPromptBox() {
               className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 ${
                 hasAttachment ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
               }`}
-              title="上传文件"
+              title={t('prompt.uploadFile')}
             >
               <Paperclip size={18} />
             </button>
             <button
               onClick={() => imageInputRef.current?.click()}
               className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-              title="上传图片"
+              title={t('prompt.uploadImage')}
             >
               <Image size={18} />
             </button>
@@ -276,9 +278,9 @@ export default function AIPromptBox() {
               className="h-9 px-5 flex items-center gap-2 bg-[var(--primary)] text-white text-sm font-medium rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
             >
               {isGenerating ? (
-                <><Loader2 size={15} className="animate-spin" /><span>生成中...</span></>
+                <><Loader2 size={15} className="animate-spin" /><span>{t('prompt.generating')}</span></>
               ) : (
-                <><Sparkles size={15} /><span>生成</span></>
+                <><Sparkles size={15} /><span>{t('prompt.generate')}</span></>
               )}
             </button>
           </div>
