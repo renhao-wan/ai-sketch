@@ -76,6 +76,7 @@ export const en: TranslationDict = {
   'copilot.uploadFile': 'Upload File',
   'copilot.uploadImage': 'Upload Image',
   'copilot.generating': 'Generating',
+  'copilot.stop': 'Stop',
   'copilot.send': 'Send',
   'copilot.generate': 'Generate',
   'copilot.config': 'Config',

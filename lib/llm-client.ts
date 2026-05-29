@@ -14,6 +14,121 @@ interface AnthropicMessage {
   content: Array<{ type: string; text?: string; source?: { type: string; media_type: string; data: string } }>;
 }
 
+const MAX_PARSE_ERRORS = 10;
+
+interface SSEProcessorOptions {
+  body: ReadableStream<Uint8Array>;
+  onChunk?: (chunk: string) => void;
+  signal?: AbortSignal;
+  extractContent: (json: Record<string, unknown>) => string | undefined;
+  checkStop?: (json: Record<string, unknown>) => string | undefined;
+  skipLine?: (trimmed: string) => boolean;
+}
+
+/**
+ * Unified SSE stream processor for both OpenAI and Anthropic
+ */
+async function processSSEStream(options: SSEProcessorOptions): Promise<string> {
+  const { body, onChunk, signal, extractContent, checkStop, skipLine } = options;
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let fullText = '';
+  let buffer = '';
+  let consecutiveParseErrors = 0;
+
+  try {
+    while (true) {
+      if (signal?.aborted) {
+        reader.releaseLock();
+        throw new DOMException('The operation was aborted.', 'AbortError');
+      }
+
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        if (skipLine?.(trimmed)) continue;
+
+        if (trimmed.startsWith('data: ')) {
+          try {
+            const json = JSON.parse(trimmed.slice(6)) as Record<string, unknown>;
+            consecutiveParseErrors = 0;
+
+            const truncationMsg = checkStop?.(json);
+            if (truncationMsg) {
+              throw new Error(truncationMsg);
+            }
+
+            const content = extractContent(json);
+            if (content) {
+              fullText += content;
+              if (onChunk) onChunk(content);
+            }
+          } catch (e) {
+            if (e instanceof SyntaxError) {
+              consecutiveParseErrors++;
+              if (consecutiveParseErrors >= MAX_PARSE_ERRORS) {
+                throw new Error('Too many consecutive SSE parse failures — stream may be corrupted');
+              }
+            } else {
+              throw e;
+            }
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  return fullText;
+}
+
+/**
+ * Fetch with automatic retry on 429 rate limiting
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 3,
+): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, options);
+
+    if (response.status !== 429) {
+      return response;
+    }
+
+    const retryAfter = response.headers.get('Retry-After');
+    let delayMs: number;
+
+    if (retryAfter) {
+      const parsed = parseInt(retryAfter, 10);
+      delayMs = isNaN(parsed) ? 1000 * (attempt + 1) : parsed * 1000;
+    } else {
+      delayMs = 1000 * Math.pow(2, attempt);
+    }
+
+    await response.text().catch(() => {});
+
+    if (attempt < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+
+    lastError = new Error(`Rate limited (429). Retrying... (attempt ${attempt + 1}/${maxRetries + 1})`);
+  }
+
+  throw lastError || new Error('Rate limited after all retries');
+}
+
 /**
  * Call LLM API with streaming support
  */
@@ -21,13 +136,14 @@ export async function callLLM(
   config: LLMConfig,
   messages: LLMMessage[],
   onChunk?: (chunk: string) => void,
+  signal?: AbortSignal,
 ): Promise<string> {
   const { type, baseUrl, apiKey, model } = config;
 
   if (type === 'openai') {
-    return callOpenAI(baseUrl, apiKey, model, messages, onChunk);
+    return callOpenAI(baseUrl, apiKey, model, messages, onChunk, signal);
   } else if (type === 'anthropic') {
-    return callAnthropic(baseUrl, apiKey, model, messages, onChunk);
+    return callAnthropic(baseUrl, apiKey, model, messages, onChunk, signal);
   } else {
     throw new Error(`Unsupported provider type: ${type}`);
   }
@@ -42,12 +158,13 @@ async function callOpenAI(
   model: string,
   messages: LLMMessage[],
   onChunk?: (chunk: string) => void,
+  signal?: AbortSignal,
 ): Promise<string> {
   const url = `${baseUrl}/chat/completions`;
 
   const processedMessages = messages.map(processMessageForOpenAI);
 
-  const response = await fetch(url, {
+  const response = await fetchWithRetry(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -57,7 +174,9 @@ async function callOpenAI(
       model,
       messages: processedMessages,
       stream: true,
+      max_tokens: 16384,
     }),
+    signal,
   });
 
   if (!response.ok) {
@@ -65,53 +184,29 @@ async function callOpenAI(
     throw new Error(`OpenAI API error: ${response.status} ${error}`);
   }
 
-  return processOpenAIStream(response.body!, onChunk);
-}
-
-/**
- * Process OpenAI streaming response
- */
-async function processOpenAIStream(
-  body: ReadableStream<Uint8Array>,
-  onChunk?: (chunk: string) => void,
-): Promise<string> {
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-  let fullText = '';
-  let buffer = '';
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed === 'data: [DONE]') continue;
-
-        if (trimmed.startsWith('data: ')) {
-          try {
-            const json = JSON.parse(trimmed.slice(6));
-            const content = json.choices?.[0]?.delta?.content;
-            if (content) {
-              fullText += content;
-              if (onChunk) onChunk(content);
-            }
-          } catch (e) {
-            console.error('Failed to parse SSE:', e);
-          }
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock();
+  if (!response.body) {
+    throw new Error('Response body is null — stream not available');
   }
 
-  return fullText;
+  return processSSEStream({
+    body: response.body,
+    onChunk,
+    signal,
+    extractContent: (json) => {
+      const choices = json.choices as Array<Record<string, unknown>> | undefined;
+      const delta = choices?.[0]?.delta as Record<string, unknown> | undefined;
+      return delta?.content as string | undefined;
+    },
+    checkStop: (json) => {
+      const choices = json.choices as Array<Record<string, unknown>> | undefined;
+      const finishReason = choices?.[0]?.finish_reason;
+      if (finishReason === 'length') {
+        return 'TRUNCATED: Output was truncated due to max_tokens limit';
+      }
+      return undefined;
+    },
+    skipLine: (trimmed) => trimmed === 'data: [DONE]',
+  });
 }
 
 /**
@@ -123,6 +218,7 @@ async function callAnthropic(
   model: string,
   messages: LLMMessage[],
   onChunk?: (chunk: string) => void,
+  signal?: AbortSignal,
 ): Promise<string> {
   const url = `${baseUrl}/messages`;
 
@@ -130,7 +226,7 @@ async function callAnthropic(
   const chatMessages = messages.filter(m => m.role !== 'system');
   const processedMessages = chatMessages.map(processMessageForAnthropic);
 
-  const response = await fetch(url, {
+  const response = await fetchWithRetry(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -144,6 +240,7 @@ async function callAnthropic(
       stream: true,
       temperature: 1,
     }),
+    signal,
   });
 
   if (!response.ok) {
@@ -151,54 +248,31 @@ async function callAnthropic(
     throw new Error(`Anthropic API error: ${response.status} ${error}`);
   }
 
-  return processAnthropicStream(response.body!, onChunk);
-}
-
-/**
- * Process Anthropic streaming response
- */
-async function processAnthropicStream(
-  body: ReadableStream<Uint8Array>,
-  onChunk?: (chunk: string) => void,
-): Promise<string> {
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-  let fullText = '';
-  let buffer = '';
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || !trimmed.startsWith('data: ')) continue;
-
-        try {
-          const json = JSON.parse(trimmed.slice(6));
-
-          if (json.type === 'content_block_delta') {
-            const content = json.delta?.text;
-            if (content) {
-              fullText += content;
-              if (onChunk) onChunk(content);
-            }
-          }
-        } catch (e) {
-          console.error('Failed to parse SSE:', e);
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock();
+  if (!response.body) {
+    throw new Error('Response body is null — stream not available');
   }
 
-  return fullText;
+  return processSSEStream({
+    body: response.body,
+    onChunk,
+    signal,
+    extractContent: (json) => {
+      if (json.type === 'content_block_delta') {
+        const delta = json.delta as Record<string, unknown> | undefined;
+        return delta?.text as string | undefined;
+      }
+      return undefined;
+    },
+    checkStop: (json) => {
+      if (json.type === 'message_delta') {
+        const delta = json.delta as Record<string, unknown> | undefined;
+        if (delta?.stop_reason === 'max_tokens') {
+          return 'TRUNCATED: Output was truncated due to max_tokens limit';
+        }
+      }
+      return undefined;
+    },
+  });
 }
 
 /**

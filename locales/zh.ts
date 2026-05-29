@@ -74,6 +74,7 @@ export const zh = {
   'copilot.uploadFile': '上传文件',
   'copilot.uploadImage': '上传图片',
   'copilot.generating': '生成中',
+  'copilot.stop': '停止',
   'copilot.send': '发送',
   'copilot.generate': '生成',
   'copilot.config': '配置',

@@ -128,6 +128,14 @@ export async function POST(request: Request) {
     const encoder = new TextEncoder();
     let accumulatedCode = '';
 
+    // Combine request signal with a 5-minute timeout
+    const timeoutMs = 5 * 60 * 1000;
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
+    const combinedController = new AbortController();
+    request.signal?.addEventListener('abort', () => combinedController.abort());
+    timeoutController.signal.addEventListener('abort', () => combinedController.abort());
+
     const stream = new ReadableStream({
       async start(controller) {
         try {
@@ -139,7 +147,7 @@ export async function POST(request: Request) {
             accumulatedCode += chunk;
             const data = `data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`;
             controller.enqueue(encoder.encode(data));
-          });
+          }, combinedController.signal);
 
           // Save assistant message after stream completes
           const processedCode = strategy.postProcess(accumulatedCode);
@@ -155,9 +163,28 @@ export async function POST(request: Request) {
           controller.close();
         } catch (error) {
           console.error('Error in stream:', error);
-          const errorData = `data: ${JSON.stringify({ type: 'error', error: (error as Error).message })}\n\n`;
+
+          const isAbort = error instanceof DOMException && error.name === 'AbortError';
+          const errorMessage = isAbort ? 'Generation cancelled' : (error as Error).message;
+
+          const errorData = `data: ${JSON.stringify({ type: 'error', error: errorMessage })}\n\n`;
           controller.enqueue(encoder.encode(errorData));
+
+          // Save failure marker so conversation state stays consistent
+          try {
+            await conversationManager.addMessage({
+              conversationId: activeConversationId!,
+              role: 'assistant',
+              content: `[Generation failed: ${errorMessage}]`,
+              sourceType: 'text',
+            });
+          } catch {
+            // Ignore secondary failure
+          }
+
           controller.close();
+        } finally {
+          clearTimeout(timeoutId);
         }
       },
     });

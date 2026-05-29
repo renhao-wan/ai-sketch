@@ -13,6 +13,7 @@ import DiagramCanvas from '@/components/DiagramCanvas';
 import * as api from '@/lib/api-client';
 import { isConfigValid } from '@/lib/config-validator';
 import { getStrategy } from '@/lib/strategies/registry';
+import { stripCodeFences } from '@/lib/json-repair';
 import { consumeInitData } from '@/lib/init-data';
 import { runMigrationIfNeeded } from '@/lib/migration';
 import { useLocale } from '@/locales';
@@ -101,14 +102,46 @@ function EditorContent() {
   }, []);
 
   const pendingInitRef = useRef<import('@/lib/init-data').InitData | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const strategy = getStrategy(format);
 
+  const handleCancelGeneration = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setIsGenerating(false);
+    setIsStreaming(false);
+  }, []);
+
+  // Abort in-flight stream on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
+  // Visibility awareness during streaming
+  useEffect(() => {
+    if (!isStreaming) return;
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        console.debug('[stream] Tab hidden during active stream');
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isStreaming]);
+
   const handleSendMessage = useCallback(async (userMessage: string | { text?: string; images?: unknown[] }, chartType: string = 'auto', sourceType: string = 'text') => {
+    if (isGenerating) return;
+
     if (!isConfigValid(config)) {
       setNotification({ isOpen: true, title: t('editor.configReminder'), message: t('editor.pleaseConfigLLM'), type: 'warning' });
       setIsConfigManagerOpen(true);
       return;
     }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     const userContent = typeof userMessage === 'string' ? userMessage : (userMessage.text || '');
 
@@ -137,6 +170,7 @@ function EditorContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ configId: config!.id, userInput: userMessage, chartType, format, conversationId }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -156,13 +190,22 @@ function EditorContent() {
         throw new Error(errorMessage);
       }
 
-      const reader = response.body!.getReader();
+      if (!response.body) {
+        throw new Error('Response body is null');
+      }
+
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let accumulatedCode = '';
       let buffer = '';
       let activeConvId = conversationId;
 
       while (true) {
+        if (controller.signal.aborted) {
+          reader.releaseLock();
+          break;
+        }
+
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
@@ -178,24 +221,22 @@ function EditorContent() {
               if (data.type === 'meta' && data.conversationId) {
                 activeConvId = data.conversationId;
                 setConversationId(data.conversationId);
-                // Update the optimistic user message with the real conversationId
                 setMessages(prev => prev.map(m =>
                   m.id === optimisticUserMsg.id ? { ...m, conversationId: data.conversationId } : m
                 ));
               } else if (data.type === 'content' && data.content) {
                 accumulatedCode += data.content;
-                const processedCode = currentStrategy.postProcess(accumulatedCode);
-                setGeneratedCode(processedCode);
+                // Lightweight: just strip code fences during streaming, defer heavy postProcess
+                setGeneratedCode(stripCodeFences(accumulatedCode));
               } else if (data.type === 'error') {
                 throw new Error(data.error);
               } else if (data.content) {
                 // Backward compatibility: old format without type field
                 accumulatedCode += data.content;
-                const processedCode = currentStrategy.postProcess(accumulatedCode);
-                setGeneratedCode(processedCode);
+                setGeneratedCode(stripCodeFences(accumulatedCode));
               }
             } catch (e) {
-              if ((e as Error).message && !(e as Error).message.includes('Unexpected')) {
+              if (!(e instanceof SyntaxError)) {
                 setApiError(t('editor.streamParseError') + (e as Error).message);
               }
             }
@@ -203,6 +244,7 @@ function EditorContent() {
         }
       }
 
+      // Full postProcess + optimize + validate after stream completes
       const processedCode = currentStrategy.postProcess(accumulatedCode);
       tryParseAndApply(processedCode, currentStrategy);
       const optimizedCode = currentStrategy.optimize(processedCode);
@@ -220,18 +262,21 @@ function EditorContent() {
       };
       setMessages(prev => [...prev, assistantMsg]);
     } catch (error) {
-      if ((error as Error).message === 'Failed to fetch' || (error as Error).name === 'TypeError') {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        // User cancelled — no error to show
+        return;
+      }
+      if (error instanceof TypeError || (error as Error).message === 'Failed to fetch') {
         setApiError(t('editor.networkError'));
       } else {
         setApiError((error as Error).message);
       }
-      // Remove optimistic user message on error
-      setMessages(prev => prev.filter(m => m.id !== optimisticUserMsg.id));
     } finally {
+      abortControllerRef.current = null;
       setIsGenerating(false);
       setIsStreaming(false);
     }
-  }, [config, format, conversationId]);
+  }, [config, format, conversationId, isGenerating]);
 
   // Send pending init data once config is loaded
   useEffect(() => {
@@ -251,6 +296,7 @@ function EditorContent() {
   }, [config, handleSendMessage]);
 
   const tryParseAndApply = (code: string, strat?: ReturnType<typeof getStrategy>) => {
+    if (isStreaming) return;
     const s = strat || strategy;
     const result = s.validate(code);
     if (result.valid) {
@@ -356,6 +402,7 @@ function EditorContent() {
           onNewConversation={handleNewConversation}
           onDeleteConversation={handleDeleteConversation}
           onSendMessage={handleSendMessage}
+          onCancel={handleCancelGeneration}
           isGenerating={isGenerating}
           currentInput={currentInput}
           currentChartType={currentChartType}

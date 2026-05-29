@@ -34,6 +34,7 @@ interface AICopilotPanelProps {
   onNewConversation: () => void;
   onDeleteConversation: (id: string) => void;
   onSendMessage: (message: string | { text: string; images: unknown[] }, chartType: string, source: SourceType) => void;
+  onCancel: () => void;
   isGenerating: boolean;
   currentInput: string;
   currentChartType: string;
@@ -53,6 +54,7 @@ export default function AICopilotPanel({
   onNewConversation,
   onDeleteConversation,
   onSendMessage,
+  onCancel,
   isGenerating,
   currentInput,
   currentChartType,
@@ -400,17 +402,22 @@ export default function AICopilotPanel({
             <Image size={15} />
           </button>
           <div className="flex-1" />
-          <button
-            onClick={handleSend}
-            disabled={!canSend()}
-            className="h-8 px-4 flex items-center gap-1.5 bg-[var(--primary)] text-white text-xs font-medium rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-[0_2px_10px_rgba(28,25,23,0.08)]"
-          >
-            {isGenerating ? (
-              <><Loader2 size={13} className="animate-spin" /><span>{t('copilot.generating')}</span></>
-            ) : (
+          {isGenerating ? (
+            <button
+              onClick={onCancel}
+              className="h-8 px-4 flex items-center gap-1.5 bg-red-500 text-white text-xs font-medium rounded-xl hover:bg-red-600 active:scale-[0.98] transition-all duration-200 shadow-[0_2px_10px_rgba(220,38,38,0.15)]"
+            >
+              <X size={13} /><span>{t('copilot.stop')}</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleSend}
+              disabled={!canSend()}
+              className="h-8 px-4 flex items-center gap-1.5 bg-[var(--primary)] text-white text-xs font-medium rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-[0_2px_10px_rgba(28,25,23,0.08)]"
+            >
               <><Send size={13} /><span>{hasMessages ? t('copilot.send') : t('copilot.generate')}</span></>
-            )}
-          </button>
+            </button>
+          )}
         </div>
 
       </div>
