@@ -4,7 +4,7 @@
  */
 
 import type { DiagramStrategy, ValidationResult } from '@/types/diagram-strategy';
-import { CHART_TYPES } from '@/lib/constants';
+import { CHART_TYPES, getChartTypeName } from '@/lib/constants';
 import { stripCodeFences } from '@/lib/json-repair';
 import { createExportBlob, identityOptimize, buildImagePrompt } from './helpers';
 
@@ -158,7 +158,7 @@ class DrawioStrategy implements DiagramStrategy {
 
     if (chartType && chartType !== 'auto') {
       const guidance = DRAWIO_GUIDANCE_MAP[chartType];
-      const chartName = (CHART_TYPES as Record<string, string>)[chartType];
+      const chartName = getChartTypeName(chartType);
       if (guidance) {
         promptParts.push(`请创建一个${chartName || chartType}类型的 Draw.io 图表。`);
         promptParts.push(`### ${chartName || chartType}设计规范\n${guidance}`);
@@ -189,14 +189,27 @@ class DrawioStrategy implements DiagramStrategy {
     if (!rawCode || typeof rawCode !== 'string') return rawCode;
     let processed = stripCodeFences(rawCode);
 
-    // Try to extract mxfile or mxGraphModel block if wrapped in other content
+    // Try DOMParser-based extraction first (handles nested/attributed tags correctly)
+    if (typeof DOMParser !== 'undefined') {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(processed, 'text/xml');
+      if (!doc.querySelector('parsererror')) {
+        const mxfile = doc.querySelector('mxfile');
+        if (mxfile) return new XMLSerializer().serializeToString(mxfile);
+        const mxGraphModel = doc.querySelector('mxGraphModel');
+        if (mxGraphModel) return new XMLSerializer().serializeToString(mxGraphModel);
+      }
+    }
+
+    // Fallback to regex (non-greedy)
     const mxfileMatch = processed.match(/<mxfile[\s\S]*?<\/mxfile>/);
     if (mxfileMatch) return mxfileMatch[0];
 
     const mxGraphMatch = processed.match(/<mxGraphModel[\s\S]*?<\/mxGraphModel>/);
     if (mxGraphMatch) return mxGraphMatch[0];
 
-    return processed;
+    // No valid XML structure found — return empty so validate() gets a clean signal
+    return '';
   }
 
   optimize(code: string): string {

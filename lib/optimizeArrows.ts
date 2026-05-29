@@ -21,15 +21,15 @@ interface EdgePair {
  * Determine the optimal edge pairs for two elements based on their relative positions
  */
 function determineEdges(startEle: ExcalidrawElement, endEle: ExcalidrawElement): EdgePair {
-  const startX = startEle.x || 0;
-  const startY = startEle.y || 0;
-  const startWidth = startEle.width || 100;
-  const startHeight = startEle.height || 100;
+  const startX = startEle.x ?? 0;
+  const startY = startEle.y ?? 0;
+  const startWidth = startEle.width ?? 100;
+  const startHeight = startEle.height ?? 100;
 
-  const endX = endEle.x || 0;
-  const endY = endEle.y || 0;
-  const endWidth = endEle.width || 100;
-  const endHeight = endEle.height || 100;
+  const endX = endEle.x ?? 0;
+  const endY = endEle.y ?? 0;
+  const endWidth = endEle.width ?? 100;
+  const endHeight = endEle.height ?? 100;
 
   const startCenterX = startX + startWidth / 2;
   const startCenterY = startY + startHeight / 2;
@@ -89,10 +89,10 @@ function determineEdges(startEle: ExcalidrawElement, endEle: ExcalidrawElement):
  * Get the center point of a specified edge for an element
  */
 function getEdgeCenter(element: ExcalidrawElement, edge: Edge): EdgeCenter {
-  const x = element.x || 0;
-  const y = element.y || 0;
-  const width = element.width || 100;
-  const height = element.height || 100;
+  const x = element.x ?? 0;
+  const y = element.y ?? 0;
+  const width = element.width ?? 100;
+  const height = element.height ?? 100;
 
   switch (edge) {
     case 'left':

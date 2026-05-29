@@ -7,6 +7,8 @@ interface DrawioCanvasProps {
   code: string;
 }
 
+const DRAWIO_ORIGIN = 'https://embed.diagrams.net';
+
 function buildLoadPayload(xml: string) {
   return JSON.stringify({
     action: 'load',
@@ -21,38 +23,63 @@ function buildLoadPayload(xml: string) {
 export default function DrawioCanvas({ code }: DrawioCanvasProps) {
   const { t } = useLocale();
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [iframeReady, setIframeReady] = useState(false);
+  const [embedReady, setEmbedReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const codeRef = useRef(code);
 
-  // Timeout detection: if iframe fails to load within 15s, show error
+  // Keep codeRef in sync
+  codeRef.current = code;
+
+  // Listen for embed protocol messages (init, load, error)
   useEffect(() => {
-    if (iframeReady) return;
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== DRAWIO_ORIGIN) return;
+
+      let data: Record<string, unknown>;
+      try {
+        data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+      } catch {
+        return;
+      }
+
+      if (data.event === 'init') {
+        setEmbedReady(true);
+        setError(null);
+      } else if (data.event === 'load') {
+        setError(null);
+      } else if (data.event === 'error') {
+        setError(typeof data.message === 'string' ? data.message : t('drawio.loadError'));
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [t]);
+
+  // Send XML when embed is ready and code changes
+  const sendXml = useCallback(() => {
+    if (!iframeRef.current || !embedReady) return;
+    try {
+      iframeRef.current.contentWindow?.postMessage(buildLoadPayload(codeRef.current), DRAWIO_ORIGIN);
+    } catch {
+      setError(t('drawio.loadError'));
+    }
+  }, [embedReady, t]);
+
+  useEffect(() => {
+    if (embedReady) sendXml();
+  }, [embedReady, sendXml, code]);
+
+  // Timeout: if embed doesn't signal init within 15s, show error
+  useEffect(() => {
+    if (embedReady) return;
     const timeout = setTimeout(() => {
-      if (!iframeReady) {
+      if (!embedReady) {
         setError(t('drawio.loadTimeout'));
       }
     }, 15000);
     return () => clearTimeout(timeout);
-  }, [iframeReady, t]);
-
-  const sendXml = useCallback(() => {
-    if (!iframeRef.current || !code) return;
-    try {
-      iframeRef.current.contentWindow?.postMessage(buildLoadPayload(code), 'https://embed.diagrams.net');
-      setError(null);
-    } catch {
-      setError(t('drawio.loadError'));
-    }
-  }, [code, t]);
-
-  // Send XML whenever code changes AND iframe is ready
-  useEffect(() => {
-    if (iframeReady) sendXml();
-  }, [iframeReady, sendXml]);
-
-  const handleLoad = () => {
-    setIframeReady(true);
-  };
+  }, [embedReady, t]);
 
   return (
     <div className="w-full h-full canvas-grid-bg relative">
@@ -66,11 +93,10 @@ export default function DrawioCanvas({ code }: DrawioCanvasProps) {
       )}
       <iframe
         ref={iframeRef}
-        src="https://embed.diagrams.net/?embed=1&proto=json&spin=1&noSaveBtn=1&noExitBtn=1"
+        src={`${DRAWIO_ORIGIN}/?embed=1&proto=json&spin=1&noSaveBtn=1&noExitBtn=1`}
         className="w-full h-full border-0"
         title="Draw.io Viewer"
-        onLoad={handleLoad}
-        sandbox="allow-scripts"
+        sandbox="allow-scripts allow-same-origin"
       />
     </div>
   );

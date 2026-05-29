@@ -103,6 +103,15 @@ function EditorContent() {
 
   const pendingInitRef = useRef<import('@/lib/init-data').InitData | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const formatRef = useRef(format);
+  useEffect(() => { formatRef.current = format; }, [format]);
+  const isFirstFormatRef = useRef(true);
+  useEffect(() => {
+    if (isFirstFormatRef.current) { isFirstFormatRef.current = false; return; }
+    setGeneratedCode('');
+    setJsonError(null);
+    setRenderData(null);
+  }, [format]);
   const strategy = getStrategy(format);
 
   const handleCancelGeneration = useCallback(() => {
@@ -162,8 +171,6 @@ function EditorContent() {
       createdAt: Date.now(),
     };
     setMessages(prev => [...prev, optimisticUserMsg]);
-
-    const currentStrategy = getStrategy(format);
 
     try {
       const response = await fetch('/api/generate', {
@@ -247,6 +254,8 @@ function EditorContent() {
       }
 
       // Full postProcess + optimize + validate after stream completes
+      // Read format from ref (may have changed during stream)
+      const currentStrategy = getStrategy(formatRef.current);
       const processedCode = currentStrategy.postProcess(accumulatedCode);
       const optimizedCode = currentStrategy.optimize(processedCode);
       setGeneratedCode(optimizedCode);
@@ -297,7 +306,6 @@ function EditorContent() {
   }, [config, handleSendMessage]);
 
   const tryParseAndApply = (code: string, strat?: ReturnType<typeof getStrategy>) => {
-    if (isStreaming) return;
     const s = strat || strategy;
     const result = s.validate(code);
     if (result.valid) {
@@ -342,6 +350,8 @@ function EditorContent() {
         if (result.valid) {
           setRenderData(result.data);
           setJsonError(null);
+        } else {
+          setJsonError(result.error);
         }
       }
     } catch (err) {

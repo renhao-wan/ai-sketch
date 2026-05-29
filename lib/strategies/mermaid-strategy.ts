@@ -4,7 +4,7 @@
  */
 
 import type { DiagramStrategy, ValidationResult } from '@/types/diagram-strategy';
-import { CHART_TYPES } from '@/lib/constants';
+import { CHART_TYPES, getChartTypeName } from '@/lib/constants';
 import { stripCodeFences } from '@/lib/json-repair';
 import { createExportBlob, identityOptimize, buildImagePrompt } from './helpers';
 
@@ -236,7 +236,7 @@ class MermaidStrategy implements DiagramStrategy {
 
     if (chartType && chartType !== 'auto') {
       const mermaidType = MERMAID_TYPE_MAP[chartType];
-      const chartName = (CHART_TYPES as Record<string, string>)[chartType];
+      const chartName = getChartTypeName(chartType);
       if (mermaidType) {
         promptParts.push(`请创建一个${chartName || chartType}类型的 Mermaid 图表，使用 \`${mermaidType}\` 语法。`);
         const spec = MERMAID_CHART_SPECS[chartType];

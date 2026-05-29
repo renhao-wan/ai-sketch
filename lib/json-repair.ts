@@ -135,37 +135,43 @@ export function repairJsonClosure(input: string): string {
 /**
  * Extract the first balanced JSON array substring from mixed text.
  * Handles strings containing ']' characters correctly by tracking bracket depth
- * inside JSON string literals. Returns null if no balanced array is found.
+ * inside JSON string literals. Tries each '[' occurrence until one yields valid JSON.
+ * Returns null if no balanced array is found.
  */
 export function extractFirstJsonArray(text: string): string | null {
   if (!text || typeof text !== 'string') return null;
   const source = stripCodeFences(text);
 
-  const start = source.indexOf('[');
-  if (start === -1) return null;
+  let searchFrom = 0;
+  while (searchFrom < source.length) {
+    const start = source.indexOf('[', searchFrom);
+    if (start === -1) return null;
 
-  let depth = 0;
-  let inString = false;
-  let escape = false;
+    let depth = 0;
+    let inString = false;
+    let escape = false;
 
-  for (let i = start; i < source.length; i++) {
-    const ch = source[i];
+    for (let i = start; i < source.length; i++) {
+      const ch = source[i];
 
-    if (inString) {
-      if (escape) { escape = false; continue; }
-      if (ch === '\\') { escape = true; continue; }
-      if (ch === '"') { inString = false; }
-      continue;
-    }
+      if (inString) {
+        if (escape) { escape = false; continue; }
+        if (ch === '\\') { escape = true; continue; }
+        if (ch === '"') { inString = false; }
+        continue;
+      }
 
-    if (ch === '"') { inString = true; continue; }
-    if (ch === '[') { depth++; continue; }
-    if (ch === ']') {
-      depth--;
-      if (depth === 0) {
-        return source.slice(start, i + 1);
+      if (ch === '"') { inString = true; continue; }
+      if (ch === '[') { depth++; continue; }
+      if (ch === ']') {
+        depth--;
+        if (depth === 0) {
+          const candidate = source.slice(start, i + 1);
+          try { JSON.parse(candidate); return candidate; } catch { break; }
+        }
       }
     }
+    searchFrom = start + 1;
   }
 
   return null;

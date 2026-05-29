@@ -60,3 +60,8 @@ export function getChartTypeLabel(key: string, t: (k: TranslationKey) => string)
   const translationKey = CHART_TYPE_KEY_MAP[key];
   return translationKey ? t(translationKey) : key;
 }
+
+/** Type-safe lookup for CHART_TYPES by key. Returns the key itself as fallback. */
+export function getChartTypeName(key: string): string {
+  return (CHART_TYPES as Record<string, string>)[key] ?? key;
+}

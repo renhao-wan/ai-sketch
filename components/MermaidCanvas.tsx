@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import DOMPurify from 'dompurify';
 import { useLocale } from '@/locales';
 
 interface MermaidCanvasProps {
@@ -26,7 +27,12 @@ async function initMermaid() {
     });
     mermaidInstance = mermaid;
   })();
-  await mermaidInitPromise;
+  try {
+    await mermaidInitPromise;
+  } catch (e) {
+    mermaidInitPromise = null; // allow retry on next call
+    throw e;
+  }
 }
 
 export default function MermaidCanvas({ code }: MermaidCanvasProps) {
@@ -42,22 +48,25 @@ export default function MermaidCanvas({ code }: MermaidCanvasProps) {
 
     const renderDiagram = async () => {
       try {
+        setError(null); // clear stale error from previous render
         await initMermaid();
         if (!mermaidInstance || !containerRef.current) return;
         if (currentRenderId !== renderIdRef.current) return;
 
         const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        const { svg } = await mermaidInstance.render(id, code);
+        const { svg, bindFunctions } = await mermaidInstance.render(id, code);
 
         if (currentRenderId !== renderIdRef.current) return;
         if (containerRef.current) {
-          containerRef.current.innerHTML = svg;
+          containerRef.current.innerHTML = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } });
+          if (bindFunctions) {
+            bindFunctions(containerRef.current);
+          }
           setError(null);
         }
       } catch (e) {
         if (currentRenderId !== renderIdRef.current) return;
         const rawMsg = (e as Error).message || t('mermaid.renderFailed');
-        // Try to extract structured line/column info from Mermaid parse errors
         const lineMatch = rawMsg.match(/Parse error on line (\d+)(?:, column (\d+))?/);
         const msg = lineMatch
           ? `Line ${lineMatch[1]}${lineMatch[2] ? `, Column ${lineMatch[2]}` : ''}: ${rawMsg.replace(lineMatch[0], '').trim()}`
@@ -70,6 +79,9 @@ export default function MermaidCanvas({ code }: MermaidCanvasProps) {
     };
 
     renderDiagram();
+
+    // Cleanup: cancel stale renders early so mermaid.render() can bail out
+    return () => { renderIdRef.current++; };
   }, [code, t]);
 
   return (

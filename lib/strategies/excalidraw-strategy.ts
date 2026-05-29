@@ -35,6 +35,12 @@ class ExcalidrawStrategy implements DiagramStrategy {
     } catch {
       processed = fixUnescapedQuotes(processed);
       processed = repairJsonClosure(processed);
+      try {
+        JSON.parse(processed);
+      } catch {
+        // Second repair also failed — return original stripped code
+        return stripCodeFences(rawCode);
+      }
       return processed;
     }
   }

@@ -98,9 +98,14 @@ async function fetchWithRetry(
   options: RequestInit,
   maxRetries = 3,
 ): Promise<Response> {
+  const signal = options.signal;
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (signal?.aborted) {
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    }
+
     const response = await fetch(url, options);
 
     if (response.status !== 429) {
@@ -120,7 +125,13 @@ async function fetchWithRetry(
     await response.text().catch(() => {});
 
     if (attempt < maxRetries) {
-      await new Promise(resolve => setTimeout(resolve, delayMs));
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(resolve, delayMs);
+        signal?.addEventListener('abort', () => {
+          clearTimeout(timer);
+          reject(new DOMException('The operation was aborted.', 'AbortError'));
+        }, { once: true });
+      });
     }
 
     lastError = new Error(`Rate limited (429). Retrying... (attempt ${attempt + 1}/${maxRetries + 1})`);
@@ -231,6 +242,7 @@ async function callAnthropic(
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
       model,

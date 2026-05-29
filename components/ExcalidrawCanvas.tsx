@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import '@excalidraw/excalidraw/index.css';
 import { useLocale } from '@/locales';
 import type { ExcalidrawElement } from '@/types';
@@ -29,38 +29,46 @@ export default function ExcalidrawCanvas({ elements }: ExcalidrawCanvasProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
   const [conversionError, setConversionError] = useState<string | null>(null);
-  const canvasKeyRef = useRef(0);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [convertedElements, setConvertedElements] = useState<any[]>([]);
+  const [canvasKey, setCanvasKey] = useState(0);
 
   useEffect(() => {
     getConvertFunction().then(fn => setConvertFunction(() => fn));
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const convertedElements = useMemo((): any[] => {
-    if (!elements || elements.length === 0 || !convertToExcalidrawElements) return [];
+  // Convert elements via useEffect (not useMemo) to avoid setState-during-render
+  useEffect(() => {
+    if (!elements || elements.length === 0 || !convertToExcalidrawElements) {
+      setConvertedElements([]);
+      setConversionError(null);
+      return;
+    }
     try {
       const result = convertToExcalidrawElements(elements);
+      setConvertedElements(result);
       setConversionError(null);
-      return result;
     } catch (error) {
       console.error('Failed to convert elements:', error);
       setConversionError((error as Error).message || t('excalidraw.convertError'));
-      return [];
+      setConvertedElements([]);
     }
   }, [elements, convertToExcalidrawElements, t]);
 
-  // Increment key when elements change to force remount
+  // Increment key when elements change to force Excalidraw remount
   useEffect(() => {
     if (convertedElements.length > 0) {
-      canvasKeyRef.current += 1;
+      setCanvasKey(k => k + 1);
     }
   }, [convertedElements]);
 
+  // Scroll to content with cleanup
   useEffect(() => {
     if (excalidrawAPI && convertedElements.length > 0) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         excalidrawAPI.scrollToContent(convertedElements, { fitToContent: true, animate: true, duration: 300 });
       }, 100);
+      return () => clearTimeout(timer);
     }
   }, [excalidrawAPI, convertedElements]);
 
@@ -75,7 +83,7 @@ export default function ExcalidrawCanvas({ elements }: ExcalidrawCanvasProps) {
         </div>
       )}
       <Excalidraw
-        key={canvasKeyRef.current.toString()}
+        key={canvasKey.toString()}
         excalidrawAPI={(api: unknown) => setExcalidrawAPI(api)}
         initialData={{
           elements: convertedElements,
@@ -83,7 +91,6 @@ export default function ExcalidrawCanvas({ elements }: ExcalidrawCanvasProps) {
             viewBackgroundColor: '#FAF8F5',
             currentItemFontFamily: 1,
           },
-          scrollToContent: true,
         }}
       />
     </div>
