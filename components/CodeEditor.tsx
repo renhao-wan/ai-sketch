@@ -1,6 +1,18 @@
 'use client';
 
-import { Editor } from '@monaco-editor/react';
+import { useState, useEffect } from 'react';
+import { Editor, loader } from '@monaco-editor/react';
+
+// Lazy-init Monaco from local package (avoids CDN Tracking Prevention warnings)
+let monacoLoadPromise: Promise<void> | null = null;
+function ensureMonacoLoaded(): Promise<void> {
+  if (!monacoLoadPromise) {
+    monacoLoadPromise = import('monaco-editor').then((monaco) => {
+      loader.config({ monaco: monaco.default || monaco });
+    });
+  }
+  return monacoLoadPromise;
+}
 import { Trash2, Wand2, ArrowRight, Loader2, X } from 'lucide-react';
 
 interface CodeEditorProps {

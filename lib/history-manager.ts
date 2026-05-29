@@ -1,14 +1,7 @@
 import { getDb, saveToDisk } from './db';
-import type { HistoryItem, LLMConfig } from '@/types';
+import { generateId } from './utils';
+import type { HistoryItem, AddHistoryData } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
-
-interface AddHistoryData {
-  chartType: string;
-  format?: DiagramFormat;
-  userInput: string;
-  generatedCode: string;
-  config: Partial<LLMConfig>;
-}
 
 interface HistoryRow {
   id: string;
@@ -37,9 +30,7 @@ function rowToHistoryItem(row: HistoryRow): HistoryItem {
 }
 
 class HistoryManager {
-  private generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  }
+  private generateId = generateId;
 
   async addHistory(data: AddHistoryData): Promise<HistoryItem> {
     const db = await getDb();

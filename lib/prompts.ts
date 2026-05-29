@@ -221,33 +221,9 @@ export const SYSTEM_PROMPT = `## 任务
 \`\`\`
 `;
 
-// Chart type display names mapping
-// Only includes chart types that have corresponding visual specifications
-const CHART_TYPE_NAMES: Record<string, string> = {
-  auto: '自动',
-  flowchart: '流程图',
-  mindmap: '思维导图',
-  orgchart: '组织架构图',
-  sequence: '时序图',
-  class: 'UML类图',
-  er: 'ER图',
-  gantt: '甘特图',
-  timeline: '时间线',
-  tree: '树形图',
-  network: '网络拓扑图',
-  architecture: '架构图',
-  dataflow: '数据流图',
-  state: '状态图',
-  swimlane: '泳道图',
-  concept: '概念图',
-  fishbone: '鱼骨图',
-  swot: 'SWOT分析图',
-  pyramid: '金字塔图',
-  funnel: '漏斗图',
-  venn: '韦恩图',
-  matrix: '矩阵图',
-  infographic: '信息图',
-};
+// Chart type display names — single source of truth in lib/constants.ts
+import { CHART_TYPES } from './constants';
+const CHART_TYPE_NAMES: Record<string, string> = CHART_TYPES;
 
 // Visual specifications for different chart types
 const CHART_VISUAL_SPECS: Record<string, string> = {

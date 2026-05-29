@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     const { configId, config: configBody, userInput, chartType, format, conversationId } = await request.json() as {
       configId?: string;
       config?: LLMConfig;
-      userInput: string | { text?: string; image?: ImageData };
+      userInput: string | { text?: string; image?: ImageData; images?: ImageData[] };
       chartType: string;
       format?: DiagramFormat;
       conversationId?: string;
@@ -72,18 +72,22 @@ export async function POST(request: Request) {
       activeConversationId = conv.id;
     }
 
-    // Save user message to conversation
+    // Normalize image/images into a single array
     const userContent = typeof userInput === 'string' ? userInput : (userInput.text || '');
-    const userImageData = typeof userInput === 'object' && userInput.image ? userInput.image.data : undefined;
-    const userImageMimeType = typeof userInput === 'object' && userInput.image ? userInput.image.mimeType : undefined;
-    const sourceType = userImageData ? 'image' : 'text';
+    const allImages: ImageData[] = [];
+    if (typeof userInput === 'object') {
+      if (userInput.image) allImages.push(userInput.image);
+      if (userInput.images) allImages.push(...userInput.images);
+    }
+    const sourceType = allImages.length > 0 ? 'image' : 'text';
 
+    // Save user message to conversation (store first image for history)
     await conversationManager.addMessage({
       conversationId: activeConversationId,
       role: 'user',
       content: userContent,
-      imageData: userImageData,
-      imageMimeType: userImageMimeType,
+      imageData: allImages[0]?.data,
+      imageMimeType: allImages[0]?.mimeType,
       sourceType,
     });
 
@@ -92,14 +96,11 @@ export async function POST(request: Request) {
 
     // Build the new user message for LLM
     let newUserMessage: LLMMessage;
-    if (typeof userInput === 'object' && userInput.image) {
+    if (allImages.length > 0) {
       newUserMessage = {
         role: 'user',
-        content: strategy.getUserPrompt(userInput.text || '', chartType),
-        image: {
-          data: userInput.image.data,
-          mimeType: userInput.image.mimeType,
-        },
+        content: strategy.getUserPrompt(userContent, chartType),
+        images: allImages,
       };
     } else {
       newUserMessage = {

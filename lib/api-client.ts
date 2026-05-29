@@ -1,13 +1,4 @@
-import type { LLMConfig, TestConnectionResult, HistoryItem, Conversation, ConversationWithMessages } from '@/types';
-import type { DiagramFormat } from '@/types/diagram-strategy';
-
-interface AddHistoryData {
-  chartType: string;
-  format?: DiagramFormat;
-  userInput: string;
-  generatedCode: string;
-  config: Partial<LLMConfig>;
-}
+import type { LLMConfig, TestConnectionResult, HistoryItem, Conversation, ConversationWithMessages, AddHistoryData } from '@/types';
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options);

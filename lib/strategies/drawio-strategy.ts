@@ -4,97 +4,34 @@
  */
 
 import type { DiagramStrategy, ValidationResult } from '@/types/diagram-strategy';
+import { CHART_TYPES } from '@/lib/constants';
+import { stripCodeFences } from '@/lib/json-repair';
+import { createExportBlob, identityOptimize, buildImagePrompt } from './helpers';
 
-// Chart type to Draw.io guidance mapping
-const CHART_TYPE_MAP: Record<string, { name: string; guidance: string }> = {
-  flowchart: {
-    name: '流程图',
-    guidance: '使用矩形表示处理步骤，菱形表示判断，圆角矩形表示开始/结束。使用箭头连接各节点表示流程方向。',
-  },
-  mindmap: {
-    name: '思维导图',
-    guidance: '使用中心节点作为主题，分支节点作为子主题。使用树形布局，分支均匀分布。',
-  },
-  orgchart: {
-    name: '组织架构图',
-    guidance: '使用矩形表示人员或职位，使用树形层级结构自上而下排列。',
-  },
-  sequence: {
-    name: '时序图',
-    guidance: '使用泳道表示参与者，使用箭头表示消息传递，按时间顺序从上到下排列。',
-  },
-  class: {
-    name: 'UML类图',
-    guidance: '使用三段式矩形表示类（类名、属性、方法），使用箭头表示继承和关联关系。',
-  },
-  er: {
-    name: 'ER图',
-    guidance: '使用矩形表示实体，椭圆表示属性，菱形表示关系。使用连线标注基数。',
-  },
-  gantt: {
-    name: '甘特图',
-    guidance: '使用水平条形图表示任务，横轴为时间，纵轴为任务列表。',
-  },
-  timeline: {
-    name: '时间线',
-    guidance: '使用水平线作为时间轴，使用节点和文本框标注事件。',
-  },
-  tree: {
-    name: '树形图',
-    guidance: '使用树形层级结构，根节点在顶部，子节点均匀分布。',
-  },
-  network: {
-    name: '网络拓扑图',
-    guidance: '使用不同形状表示不同类型的网络设备，使用连线表示网络连接。',
-  },
-  architecture: {
-    name: '架构图',
-    guidance: '使用分层布局，矩形表示组件或服务，箭头表示依赖或数据流。',
-  },
-  dataflow: {
-    name: '数据流图',
-    guidance: '使用箭头表示数据流向，矩形表示处理过程，平行线表示数据存储。',
-  },
-  state: {
-    name: '状态图',
-    guidance: '使用圆角矩形表示状态，箭头表示状态转换，标注触发条件。',
-  },
-  swimlane: {
-    name: '泳道图',
-    guidance: '使用泳道划分不同角色或部门，活动在泳道内按时间顺序排列。',
-  },
-  concept: {
-    name: '概念图',
-    guidance: '使用节点表示概念，连线表示概念间的关系。',
-  },
-  fishbone: {
-    name: '鱼骨图',
-    guidance: '使用主干箭头指向问题，分支箭头指向原因分类。',
-  },
-  swot: {
-    name: 'SWOT分析图',
-    guidance: '使用2x2网格布局，四个象限分别表示优势、劣势、机会、威胁。',
-  },
-  pyramid: {
-    name: '金字塔图',
-    guidance: '使用梯形或矩形从上到下递增排列，形成金字塔形状。',
-  },
-  funnel: {
-    name: '漏斗图',
-    guidance: '使用梯形从上到下递减排列，形成漏斗形状。',
-  },
-  venn: {
-    name: '韦恩图',
-    guidance: '使用圆形或椭圆表示集合，重叠区域表示交集。',
-  },
-  matrix: {
-    name: '矩阵图',
-    guidance: '使用网格布局，行列交叉形成矩阵，表头用深色区分。',
-  },
-  infographic: {
-    name: '信息图',
-    guidance: '使用模块化布局，结合图形、文字、数据展示信息。',
-  },
+// Chart type to Draw.io guidance mapping (only guidance, names come from CHART_TYPES)
+const DRAWIO_GUIDANCE_MAP: Record<string, string> = {
+  flowchart: '使用矩形表示处理步骤，菱形表示判断，圆角矩形表示开始/结束。使用箭头连接各节点表示流程方向。',
+  mindmap: '使用中心节点作为主题，分支节点作为子主题。使用树形布局，分支均匀分布。',
+  orgchart: '使用矩形表示人员或职位，使用树形层级结构自上而下排列。',
+  sequence: '使用泳道表示参与者，使用箭头表示消息传递，按时间顺序从上到下排列。',
+  class: '使用三段式矩形表示类（类名、属性、方法），使用箭头表示继承和关联关系。',
+  er: '使用矩形表示实体，椭圆表示属性，菱形表示关系。使用连线标注基数。',
+  gantt: '使用水平条形图表示任务，横轴为时间，纵轴为任务列表。',
+  timeline: '使用水平线作为时间轴，使用节点和文本框标注事件。',
+  tree: '使用树形层级结构，根节点在顶部，子节点均匀分布。',
+  network: '使用不同形状表示不同类型的网络设备，使用连线表示网络连接。',
+  architecture: '使用分层布局，矩形表示组件或服务，箭头表示依赖或数据流。',
+  dataflow: '使用箭头表示数据流向，矩形表示处理过程，平行线表示数据存储。',
+  state: '使用圆角矩形表示状态，箭头表示状态转换，标注触发条件。',
+  swimlane: '使用泳道划分不同角色或部门，活动在泳道内按时间顺序排列。',
+  concept: '使用节点表示概念，连线表示概念间的关系。',
+  fishbone: '使用主干箭头指向问题，分支箭头指向原因分类。',
+  swot: '使用2x2网格布局，四个象限分别表示优势、劣势、机会、威胁。',
+  pyramid: '使用梯形或矩形从上到下递增排列，形成金字塔形状。',
+  funnel: '使用梯形从上到下递减排列，形成漏斗形状。',
+  venn: '使用圆形或椭圆表示集合，重叠区域表示交集。',
+  matrix: '使用网格布局，行列交叉形成矩阵，表头用深色区分。',
+  infographic: '使用模块化布局，结合图形、文字、数据展示信息。',
 };
 
 const DRAWIO_SYSTEM_PROMPT = `## 任务
@@ -220,10 +157,11 @@ class DrawioStrategy implements DiagramStrategy {
     const promptParts: string[] = [];
 
     if (chartType && chartType !== 'auto') {
-      const mapping = CHART_TYPE_MAP[chartType];
-      if (mapping) {
-        promptParts.push(`请创建一个${mapping.name}类型的 Draw.io 图表。`);
-        promptParts.push(`### ${mapping.name}设计规范\n${mapping.guidance}`);
+      const guidance = DRAWIO_GUIDANCE_MAP[chartType];
+      const chartName = (CHART_TYPES as Record<string, string>)[chartType];
+      if (guidance) {
+        promptParts.push(`请创建一个${chartName || chartType}类型的 Draw.io 图表。`);
+        promptParts.push(`### ${chartName || chartType}设计规范\n${guidance}`);
       }
     } else {
       promptParts.push(
@@ -249,11 +187,7 @@ class DrawioStrategy implements DiagramStrategy {
 
   postProcess(rawCode: string): string {
     if (!rawCode || typeof rawCode !== 'string') return rawCode;
-    let processed = rawCode.trim();
-    // Strip markdown code fences
-    processed = processed.replace(/^```(?:xml)?\s*\n?/i, '');
-    processed = processed.replace(/\n?```\s*$/, '');
-    processed = processed.trim();
+    let processed = stripCodeFences(rawCode);
 
     // Try to extract mxfile or mxGraphModel block if wrapped in other content
     const mxfileMatch = processed.match(/<mxfile[\s\S]*<\/mxfile>/);
@@ -266,7 +200,7 @@ class DrawioStrategy implements DiagramStrategy {
   }
 
   optimize(code: string): string {
-    return code;
+    return identityOptimize(code);
   }
 
   validate(code: string): ValidationResult {
@@ -295,30 +229,11 @@ class DrawioStrategy implements DiagramStrategy {
   }
 
   createExportBlob(code: string): Blob {
-    return new Blob([code], { type: this.mimeType });
+    return createExportBlob(code, this.mimeType);
   }
 
   generateImagePrompt(chartType: string): string {
-    const chartTypeText = chartType && chartType !== 'auto'
-      ? `请将图片内容转换为${CHART_TYPE_MAP[chartType]?.name || ''}类型的Draw.io图表。`
-      : '请分析图片内容并选择合适的Draw.io图表类型进行转换。';
-
-    return `${chartTypeText}
-
-请仔细分析图片中的：
-1. 文字内容和标签
-2. 图形元素和结构
-3. 流程或连接关系
-4. 布局和层次关系
-5. 数据或数值信息
-
-基于分析结果，创建清晰、准确的 Draw.io XML 代码，确保：
-- 保留图片中的所有关键信息
-- 使用合适的图表类型和布局
-- 保持逻辑关系和结构
-- XML 格式正确，可直接在 Draw.io 中打开
-
-只输出 Draw.io XML 代码，不要包含代码块标记。XML 必须包含完整的 mxfile/mxGraphModel 结构。`;
+    return buildImagePrompt(chartType, 'Draw.io', CHART_TYPES as Record<string, string>, '只输出 Draw.io XML 代码，不要包含代码块标记。XML 必须包含完整的 mxfile/mxGraphModel 结构。');
   }
 }
 

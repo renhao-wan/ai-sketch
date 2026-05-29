@@ -12,13 +12,10 @@ import {
   AlertCircle,
   Upload,
 } from 'lucide-react';
-import {
-  validateImage,
-  createImageObject,
-  getImagePreviewUrl,
-  generateImagePrompt,
-} from '@/lib/image-utils';
+import { imageStrategy, orchestrator } from '@/lib/input-strategies/registry';
+import { setInitData } from '@/lib/init-data';
 import type { DiagramFormat } from '@/types/diagram-strategy';
+import type { MessagePayload } from '@/types/input-strategy';
 
 const FORMATS = [
   { key: 'excalidraw', label: 'Excalidraw' },
@@ -37,13 +34,11 @@ export default function AIPromptBox() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileContent, setFileContent] = useState('');
-  const [fileStatus, setFileStatus] = useState<'' | 'parsing' | 'success' | 'error'>('');
-  const [fileError, setFileError] = useState('');
-
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  // Unified attachment state — all paths go through orchestrator
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [attachStatus, setAttachStatus] = useState<'' | 'processing' | 'success' | 'error'>('');
+  const [attachError, setAttachError] = useState('');
+  const [payload, setPayload] = useState<MessagePayload | null>(null);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -53,35 +48,48 @@ export default function AIPromptBox() {
     }
   }, [prompt]);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    processFile(file);
+  /** Core handler — all file inputs (single, multi, drag) funnel here */
+  const handleFiles = async (files: File[]) => {
+    if (files.length === 0) return;
+
+    clearAttachments();
+    setAttachStatus('processing');
+    setAttachError('');
+
+    // Set diagram format on image strategy before orchestrator runs
+    imageStrategy.setDiagramFormat(activeFormat as DiagramFormat);
+
+    const result = await orchestrator.handleFiles(files, prompt, 'auto');
+    if (result.success) {
+      setAttachments(files);
+      setPayload(result.payload);
+      setAttachStatus('success');
+    } else {
+      setAttachError(result.errors.map(e => `${e.fileName}: ${e.error}`).join('; '));
+      setAttachStatus('error');
+    }
   };
 
-  const handleClearFile = () => {
-    setSelectedFile(null);
-    setFileContent('');
-    setFileStatus('');
-    setFileError('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    handleFiles(Array.from(e.target.files || []));
   };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    processImage(file);
+    handleFiles(Array.from(e.target.files || []));
   };
 
-  const handleClearImage = () => {
-    setSelectedImage(null);
-    setImagePreview(null);
+  const clearAttachments = () => {
+    setAttachments([]);
+    setAttachStatus('');
+    setAttachError('');
+    setPayload(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
     if (imageInputRef.current) imageInputRef.current.value = '';
   };
 
   const canGenerate = (): boolean => {
     if (isGenerating) return false;
-    return !!(prompt.trim() || (fileStatus === 'success' && fileContent) || selectedImage);
+    return !!(prompt.trim() || (attachStatus === 'success' && payload));
   };
 
   const handleGenerate = async () => {
@@ -89,34 +97,17 @@ export default function AIPromptBox() {
     setIsGenerating(true);
 
     try {
-      if (selectedImage) {
-        const imageObject = await createImageObject(selectedImage);
-        const previewUrl = await getImagePreviewUrl(selectedImage);
-        const imageData = { ...imageObject, previewUrl };
-        const text = prompt.trim() || generateImagePrompt('auto', activeFormat as DiagramFormat);
-        sessionStorage.setItem('ai-sketch-init-data', JSON.stringify({
-          type: 'image',
-          data: { text, image: imageData },
-          format: activeFormat,
-        }));
-        router.push('/editor?source=image');
-      } else if (fileStatus === 'success' && fileContent) {
-        const data = prompt.trim()
-          ? `用户指令：\n${prompt.trim()}\n\n参考内容：\n${fileContent}`
-          : fileContent;
-        sessionStorage.setItem('ai-sketch-init-data', JSON.stringify({
-          type: 'file',
-          data,
-          format: activeFormat,
-        }));
-        router.push('/editor?source=file');
+      if (attachStatus === 'success' && payload) {
+        const sourceType = payload.type === 'image' ? 'image' : 'file';
+        setInitData({ type: payload.type, data: payload.content, format: activeFormat as DiagramFormat });
+        router.push(`/editor?source=${sourceType}`);
       } else if (prompt.trim()) {
-        const params = new URLSearchParams({ prompt: prompt.trim(), format: activeFormat });
-        router.push(`/editor?${params.toString()}`);
+        setInitData({ type: 'text', data: prompt.trim(), format: activeFormat as DiagramFormat });
+        router.push('/editor?source=text');
       }
     } catch (err) {
-      setFileError((err as Error).message);
-      setFileStatus('error');
+      setAttachError((err as Error).message);
+      setAttachStatus('error');
     } finally {
       setIsGenerating(false);
     }
@@ -153,53 +144,55 @@ export default function AIPromptBox() {
     e.stopPropagation();
     setIsDragging(false);
     dragCounterRef.current = 0;
-    const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-    if (file.type.startsWith('image/')) {
-      processImage(file);
-    } else {
-      processFile(file);
-    }
+    handleFiles(Array.from(e.dataTransfer.files));
   };
 
-  const processFile = (file: File) => {
-    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-    if (!['.md', '.txt'].includes(ext)) {
-      setFileError('请选择 .md 或 .txt 文件');
-      setFileStatus('error');
-      return;
-    }
-    if (file.size > 1024 * 1024) {
-      setFileError('文件大小不能超过 1MB');
-      setFileStatus('error');
-      return;
-    }
-    handleClearImage();
-    setSelectedFile(file);
-    setFileStatus('parsing');
-    setFileError('');
-    const reader = new FileReader();
-    reader.onload = () => {
-      const content = ((reader.result as string) || '').trim();
-      if (content) { setFileContent(content); setFileStatus('success'); }
-      else { setFileError('文件内容为空'); setFileStatus('error'); }
-    };
-    reader.onerror = () => { setFileError('文件读取失败'); setFileStatus('error'); };
-    reader.readAsText(file);
-  };
+  const hasAttachment = attachments.length > 0;
 
-  const processImage = async (file: File) => {
-    try {
-      const validation = validateImage(file);
-      if (!validation.isValid) { setFileError(validation.error!); setFileStatus('error'); return; }
-      handleClearFile();
-      setSelectedImage(file);
-      const previewUrl = await getImagePreviewUrl(file);
-      setImagePreview(previewUrl);
-    } catch (err) { setFileError((err as Error).message); setFileStatus('error'); }
-  };
+  // Render attachment chips
+  const renderAttachments = () => {
+    if (attachments.length === 0) return null;
 
-  const hasAttachment = selectedFile || selectedImage;
+    // Single file — show details
+    if (attachments.length === 1) {
+      const file = attachments[0];
+      const isImage = file.type.startsWith('image/');
+      return (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/[0.03] border border-black/[0.06]">
+          {attachStatus === 'processing' && <Loader2 size={13} className="animate-spin text-[var(--muted)] flex-shrink-0" />}
+          {attachStatus === 'success' && <CheckCircle size={13} className="text-emerald-500 flex-shrink-0" />}
+          {attachStatus === 'error' && <AlertCircle size={13} className="text-red-500 flex-shrink-0" />}
+          {isImage && <Image size={13} className="text-[var(--muted)] flex-shrink-0" />}
+          {!isImage && <Paperclip size={13} className="text-[var(--muted)] flex-shrink-0" />}
+          <span className="text-xs text-[var(--fg)] truncate flex-1">{file.name}</span>
+          {attachStatus === 'error' && <span className="text-[10px] text-red-500 flex-shrink-0">{attachError}</span>}
+          <button onClick={clearAttachments} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
+            <X size={13} />
+          </button>
+        </div>
+      );
+    }
+
+    // Multiple files — show count
+    const imageCount = attachments.filter(f => f.type.startsWith('image/')).length;
+    const fileCount = attachments.length - imageCount;
+    const parts: string[] = [];
+    if (imageCount > 0) parts.push(`${imageCount} 张图片`);
+    if (fileCount > 0) parts.push(`${fileCount} 个文件`);
+
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/[0.03] border border-black/[0.06]">
+        {attachStatus === 'processing' && <Loader2 size={13} className="animate-spin text-[var(--muted)] flex-shrink-0" />}
+        {attachStatus === 'success' && <CheckCircle size={13} className="text-emerald-500 flex-shrink-0" />}
+        {attachStatus === 'error' && <AlertCircle size={13} className="text-red-500 flex-shrink-0" />}
+        <span className="text-xs text-[var(--fg)] truncate flex-1">{parts.join(' + ')}</span>
+        {attachStatus === 'error' && <span className="text-[10px] text-red-500 flex-shrink-0">{attachError}</span>}
+        <button onClick={clearAttachments} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
+          <X size={13} />
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -233,31 +226,10 @@ export default function AIPromptBox() {
             style={{ minHeight: '48px' }}
           />
 
-          {/* Attachment */}
-          {(selectedFile || selectedImage) && (
-            <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-black/[0.03] border border-black/[0.06]">
-              {selectedFile && (
-                <>
-                  {fileStatus === 'parsing' && <Loader2 size={13} className="animate-spin text-[var(--muted)] flex-shrink-0" />}
-                  {fileStatus === 'success' && <CheckCircle size={13} className="text-emerald-500 flex-shrink-0" />}
-                  {fileStatus === 'error' && <AlertCircle size={13} className="text-red-500 flex-shrink-0" />}
-                  <span className="text-xs text-[var(--fg)] truncate flex-1">{selectedFile.name}</span>
-                  {fileStatus === 'success' && <span className="text-[10px] text-[var(--muted)]/60 flex-shrink-0">{fileContent.length} 字符</span>}
-                  {fileStatus === 'error' && <span className="text-[10px] text-red-500 flex-shrink-0">{fileError}</span>}
-                  <button onClick={handleClearFile} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
-                    <X size={13} />
-                  </button>
-                </>
-              )}
-              {selectedImage && (
-                <>
-                  {imagePreview && <img src={imagePreview} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0" />}
-                  <span className="text-xs text-[var(--fg)] truncate flex-1">{selectedImage.name}</span>
-                  <button onClick={handleClearImage} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
-                    <X size={13} />
-                  </button>
-                </>
-              )}
+          {/* Attachments */}
+          {hasAttachment && (
+            <div className="mt-2 flex flex-col gap-1">
+              {renderAttachments()}
             </div>
           )}
         </div>
@@ -279,13 +251,13 @@ export default function AIPromptBox() {
 
           {/* Right - Actions */}
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-[var(--muted)]/40">单个附件</span>
-            <input ref={fileInputRef} type="file" accept=".md,.txt" className="hidden" onChange={handleFileChange} />
-            <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+            <span className="text-[10px] text-[var(--muted)]/40">附件</span>
+            <input ref={fileInputRef} type="file" accept=".md,.txt" multiple className="hidden" onChange={handleFileChange} />
+            <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
             <button
               onClick={() => fileInputRef.current?.click()}
               className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 ${
-                selectedFile ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5'
+                hasAttachment ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5'
               }`}
               title="上传文件"
             >
@@ -293,9 +265,7 @@ export default function AIPromptBox() {
             </button>
             <button
               onClick={() => imageInputRef.current?.click()}
-              className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 ${
-                selectedImage ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5'
-              }`}
+              className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 transition-all duration-200"
               title="上传图片"
             >
               <Image size={18} />

@@ -205,27 +205,28 @@ async function processAnthropicStream(
  * Process message for OpenAI API with multimodal support
  */
 function processMessageForOpenAI(message: LLMMessage): OpenAIMessage {
-  if (!message.image) {
+  const images = message.images;
+  if (!images || images.length === 0) {
     return message;
   }
 
-  const { image, content } = message;
+  const contentParts: Array<{ type: string; text?: string; image_url?: { url: string; detail: string } }> = [
+    { type: 'text', text: message.content },
+  ];
+
+  for (const img of images) {
+    contentParts.push({
+      type: 'image_url',
+      image_url: {
+        url: `data:${img.mimeType};base64,${img.data}`,
+        detail: 'high',
+      },
+    });
+  }
 
   return {
     role: message.role,
-    content: [
-      {
-        type: 'text',
-        text: content,
-      },
-      {
-        type: 'image_url',
-        image_url: {
-          url: `data:${image.mimeType};base64,${image.data}`,
-          detail: 'high',
-        },
-      },
-    ],
+    content: contentParts,
   };
 }
 
@@ -233,28 +234,29 @@ function processMessageForOpenAI(message: LLMMessage): OpenAIMessage {
  * Process message for Anthropic API with multimodal support
  */
 function processMessageForAnthropic(message: LLMMessage): AnthropicMessage {
-  if (!message.image) {
+  const images = message.images;
+  if (!images || images.length === 0) {
     return message as unknown as AnthropicMessage;
   }
 
-  const { image, content } = message;
+  const contentParts: Array<{ type: string; text?: string; source?: { type: string; media_type: string; data: string } }> = [
+    { type: 'text', text: message.content },
+  ];
+
+  for (const img of images) {
+    contentParts.push({
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: img.mimeType,
+        data: img.data,
+      },
+    });
+  }
 
   return {
     role: message.role === 'assistant' ? 'assistant' : 'user',
-    content: [
-      {
-        type: 'text',
-        text: content,
-      },
-      {
-        type: 'image',
-        source: {
-          type: 'base64',
-          media_type: image.mimeType,
-          data: image.data,
-        },
-      },
-    ],
+    content: contentParts,
   };
 }
 

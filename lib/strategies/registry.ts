@@ -23,10 +23,3 @@ export function getStrategy(format: DiagramFormat): DiagramStrategy {
   if (!strategy) throw new Error(`Unknown diagram format: ${format}`);
   return strategy;
 }
-
-/**
- * Get all supported format keys.
- */
-export function getAllFormats(): DiagramFormat[] {
-  return Object.keys(strategies) as DiagramFormat[];
-}

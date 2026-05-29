@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Send,
   Paperclip,
@@ -20,8 +21,8 @@ import {
   Plus,
 } from 'lucide-react';
 import { AppIcon } from './TopBar';
-import { CHART_TYPES } from '@/lib/constants';
-import { generateImagePrompt } from '@/lib/image-utils';
+import ChartTypeSelect from './ChartTypeSelect';
+import { imageStrategy, fileStrategy } from '@/lib/input-strategies/registry';
 import ImageUpload from './ImageUpload';
 import MessageBubble from './MessageBubble';
 import ConversationList from './ConversationList';
@@ -34,7 +35,7 @@ interface AICopilotPanelProps {
   onLoadConversation: (id: string) => void;
   onNewConversation: () => void;
   onDeleteConversation: (id: string) => void;
-  onSendMessage: (message: string | { text: string; image: unknown }, chartType: string, source: SourceType) => void;
+  onSendMessage: (message: string | { text: string; images: unknown[] }, chartType: string, source: SourceType) => void;
   isGenerating: boolean;
   currentInput: string;
   currentChartType: string;
@@ -69,6 +70,7 @@ export default function AICopilotPanel({
   apiError,
   onClearError,
 }: AICopilotPanelProps) {
+  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [prompt, setPrompt] = useState(currentInput || '');
   const [chartType, setChartType] = useState(currentChartType || 'auto');
@@ -114,13 +116,15 @@ export default function AICopilotPanel({
     if (!canSend()) return;
 
     if (showImageUpload && selectedImage) {
-      const text = prompt.trim() || generateImagePrompt(chartType);
-      onSendMessage({ text, image: selectedImage }, chartType, 'image');
+      const msg = imageStrategy.buildMessage({ imageObject: selectedImage, previewUrl: '' }, prompt, chartType);
+      if (msg.type === 'image') {
+        onSendMessage(msg.content, chartType, 'image');
+      }
     } else if (fileStatus === 'success' && fileContent) {
-      const combined = prompt.trim()
-        ? `用户指令：\n${prompt.trim()}\n\n参考内容：\n${fileContent}`
-        : fileContent;
-      onSendMessage(combined, chartType, 'file');
+      const msg = fileStrategy.buildMessage(fileContent, prompt, chartType);
+      if (msg.type === 'text') {
+        onSendMessage(msg.content, chartType, 'file');
+      }
     } else if (prompt.trim()) {
       onSendMessage(prompt.trim(), chartType, 'text');
     }
@@ -145,18 +149,13 @@ export default function AICopilotPanel({
     onSendMessage(label, chartType, 'text');
   };
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-    if (!['.md', '.txt'].includes(ext)) {
-      setFileError('请选择 .md 或 .txt 文件');
-      setFileStatus('error');
-      return;
-    }
-    if (file.size > 1024 * 1024) {
-      setFileError('文件大小不能超过 1MB');
+    const validation = fileStrategy.validate(file);
+    if (!validation.valid) {
+      setFileError(validation.error);
       setFileStatus('error');
       return;
     }
@@ -166,22 +165,14 @@ export default function AICopilotPanel({
     setFileStatus('parsing');
     setFileError('');
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const content = ((reader.result as string) || '').trim();
-      if (content) {
-        setFileContent(content);
-        setFileStatus('success');
-      } else {
-        setFileError('文件内容为空');
-        setFileStatus('error');
-      }
-    };
-    reader.onerror = () => {
-      setFileError('文件读取失败');
+    try {
+      const content = await fileStrategy.process(file);
+      setFileContent(content as string);
+      setFileStatus('success');
+    } catch (err) {
+      setFileError((err as Error).message);
       setFileStatus('error');
-    };
-    reader.readAsText(file);
+    }
   };
 
   const handleClearFile = () => {
@@ -194,8 +185,10 @@ export default function AICopilotPanel({
 
   const handleImageSubmit = () => {
     if (!selectedImage || isGenerating) return;
-    const imagePrompt = generateImagePrompt(chartType);
-    onSendMessage({ text: imagePrompt, image: selectedImage }, chartType, 'image');
+    const msg = imageStrategy.buildMessage({ imageObject: selectedImage, previewUrl: '' }, '', chartType);
+    if (msg.type === 'image') {
+      onSendMessage(msg.content, chartType, 'image');
+    }
   };
 
   const handleToggleImage = () => {
@@ -240,7 +233,13 @@ export default function AICopilotPanel({
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-14 border-b border-black/5 flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <AppIcon size={22} />
+          <button
+            onClick={() => router.push('/')}
+            className="hover:opacity-80 transition-opacity duration-200"
+            title="返回首页"
+          >
+            <AppIcon size={22} />
+          </button>
           <ConversationList
             currentId={conversationId}
             onSelect={onLoadConversation}
@@ -299,15 +298,7 @@ export default function AICopilotPanel({
 
           {/* Chart Type */}
           <div className="w-full mb-4">
-            <select
-              value={chartType}
-              onChange={(e) => setChartType(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-black/4 border border-black/5 rounded-xl text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-indigo)]/30 appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_8px_center] pr-7"
-            >
-              {Object.entries(CHART_TYPES).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
+            <ChartTypeSelect value={chartType} onChange={setChartType} />
           </div>
 
           {/* Suggestion Chips */}
@@ -332,15 +323,7 @@ export default function AICopilotPanel({
         {/* Chart Type (when has messages) */}
         {hasMessages && !showImageUpload && (
           <div className="px-4 pt-3 pb-1">
-            <select
-              value={chartType}
-              onChange={(e) => setChartType(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-black/4 border border-black/5 rounded-xl text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-indigo)]/30 appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_8px_center] pr-7"
-            >
-              {Object.entries(CHART_TYPES).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
+            <ChartTypeSelect value={chartType} onChange={setChartType} />
           </div>
         )}
 

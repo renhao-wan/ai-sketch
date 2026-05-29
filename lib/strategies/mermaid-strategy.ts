@@ -4,31 +4,34 @@
  */
 
 import type { DiagramStrategy, ValidationResult } from '@/types/diagram-strategy';
+import { CHART_TYPES } from '@/lib/constants';
+import { stripCodeFences } from '@/lib/json-repair';
+import { createExportBlob, identityOptimize, buildImagePrompt } from './helpers';
 
-// Chart type to Mermaid diagram type mapping
-const CHART_TYPE_MAP: Record<string, { mermaidType: string; name: string }> = {
-  flowchart: { mermaidType: 'flowchart TD', name: '流程图' },
-  mindmap: { mermaidType: 'mindmap', name: '思维导图' },
-  orgchart: { mermaidType: 'flowchart TD', name: '组织架构图' },
-  sequence: { mermaidType: 'sequenceDiagram', name: '时序图' },
-  class: { mermaidType: 'classDiagram', name: 'UML类图' },
-  er: { mermaidType: 'erDiagram', name: 'ER图' },
-  gantt: { mermaidType: 'gantt', name: '甘特图' },
-  timeline: { mermaidType: 'timeline', name: '时间线' },
-  tree: { mermaidType: 'flowchart TD', name: '树形图' },
-  network: { mermaidType: 'flowchart TD', name: '网络拓扑图' },
-  architecture: { mermaidType: 'flowchart TD', name: '架构图' },
-  dataflow: { mermaidType: 'flowchart LR', name: '数据流图' },
-  state: { mermaidType: 'stateDiagram-v2', name: '状态图' },
-  swimlane: { mermaidType: 'flowchart TD', name: '泳道图' },
-  concept: { mermaidType: 'flowchart TD', name: '概念图' },
-  fishbone: { mermaidType: 'flowchart TD', name: '鱼骨图' },
-  swot: { mermaidType: 'flowchart TD', name: 'SWOT分析图' },
-  pyramid: { mermaidType: 'flowchart TD', name: '金字塔图' },
-  funnel: { mermaidType: 'flowchart TD', name: '漏斗图' },
-  venn: { mermaidType: 'flowchart TD', name: '韦恩图' },
-  matrix: { mermaidType: 'flowchart TD', name: '矩阵图' },
-  infographic: { mermaidType: 'flowchart TD', name: '信息图' },
+// Chart type to Mermaid diagram type mapping (only mermaidType, names come from CHART_TYPES)
+const MERMAID_TYPE_MAP: Record<string, string> = {
+  flowchart: 'flowchart TD',
+  mindmap: 'mindmap',
+  orgchart: 'flowchart TD',
+  sequence: 'sequenceDiagram',
+  class: 'classDiagram',
+  er: 'erDiagram',
+  gantt: 'gantt',
+  timeline: 'timeline',
+  tree: 'flowchart TD',
+  network: 'flowchart TD',
+  architecture: 'flowchart TD',
+  dataflow: 'flowchart LR',
+  state: 'stateDiagram-v2',
+  swimlane: 'flowchart TD',
+  concept: 'flowchart TD',
+  fishbone: 'flowchart TD',
+  swot: 'flowchart TD',
+  pyramid: 'flowchart TD',
+  funnel: 'flowchart TD',
+  venn: 'flowchart TD',
+  matrix: 'flowchart TD',
+  infographic: 'flowchart TD',
 };
 
 // Valid Mermaid diagram starters
@@ -232,9 +235,10 @@ class MermaidStrategy implements DiagramStrategy {
     const promptParts: string[] = [];
 
     if (chartType && chartType !== 'auto') {
-      const mapping = CHART_TYPE_MAP[chartType];
-      if (mapping) {
-        promptParts.push(`请创建一个${mapping.name}类型的 Mermaid 图表，使用 \`${mapping.mermaidType}\` 语法。`);
+      const mermaidType = MERMAID_TYPE_MAP[chartType];
+      const chartName = (CHART_TYPES as Record<string, string>)[chartType];
+      if (mermaidType) {
+        promptParts.push(`请创建一个${chartName || chartType}类型的 Mermaid 图表，使用 \`${mermaidType}\` 语法。`);
         const spec = MERMAID_CHART_SPECS[chartType];
         if (spec) {
           promptParts.push(spec.trim());
@@ -262,16 +266,11 @@ class MermaidStrategy implements DiagramStrategy {
 
   postProcess(rawCode: string): string {
     if (!rawCode || typeof rawCode !== 'string') return rawCode;
-    let processed = rawCode.trim();
-    // Strip markdown code fences
-    processed = processed.replace(/^```mermaid\s*\n?/i, '');
-    processed = processed.replace(/^```\s*\n?/i, '');
-    processed = processed.replace(/\n?```\s*$/, '');
-    return processed.trim();
+    return stripCodeFences(rawCode);
   }
 
   optimize(code: string): string {
-    return code;
+    return identityOptimize(code);
   }
 
   validate(code: string): ValidationResult {
@@ -289,30 +288,11 @@ class MermaidStrategy implements DiagramStrategy {
   }
 
   createExportBlob(code: string): Blob {
-    return new Blob([code], { type: this.mimeType });
+    return createExportBlob(code, this.mimeType);
   }
 
   generateImagePrompt(chartType: string): string {
-    const chartTypeText = chartType && chartType !== 'auto'
-      ? `请将图片内容转换为${CHART_TYPE_MAP[chartType]?.name || ''}类型的Mermaid图表。`
-      : '请分析图片内容并选择合适的Mermaid图表类型进行转换。';
-
-    return `${chartTypeText}
-
-请仔细分析图片中的：
-1. 文字内容和标签
-2. 图形元素和结构
-3. 流程或连接关系
-4. 布局和层次关系
-5. 数据或数值信息
-
-基于分析结果，创建清晰、准确的 Mermaid 图表代码，确保：
-- 保留图片中的所有关键信息
-- 使用合适的 Mermaid 图表类型
-- 保持逻辑关系和结构
-- 语法正确，可直接渲染
-
-只输出 Mermaid 代码，不要包含代码块标记。`;
+    return buildImagePrompt(chartType, 'Mermaid', CHART_TYPES as Record<string, string>, '只输出 Mermaid 代码，不要包含代码块标记。');
   }
 }
 

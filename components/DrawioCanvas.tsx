@@ -1,65 +1,44 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 
 interface DrawioCanvasProps {
   code: string;
 }
 
+function buildLoadPayload(xml: string) {
+  return JSON.stringify({
+    action: 'load',
+    xml,
+    autosave: 0,
+    noSaveBtn: 1,
+    noExitBtn: 1,
+    readOnly: 1,
+  });
+}
+
 export default function DrawioCanvas({ code }: DrawioCanvasProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [iframeReady, setIframeReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const sendXml = useCallback(() => {
     if (!iframeRef.current || !code) return;
-
-    const iframe = iframeRef.current;
-
-    const sendXml = () => {
-      try {
-        iframe.contentWindow?.postMessage(
-          JSON.stringify({
-            action: 'load',
-            xml: code,
-            autosave: 0,
-            noSaveBtn: 1,
-            noExitBtn: 1,
-            readOnly: 1,
-          }),
-          '*',
-        );
-        setLoaded(true);
-        setError(null);
-      } catch (e) {
-        setError('无法加载图表到 Draw.io 查看器');
-      }
-    };
-
-    if (loaded) {
-      sendXml();
+    try {
+      iframeRef.current.contentWindow?.postMessage(buildLoadPayload(code), '*');
+      setError(null);
+    } catch {
+      setError('无法加载图表到 Draw.io 查看器');
     }
-  }, [code, loaded]);
+  }, [code]);
+
+  // Send XML whenever code changes AND iframe is ready
+  useEffect(() => {
+    if (iframeReady) sendXml();
+  }, [iframeReady, sendXml]);
 
   const handleLoad = () => {
-    setLoaded(true);
-    if (code && iframeRef.current) {
-      try {
-        iframeRef.current.contentWindow?.postMessage(
-          JSON.stringify({
-            action: 'load',
-            xml: code,
-            autosave: 0,
-            noSaveBtn: 1,
-            noExitBtn: 1,
-            readOnly: 1,
-          }),
-          '*',
-        );
-      } catch {
-        setError('无法加载图表到 Draw.io 查看器');
-      }
-    }
+    setIframeReady(true);
   };
 
   return (

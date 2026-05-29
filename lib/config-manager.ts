@@ -8,7 +8,7 @@ interface ConfigStats {
   byType: Record<string, number>;
 }
 
-interface ValidationResult {
+interface ConfigValidationResult {
   isValid: boolean;
   errors: string[];
 }
@@ -41,10 +41,10 @@ function rowToConfig(row: ConfigRow): LLMConfig {
   };
 }
 
+import { generateId } from './utils';
+
 class ConfigManager {
-  generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  }
+  generateId = generateId;
 
   async getAllConfigs(): Promise<LLMConfig[]> {
     const db = await getDb();
@@ -218,7 +218,7 @@ class ConfigManager {
     });
   }
 
-  validateConfig(config: Partial<LLMConfig>): ValidationResult {
+  validateConfig(config: Partial<LLMConfig>): ConfigValidationResult {
     const errors: string[] = [];
 
     if (!config.name || config.name.trim() === '') {

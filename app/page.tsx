@@ -3,19 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppIcon } from '@/components/TopBar';
+import { setInitData } from '@/lib/init-data';
 import AIPromptBox from '@/components/AIPromptBox';
 import ConfigManager from '@/components/ConfigManager';
 import HistoryModal from '@/components/HistoryModal';
-import { Settings, History, FileText } from 'lucide-react';
+import { Settings, History, FileText, PenTool } from 'lucide-react';
 import * as api from '@/lib/api-client';
 import { runMigrationIfNeeded } from '@/lib/migration';
 import type { HistoryItem } from '@/types';
-
-const CHART_TYPE_NAMES: Record<string, string> = {
-  auto: '自动', flowchart: '流程图', mindmap: '思维导图', orgchart: '组织架构图',
-  sequence: '时序图', class: 'UML类图', er: 'ER图', gantt: '甘特图',
-  architecture: '架构图', state: '状态图', network: '网络拓扑图',
-};
 
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts;
@@ -43,7 +38,8 @@ export default function HomePage() {
   }, []);
 
   const handleApplyHistory = (item: HistoryItem) => {
-    router.push(`/editor?prompt=${encodeURIComponent(item.userInput)}&format=${item.chartType}`);
+    setInitData({ type: 'text', data: item.userInput, format: (item.format || 'excalidraw') as import('@/types/diagram-strategy').DiagramFormat });
+    router.push('/editor?source=text');
   };
 
   return (
@@ -55,6 +51,14 @@ export default function HomePage() {
           <span className="text-[13px] font-semibold tracking-tight text-[var(--fg)]">AI Sketch</span>
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => router.push('/editor')}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5 hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors duration-150"
+            title="进入编辑器"
+          >
+            <PenTool size={13} />
+            <span>编辑器</span>
+          </button>
           <button
             onClick={() => setIsHistoryOpen(true)}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/[0.05] transition-colors duration-150"
@@ -110,13 +114,16 @@ export default function HomePage() {
           {/* Quick Templates */}
           <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
             {['微服务架构图', '用户登录流程', 'ER 数据模型', '系统部署图', '思维导图'].map((t) => (
-              <a
+              <button
                 key={t}
-                href={`/editor?prompt=${encodeURIComponent(t)}&format=auto`}
+                onClick={() => {
+                  setInitData({ type: 'text', data: t, format: 'excalidraw' });
+                  router.push('/editor?source=text');
+                }}
                 className="px-4 py-2 text-xs text-[var(--muted)] bg-white/50 backdrop-blur border border-white/20 rounded-full hover:bg-white/70 hover:text-[var(--fg)] hover:border-[var(--accent-indigo)]/20 transition-all duration-200"
               >
                 {t}
-              </a>
+              </button>
             ))}
           </div>
 

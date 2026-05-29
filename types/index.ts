@@ -16,7 +16,7 @@ export interface LLMConfig {
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
-  image?: ImageData;
+  images?: ImageData[];
 }
 
 /** Base64 image data */
@@ -34,6 +34,15 @@ export interface HistoryItem {
   generatedCode: string;
   config: Partial<LLMConfig>;
   timestamp: number;
+}
+
+/** Data needed to create a history entry */
+export interface AddHistoryData {
+  chartType: string;
+  format?: import('./diagram-strategy').DiagramFormat;
+  userInput: string;
+  generatedCode: string;
+  config: Partial<LLMConfig>;
 }
 
 /** Notification component state */
@@ -65,9 +74,6 @@ export interface ModelInfo {
   name: string;
 }
 
-/** Chart type keys */
-export type ChartTypeKey = string;
-
 /** AI action IDs */
 export type AIActionId = 'optimize' | 'layout' | 'beautify' | 'explain' | 'generate';
 
@@ -87,16 +93,9 @@ export interface ExcalidrawElement {
   [key: string]: unknown;
 }
 
-/** Image validation result */
-export interface ImageValidationResult {
-  isValid: boolean;
-  error?: string;
-}
 
-/** Image object for API calls */
-export interface ImageObject {
-  data: string;
-  mimeType: string;
+/** Image object for API calls — extends ImageData with additional metadata */
+export interface ImageObject extends ImageData {
   dimensions: { width: number; height: number };
   size: number;
   name: string;
@@ -105,7 +104,7 @@ export interface ImageObject {
 /** Generate API request body */
 export interface GenerateRequest {
   config: LLMConfig;
-  userInput: string | { text?: string; image?: ImageData };
+  userInput: string | { text?: string; image?: ImageData; images?: ImageData[] };
   chartType: string;
   format?: import('./diagram-strategy').DiagramFormat;
 }

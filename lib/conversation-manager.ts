@@ -1,4 +1,5 @@
 import { getDb, saveToDisk } from './db';
+import { generateId } from './utils';
 import type { Conversation, ConversationMessage, ConversationWithMessages, LLMMessage } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
@@ -60,10 +61,10 @@ function toLLMMessage(msg: ConversationMessage): LLMMessage {
     content: msg.content,
   };
   if (msg.imageData && msg.imageMimeType) {
-    llmMsg.image = {
+    llmMsg.images = [{
       data: msg.imageData,
       mimeType: msg.imageMimeType,
-    };
+    }];
   }
   return llmMsg;
 }
@@ -71,9 +72,7 @@ function toLLMMessage(msg: ConversationMessage): LLMMessage {
 const MAX_CONTEXT_MESSAGES = 50;
 
 class ConversationManager {
-  private generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  }
+  private generateId = generateId;
 
   async create(data: {
     title?: string;

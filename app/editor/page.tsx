@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { AppIcon } from '@/components/TopBar';
 import AICopilotPanel from '@/components/AICopilotPanel';
@@ -15,16 +14,14 @@ import DiagramCanvas from '@/components/DiagramCanvas';
 import * as api from '@/lib/api-client';
 import { isConfigValid } from '@/lib/config-validator';
 import { getStrategy } from '@/lib/strategies/registry';
+import { consumeInitData } from '@/lib/init-data';
 import { runMigrationIfNeeded } from '@/lib/migration';
 import type { LLMConfig, HistoryItem, NotificationState, AIActionId, ConversationMessage } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
-function generateMessageId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
+import { generateId } from '@/lib/utils';
 
 function EditorContent() {
-  const searchParams = useSearchParams();
   const [config, setConfig] = useState<LLMConfig | null>(null);
   const [isConfigManagerOpen, setIsConfigManagerOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -38,7 +35,6 @@ function EditorContent() {
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [currentInput, setCurrentInput] = useState('');
   const [currentChartType, setCurrentChartType] = useState('auto');
-  const [bottomPanelContent, setBottomPanelContent] = useState<string | null>(null);
   const [notification, setNotification] = useState<NotificationState>({
     isOpen: false,
     title: '',
@@ -67,48 +63,40 @@ function EditorContent() {
     runMigrationIfNeeded().then(() => loadConfig());
   }, [loadConfig]);
 
+  // Consume init data from sessionStorage on mount (set by homepage before navigation)
   useEffect(() => {
-    const prompt = searchParams.get('prompt');
-    const formatParam = searchParams.get('format') as DiagramFormat | null;
-    const source = searchParams.get('source');
+    const params = new URLSearchParams(window.location.search);
+    const source = params.get('source');
+    if (!source) return;
 
-    if (formatParam && ['excalidraw', 'mermaid', 'drawio'].includes(formatParam)) {
-      setFormat(formatParam);
+    const init = consumeInitData();
+    if (!init) return;
+
+    if (init.format && ['excalidraw', 'mermaid', 'drawio'].includes(init.format)) {
+      setFormat(init.format);
     }
 
-    if (source === 'file' || source === 'image') {
-      try {
-        const raw = sessionStorage.getItem('ai-sketch-init-data');
-        if (raw) {
-          const init = JSON.parse(raw);
-          sessionStorage.removeItem('ai-sketch-init-data');
-          if (init.format && ['excalidraw', 'mermaid', 'drawio'].includes(init.format)) {
-            setFormat(init.format);
-          }
-          if (init.type === 'file' && init.data) {
-            setCurrentInput(init.data);
-            setCurrentChartType(init.format || 'auto');
-            setTimeout(() => handleSendMessage(init.data, init.format || 'auto', 'file'), 300);
-          } else if (init.type === 'image' && init.data) {
-            setCurrentChartType(init.format || 'auto');
-            setTimeout(() => handleSendMessage(init.data, init.format || 'auto', 'image'), 300);
-          }
-        }
-      } catch (e) {
-        console.error('Failed to read init data:', e);
-      }
-    } else if (prompt) {
-      setCurrentInput(prompt);
-      if (formatParam) setCurrentChartType(formatParam);
-      setTimeout(() => {
-        handleSendMessage(prompt, formatParam || 'auto', 'text');
-      }, 300);
+    const data = init.data;
+    if (init.type === 'text' && typeof data === 'string') {
+      setCurrentInput(data);
+      setCurrentChartType('auto');
+    } else if (init.type === 'file' && data) {
+      const text = typeof data === 'string' ? data : ((data as { text?: string }).text || '');
+      setCurrentInput(text);
+      setCurrentChartType('auto');
+    } else if (init.type === 'image' && data) {
+      const imgData = data as { text?: string; images?: unknown[] };
+      setCurrentInput(imgData.text || '');
+      setCurrentChartType('auto');
     }
-  }, [searchParams]);
 
+    pendingInitRef.current = init;
+  }, []);
+
+  const pendingInitRef = useRef<import('@/lib/init-data').InitData | null>(null);
   const strategy = getStrategy(format);
 
-  const handleSendMessage = useCallback(async (userMessage: string | { text?: string; image?: unknown }, chartType: string = 'auto', sourceType: string = 'text') => {
+  const handleSendMessage = useCallback(async (userMessage: string | { text?: string; images?: unknown[] }, chartType: string = 'auto', sourceType: string = 'text') => {
     if (!isConfigValid(config)) {
       setNotification({ isOpen: true, title: '配置提醒', message: '请先配置您的 LLM 提供商', type: 'warning' });
       setIsConfigManagerOpen(true);
@@ -116,7 +104,6 @@ function EditorContent() {
     }
 
     const userContent = typeof userMessage === 'string' ? userMessage : (userMessage.text || '');
-    const hasImage = typeof userMessage === 'object' && 'image' in userMessage && userMessage.image;
 
     setCurrentInput(userContent);
     setCurrentChartType(chartType);
@@ -127,7 +114,7 @@ function EditorContent() {
 
     // Optimistic: add user message to local state
     const optimisticUserMsg: ConversationMessage = {
-      id: generateMessageId(),
+      id: generateId(),
       conversationId: conversationId || '',
       role: 'user',
       content: userContent,
@@ -217,7 +204,7 @@ function EditorContent() {
 
       // Add assistant message to local state
       const assistantMsg: ConversationMessage = {
-        id: generateMessageId(),
+        id: generateId(),
         conversationId: activeConvId || '',
         role: 'assistant',
         content: optimizedCode,
@@ -246,6 +233,23 @@ function EditorContent() {
       setIsStreaming(false);
     }
   }, [config, format, conversationId]);
+
+  // Send pending init data once config is loaded
+  useEffect(() => {
+    if (!config || !pendingInitRef.current) return;
+
+    const init = pendingInitRef.current;
+    pendingInitRef.current = null;
+
+    const data = init.data;
+    if (init.type === 'text' && typeof data === 'string') {
+      handleSendMessage(data, 'auto', 'text');
+    } else if (init.type === 'file' && data) {
+      handleSendMessage(data as string, 'auto', 'file');
+    } else if (init.type === 'image' && data) {
+      handleSendMessage(data as { text?: string; images?: unknown[] }, 'auto', 'image');
+    }
+  }, [config, handleSendMessage]);
 
   const tryParseAndApply = (code: string, strat?: ReturnType<typeof getStrategy>) => {
     const s = strat || strategy;
@@ -339,7 +343,7 @@ function EditorContent() {
       case 'optimize': handleOptimizeCode(); break;
       case 'layout': setNotification({ isOpen: true, title: '自动布局', message: '布局优化中...', type: 'info' }); break;
       case 'beautify': setNotification({ isOpen: true, title: '美化图表', message: '正在美化...', type: 'info' }); break;
-      case 'explain': setBottomPanelContent('ai'); break;
+      case 'explain': break;
       case 'generate': setNotification({ isOpen: true, title: '生成节点', message: '请描述要添加的节点', type: 'info' }); break;
     }
   };

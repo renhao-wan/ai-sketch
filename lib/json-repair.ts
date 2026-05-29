@@ -24,10 +24,10 @@ try {
 /**
  * Remove leading/trailing Markdown code fences.
  */
-function stripCodeFences(text: string): string {
+export function stripCodeFences(text: string): string {
   if (!text || typeof text !== 'string') return text;
   let s = text.trim();
-  s = s.replace(/^```(?:json|javascript|js)?\s*\n?/i, '');
+  s = s.replace(/^```(?:json|javascript|js|mermaid|xml|html|markdown|md)?\s*\n?/i, '');
   s = s.replace(/\n?```\s*$/i, '');
   return s.trim();
 }
@@ -130,28 +130,6 @@ export function repairJsonClosure(input: string): string {
   }
 
   return out;
-}
-
-/**
- * Safely parse JSON with closure repair. Returns { ok, value, error }.
- */
-export function safeParseJsonWithRepair(input: string): { ok: true; value: unknown } | { ok: false; error: unknown } {
-  try {
-    return { ok: true, value: JSON.parse(input) };
-  } catch (_) {
-    try {
-      const repaired = repairJsonClosure(input);
-      return { ok: true, value: JSON.parse(repaired) };
-    } catch (error) {
-      if (jsonRepairLib) {
-        try {
-          const repaired = jsonRepairLib(input);
-          return { ok: true, value: JSON.parse(repaired) };
-        } catch (_) { /* fallthrough */ }
-      }
-      return { ok: false, error };
-    }
-  }
 }
 
 // Helpers
