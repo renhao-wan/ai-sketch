@@ -85,6 +85,7 @@ export default function AICopilotPanel({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileContent, setFileContent] = useState('');
@@ -95,8 +96,11 @@ export default function AICopilotPanel({
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [messages.length]);
 
   useEffect(() => {
     if (currentInput !== undefined) setPrompt(currentInput);
@@ -247,7 +251,7 @@ export default function AICopilotPanel({
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="h-full flex flex-col bg-[var(--bg-glass)] backdrop-blur-2xl relative z-10 animate-fade-in" style={{ width: panelWidth, minWidth: panelWidth }}>
+    <div className="h-full flex flex-col overflow-hidden bg-[var(--bg-glass)] backdrop-blur-2xl relative z-10 animate-fade-in" style={{ width: panelWidth, minWidth: panelWidth }}>
       {/* Resize Handle */}
       {onPanelWidthChange && (
         <div
@@ -307,7 +311,7 @@ export default function AICopilotPanel({
 
       {/* Message List or Empty State */}
       {hasMessages ? (
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-thin">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 scrollbar-subtle">
           {messages.map((msg) => (
             <MessageBubble
               key={msg.id}

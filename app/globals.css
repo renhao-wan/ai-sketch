@@ -266,6 +266,37 @@ html, body {
   background: rgba(28, 25, 23, 0.18);
 }
 
+/* Subtle scrollbar: very faint by default, vivid on hover */
+.scrollbar-subtle {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124, 58, 237, 0.06) transparent;
+}
+
+.scrollbar-subtle:hover {
+  scrollbar-color: rgba(124, 58, 237, 0.2) transparent;
+}
+
+.scrollbar-subtle::-webkit-scrollbar {
+  width: 5px;
+}
+
+.scrollbar-subtle::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-subtle::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.06);
+  border-radius: 999px;
+}
+
+.scrollbar-subtle:hover::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.2);
+}
+
+.scrollbar-subtle:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.38);
+}
+
 /* ============================================
    Segmented Control
    ============================================ */
