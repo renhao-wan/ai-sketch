@@ -66,16 +66,29 @@ function determineEdges(s: Record<string, unknown>, e: Record<string, unknown>):
   return { sEdge: 'right', eEdge: 'left' };
 }
 
-/** Pre-compute arrow position, strip binding references only */
+/**
+ * Pre-compute arrow position for streaming rendering.
+ *
+ * Rules:
+ * - start/end with `type` → keep (auto-creates target element)
+ * - start/end with `id` → strip (target may not exist yet during streaming)
+ * - label, boundElements, and all other props → always preserved
+ * - Coordinates pre-computed when both id-based targets are available
+ */
 function positionArrow(arrow: Record<string, unknown>, idMap: Map<string, Record<string, unknown>>): Record<string, unknown> {
   const startRef = arrow.start as Record<string, unknown> | undefined;
   const endRef = arrow.end as Record<string, unknown> | undefined;
-  const startEl = startRef?.id ? idMap.get(startRef.id as string) : null;
-  const endEl = endRef?.id ? idMap.get(endRef.id as string) : null;
 
-  // Only strip binding references, keep everything else (label, boundElements, etc.)
-  const { start, end, startBinding, endBinding, ...rest } = arrow;
-  const result = { ...rest };
+  // Determine which references are id-based (need stripping) vs type-based (keep)
+  const startIsId = !!startRef?.id;
+  const endIsId = !!endRef?.id;
+  const startEl = startIsId ? idMap.get(startRef!.id as string) : null;
+  const endEl = endIsId ? idMap.get(endRef!.id as string) : null;
+
+  // Build result: strip id-based refs, keep type-based refs
+  const result: Record<string, unknown> = { ...arrow };
+  if (startIsId) result.start = undefined;
+  if (endIsId) result.end = undefined;
 
   if (startEl && endEl) {
     const { sEdge, eEdge } = determineEdges(startEl, endEl);
@@ -85,7 +98,6 @@ function positionArrow(arrow: Record<string, unknown>, idMap: Map<string, Record
     result.y = sc.y;
     result.width = (ec.x - sc.x) || 1;
     result.height = ec.y - sc.y;
-    // Also update points to match new position
     result.points = [[0, 0], [result.width as number, result.height as number]];
   }
 
@@ -179,14 +191,8 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
 
         if (hasNew && sceneRef.current.length > 0) {
           try {
-            // Defer to next frame — avoids "setState inside update" warning
-            // when Excalidraw API is called during React render cycle
-            requestAnimationFrame(() => {
-              try {
-                apiRef.current?.updateScene({ elements: sceneRef.current });
-                apiRef.current?.scrollToContent(sceneRef.current, { fitToContent: true, animate: false, padding: 20 });
-              } catch {}
-            });
+            apiRef.current.updateScene({ elements: sceneRef.current });
+            apiRef.current.scrollToContent(sceneRef.current, { fitToContent: true, animate: false, padding: 20 });
           } catch {}
         }
       },
@@ -222,13 +228,8 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
 
     if (converted.length > 0) {
       try {
-        // Defer to next frame — avoids "setState inside update" warning
-        requestAnimationFrame(() => {
-          try {
-            apiRef.current?.updateScene({ elements: converted });
-            apiRef.current?.scrollToContent(converted, { fitToContent: true, animate: true, duration: 300, padding: 20 });
-          } catch {}
-        });
+        apiRef.current.updateScene({ elements: converted });
+        apiRef.current.scrollToContent(converted, { fitToContent: true, animate: true, duration: 300, padding: 20 });
       } catch {}
     }
 
