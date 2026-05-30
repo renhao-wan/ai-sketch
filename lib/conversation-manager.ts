@@ -61,10 +61,19 @@ function toLLMMessage(msg: ConversationMessage): LLMMessage {
     content: msg.content,
   };
   if (msg.imageData && msg.imageMimeType) {
-    llmMsg.images = [{
-      data: msg.imageData,
-      mimeType: msg.imageMimeType,
-    }];
+    if (msg.imageMimeType === 'application/json') {
+      // 多图：imageData 是 JSON 数组 [{ data, mimeType }]
+      try {
+        const arr = JSON.parse(msg.imageData) as { data: string; mimeType: string }[];
+        llmMsg.images = arr.map(img => ({ data: img.data, mimeType: img.mimeType }));
+      } catch {
+        // 解析失败，当作单图处理
+        llmMsg.images = [{ data: msg.imageData, mimeType: msg.imageMimeType }];
+      }
+    } else {
+      // 单图
+      llmMsg.images = [{ data: msg.imageData, mimeType: msg.imageMimeType }];
+    }
   }
   return llmMsg;
 }

@@ -99,10 +99,13 @@ function EditorContent() {
       setCurrentChartType('auto');
     }
 
+    // 存储 source 参数，用于自动发送时确定 sourceType
     pendingInitRef.current = init;
+    pendingSourceRef.current = source;
   }, []);
 
   const pendingInitRef = useRef<import('@/lib/init-data').InitData | null>(null);
+  const pendingSourceRef = useRef<string>('text');
   const abortControllerRef = useRef<AbortController | null>(null);
   const streamRendererRef = useRef<StreamRendererRef | null>(null);
   const formatRef = useRef(format);
@@ -171,6 +174,10 @@ function EditorContent() {
       content: userContent,
       sourceType: sourceType as 'text' | 'file' | 'image',
       createdAt: Date.now(),
+      ...(sourceType === 'image' && typeof userMessage === 'object' && userMessage.images?.length ? {
+        imageData: (userMessage.images[0] as { data?: string })?.data,
+        imageMimeType: (userMessage.images[0] as { mimeType?: string })?.mimeType,
+      } : {}),
     };
     const optimisticAssistantMsg: ConversationMessage = {
       id: generateId(),
@@ -186,7 +193,7 @@ function EditorContent() {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ configId: config!.id, userInput: userMessage, chartType, format, conversationId }),
+        body: JSON.stringify({ configId: config!.id, userInput: userMessage, chartType, format, conversationId, sourceType }),
         signal: controller.signal,
       });
 
@@ -312,10 +319,13 @@ function EditorContent() {
     pendingInitRef.current = null;
 
     const data = init.data;
+    // 使用 URL 参数 source 确定 sourceType（首页传文件时 orchestrator 返回 type='text'，但 source='file'）
+    const resolvedSource = pendingSourceRef.current || (init.type === 'image' ? 'image' : init.type === 'file' ? 'file' : 'text');
+
     if (init.type === 'text' && typeof data === 'string') {
-      handleSendMessage(data, 'auto', 'text');
+      handleSendMessage(data, 'auto', resolvedSource);
     } else if (init.type === 'file' && data) {
-      handleSendMessage(data as string, 'auto', 'file');
+      handleSendMessage(data as string, 'auto', resolvedSource);
     } else if (init.type === 'image' && data) {
       handleSendMessage(data as { text?: string; images?: unknown[] }, 'auto', 'image');
     }

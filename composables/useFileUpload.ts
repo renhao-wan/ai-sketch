@@ -14,6 +14,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { imageStrategy, orchestrator } from '@/lib/input-strategies/registry';
+import { getStrategy } from '@/lib/strategies/registry';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 import type { MessagePayload } from '@/types/input-strategy';
 
@@ -101,8 +102,17 @@ export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadRetu
 
     const result = await orchestrator.handleFiles(merged, prompt || '', 'auto');
     if (result.success) {
+      let finalPayload = result.payload;
+      // 图片无描述时，补充默认 prompt（orchestrator 的 merge 不调用 strategy.buildMessage）
+      if (finalPayload.type === 'image' && finalPayload.content && !finalPayload.content.text) {
+        const fmt = options?.diagramFormat || 'excalidraw';
+        finalPayload = {
+          ...finalPayload,
+          content: { ...finalPayload.content, text: getStrategy(fmt).generateImagePrompt('auto') },
+        };
+      }
       setAttachments(merged);
-      setPayload(result.payload);
+      setPayload(finalPayload);
       setAttachStatus('success');
     } else {
       setAttachError(result.errors.map(e => `${e.fileName}: ${e.error}`).join('; '));

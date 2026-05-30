@@ -32,18 +32,30 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
             ? 'bg-[var(--accent-indigo)] text-white rounded-br-md'
             : 'bg-[var(--surface-warm)] text-[var(--fg)] rounded-bl-md border border-[var(--border)]'
         }`}>
-          {/* Image thumbnail for image messages */}
-          {message.imageData && (
-            <div className="mb-2">
-              <div className="w-32 h-24 rounded-lg overflow-hidden bg-[var(--surface-warm-hover)] flex items-center justify-center">
-                <img
-                  src={`data:${message.imageMimeType};base64,${message.imageData}`}
-                  alt="Uploaded"
-                  className="w-full h-full object-cover"
-                />
+          {/* Image thumbnail(s) for image messages */}
+          {message.imageData && (() => {
+            // 解析图片数据：单图或多图 JSON 数组
+            const images: { data: string; mimeType: string }[] = [];
+            if (message.imageMimeType === 'application/json') {
+              try { images.push(...JSON.parse(message.imageData)); } catch { /* ignore */ }
+            } else {
+              images.push({ data: message.imageData, mimeType: message.imageMimeType || 'image/png' });
+            }
+            if (images.length === 0) return null;
+            return (
+              <div className={`mb-2 flex gap-1.5 flex-wrap ${images.length > 1 ? 'max-w-48' : ''}`}>
+                {images.slice(0, 3).map((img, i) => (
+                  <div key={i} className="w-20 h-16 rounded-lg overflow-hidden bg-[var(--surface-warm-hover)] flex items-center justify-center">
+                    <img
+                      src={`data:${img.mimeType};base64,${img.data}`}
+                      alt={`Uploaded ${i + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Text content */}
           {isUser ? (

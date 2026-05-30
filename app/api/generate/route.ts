@@ -22,13 +22,14 @@ import type { DiagramFormat } from '@/types/diagram-strategy';
  */
 export async function POST(request: Request) {
   try {
-    const { configId, config: configBody, userInput, chartType, format, conversationId } = await request.json() as {
+    const { configId, config: configBody, userInput, chartType, format, conversationId, sourceType: frontendSourceType } = await request.json() as {
       configId?: string;
       config?: LLMConfig;
       userInput: string | { text?: string; image?: ImageData; images?: ImageData[] };
       chartType: string;
       format?: DiagramFormat;
       conversationId?: string;
+      sourceType?: string;
     };
 
     let config: LLMConfig | undefined;
@@ -79,15 +80,21 @@ export async function POST(request: Request) {
       if (userInput.image) allImages.push(userInput.image);
       if (userInput.images) allImages.push(...userInput.images);
     }
-    const sourceType = allImages.length > 0 ? 'image' : 'text';
+    const sourceType = frontendSourceType || (allImages.length > 0 ? 'image' : 'text');
 
-    // Save user message to conversation (store first image for history)
+    // Save user message to conversation (store all images as JSON array for history)
+    const imageDataStr = allImages.length > 0
+      ? (allImages.length === 1 ? allImages[0].data : JSON.stringify(allImages.map(img => ({ data: img.data, mimeType: img.mimeType }))))
+      : undefined;
+    const imageMimeTypeStr = allImages.length > 0
+      ? (allImages.length === 1 ? allImages[0].mimeType : 'application/json')
+      : undefined;
     await conversationManager.addMessage({
       conversationId: activeConversationId,
       role: 'user',
       content: userContent,
-      imageData: allImages[0]?.data,
-      imageMimeType: allImages[0]?.mimeType,
+      imageData: imageDataStr,
+      imageMimeType: imageMimeTypeStr,
       sourceType,
     });
 

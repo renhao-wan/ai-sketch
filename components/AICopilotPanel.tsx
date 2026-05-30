@@ -142,7 +142,21 @@ export default function AICopilotPanel({
     if (!canSendNow()) return;
 
     if (payload) {
-      onSendMessage(payload.content, chartType, getSourceType());
+      if (payload.type === 'image') {
+        // 图片 payload：将用户额外描述合并到 text 字段
+        const imgContent = payload.content as { text: string; images: unknown[] };
+        const mergedText = prompt.trim()
+          ? `${prompt.trim()}\n\n${imgContent.text}`.trim()
+          : imgContent.text;
+        onSendMessage({ text: mergedText, images: imgContent.images }, chartType, 'image');
+      } else {
+        // 文件 payload：将用户额外描述合并到 content 前面
+        const fileContent = payload.content as string;
+        const merged = prompt.trim()
+          ? `${prompt.trim()}\n\n${fileContent}`
+          : fileContent;
+        onSendMessage(merged, chartType, getSourceType());
+      }
     } else if (prompt.trim()) {
       onSendMessage(prompt.trim(), chartType, 'text');
     }
