@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, type ChangeEvent, type KeyboardEvent, type MouseEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, type KeyboardEvent, type MouseEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Send,
@@ -19,12 +19,11 @@ import {
 } from 'lucide-react';
 import { AppIcon } from './TopBar';
 import ChartTypeSelect from './ChartTypeSelect';
-import { imageStrategy, fileStrategy } from '@/lib/input-strategies/registry';
-import ImageUpload from './ImageUpload';
+import { useFileUpload } from '@/composables/useFileUpload';
 import MessageBubble from './MessageBubble';
 import ConversationList from './ConversationList';
 import { useLocale } from '@/locales';
-import type { SourceType, ImageObject, ConversationMessage } from '@/types';
+import type { SourceType, ConversationMessage } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
 const FORMATS = [
@@ -81,18 +80,16 @@ export default function AICopilotPanel({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [prompt, setPrompt] = useState(currentInput || '');
   const [chartType, setChartType] = useState(currentChartType || 'auto');
-  const [showImageUpload, setShowImageUpload] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileContent, setFileContent] = useState('');
-  const [fileStatus, setFileStatus] = useState<'' | 'parsing' | 'success' | 'error'>('');
-  const [fileError, setFileError] = useState('');
+  const { attachments, payload, attachStatus, attachError, handleFiles, clearAttachments, canSend, getSourceType } = useFileUpload();
 
-  const [selectedImage, setSelectedImage] = useState<(ImageObject & { previewUrl: string; file: File }) | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounterRef = useRef(0);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-scroll to bottom when messages change
   const prevCountRef = useRef(0);
@@ -135,33 +132,24 @@ export default function AICopilotPanel({
     }
   }, [prompt]);
 
-  const canSend = (): boolean => {
+  const canSendNow = (): boolean => {
     if (isGenerating) return false;
-    return !!(prompt.trim() || (fileStatus === 'success' && fileContent) || (showImageUpload && selectedImage));
+    return canSend(!!prompt.trim());
   };
 
   const handleSend = () => {
-    if (!canSend()) return;
+    if (!canSendNow()) return;
 
-    if (showImageUpload && selectedImage) {
-      const msg = imageStrategy.buildMessage({ imageObject: selectedImage, previewUrl: '' }, prompt, chartType);
-      if (msg.type === 'image') {
-        onSendMessage(msg.content, chartType, 'image');
-      }
-    } else if (fileStatus === 'success' && fileContent) {
-      const msg = fileStrategy.buildMessage(fileContent, prompt, chartType);
-      if (msg.type === 'text') {
-        onSendMessage(msg.content, chartType, 'file');
-      }
+    if (payload) {
+      onSendMessage(payload.content, chartType, getSourceType());
     } else if (prompt.trim()) {
       onSendMessage(prompt.trim(), chartType, 'text');
     }
 
-    // Clear input after send
+    clearAttachments();
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (imageInputRef.current) imageInputRef.current.value = '';
     setPrompt('');
-    handleClearFile();
-    setShowImageUpload(false);
-    setSelectedImage(null);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -171,56 +159,31 @@ export default function AICopilotPanel({
     }
   };
 
-  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const validation = fileStrategy.validate(file);
-    if (!validation.valid) {
-      setFileError(validation.error);
-      setFileStatus('error');
-      return;
-    }
-
-    setShowImageUpload(false);
-    setSelectedFile(file);
-    setFileStatus('parsing');
-    setFileError('');
-
-    try {
-      const content = await fileStrategy.process(file);
-      setFileContent(content as string);
-      setFileStatus('success');
-    } catch (err) {
-      setFileError((err as Error).message);
-      setFileStatus('error');
-    }
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.types.includes('Files')) setIsDragging(true);
   };
 
-  const handleClearFile = () => {
-    setSelectedFile(null);
-    setFileContent('');
-    setFileStatus('');
-    setFileError('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) setIsDragging(false);
   };
 
-  const handleImageSubmit = () => {
-    if (!selectedImage || isGenerating) return;
-    const msg = imageStrategy.buildMessage({ imageObject: selectedImage, previewUrl: '' }, '', chartType);
-    if (msg.type === 'image') {
-      onSendMessage(msg.content, chartType, 'image');
-    }
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
   };
 
-  const handleToggleImage = () => {
-    if (showImageUpload) {
-      setShowImageUpload(false);
-      setSelectedImage(null);
-    } else {
-      setShowImageUpload(true);
-      handleClearFile();
-    }
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounterRef.current = 0;
+    handleFiles(Array.from(e.dataTransfer.files));
   };
 
   const handleResizeStart = useCallback((e: MouseEvent) => {
@@ -374,7 +337,7 @@ export default function AICopilotPanel({
       {/* Input Area */}
       <div className="border-t border-black/[0.08] bg-black/[0.02] flex-shrink-0">
         {/* Format & Chart Type (when has messages) */}
-        {hasMessages && !showImageUpload && (
+        {hasMessages && (
           <div className="px-4 pt-3 pb-1 space-y-2">
             <div className="segmented-control w-full">
               {FORMATS.map((f) => (
@@ -391,44 +354,44 @@ export default function AICopilotPanel({
           </div>
         )}
 
-        {/* Text Input or Image Upload */}
+        {/* Text Input */}
         <div className="px-4 pt-2">
-          {showImageUpload ? (
-            <div className="min-h-[120px] flex flex-col">
-              <ImageUpload
-                onImageSelect={setSelectedImage}
-                isGenerating={isGenerating}
-                chartType={chartType}
-                onChartTypeChange={setChartType}
-                onImageGenerate={handleImageSubmit}
-              />
-            </div>
-          ) : (
-            <>
-              <textarea
-                ref={textareaRef}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={hasMessages ? t('copilot.continueDescribe') : t('copilot.describeChart') + '...'}
-                className="w-full resize-none bg-white/60 text-sm leading-relaxed text-[var(--fg)] placeholder:text-[var(--muted)]/60 focus:outline-none focus:ring-1 focus:ring-[var(--accent-indigo)]/20 min-h-[60px] max-h-[160px] rounded-xl px-3 py-2.5 border border-black/[0.1] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
-              />
+          <div
+            className="relative"
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            {isDragging && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--accent-indigo)]/5 border-2 border-dashed border-[var(--accent-indigo)]/30 rounded-xl pointer-events-none">
+                <span className="text-sm font-medium text-[var(--accent-indigo)]">拖放文件到此处</span>
+              </div>
+            )}
+            <textarea
+              ref={textareaRef}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={hasMessages ? t('copilot.continueDescribe') : t('copilot.describeChart') + '...'}
+              className="w-full resize-none bg-white/60 text-sm leading-relaxed text-[var(--fg)] placeholder:text-[var(--muted)]/60 focus:outline-none focus:ring-1 focus:ring-[var(--accent-indigo)]/20 min-h-[60px] max-h-[160px] rounded-xl px-3 py-2.5 border border-black/[0.1] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+            />
+          </div>
 
-              {/* File Status */}
-              {selectedFile && (
-                <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)]">
-                  {fileStatus === 'parsing' && <Loader2 size={13} className="animate-spin text-[var(--muted)] flex-shrink-0" />}
-                  {fileStatus === 'success' && <CheckCircle size={13} className="text-emerald-500 flex-shrink-0" />}
-                  {fileStatus === 'error' && <AlertCircle size={13} className="text-red-500 flex-shrink-0" />}
-                  <span className="text-xs text-[var(--fg)] truncate flex-1">{selectedFile.name}</span>
-                  {fileStatus === 'success' && <span className="text-[10px] text-[var(--muted)]/60 flex-shrink-0">{fileContent.length} {t('copilot.characters')}</span>}
-                  {fileStatus === 'error' && <span className="text-[10px] text-red-500 flex-shrink-0">{fileError}</span>}
-                  <button onClick={handleClearFile} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
-                    <X size={13} />
-                  </button>
-                </div>
-              )}
-            </>
+          {/* Attachment Status */}
+          {attachments.length > 0 && (
+            <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)]">
+              {attachStatus === 'processing' && <Loader2 size={13} className="animate-spin text-[var(--muted)] flex-shrink-0" />}
+              {attachStatus === 'success' && <CheckCircle size={13} className="text-emerald-500 flex-shrink-0" />}
+              {attachStatus === 'error' && <AlertCircle size={13} className="text-red-500 flex-shrink-0" />}
+              <span className="text-xs text-[var(--fg)] truncate flex-1">
+                {attachments.length === 1 ? attachments[0].name : `${attachments.length} 个文件`}
+              </span>
+              {attachStatus === 'error' && <span className="text-[10px] text-red-500 flex-shrink-0">{attachError}</span>}
+              <button onClick={() => { clearAttachments(); if (fileInputRef.current) fileInputRef.current.value = ''; if (imageInputRef.current) imageInputRef.current.value = ''; }} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
+                <X size={13} />
+              </button>
+            </div>
           )}
         </div>
 
@@ -438,8 +401,17 @@ export default function AICopilotPanel({
             ref={fileInputRef}
             type="file"
             accept=".md,.txt"
+            multiple
             className="hidden"
-            onChange={handleFileChange}
+            onChange={(e) => handleFiles(Array.from(e.target.files || []))}
+          />
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => handleFiles(Array.from(e.target.files || []))}
           />
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -450,11 +422,9 @@ export default function AICopilotPanel({
             <Paperclip size={15} />
           </button>
           <button
-            onClick={handleToggleImage}
+            onClick={() => imageInputRef.current?.click()}
             disabled={isGenerating}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 disabled:opacity-40 ${
-              showImageUpload ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-            }`}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200 disabled:opacity-40"
             title={t('copilot.uploadImage')}
           >
             <Image size={15} />
@@ -470,7 +440,7 @@ export default function AICopilotPanel({
           ) : (
             <button
               onClick={handleSend}
-              disabled={!canSend()}
+              disabled={!canSendNow()}
               className="h-8 px-4 flex items-center gap-1.5 bg-[var(--primary)] text-white text-xs font-medium rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-[0_2px_10px_rgba(28,25,23,0.08)]"
             >
               <><Send size={13} /><span>{hasMessages ? t('copilot.send') : t('copilot.generate')}</span></>
