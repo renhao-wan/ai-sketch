@@ -112,11 +112,17 @@ const DRAWIO_SYSTEM_PROMPT = `## 任务
 \`\`\`
 
 ### 带标签的连接线
+标签位置通过 style 中的 labelPosition 和 align 控制：
 \`\`\`xml
-<mxCell id="edge-1" value="连接标签" style="edgeStyle=orthogonalEdgeStyle;fontSize=12;" edge="1" parent="1" source="node-1" target="node-2">
+<mxCell id="edge-1" value="连接标签" style="edgeStyle=orthogonalEdgeStyle;fontSize=12;labelPosition=center;align=center;verticalAlign=middle;" edge="1" parent="1" source="node-1" target="node-2">
   <mxGeometry relative="1" as="geometry" />
 </mxCell>
 \`\`\`
+
+**重要：连接线标签位置规范**
+- 标签必须放在 style 中，不要使用独立的文本节点
+- 使用 \`labelPosition=center;align=center;verticalAlign=middle;\` 确保标签居中显示在连线上
+- 不要为连接线标签创建单独的 mxCell 节点，标签文字应通过 value 属性设置
 
 ### 容器/分组
 \`\`\`xml

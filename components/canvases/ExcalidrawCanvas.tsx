@@ -32,7 +32,7 @@ loadConvertFn();
 const VALID = new Set(['rectangle','ellipse','diamond','text','arrow','line','freedraw','image','frame','webembed','magicframe']);
 const ARROW_TYPES = new Set(['arrow', 'line']);
 
-// ─── Arrow position computation (from docs/arrow-compute-rule.md) ───
+// ─── Arrow position computation ───
 
 function getEdgeCenter(el: Record<string, unknown>, edge: string): { x: number; y: number } {
   const x = (el.x as number) || 0, y = (el.y as number) || 0;
@@ -67,42 +67,46 @@ function determineEdges(s: Record<string, unknown>, e: Record<string, unknown>):
 }
 
 /**
- * Pre-compute arrow position for streaming rendering.
- *
- * Rules:
- * - start/end with `type` → keep (auto-creates target element)
- * - start/end with `id` → strip (target may not exist yet during streaming)
- * - label, boundElements, and all other props → always preserved
- * - Coordinates pre-computed when both id-based targets are available
+ * 处理箭头/线条的流式渲染。
+ * - 两个目标都在 idMap 中 → 去掉 id 引用，计算坐标，返回处理后的元素
+ * - 目标不全 → 返回 null（跳过，等最终渲染处理）
  */
-function positionArrow(arrow: Record<string, unknown>, idMap: Map<string, Record<string, unknown>>): Record<string, unknown> {
+function positionArrow(arrow: Record<string, unknown>, idMap: Map<string, Record<string, unknown>>): Record<string, unknown> | null {
   const startRef = arrow.start as Record<string, unknown> | undefined;
   const endRef = arrow.end as Record<string, unknown> | undefined;
 
-  // Determine which references are id-based (need stripping) vs type-based (keep)
   const startIsId = !!startRef?.id;
   const endIsId = !!endRef?.id;
+
+  // 没有 id 引用，直接返回原元素
+  if (!startIsId && !endIsId) return arrow;
+
   const startEl = startIsId ? idMap.get(startRef!.id as string) : null;
   const endEl = endIsId ? idMap.get(endRef!.id as string) : null;
 
-  // Build result: strip id-based refs, keep type-based refs
-  const result: Record<string, unknown> = { ...arrow };
-  if (startIsId) result.start = undefined;
-  if (endIsId) result.end = undefined;
+  // 目标不全，跳过（返回 null）
+  if (!startEl || !endEl) return null;
 
-  if (startEl && endEl) {
-    const { sEdge, eEdge } = determineEdges(startEl, endEl);
-    const sc = getEdgeCenter(startEl, sEdge);
-    const ec = getEdgeCenter(endEl, eEdge);
-    result.x = sc.x;
-    result.y = sc.y;
-    result.width = (ec.x - sc.x) || 1;
-    result.height = ec.y - sc.y;
-    result.points = [[0, 0], [result.width as number, result.height as number]];
+  // 两个目标都在，去掉 id 引用并计算坐标
+  const result: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(arrow)) {
+    if (key === 'start' || key === 'end') continue;
+    result[key] = val;
   }
+
+  const { sEdge, eEdge } = determineEdges(startEl, endEl);
+  const sc = getEdgeCenter(startEl, sEdge);
+  const ec = getEdgeCenter(endEl, eEdge);
+  result.x = sc.x;
+  result.y = sc.y;
+  result.width = (ec.x - sc.x) || 1;
+  result.height = ec.y - sc.y;
+  result.points = [[0, 0], [result.width as number, result.height as number]];
 
   return result;
 }
+
+// ─── Component ───
 
 export interface StreamRendererRef {
   feed: (buffer: string) => void;
@@ -120,7 +124,6 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
   const apiRef = useRef<any>(null);
   const [convertFn, setConvertFn] = useState<ConvertFn | null>(null);
 
-  // Streaming refs — each element converted EXACTLY ONCE
   const consumedRef = useRef(0);
   const allRawRef = useRef<unknown[]>([]);
   const idMapRef = useRef(new Map<string, Record<string, unknown>>());
@@ -150,6 +153,7 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
     }
   }, [isStreaming]);
 
+  // Streaming feed — 逐个元素更新
   useEffect(() => {
     if (!streamRendererRef) return;
 
@@ -161,8 +165,6 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
         if (newRaw.length === 0) return;
         consumedRef.current = consumed;
 
-        let hasNew = false;
-
         for (const el of newRaw) {
           const rec = el as Record<string, unknown>;
           const t = rec.type as string;
@@ -173,27 +175,23 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
           allRawRef.current.push(el);
           idMapRef.current.set(id, rec);
 
-          // Prepare element
           let prepared: unknown = el;
           if (ARROW_TYPES.has(t)) {
-            prepared = positionArrow(rec, idMapRef.current);
+            const result = positionArrow(rec, idMapRef.current);
+            if (!result) continue; // 目标不全，跳过
+            prepared = result;
           }
 
-          // Convert exactly once
           try {
             const converted = convertFn([prepared], { regenerateIds: false });
             sceneRef.current.push(...converted);
             convertedIdsRef.current.add(id);
           } catch { /* skip */ }
 
-          hasNew = true;
-        }
-
-        if (hasNew && sceneRef.current.length > 0) {
-          try {
-            apiRef.current.updateScene({ elements: sceneRef.current });
+          if (sceneRef.current.length > 0) {
+            apiRef.current.updateScene({ elements: [...sceneRef.current] });
             apiRef.current.scrollToContent(sceneRef.current, { fitToContent: true, animate: false, padding: 20 });
-          } catch {}
+          }
         }
       },
       reset: () => {
@@ -227,10 +225,9 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
     }
 
     if (converted.length > 0) {
-      try {
-        apiRef.current.updateScene({ elements: converted });
-        apiRef.current.scrollToContent(converted, { fitToContent: true, animate: true, duration: 300, padding: 20 });
-      } catch {}
+      apiRef.current.updateScene({ elements: converted });
+      // 与流式期间完全相同的 scrollToContent 调用
+      apiRef.current.scrollToContent(converted, { fitToContent: true, animate: false, padding: 20 });
     }
 
     consumedRef.current = 0;

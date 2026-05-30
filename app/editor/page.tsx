@@ -332,28 +332,8 @@ function EditorContent() {
     setCurrentInput('');
   }, [config, handleSendMessage]);
 
-  // Streaming preview (Mermaid/Drawio only — Excalidraw renders after stream ends)
-  const streamTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (!isStreaming || !generatedCode) return;
-    if (streamTimerRef.current) return;
-    streamTimerRef.current = setTimeout(() => {
-      streamTimerRef.current = null;
-      if (!isStreamingRef.current) return;
-      const fmt = formatRef.current;
-      if (fmt === 'mermaid') {
-        const result = getStrategy('mermaid').validate(generatedCode);
-        if (result.valid) { setRenderData(result.data); setJsonError(null); }
-      } else if (fmt === 'drawio') {
-        const cleaned = stripCodeFences(generatedCode);
-        if (cleaned.includes('<mxGraphModel') || cleaned.includes('<mxfile')) {
-          setRenderData(cleaned); setJsonError(null);
-        }
-      }
-    }, 200);
-    return () => {};
-  }, [generatedCode, isStreaming]);
-  useEffect(() => () => { if (streamTimerRef.current) clearTimeout(streamTimerRef.current); }, []);
+  // Mermaid 和 Draw.io 不在流式期间渲染，等流式完成后再渲染（由 tryParseAndApply 处理）
+  // 侧边栏 AI 输出仍然流式显示
 
   const tryParseAndApply = (code: string, strat?: ReturnType<typeof getStrategy>) => {
     const s = strat || strategy;

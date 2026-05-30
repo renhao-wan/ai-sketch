@@ -30,19 +30,26 @@ export default function DiagramCanvas({ format, data, isStreaming, streamBuffer,
 
   const isEmpty = normalized === null || normalized === undefined;
 
-  // Excalidraw needs to stay mounted during streaming for updateScene calls
-  const excalidrawAlwaysMounted = format === 'excalidraw' && isStreaming;
+  // 非活跃 canvas 传空数据清空内容，但组件保持挂载
+  const excalidrawElements = format === 'excalidraw' && Array.isArray(normalized) ? normalized : [];
+  const mermaidCode = format === 'mermaid' && typeof normalized === 'string' ? normalized : '';
+  const drawioCode = format === 'drawio' && typeof normalized === 'string' ? normalized : '';
 
-  if (isEmpty && !isStreaming && !excalidrawAlwaysMounted) {
-    return (
-      <div className="w-full h-full flex items-center justify-center canvas-grid-bg">
-        <p className="text-sm text-[var(--muted)]">{t('canvas.emptyState')}</p>
-      </div>
-    );
-  }
+  // 确定各 canvas 的 z-index（Excalidraw 和 Mermaid 不需要 iframe 可见即可初始化）
+  const zExcalidraw = format === 'excalidraw' ? 3 : -1;
+  const zMermaid = format === 'mermaid' ? 3 : -1;
+  const zDrawio = format === 'drawio' ? 3 : -2; // 始终在底层（iframe 需要可见）
 
   return (
     <div className="w-full h-full canvas-grid-bg relative">
+      {/* 空状态提示 */}
+      {isEmpty && !isStreaming && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <p className="text-sm text-[var(--muted)]">{t('canvas.emptyState')}</p>
+        </div>
+      )}
+
+      {/* 流式加载提示 */}
       {isStreaming && isEmpty && (
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <div className="px-5 py-3 rounded-2xl bg-[var(--surface-warm)] backdrop-blur-xl border border-[var(--accent-violet)]/15 shadow-[var(--shadow-floating)] flex items-center gap-3">
@@ -55,18 +62,16 @@ export default function DiagramCanvas({ format, data, isStreaming, streamBuffer,
         </div>
       )}
 
-      {(!isEmpty || excalidrawAlwaysMounted) && (
-        <>
-          {format === 'excalidraw' && <ExcalidrawCanvas elements={Array.isArray(normalized) ? normalized : []} isStreaming={isStreaming} streamRendererRef={streamRendererRef} />}
-          {format === 'mermaid' && <MermaidCanvas code={typeof normalized === 'string' ? normalized : ''} />}
-          {format === 'drawio' && <DrawioCanvas code={typeof normalized === 'string' ? normalized : ''} />}
-          {!['excalidraw', 'mermaid', 'drawio'].includes(format) && (
-            <div className="w-full h-full flex items-center justify-center">
-              <p className="text-sm text-[var(--muted)]">{t('canvas.unsupportedFormat')} {format}</p>
-            </div>
-          )}
-        </>
-      )}
+      {/* 三个 Canvas 始终挂载，用 z-index 控制前后，传空数据清空非活跃内容 */}
+      <div className="absolute inset-0" style={{ zIndex: zDrawio }}>
+        <DrawioCanvas code={drawioCode} />
+      </div>
+      <div className="absolute inset-0" style={{ zIndex: zExcalidraw }}>
+        <ExcalidrawCanvas elements={excalidrawElements} isStreaming={format === 'excalidraw' ? isStreaming : undefined} streamRendererRef={streamRendererRef} />
+      </div>
+      <div className="absolute inset-0" style={{ zIndex: zMermaid }}>
+        <MermaidCanvas code={mermaidCode} isStreaming={format === 'mermaid' ? isStreaming : undefined} />
+      </div>
     </div>
   );
 }

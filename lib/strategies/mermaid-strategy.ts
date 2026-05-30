@@ -266,7 +266,22 @@ class MermaidStrategy implements DiagramStrategy {
 
   postProcess(rawCode: string): string {
     if (!rawCode || typeof rawCode !== 'string') return rawCode;
-    return stripCodeFences(rawCode);
+    let code = stripCodeFences(rawCode);
+
+    // 修复常见的 Mermaid 语法问题
+    // 1. 移除代码块标记（如果有残留）
+    code = code.replace(/^```mermaid\s*/i, '').replace(/```\s*$/, '');
+
+    // 2. 修复箭头语法
+    code = code.replace(/-- >/g, '-->');
+    code = code.replace(/== >/g, '==>');
+
+    // 3. 确保 flowchart 方向声明存在
+    if (code.trim().startsWith('flowchart') && !code.trim().match(/^flowchart\s+(TD|LR|TB|RL|BT)/i)) {
+      code = code.replace(/^flowchart/i, 'flowchart TD');
+    }
+
+    return code.trim();
   }
 
   optimize(code: string): string {
@@ -277,10 +292,21 @@ class MermaidStrategy implements DiagramStrategy {
     try {
       const trimmed = code.trim();
       if (!trimmed) return { valid: false, error: '代码为空' };
+
+      // 检查是否以有效的 Mermaid 关键字开头
       const startsValid = VALID_STARTS.some(kw => trimmed.startsWith(kw));
       if (!startsValid) {
         return { valid: false, error: '代码不是有效的 Mermaid 语法（未以有效关键字开头）' };
       }
+
+      // 基本语法检查：确保有内容（至少有一些节点或语句）
+      // 对于流式代码，我们只检查基本结构，不检查完整语法
+      const lines = trimmed.split('\n').filter(line => line.trim().length > 0);
+      if (lines.length < 2) {
+        // 可能是不完整的流式代码，仍然返回 valid，让 MermaidCanvas 处理渲染错误
+        return { valid: true, data: trimmed };
+      }
+
       return { valid: true, data: trimmed };
     } catch (e) {
       return { valid: false, error: (e as Error).message };
