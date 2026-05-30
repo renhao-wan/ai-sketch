@@ -20,6 +20,7 @@ import {
 import { AppIcon } from './TopBar';
 import ChartTypeSelect from './ChartTypeSelect';
 import { useFileUpload } from '@/composables/useFileUpload';
+import Notification from './Notification';
 import MessageBubble from './MessageBubble';
 import ConversationList from './ConversationList';
 import { useLocale } from '@/locales';
@@ -85,7 +86,7 @@ export default function AICopilotPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  const { attachments, payload, attachStatus, attachError, handleFiles, clearAttachments, canSend, getSourceType } = useFileUpload({ diagramFormat: currentFormat });
+  const { attachments, payload, attachStatus, attachError, notification, closeNotification, handleFiles, clearAttachments, removeAttachment, canSend, getSourceType } = useFileUpload({ diagramFormat: currentFormat });
 
   const [isDragging, setIsDragging] = useState(false);
   const dragCounterRef = useRef(0);
@@ -378,21 +379,35 @@ export default function AICopilotPanel({
             />
           </div>
 
-          {/* Attachment Status */}
+          {/* Attachment Cards */}
           {attachments.length > 0 && (
-            <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)]">
-              {attachStatus === 'processing' && <Loader2 size={13} className="animate-spin text-[var(--muted)] flex-shrink-0" />}
-              {attachStatus === 'success' && <CheckCircle size={13} className="text-emerald-500 flex-shrink-0" />}
-              {attachStatus === 'error' && <AlertCircle size={13} className="text-red-500 flex-shrink-0" />}
-              <span className="text-xs text-[var(--fg)] truncate flex-1">
-                {attachments.length === 1 ? attachments[0].name : `${attachments.length} 个文件`}
-              </span>
-              {attachStatus === 'error' && <span className="text-[10px] text-red-500 flex-shrink-0">{attachError}</span>}
-              <button onClick={() => { clearAttachments(); if (fileInputRef.current) fileInputRef.current.value = ''; if (imageInputRef.current) imageInputRef.current.value = ''; }} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
-                <X size={13} />
-              </button>
+            <div className={`mt-2 grid gap-2 ${attachments.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+              {attachments.map((file, i) => {
+                const isImage = file.type.startsWith('image/');
+                return (
+                  <div key={`${file.name}-${i}`} className="relative flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] group">
+                    {isImage ? (
+                      <img src={URL.createObjectURL(file)} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-8 h-8 rounded bg-[var(--surface-warm)] flex items-center justify-center flex-shrink-0">
+                        <Paperclip size={13} className="text-[var(--muted)]" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] text-[var(--fg)] truncate">{file.name}</p>
+                      {attachStatus === 'processing' && <p className="text-[10px] text-[var(--muted)]">处理中...</p>}
+                      {attachStatus === 'success' && <p className="text-[10px] text-emerald-500">就绪</p>}
+                      {attachStatus === 'error' && <p className="text-[10px] text-red-500">{attachError}</p>}
+                    </div>
+                    <button onClick={() => removeAttachment(i)} className="opacity-0 group-hover:opacity-100 text-[var(--muted)] hover:text-[var(--fg)] transition-all flex-shrink-0">
+                      <X size={12} />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
+
         </div>
 
         {/* Action Buttons */}
@@ -464,6 +479,14 @@ export default function AICopilotPanel({
           <Download size={13} /><span>{t('copilot.export')}</span>
         </button>
       </div>
+
+      <Notification
+        isOpen={notification.isOpen}
+        onClose={closeNotification}
+        title={notification.title}
+        message={notification.message}
+        type={notification.type}
+      />
     </div>
   );
 }

@@ -5,23 +5,32 @@
  * 供 AIPromptBox（首页）和 AICopilotPanel（编辑器）共用。
  *
  * @example
- * const { attachments, payload, attachStatus, attachError, handleFiles, clearAttachments, canSend, getSourceType } = useFileUpload();
+ * const { attachments, payload, handleFiles, clearAttachments, removeAttachment, notification, closeNotification } = useFileUpload();
  * await handleFiles(files, prompt); // 首页场景
  * await handleFiles(files);         // 编辑器场景
  */
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { imageStrategy, orchestrator } from '@/lib/input-strategies/registry';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 import type { MessagePayload } from '@/types/input-strategy';
 
 type AttachStatus = '' | 'processing' | 'success' | 'error';
 
+interface NotificationState {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+}
+
 interface UseFileUploadOptions {
   /** 图表格式，用于 ImageStrategy 生成默认 prompt */
   diagramFormat?: DiagramFormat;
+  /** 最大附件数量，默认 3 */
+  maxItems?: number;
 }
 
 interface UseFileUploadReturn {
@@ -38,6 +47,8 @@ interface UseFileUploadReturn {
   handleFiles: (files: File[], prompt?: string) => Promise<void>;
   /** 清除所有附件状态 */
   clearAttachments: () => void;
+  /** 移除单个附件（按索引） */
+  removeAttachment: (index: number) => void;
 
   /** 判断是否可以发送（有 prompt 或有成功附件） */
   canSend: (hasPrompt: boolean) => boolean;
@@ -47,19 +58,39 @@ interface UseFileUploadReturn {
   setAttachError: (error: string) => void;
   /** 手动设置附件状态 */
   setAttachStatus: (status: AttachStatus) => void;
+
+  /** 全局通知状态（配合 Notification 组件使用） */
+  notification: NotificationState;
+  /** 关闭通知 */
+  closeNotification: () => void;
 }
 
 export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadReturn {
+  const maxItems = options?.maxItems ?? 3;
   const [attachments, setAttachments] = useState<File[]>([]);
   const [payload, setPayload] = useState<MessagePayload | null>(null);
   const [attachStatus, setAttachStatus] = useState<AttachStatus>('');
   const [attachError, setAttachError] = useState('');
+  const [notification, setNotification] = useState<NotificationState>({ isOpen: false, title: '', message: '', type: 'warning' });
+  const attachmentsRef = useRef<File[]>([]);
+  attachmentsRef.current = attachments;
+
+  const closeNotification = useCallback(() => {
+    setNotification(prev => ({ ...prev, isOpen: false }));
+  }, []);
 
   const handleFiles = useCallback(async (files: File[], prompt?: string) => {
     if (files.length === 0) return;
 
-    setAttachments([]);
-    setPayload(null);
+    // 合并已有附件和新文件
+    const merged = [...attachmentsRef.current, ...files];
+
+    // 限制附件数量
+    if (merged.length > maxItems) {
+      setNotification({ isOpen: true, title: '附件数量限制', message: `最多上传 ${maxItems} 个附件`, type: 'warning' });
+      return;
+    }
+
     setAttachStatus('processing');
     setAttachError('');
 
@@ -68,16 +99,16 @@ export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadRetu
       imageStrategy.setDiagramFormat(options.diagramFormat);
     }
 
-    const result = await orchestrator.handleFiles(files, prompt || '', 'auto');
+    const result = await orchestrator.handleFiles(merged, prompt || '', 'auto');
     if (result.success) {
-      setAttachments(files);
+      setAttachments(merged);
       setPayload(result.payload);
       setAttachStatus('success');
     } else {
       setAttachError(result.errors.map(e => `${e.fileName}: ${e.error}`).join('; '));
       setAttachStatus('error');
     }
-  }, [options?.diagramFormat]);
+  }, [options?.diagramFormat, maxItems]);
 
   const clearAttachments = useCallback(() => {
     setAttachments([]);
@@ -85,6 +116,34 @@ export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadRetu
     setAttachStatus('');
     setAttachError('');
   }, []);
+
+  const removeAttachment = useCallback(async (index: number) => {
+    const remaining = attachmentsRef.current.filter((_, i) => i !== index);
+    if (remaining.length === 0) {
+      setAttachments([]);
+      setPayload(null);
+      setAttachStatus('');
+      setAttachError('');
+      return;
+    }
+
+    setAttachStatus('processing');
+    setAttachError('');
+
+    if (options?.diagramFormat) {
+      imageStrategy.setDiagramFormat(options.diagramFormat);
+    }
+
+    const result = await orchestrator.handleFiles(remaining, '', 'auto');
+    if (result.success) {
+      setAttachments(remaining);
+      setPayload(result.payload);
+      setAttachStatus('success');
+    } else {
+      setAttachError(result.errors.map(e => `${e.fileName}: ${e.error}`).join('; '));
+      setAttachStatus('error');
+    }
+  }, [options?.diagramFormat]);
 
   const canSend = useCallback((hasPrompt: boolean): boolean => {
     return hasPrompt || (attachStatus === 'success' && payload !== null);
@@ -102,9 +161,12 @@ export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadRetu
     attachError,
     handleFiles,
     clearAttachments,
+    removeAttachment,
     canSend,
     getSourceType,
     setAttachError,
     setAttachStatus,
+    notification,
+    closeNotification,
   };
 }

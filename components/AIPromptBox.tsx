@@ -15,6 +15,7 @@ import {
 import { setInitData } from '@/lib/init-data';
 import { useLocale } from '@/locales';
 import { useFileUpload } from '@/composables/useFileUpload';
+import Notification from './Notification';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
 const FORMATS = [
@@ -36,7 +37,7 @@ export default function AIPromptBox() {
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Unified attachment state via useFileUpload hook
-  const { attachments, payload, attachStatus, attachError, handleFiles: handleFilesRaw, clearAttachments, getSourceType, setAttachError, setAttachStatus } = useFileUpload({
+  const { attachments, payload, attachStatus, attachError, notification, closeNotification, handleFiles: handleFilesRaw, clearAttachments, removeAttachment, getSourceType, setAttachError, setAttachStatus } = useFileUpload({
     diagramFormat: activeFormat as DiagramFormat,
   });
 
@@ -129,48 +130,38 @@ export default function AIPromptBox() {
 
   const hasAttachment = attachments.length > 0;
 
-  // Render attachment chips
+  // Render attachment cards
   const renderAttachments = () => {
     if (attachments.length === 0) return null;
 
-    // Single file — show details
-    if (attachments.length === 1) {
-      const file = attachments[0];
-      const isImage = file.type.startsWith('image/');
-      return (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)]">
-          {attachStatus === 'processing' && <Loader2 size={13} className="animate-spin text-[var(--muted)] flex-shrink-0" />}
-          {attachStatus === 'success' && <CheckCircle size={13} className="text-emerald-500 flex-shrink-0" />}
-          {attachStatus === 'error' && <AlertCircle size={13} className="text-red-500 flex-shrink-0" />}
-          {isImage && <Image size={13} className="text-[var(--muted)] flex-shrink-0" />}
-          {!isImage && <Paperclip size={13} className="text-[var(--muted)] flex-shrink-0" />}
-          <span className="text-xs text-[var(--fg)] truncate flex-1">{file.name}</span>
-          {attachStatus === 'error' && <span className="text-[10px] text-red-500 flex-shrink-0">{attachError}</span>}
-          <button onClick={clearAttachmentsLocal} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
-            <X size={13} />
-          </button>
-        </div>
-      );
-    }
-
-    // Multiple files — show count
-    const imageCount = attachments.filter(f => f.type.startsWith('image/')).length;
-    const fileCount = attachments.length - imageCount;
-    const parts: string[] = [];
-    if (imageCount > 0) parts.push(`${imageCount} ${t('prompt.imageCount')}`);
-    if (fileCount > 0) parts.push(`${fileCount} ${t('prompt.fileCount')}`);
-
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)]">
-        {attachStatus === 'processing' && <Loader2 size={13} className="animate-spin text-[var(--muted)] flex-shrink-0" />}
-        {attachStatus === 'success' && <CheckCircle size={13} className="text-emerald-500 flex-shrink-0" />}
-        {attachStatus === 'error' && <AlertCircle size={13} className="text-red-500 flex-shrink-0" />}
-        <span className="text-xs text-[var(--fg)] truncate flex-1">{parts.join(' + ')}</span>
-        {attachStatus === 'error' && <span className="text-[10px] text-red-500 flex-shrink-0">{attachError}</span>}
-        <button onClick={clearAttachmentsLocal} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
-          <X size={13} />
-        </button>
-      </div>
+      <>
+        <div className={`grid gap-2 ${attachments.length === 1 ? 'grid-cols-1' : attachments.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+          {attachments.map((file, i) => {
+            const isImage = file.type.startsWith('image/');
+            return (
+              <div key={`${file.name}-${i}`} className="relative flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] group">
+                {isImage ? (
+                  <img src={URL.createObjectURL(file)} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-8 h-8 rounded bg-[var(--surface-warm)] flex items-center justify-center flex-shrink-0">
+                    <Paperclip size={13} className="text-[var(--muted)]" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] text-[var(--fg)] truncate">{file.name}</p>
+                  {attachStatus === 'processing' && <p className="text-[10px] text-[var(--muted)]">处理中...</p>}
+                  {attachStatus === 'success' && <p className="text-[10px] text-emerald-500">就绪</p>}
+                  {attachStatus === 'error' && <p className="text-[10px] text-red-500">{attachError}</p>}
+                </div>
+                <button onClick={() => removeAttachment(i)} className="opacity-0 group-hover:opacity-100 text-[var(--muted)] hover:text-[var(--fg)] transition-all flex-shrink-0">
+                  <X size={12} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </>
     );
   };
 
@@ -212,6 +203,7 @@ export default function AIPromptBox() {
               {renderAttachments()}
             </div>
           )}
+
         </div>
 
         {/* Bottom Bar */}
@@ -265,7 +257,16 @@ export default function AIPromptBox() {
             </button>
           </div>
         </div>
+
       </div>
+
+      <Notification
+        isOpen={notification.isOpen}
+        onClose={closeNotification}
+        title={notification.title}
+        message={notification.message}
+        type={notification.type}
+      />
     </div>
   );
 }
