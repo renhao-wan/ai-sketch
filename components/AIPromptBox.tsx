@@ -237,7 +237,7 @@ export default function AIPromptBox() {
             <button
               onClick={() => fileInputRef.current?.click()}
               className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 ${
-                hasAttachment ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                hasAttachment && getSourceType() === 'file' ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
               }`}
               title={t('prompt.uploadFile')}
             >
@@ -245,7 +245,9 @@ export default function AIPromptBox() {
             </button>
             <button
               onClick={() => imageInputRef.current?.click()}
-              className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+              className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 ${
+                hasAttachment && getSourceType() === 'image' ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+              }`}
               title={t('prompt.uploadImage')}
             >
               <Image size={18} />

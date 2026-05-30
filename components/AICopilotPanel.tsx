@@ -416,7 +416,9 @@ export default function AICopilotPanel({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isGenerating}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200 disabled:opacity-40"
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 disabled:opacity-40 ${
+              attachments.length > 0 && getSourceType() === 'file' ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+            }`}
             title={t('copilot.uploadFile')}
           >
             <Paperclip size={15} />
@@ -424,7 +426,9 @@ export default function AICopilotPanel({
           <button
             onClick={() => imageInputRef.current?.click()}
             disabled={isGenerating}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200 disabled:opacity-40"
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 disabled:opacity-40 ${
+              attachments.length > 0 && getSourceType() === 'image' ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+            }`}
             title={t('copilot.uploadImage')}
           >
             <Image size={15} />
