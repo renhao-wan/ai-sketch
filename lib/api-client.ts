@@ -1,7 +1,10 @@
 import type { LLMConfig, TestConnectionResult, Conversation, ConversationWithMessages } from '@/types';
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
+  const res = await fetch(url, {
+    cache: 'no-store',
+    ...options,
+  });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || `请求失败 (${res.status})`);
