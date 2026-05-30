@@ -78,6 +78,7 @@ export const zh = {
   'copilot.send': '发送',
   'copilot.generate': '生成',
   'copilot.config': '配置',
+  'copilot.dropFiles': '拖放文件到此处',
 
   // Bottom Context Panel
   'panel.generatedCode': '生成代码',
