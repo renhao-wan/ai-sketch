@@ -177,6 +177,68 @@ export function extractFirstJsonArray(text: string): string | null {
   return null;
 }
 
+/**
+ * Extract complete JSON objects from a partial streaming buffer.
+ * Scans for `{...}` blocks at array level (depth 0→1→0), attempts JSON.parse,
+ * and returns successfully parsed elements plus the consumed character offset.
+ *
+ * @param buffer - The accumulated raw string (after stripCodeFences)
+ * @param startFrom - Character offset to resume scanning from (avoids re-parsing)
+ */
+export function extractCompleteElements(buffer: string, startFrom = 0): { elements: unknown[]; consumed: number } {
+  if (!buffer || typeof buffer !== 'string') return { elements: [], consumed: startFrom };
+
+  const elements: unknown[] = [];
+  let i = startFrom;
+
+  // Skip to the opening [ (only on first call)
+  if (i === 0) {
+    const bracket = buffer.indexOf('[');
+    if (bracket === -1) return { elements: [], consumed: 0 };
+    i = bracket + 1;
+  }
+
+  while (i < buffer.length) {
+    // Skip whitespace and commas between elements
+    while (i < buffer.length && /[\s,]/.test(buffer[i])) i++;
+    if (i >= buffer.length || buffer[i] !== '{') break;
+
+    // Track brace depth to find the matching }
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    const start = i;
+
+    for (; i < buffer.length; i++) {
+      const ch = buffer[i];
+      if (inString) {
+        if (escape) { escape = false; continue; }
+        if (ch === '\\') { escape = true; continue; }
+        if (ch === '"') { inString = false; }
+        continue;
+      }
+      if (ch === '"') { inString = true; continue; }
+      if (ch === '{') { depth++; continue; }
+      if (ch === '}') {
+        depth--;
+        if (depth === 0) {
+          const candidate = buffer.slice(start, i + 1);
+          try {
+            const parsed = JSON.parse(candidate);
+            elements.push(parsed);
+          } catch {
+            // Malformed object — skip it
+          }
+          i++; // move past the closing }
+          break;
+        }
+      }
+    }
+  }
+
+  return { elements, consumed: i };
+}
+
 // Helpers
 function findNextNonWsIndex(str: string, from: number): number {
   for (let i = from; i < str.length; i++) {

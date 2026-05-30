@@ -136,7 +136,6 @@ export function optimizeExcalidrawCode(codeString: string): string {
     const cleanedCode = codeString.trim();
     const arrayStr = extractFirstJsonArray(cleanedCode);
     if (!arrayStr) {
-      console.error('No array found in code');
       return codeString;
     }
 

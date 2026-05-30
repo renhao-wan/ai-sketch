@@ -32,7 +32,7 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
 
   const loadConversations = async () => {
     try {
-      const data = await api.fetchConversations(20);
+      const data = await api.fetchConversations();
       setConversations(data);
     } catch (err) {
       console.error('Failed to load conversations:', err);

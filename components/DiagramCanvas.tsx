@@ -1,8 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import type { MutableRefObject } from 'react';
 import { useLocale } from '@/locales';
 import type { DiagramFormat } from '@/types/diagram-strategy';
+import type { StreamRendererRef } from './ExcalidrawCanvas';
 
 const ExcalidrawCanvas = dynamic(() => import('./ExcalidrawCanvas'), { ssr: false });
 const MermaidCanvas = dynamic(() => import('./MermaidCanvas'), { ssr: false });
@@ -12,9 +14,12 @@ interface DiagramCanvasProps {
   format: DiagramFormat;
   data: unknown;
   isStreaming?: boolean;
+  streamBuffer?: string;
+  streamVersion?: number;
+  streamRendererRef?: MutableRefObject<StreamRendererRef | null>;
 }
 
-export default function DiagramCanvas({ format, data, isStreaming }: DiagramCanvasProps) {
+export default function DiagramCanvas({ format, data, isStreaming, streamBuffer, streamVersion, streamRendererRef }: DiagramCanvasProps) {
   const { t } = useLocale();
 
   // Normalize: extract array from wrapper objects
@@ -25,7 +30,10 @@ export default function DiagramCanvas({ format, data, isStreaming }: DiagramCanv
 
   const isEmpty = normalized === null || normalized === undefined;
 
-  if (isEmpty && !isStreaming) {
+  // Excalidraw needs to stay mounted during streaming for updateScene calls
+  const excalidrawAlwaysMounted = format === 'excalidraw' && isStreaming;
+
+  if (isEmpty && !isStreaming && !excalidrawAlwaysMounted) {
     return (
       <div className="w-full h-full flex items-center justify-center canvas-grid-bg">
         <p className="text-sm text-[var(--muted)]">{t('canvas.emptyState')}</p>
@@ -47,9 +55,9 @@ export default function DiagramCanvas({ format, data, isStreaming }: DiagramCanv
         </div>
       )}
 
-      {!isEmpty && (
+      {(!isEmpty || excalidrawAlwaysMounted) && (
         <>
-          {format === 'excalidraw' && <ExcalidrawCanvas elements={Array.isArray(normalized) ? normalized : []} />}
+          {format === 'excalidraw' && <ExcalidrawCanvas elements={Array.isArray(normalized) ? normalized : []} isStreaming={isStreaming} streamRendererRef={streamRendererRef} />}
           {format === 'mermaid' && <MermaidCanvas code={typeof normalized === 'string' ? normalized : ''} />}
           {format === 'drawio' && <DrawioCanvas code={typeof normalized === 'string' ? normalized : ''} />}
           {!['excalidraw', 'mermaid', 'drawio'].includes(format) && (

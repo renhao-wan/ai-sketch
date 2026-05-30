@@ -151,13 +151,14 @@ export async function POST(request: Request) {
 
           // Save assistant message after stream completes
           const processedCode = strategy.postProcess(accumulatedCode);
+          const optimizedCode = strategy.optimize(processedCode);
           await conversationManager.addMessage({
             conversationId: activeConversationId!,
             role: 'assistant',
-            content: processedCode,
+            content: optimizedCode,
             sourceType: 'text',
           });
-          await conversationManager.updateCurrentCode(activeConversationId!, processedCode);
+          await conversationManager.updateCurrentCode(activeConversationId!, optimizedCode);
 
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();

@@ -30,7 +30,7 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
         <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
           isUser
             ? 'bg-[var(--accent-indigo)] text-white rounded-br-md'
-            : 'bg-[var(--surface-warm-hover)] text-[var(--fg)] rounded-bl-md'
+            : 'bg-[var(--surface-warm)] text-[var(--fg)] rounded-bl-md border border-[var(--border)]'
         }`}>
           {/* Image thumbnail for image messages */}
           {message.imageData && (
@@ -61,7 +61,7 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
               </pre>
               {message.content.length > 300 && (
                 <p className="text-[11px] text-[var(--muted)] mt-1">
-                  {t('message.characters')} {message.content.length}
+                  {message.content.length} {t('message.characters')}
                 </p>
               )}
             </div>

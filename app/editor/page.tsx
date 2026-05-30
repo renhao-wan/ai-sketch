@@ -9,6 +9,7 @@ import CodeEditor from '@/components/CodeEditor';
 import ConfigManager from '@/components/ConfigManager';
 import Notification from '@/components/Notification';
 import DiagramCanvas from '@/components/DiagramCanvas';
+import type { StreamRendererRef } from '@/components/ExcalidrawCanvas';
 import * as api from '@/lib/api-client';
 import { isConfigValid } from '@/lib/config-validator';
 import { getStrategy } from '@/lib/strategies/registry';
@@ -103,6 +104,7 @@ function EditorContent() {
 
   const pendingInitRef = useRef<import('@/lib/init-data').InitData | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const streamRendererRef = useRef<StreamRendererRef | null>(null);
   const formatRef = useRef(format);
   useEffect(() => { formatRef.current = format; }, [format]);
   const isFirstFormatRef = useRef(true);
@@ -112,6 +114,7 @@ function EditorContent() {
     setGeneratedCode('');
     setJsonError(null);
     setRenderData(null);
+    streamRendererRef.current?.reset();
   }, [format]);
   const strategy = getStrategy(format);
 
@@ -242,6 +245,8 @@ function EditorContent() {
                 accumulatedCode += data.content;
                 const stripped = stripCodeFences(accumulatedCode);
                 setGeneratedCode(stripped);
+                // Feed directly to Excalidraw for real-time rendering (bypasses React batching)
+                streamRendererRef.current?.feed(stripped);
                 // Update streaming assistant message in sidebar
                 setMessages(prev => prev.map(m =>
                   m.id === optimisticAssistantMsg.id ? { ...m, content: stripped } : m
@@ -253,6 +258,7 @@ function EditorContent() {
                 accumulatedCode += data.content;
                 const stripped = stripCodeFences(accumulatedCode);
                 setGeneratedCode(stripped);
+                streamRendererRef.current?.feed(stripped);
                 setMessages(prev => prev.map(m =>
                   m.id === optimisticAssistantMsg.id ? { ...m, content: stripped } : m
                 ));
@@ -275,6 +281,7 @@ function EditorContent() {
       const optimizedCode = currentStrategy.optimize(processedCode);
       setGeneratedCode(optimizedCode);
       tryParseAndApply(optimizedCode, currentStrategy);
+      streamRendererRef.current?.reset();
 
       // Update streaming assistant message with final post-processed code
       setMessages(prev => prev.map(m =>
@@ -376,10 +383,11 @@ function EditorContent() {
       if (conv.format && ['excalidraw', 'mermaid', 'drawio'].includes(conv.format)) {
         setFormat(conv.format);
       }
-      setGeneratedCode(conv.currentCode);
       const strat = getStrategy(conv.format);
-      if (conv.currentCode) {
-        const result = strat.validate(conv.currentCode);
+      const code = conv.currentCode ? strat.optimize(conv.currentCode) : '';
+      setGeneratedCode(code);
+      if (code) {
+        const result = strat.validate(code);
         if (result.valid) {
           setRenderData(result.data);
           setJsonError(null);
@@ -401,6 +409,7 @@ function EditorContent() {
     setCurrentInput('');
     setJsonError(null);
     setApiError(null);
+    streamRendererRef.current?.reset();
   }, []);
 
   const handleDeleteConversation = useCallback((id: string) => {
@@ -467,7 +476,7 @@ function EditorContent() {
 
           {/* Canvas */}
           <div className="flex-1 relative">
-            <DiagramCanvas format={format} data={renderData} isStreaming={isStreaming} />
+            <DiagramCanvas format={format} data={renderData} isStreaming={isStreaming} streamRendererRef={streamRendererRef} />
           </div>
 
           {/* Bottom Context Panel */}

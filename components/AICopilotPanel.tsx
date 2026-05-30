@@ -95,10 +95,27 @@ export default function AICopilotPanel({
   const [selectedImage, setSelectedImage] = useState<(ImageObject & { previewUrl: string; file: File }) | null>(null);
 
   // Auto-scroll to bottom when messages change
+  const prevCountRef = useRef(0);
   useEffect(() => {
     const container = messagesContainerRef.current;
-    if (container) {
-      container.scrollTop = container.scrollHeight;
+    if (!container) return;
+
+    const isNewMessage = messages.length > prevCountRef.current;
+    prevCountRef.current = messages.length;
+
+    if (isNewMessage) {
+      // New message: always scroll to bottom
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+      });
+    } else {
+      // Streaming content update: only scroll if near bottom
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+      if (isNearBottom) {
+        requestAnimationFrame(() => {
+          container.scrollTop = container.scrollHeight;
+        });
+      }
     }
   }, [messages]);
 
@@ -311,7 +328,7 @@ export default function AICopilotPanel({
 
       {/* Message List or Empty State */}
       {hasMessages ? (
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 scrollbar-subtle">
+        <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 scrollbar-subtle bg-[var(--surface-warm)]/30">
           {messages.map((msg) => (
             <MessageBubble
               key={msg.id}
@@ -355,7 +372,7 @@ export default function AICopilotPanel({
       )}
 
       {/* Input Area */}
-      <div className="border-t border-[var(--surface-warm-hover)] flex-shrink-0">
+      <div className="border-t border-black/[0.08] bg-black/[0.02] flex-shrink-0">
         {/* Format & Chart Type (when has messages) */}
         {hasMessages && !showImageUpload && (
           <div className="px-4 pt-3 pb-1 space-y-2">
@@ -394,7 +411,7 @@ export default function AICopilotPanel({
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={hasMessages ? t('copilot.continueDescribe') : t('copilot.describeChart') + '...'}
-                className="w-full resize-none bg-transparent text-sm leading-relaxed text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none min-h-[60px] max-h-[160px]"
+                className="w-full resize-none bg-white/60 text-sm leading-relaxed text-[var(--fg)] placeholder:text-[var(--muted)]/60 focus:outline-none focus:ring-1 focus:ring-[var(--accent-indigo)]/20 min-h-[60px] max-h-[160px] rounded-xl px-3 py-2.5 border border-black/[0.1] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
               />
 
               {/* File Status */}
