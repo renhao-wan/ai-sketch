@@ -15,7 +15,6 @@ import {
   X,
   CheckCircle,
   AlertCircle,
-  Plus,
 } from 'lucide-react';
 import { AppIcon } from '../layout/TopBar';
 import ChartTypeSelect from '../ChartTypeSelect';
@@ -264,11 +263,11 @@ export default function AICopilotPanel({
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={onNewConversation}
+            onClick={onOpenConfig}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-            title={t('copilot.newConversation')}
+            title={t('copilot.config')}
           >
-            <Plus size={16} />
+            <Wand2 size={15} />
           </button>
           <button
             onClick={() => setIsCollapsed(true)}
@@ -453,13 +452,6 @@ export default function AICopilotPanel({
           )}
         </div>
 
-      </div>
-
-      {/* Bottom Actions */}
-      <div className="border-t border-[var(--surface-warm-hover)] px-4 py-3 flex items-center gap-1 flex-shrink-0">
-        <button onClick={onOpenConfig} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg transition-all duration-200">
-          <Wand2 size={13} /><span>{t('copilot.config')}</span>
-        </button>
       </div>
 
       <Notification
