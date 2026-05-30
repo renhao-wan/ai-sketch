@@ -341,6 +341,8 @@ function EditorContent() {
     setCurrentInput('');
     setJsonError(null);
     setApiError(null);
+    setFormat('excalidraw');
+    setCurrentChartType('auto');
     streamRendererRef.current?.reset();
   }, []);
 

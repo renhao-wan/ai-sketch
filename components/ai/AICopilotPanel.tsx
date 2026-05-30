@@ -104,15 +104,19 @@ export default function AICopilotPanel({
 
   // Auto-scroll to bottom when messages change
   const prevCountRef = useRef(0);
+  const prevConvRef = useRef(conversationId);
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
 
+    const convChanged = conversationId !== prevConvRef.current;
+    prevConvRef.current = conversationId;
+
     const isNewMessage = messages.length > prevCountRef.current;
     prevCountRef.current = messages.length;
 
-    if (isNewMessage) {
-      // New message: always scroll to bottom
+    if (convChanged || isNewMessage) {
+      // Conversation switch or new message: always scroll to bottom
       requestAnimationFrame(() => {
         container.scrollTop = container.scrollHeight;
       });
@@ -125,15 +129,15 @@ export default function AICopilotPanel({
         });
       }
     }
-  }, [messages]);
+  }, [messages, conversationId]);
 
   useEffect(() => {
     if (currentInput !== undefined) setPrompt(currentInput);
   }, [currentInput]);
 
   useEffect(() => {
-    if (currentChartType !== undefined) setChartType(currentChartType);
-  }, [currentChartType]);
+    setChartType(currentChartType || 'auto');
+  }, [currentChartType, conversationId]);
 
   useEffect(() => {
     const el = textareaRef.current;
