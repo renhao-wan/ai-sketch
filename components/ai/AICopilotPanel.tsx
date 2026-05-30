@@ -20,18 +20,27 @@ import {
 import { AppIcon } from '../layout/TopBar';
 import ChartTypeSelect from '../ChartTypeSelect';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import Notification from '../Notification';
 import MessageBubble from './MessageBubble';
 import ConversationList from './ConversationList';
 import { useLocale } from '@/locales';
+import FormatSelector from '../FormatSelector';
 import type { SourceType, ConversationMessage } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
-const FORMATS = [
-  { key: 'excalidraw' as DiagramFormat, label: 'Excalidraw' },
-  { key: 'mermaid' as DiagramFormat, label: 'Mermaid' },
-  { key: 'drawio' as DiagramFormat, label: 'Draw.io' },
-];
+/** 导出消息内容为文件 */
+function exportMessage(content: string, format: DiagramFormat) {
+  const ext = format === 'excalidraw' ? 'json' : format === 'mermaid' ? 'mmd' : 'drawio';
+  const mime = format === 'excalidraw' ? 'application/json' : format === 'mermaid' ? 'text/plain' : 'application/xml';
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `diagram.${ext}`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 interface AICopilotPanelProps {
   conversationId: string | null;
@@ -49,6 +58,7 @@ interface AICopilotPanelProps {
   onFormatChange: (format: DiagramFormat) => void;
   onOpenConfig: () => void;
   onExport: () => void;
+  onRegenerate: () => void;
   apiError: string | null;
   onClearError: () => void;
   panelWidth?: number;
@@ -71,6 +81,7 @@ export default function AICopilotPanel({
   onFormatChange,
   onOpenConfig,
   onExport,
+  onRegenerate,
   apiError,
   onClearError,
   panelWidth = 360,
@@ -88,8 +99,7 @@ export default function AICopilotPanel({
 
   const { attachments, payload, attachStatus, attachError, notification, closeNotification, handleFiles, clearAttachments, removeAttachment, canSend, getSourceType } = useFileUpload({ diagramFormat: currentFormat });
 
-  const [isDragging, setIsDragging] = useState(false);
-  const dragCounterRef = useRef(0);
+  const { isDragging, dragHandlers } = useDragAndDrop(handleFiles);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-scroll to bottom when messages change
@@ -172,33 +182,6 @@ export default function AICopilotPanel({
       e.preventDefault();
       handleSend();
     }
-  };
-
-  const handleDragEnter = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounterRef.current++;
-    if (e.dataTransfer.types.includes('Files')) setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounterRef.current--;
-    if (dragCounterRef.current === 0) setIsDragging(false);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    dragCounterRef.current = 0;
-    handleFiles(Array.from(e.dataTransfer.files));
   };
 
   const handleResizeStart = useCallback((e: MouseEvent) => {
@@ -307,13 +290,21 @@ export default function AICopilotPanel({
       {/* Message List or Empty State */}
       {hasMessages ? (
         <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 scrollbar-subtle bg-[var(--surface-warm)]/30">
-          {messages.map((msg) => (
-            <MessageBubble
-              key={msg.id}
-              message={msg}
-              isStreaming={isStreaming && msg.role === 'assistant' && msg.id === messages[messages.length - 1]?.id}
-            />
-          ))}
+          {messages.map((msg, idx) => {
+            const isLastAssistant = msg.role === 'assistant' && idx === messages.length - 1;
+            const isAssistant = msg.role === 'assistant';
+            const isMsgStreaming = isStreaming && msg.role === 'assistant' && msg.id === messages[messages.length - 1]?.id;
+            return (
+              <MessageBubble
+                key={msg.id}
+                message={msg}
+                isStreaming={isMsgStreaming}
+                onRegenerate={isLastAssistant && !isGenerating ? onRegenerate : undefined}
+                onCopy={isAssistant && !isMsgStreaming ? () => navigator.clipboard.writeText(msg.content) : undefined}
+                onExport={isAssistant && !isMsgStreaming ? () => exportMessage(msg.content, currentFormat) : undefined}
+              />
+            );
+          })}
           <div ref={messagesEndRef} />
         </div>
       ) : (
@@ -329,17 +320,7 @@ export default function AICopilotPanel({
 
           {/* Format Selector */}
           <div className="w-full mb-3">
-            <div className="segmented-control w-full">
-              {FORMATS.map((f) => (
-                <button
-                  key={f.key}
-                  onClick={() => onFormatChange(f.key)}
-                  className={`segmented-control-item ${currentFormat === f.key ? 'active' : ''}`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+            <FormatSelector value={currentFormat} onChange={onFormatChange} className="w-full" />
           </div>
 
           {/* Chart Type */}
@@ -354,17 +335,7 @@ export default function AICopilotPanel({
         {/* Format & Chart Type (when has messages) */}
         {hasMessages && (
           <div className="px-4 pt-3 pb-1 space-y-2">
-            <div className="segmented-control w-full">
-              {FORMATS.map((f) => (
-                <button
-                  key={f.key}
-                  onClick={() => onFormatChange(f.key)}
-                  className={`segmented-control-item ${currentFormat === f.key ? 'active' : ''}`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+            <FormatSelector value={currentFormat} onChange={onFormatChange} className="w-full" />
             <ChartTypeSelect value={chartType} onChange={setChartType} />
           </div>
         )}
@@ -373,10 +344,7 @@ export default function AICopilotPanel({
         <div className="px-4 pt-2">
           <div
             className="relative"
-            onDragEnter={handleDragEnter}
-            onDragLeave={handleDragLeave}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
+            {...dragHandlers}
           >
             {isDragging && (
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--accent-indigo)]/5 border-2 border-dashed border-[var(--accent-indigo)]/30 rounded-xl pointer-events-none">
@@ -487,10 +455,6 @@ export default function AICopilotPanel({
       <div className="border-t border-[var(--surface-warm-hover)] px-4 py-3 flex items-center gap-1 flex-shrink-0">
         <button onClick={onOpenConfig} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg transition-all duration-200">
           <Wand2 size={13} /><span>{t('copilot.config')}</span>
-        </button>
-        <div className="flex-1" />
-        <button onClick={onExport} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg transition-all duration-200">
-          <Download size={13} /><span>{t('copilot.export')}</span>
         </button>
       </div>
 

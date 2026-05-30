@@ -1,17 +1,53 @@
 'use client';
 
-import { User, Bot } from 'lucide-react';
+import { useState, useRef, useCallback, useMemo } from 'react';
+import { User, Bot, RefreshCw, Copy, Download, Check } from 'lucide-react';
 import { useLocale } from '@/locales';
+import { parseStoredImages } from '@/lib/utils';
 import type { ConversationMessage } from '@/types';
 
 interface MessageBubbleProps {
   message: ConversationMessage;
   isStreaming?: boolean;
+  onRegenerate?: () => void;
+  onCopy?: () => void;
+  onExport?: () => void;
 }
 
-export default function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
+export default function MessageBubble({ message, isStreaming, onRegenerate, onCopy, onExport }: MessageBubbleProps) {
   const { t } = useLocale();
   const isUser = message.role === 'user';
+  const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleCopy = useCallback(() => {
+    if (!onCopy) return;
+    onCopy();
+    setCopied(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setCopied(false), 1500);
+  }, [onCopy]);
+
+  const hasActions = onRegenerate || onCopy || onExport;
+  const actionButtons = hasActions ? (
+    <div className="flex items-center gap-0.5">
+      {onRegenerate && (
+        <button onClick={onRegenerate} className="flex items-center justify-center w-5 h-5 text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 rounded transition-all duration-200" title={t('copilot.regenerate')}>
+          <RefreshCw size={11} />
+        </button>
+      )}
+      {onCopy && (
+        <button onClick={handleCopy} className={`flex items-center justify-center w-5 h-5 rounded transition-all duration-200 ${copied ? 'text-emerald-500' : 'text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5'}`} title={t('copilot.copy')}>
+          {copied ? <Check size={11} /> : <Copy size={11} />}
+        </button>
+      )}
+      {onExport && (
+        <button onClick={onExport} className="flex items-center justify-center w-5 h-5 text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 rounded transition-all duration-200" title={t('copilot.export')}>
+          <Download size={11} />
+        </button>
+      )}
+    </div>
+  ) : null;
 
   return (
     <div className={`flex gap-2.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -34,13 +70,7 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
         }`}>
           {/* Image thumbnail(s) for image messages */}
           {message.imageData && (() => {
-            // 解析图片数据：单图或多图 JSON 数组
-            const images: { data: string; mimeType: string }[] = [];
-            if (message.imageMimeType === 'application/json') {
-              try { images.push(...JSON.parse(message.imageData)); } catch { /* ignore */ }
-            } else {
-              images.push({ data: message.imageData, mimeType: message.imageMimeType || 'image/png' });
-            }
+            const images = parseStoredImages(message.imageData, message.imageMimeType);
             if (images.length === 0) return null;
             return (
               <div className={`mb-2 flex gap-1.5 flex-wrap ${images.length > 1 ? 'max-w-48' : ''}`}>
@@ -72,9 +102,17 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
                 <code>{message.content.length > 300 ? message.content.substring(0, 300) + '...' : message.content}</code>
               </pre>
               {message.content.length > 300 && (
-                <p className="text-[11px] text-[var(--muted)] mt-1">
-                  {message.content.length} {t('message.characters')}
-                </p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-[11px] text-[var(--muted)]">
+                    {message.content.length} {t('message.characters')}
+                  </p>
+                  {actionButtons}
+                </div>
+              )}
+              {message.content.length <= 300 && actionButtons && (
+                <div className="flex items-center justify-end mt-1">
+                  {actionButtons}
+                </div>
               )}
             </div>
           )}

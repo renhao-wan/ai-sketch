@@ -81,6 +81,8 @@ export const en: TranslationDict = {
   'copilot.generate': 'Generate',
   'copilot.config': 'Config',
   'copilot.dropFiles': 'Drop files here',
+  'copilot.regenerate': 'Regenerate',
+  'copilot.copy': 'Copy',
 
   // Bottom Context Panel
   'panel.generatedCode': 'Generated Code',

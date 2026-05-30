@@ -15,21 +15,15 @@ import {
 import { setInitData } from '@/lib/init-data';
 import { useLocale } from '@/locales';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { useDragAndDrop } from '@/hooks/useDragAndDrop';
+import FormatSelector from '../FormatSelector';
 import Notification from '../Notification';
 import type { DiagramFormat } from '@/types/diagram-strategy';
-
-const FORMATS = [
-  { key: 'excalidraw', label: 'Excalidraw' },
-  { key: 'mermaid', label: 'Mermaid' },
-  { key: 'drawio', label: 'Draw.io' },
-];
 
 export default function AIPromptBox() {
   const router = useRouter();
   const { t } = useLocale();
   const [prompt, setPrompt] = useState('');
-  const [isDragging, setIsDragging] = useState(false);
-  const dragCounterRef = useRef(0);
   const [activeFormat, setActiveFormat] = useState('excalidraw');
   const [isGenerating, setIsGenerating] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -53,6 +47,8 @@ export default function AIPromptBox() {
   const handleFiles = async (files: File[]) => {
     await handleFilesRaw(files, prompt);
   };
+
+  const { isDragging, dragHandlers } = useDragAndDrop(handleFiles);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     handleFiles(Array.from(e.target.files || []));
@@ -101,33 +97,6 @@ export default function AIPromptBox() {
     }
   };
 
-  const handleDragEnter = (e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounterRef.current++;
-    if (e.dataTransfer.types.includes('Files')) setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounterRef.current--;
-    if (dragCounterRef.current === 0) setIsDragging(false);
-  };
-
-  const handleDragOver = (e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = (e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    dragCounterRef.current = 0;
-    handleFiles(Array.from(e.dataTransfer.files));
-  };
-
   const hasAttachment = attachments.length > 0;
 
   // Render attachment cards
@@ -169,10 +138,7 @@ export default function AIPromptBox() {
     <div className="w-full max-w-4xl mx-auto">
       <div
         className="relative rounded-3xl bg-[var(--surface-warm)] backdrop-blur-2xl border border-[var(--border)] shadow-[0_10px_60px_rgba(28,25,23,0.08)] overflow-hidden"
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
+        {...dragHandlers}
       >
         {/* Drag Overlay */}
         {isDragging && (
@@ -209,17 +175,7 @@ export default function AIPromptBox() {
         {/* Bottom Bar */}
         <div className="flex items-center justify-between px-4 pb-4 pt-1">
           {/* Left - Format Selector */}
-          <div className="segmented-control">
-            {FORMATS.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setActiveFormat(f.key)}
-                className={`segmented-control-item ${activeFormat === f.key ? 'active' : ''}`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+          <FormatSelector value={activeFormat as DiagramFormat} onChange={(f) => setActiveFormat(f)} />
 
           {/* Right - Actions */}
           <div className="flex items-center gap-2">

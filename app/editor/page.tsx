@@ -20,7 +20,8 @@ import { useLocale } from '@/locales';
 import type { LLMConfig, NotificationState, AIActionId, ConversationMessage } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
-import { generateId } from '@/lib/utils';
+import { generateId, parseStoredImages } from '@/lib/utils';
+import { consumeSSEStream, parseAPIError } from '@/lib/sse-consumer';
 
 function EditorContent() {
   const { t } = useLocale();
@@ -135,17 +136,6 @@ function EditorContent() {
     };
   }, []);
 
-  // Visibility awareness during streaming
-  useEffect(() => {
-    if (!isStreaming) return;
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isStreaming]);
-
   const handleSendMessage = useCallback(async (userMessage: string | { text?: string; images?: unknown[] }, chartType: string = 'auto', sourceType: string = 'text') => {
     if (isGenerating) return;
 
@@ -214,75 +204,31 @@ function EditorContent() {
         throw new Error(errorMessage);
       }
 
-      if (!response.body) {
-        throw new Error('Response body is null');
-      }
+      if (!response.body) throw new Error('Response body is null');
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let accumulatedCode = '';
-      let buffer = '';
       let activeConvId = conversationId;
-
-      while (true) {
-        if (controller.signal.aborted) {
-          reader.releaseLock();
-          break;
-        }
-
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.trim() === '' || line.trim() === 'data: [DONE]') continue;
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-
-              if (data.type === 'meta' && data.conversationId) {
-                activeConvId = data.conversationId;
-                setConversationId(data.conversationId);
-                setMessages(prev => prev.map(m =>
-                  (m.id === optimisticUserMsg.id || m.id === optimisticAssistantMsg.id) ? { ...m, conversationId: data.conversationId } : m
-                ));
-              } else if (data.type === 'content' && data.content) {
-                accumulatedCode += data.content;
-                const stripped = stripCodeFences(accumulatedCode);
-                setGeneratedCode(stripped);
-                // Feed directly to Excalidraw for real-time rendering (bypasses React batching)
-                streamRendererRef.current?.feed(stripped);
-                // Update streaming assistant message in sidebar
-                setMessages(prev => prev.map(m =>
-                  m.id === optimisticAssistantMsg.id ? { ...m, content: stripped } : m
-                ));
-              } else if (data.type === 'error') {
-                throw new Error(data.error);
-              } else if (data.content) {
-                // Backward compatibility: old format without type field
-                accumulatedCode += data.content;
-                const stripped = stripCodeFences(accumulatedCode);
-                setGeneratedCode(stripped);
-                streamRendererRef.current?.feed(stripped);
-                setMessages(prev => prev.map(m =>
-                  m.id === optimisticAssistantMsg.id ? { ...m, content: stripped } : m
-                ));
-              }
-            } catch (e) {
-              if (e instanceof SyntaxError) {
-                console.warn('[SSE] JSON parse error:', (e as SyntaxError).message, 'Raw:', line);
-              } else {
-                setApiError(t('editor.streamParseError') + (e as Error).message);
-              }
-            }
-          }
-        }
-      }
+      const { accumulatedCode } = await consumeSSEStream(
+        response.body.getReader(),
+        controller.signal,
+        {
+          onMeta: (convId) => {
+            activeConvId = convId;
+            setConversationId(convId);
+            setMessages(prev => prev.map(m =>
+              (m.id === optimisticUserMsg.id || m.id === optimisticAssistantMsg.id) ? { ...m, conversationId: convId } : m
+            ));
+          },
+          onContent: (stripped) => {
+            setGeneratedCode(stripped);
+            streamRendererRef.current?.feed(stripped);
+            setMessages(prev => prev.map(m =>
+              m.id === optimisticAssistantMsg.id ? { ...m, content: stripped } : m
+            ));
+          },
+        },
+      );
 
       // Full postProcess + optimize + validate after stream completes
-      // Read format from ref (may have changed during stream)
       const currentStrategy = getStrategy(formatRef.current);
       const processedCode = currentStrategy.postProcess(accumulatedCode);
       const optimizedCode = currentStrategy.optimize(processedCode);
@@ -295,15 +241,11 @@ function EditorContent() {
         m.id === optimisticAssistantMsg.id ? { ...m, content: optimizedCode, conversationId: activeConvId || m.conversationId } : m
       ));
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        return;
-      }
+      if (error instanceof DOMException && error.name === 'AbortError') return;
       console.error('[stream] error:', error);
-      if (error instanceof TypeError || (error as Error).message === 'Failed to fetch') {
-        setApiError(t('editor.networkError'));
-      } else {
-        setApiError((error as Error).message);
-      }
+      setApiError(error instanceof TypeError || (error as Error).message === 'Failed to fetch'
+        ? t('editor.networkError')
+        : (error as Error).message);
     } finally {
       abortControllerRef.current = null;
       setIsGenerating(false);
@@ -408,6 +350,124 @@ function EditorContent() {
     }
   }, [conversationId, handleNewConversation]);
 
+  const handleRegenerate = useCallback(async () => {
+    if (isGenerating || messages.length === 0) return;
+    if (!isConfigValid(config)) {
+      setNotification({ isOpen: true, title: t('editor.configReminder'), message: t('editor.pleaseConfigLLM'), type: 'warning' });
+      setIsConfigManagerOpen(true);
+      return;
+    }
+
+    // 找到最后一条 user 消息和 assistant 消息
+    const lastUserIdx = [...messages].reverse().findIndex(m => m.role === 'user');
+    if (lastUserIdx === -1) return;
+    const lastUserMsg = messages[messages.length - 1 - lastUserIdx];
+
+    // 从 user 消息中还原 images
+    const images = parseStoredImages(lastUserMsg.imageData, lastUserMsg.imageMimeType);
+
+    const userInput = images.length > 0
+      ? { text: lastUserMsg.content, images }
+      : lastUserMsg.content;
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    setIsGenerating(true);
+    setIsStreaming(true);
+    setApiError(null);
+    setJsonError(null);
+    setGeneratedCode('');
+    setRenderData(null);
+
+    // 删除旧的 assistant 消息，添加新的占位
+    setMessages(prev => {
+      const lastAssistantIdx = [...prev].reverse().findIndex(m => m.role === 'assistant');
+      if (lastAssistantIdx === -1) return prev;
+      const idx = prev.length - 1 - lastAssistantIdx;
+      return [...prev.slice(0, idx), ...prev.slice(idx + 1)];
+    });
+
+    // 仅添加 assistant 占位消息（不添加新的 user 消息）
+    const optimisticAssistantMsg: ConversationMessage = {
+      id: generateId(),
+      conversationId: conversationId || '',
+      role: 'assistant',
+      content: '',
+      sourceType: 'text',
+      createdAt: Date.now(),
+    };
+    setMessages(prev => [...prev, optimisticAssistantMsg]);
+
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          configId: config!.id,
+          userInput,
+          chartType: currentChartType,
+          format,
+          conversationId,
+          sourceType: lastUserMsg.sourceType || 'text',
+          regenerate: true,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        let errorMessage = t('editor.generateFailed');
+        try {
+          const errorData = await response.json();
+          if (errorData.error) errorMessage = errorData.error;
+        } catch {
+          switch (response.status) {
+            case 400: errorMessage = t('editor.requestError'); break;
+            case 401: case 403: errorMessage = t('editor.apiKeyError'); break;
+            case 429: errorMessage = t('editor.rateLimit'); break;
+            case 500: case 502: case 503: errorMessage = t('editor.serverError'); break;
+            default: errorMessage = `${t('editor.requestFailed')} (${response.status})`;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      if (!response.body) throw new Error('Response body is null');
+
+      const { accumulatedCode } = await consumeSSEStream(
+        response.body.getReader(),
+        controller.signal,
+        {
+          onContent: (stripped) => {
+            setGeneratedCode(stripped);
+            streamRendererRef.current?.feed(stripped);
+            setMessages(prev => prev.map(m =>
+              m.id === optimisticAssistantMsg.id ? { ...m, content: stripped } : m
+            ));
+          },
+        },
+      );
+
+      // 与 handleSendMessage 一致：postProcess + optimize
+      const currentStrategy = getStrategy(formatRef.current);
+      const processedCode = currentStrategy.postProcess(accumulatedCode);
+      const optimizedCode = currentStrategy.optimize(processedCode);
+      setGeneratedCode(optimizedCode);
+      setMessages(prev => prev.map(m =>
+        m.id === optimisticAssistantMsg.id ? { ...m, content: optimizedCode } : m
+      ));
+      tryParseAndApply(optimizedCode, currentStrategy);
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') {
+        setApiError((error as Error).message || t('editor.generateFailed'));
+      }
+    } finally {
+      setIsGenerating(false);
+      setIsStreaming(false);
+      abortControllerRef.current = null;
+    }
+  }, [isGenerating, messages, config, currentChartType, format, conversationId, t]);
+
   const handleAIAction = (actionId: AIActionId) => {
     switch (actionId) {
       case 'optimize': handleOptimizeCode(); break;
@@ -450,9 +510,10 @@ function EditorContent() {
           currentInput={currentInput}
           currentChartType={currentChartType}
           currentFormat={format}
-          onFormatChange={setFormat}
+          onFormatChange={(f) => { setFormat(f); setRenderData(null); setGeneratedCode(''); }}
           onOpenConfig={() => setIsConfigManagerOpen(true)}
           onExport={handleExport}
+          onRegenerate={handleRegenerate}
           apiError={apiError}
           onClearError={() => setApiError(null)}
           panelWidth={panelWidth}

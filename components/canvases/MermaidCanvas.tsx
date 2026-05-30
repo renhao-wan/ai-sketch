@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocale } from '@/locales';
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { useZoomControls } from '@/hooks/useZoomControls';
+import ZoomToolbar from './ZoomToolbar';
 
 interface MermaidCanvasProps {
   code: string;
@@ -69,66 +70,31 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
   const isStreamingRef = useRef(isStreaming);
   isStreamingRef.current = isStreaming;
 
-  // 缩放和平移状态
-  const [scale, setScale] = useState(1);
-  const [translate, setTranslate] = useState({ x: 0, y: 0 });
-  const isPanning = useRef(false);
-  const panStart = useRef({ x: 0, y: 0 });
+  const {
+    scale, translate, isPanning,
+    handleZoomIn, handleZoomOut, handleFitToView,
+    handleWheel, handleMouseDown, handleMouseMove, handleMouseUp,
+  } = useZoomControls();
 
-  const handleZoomIn = useCallback(() => {
-    setScale(s => Math.min(s + 0.25, 3));
-  }, []);
-
-  const handleZoomOut = useCallback(() => {
-    setScale(s => Math.max(s - 0.25, 0.25));
-  }, []);
-
-  const handleFitToView = useCallback(() => {
+  const handleFitToViewLocal = useCallback(() => {
     if (!containerRef.current || !wrapperRef.current) return;
     const svg = containerRef.current.querySelector('svg');
     if (!svg) return;
     const svgWidth = containerRef.current.scrollWidth;
     const svgHeight = containerRef.current.scrollHeight;
     const wrapperRect = wrapperRef.current.getBoundingClientRect();
-    const scaleX = (wrapperRect.width * 0.75) / svgWidth;
-    const scaleY = (wrapperRect.height * 0.75) / svgHeight;
-    const newScale = Math.min(scaleX, scaleY, 1.5);
-    setScale(newScale);
-    setTranslate({ x: 0, y: 0 });
-  }, []);
-
-  // 鼠标滚轮缩放
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      setScale(s => Math.max(0.3, Math.min(3, s + delta)));
-    }
-  }, []);
-
-  // 鼠标拖拽平移
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button === 1 || (e.button === 0 && e.altKey)) {
-      isPanning.current = true;
-      panStart.current = { x: e.clientX - translate.x, y: e.clientY - translate.y };
-    }
-  }, [translate]);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (isPanning.current) {
-      setTranslate({
-        x: e.clientX - panStart.current.x,
-        y: e.clientY - panStart.current.y,
-      });
-    }
-  }, []);
-
-  const handleMouseUp = useCallback(() => {
-    isPanning.current = false;
-  }, []);
+    handleFitToView(wrapperRect.width, wrapperRect.height, svgWidth, svgHeight);
+  }, [handleFitToView]);
 
   useEffect(() => {
-    if (!code || !containerRef.current) return;
+    if (!containerRef.current) return;
+
+    // 空代码时清空容器
+    if (!code) {
+      containerRef.current.innerHTML = '';
+      setError(null);
+      return;
+    }
 
     const currentRenderId = ++renderIdRef.current;
 
@@ -154,15 +120,10 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
             if (!containerRef.current || !wrapperRef.current) return;
             const svgEl = containerRef.current.querySelector('svg');
             if (!svgEl) return;
-            // 使用 scrollWidth/scrollHeight 获取 SVG 实际渲染大小
             const svgWidth = containerRef.current.scrollWidth;
             const svgHeight = containerRef.current.scrollHeight;
             const wrapperRect = wrapperRef.current.getBoundingClientRect();
-            const scaleX = (wrapperRect.width * 0.75) / svgWidth;
-            const scaleY = (wrapperRect.height * 0.75) / svgHeight;
-            const newScale = Math.min(scaleX, scaleY, 1.5);
-            setScale(newScale);
-            setTranslate({ x: 0, y: 0 });
+            handleFitToView(wrapperRect.width, wrapperRect.height, svgWidth, svgHeight);
           });
         }
       } catch (e) {
@@ -188,20 +149,7 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
 
   return (
     <div className="w-full h-full overflow-hidden canvas-grid-bg relative">
-      {/* 缩放控制按钮 */}
-      <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-lg border border-black/[0.08] shadow-sm p-1">
-        <button onClick={handleZoomOut} className="p-1.5 hover:bg-black/[0.05] rounded transition-colors" title="缩小">
-          <ZoomOut size={14} className="text-[var(--muted)]" />
-        </button>
-        <span className="text-[11px] text-[var(--muted)] min-w-[40px] text-center font-mono">{Math.round(scale * 100)}%</span>
-        <button onClick={handleZoomIn} className="p-1.5 hover:bg-black/[0.05] rounded transition-colors" title="放大">
-          <ZoomIn size={14} className="text-[var(--muted)]" />
-        </button>
-        <div className="w-px h-4 bg-black/[0.08] mx-0.5" />
-        <button onClick={handleFitToView} className="p-1.5 hover:bg-black/[0.05] rounded transition-colors" title="适应视图">
-          <Maximize2 size={14} className="text-[var(--muted)]" />
-        </button>
-      </div>
+      <ZoomToolbar scale={scale} onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} onFitToView={handleFitToViewLocal} />
 
       {/* 图表容器 */}
       <div
@@ -212,7 +160,7 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        style={{ cursor: isPanning.current ? 'grabbing' : 'default' }}
+        style={{ cursor: isPanning ? 'grabbing' : 'default' }}
       >
         {error ? (
           <div className="w-full h-full flex items-center justify-center p-6">
@@ -230,7 +178,7 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
             style={{
               transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
               transformOrigin: 'center center',
-              transition: isPanning.current ? 'none' : 'transform 0.15s ease-out',
+              transition: isPanning ? 'none' : 'transform 0.15s ease-out',
             }}
           />
         )}

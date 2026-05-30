@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useLocale } from '@/locales';
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { useZoomControls } from '@/hooks/useZoomControls';
+import ZoomToolbar from './ZoomToolbar';
 
 interface DrawioCanvasProps {
   code: string;
@@ -27,40 +28,22 @@ export default function DrawioCanvas({ code }: DrawioCanvasProps) {
   const [embedReady, setEmbedReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const codeRef = useRef(code);
-
-  // 缩放状态
-  const [scale, setScale] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Keep codeRef in sync
   codeRef.current = code;
 
-  const handleZoomIn = useCallback(() => {
-    setScale(s => Math.min(s + 0.25, 3));
-  }, []);
-
-  const handleZoomOut = useCallback(() => {
-    setScale(s => Math.max(s - 0.25, 0.25));
-  }, []);
+  const { scale, handleZoomIn, handleZoomOut, handleSetScale, handleResetTranslate, handleWheel } = useZoomControls();
 
   const handleFitToView = useCallback(() => {
-    setScale(1);
-  }, []);
-
-  // 鼠标滚轮缩放
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      setScale(s => Math.max(0.25, Math.min(3, s + delta)));
-    }
-  }, []);
+    handleResetTranslate();
+  }, [handleResetTranslate]);
 
   // 自动适应视图（在 XML 加载后）
   useEffect(() => {
     if (!embedReady || !code) return;
-    setScale(1);
-  }, [code, embedReady]);
+    handleSetScale(1);
+  }, [code, embedReady, handleSetScale]);
 
   // Listen for embed protocol messages (init, load, error)
   useEffect(() => {
@@ -125,20 +108,7 @@ export default function DrawioCanvas({ code }: DrawioCanvasProps) {
 
   return (
     <div className="w-full h-full canvas-grid-bg relative overflow-hidden">
-      {/* 缩放控制按钮 */}
-      <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-lg border border-black/[0.08] shadow-sm p-1">
-        <button onClick={handleZoomOut} className="p-1.5 hover:bg-black/[0.05] rounded transition-colors" title="缩小">
-          <ZoomOut size={14} className="text-[var(--muted)]" />
-        </button>
-        <span className="text-[11px] text-[var(--muted)] min-w-[40px] text-center font-mono">{Math.round(scale * 100)}%</span>
-        <button onClick={handleZoomIn} className="p-1.5 hover:bg-black/[0.05] rounded transition-colors" title="放大">
-          <ZoomIn size={14} className="text-[var(--muted)]" />
-        </button>
-        <div className="w-px h-4 bg-black/[0.08] mx-0.5" />
-        <button onClick={handleFitToView} className="p-1.5 hover:bg-black/[0.05] rounded transition-colors" title="适应视图">
-          <Maximize2 size={14} className="text-[var(--muted)]" />
-        </button>
-      </div>
+      <ZoomToolbar scale={scale} onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} onFitToView={handleFitToView} />
 
       {/* 错误提示 */}
       {error && (

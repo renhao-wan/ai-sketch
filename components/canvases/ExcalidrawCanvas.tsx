@@ -206,7 +206,18 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
 
   // Final render after stream ends
   useEffect(() => {
-    if (isStreaming || !elements?.length || !convertFn || !apiRef.current) return;
+    if (isStreaming || !convertFn || !apiRef.current) return;
+
+    // 空元素时清空画布
+    if (!elements?.length) {
+      apiRef.current.updateScene({ elements: [] });
+      consumedRef.current = 0;
+      allRawRef.current = [];
+      idMapRef.current = new Map();
+      convertedIdsRef.current = new Set();
+      sceneRef.current = [];
+      return;
+    }
 
     const valid = (elements as Record<string, unknown>[])
       .filter(e => e.type && VALID.has(e.type as string));

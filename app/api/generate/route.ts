@@ -22,7 +22,7 @@ import type { DiagramFormat } from '@/types/diagram-strategy';
  */
 export async function POST(request: Request) {
   try {
-    const { configId, config: configBody, userInput, chartType, format, conversationId, sourceType: frontendSourceType } = await request.json() as {
+    const { configId, config: configBody, userInput, chartType, format, conversationId, sourceType: frontendSourceType, regenerate } = await request.json() as {
       configId?: string;
       config?: LLMConfig;
       userInput: string | { text?: string; image?: ImageData; images?: ImageData[] };
@@ -30,6 +30,7 @@ export async function POST(request: Request) {
       format?: DiagramFormat;
       conversationId?: string;
       sourceType?: string;
+      regenerate?: boolean;
     };
 
     let config: LLMConfig | undefined;
@@ -82,21 +83,26 @@ export async function POST(request: Request) {
     }
     const sourceType = frontendSourceType || (allImages.length > 0 ? 'image' : 'text');
 
-    // Save user message to conversation (store all images as JSON array for history)
-    const imageDataStr = allImages.length > 0
-      ? (allImages.length === 1 ? allImages[0].data : JSON.stringify(allImages.map(img => ({ data: img.data, mimeType: img.mimeType }))))
-      : undefined;
-    const imageMimeTypeStr = allImages.length > 0
-      ? (allImages.length === 1 ? allImages[0].mimeType : 'application/json')
-      : undefined;
-    await conversationManager.addMessage({
-      conversationId: activeConversationId,
-      role: 'user',
-      content: userContent,
-      imageData: imageDataStr,
-      imageMimeType: imageMimeTypeStr,
-      sourceType,
-    });
+    if (regenerate) {
+      // 重新生成：删除最后一条 assistant 消息，不添加新的 user 消息
+      await conversationManager.deleteLastAssistantMessage(activeConversationId!);
+    } else {
+      // 正常生成：保存 user 消息
+      const imageDataStr = allImages.length > 0
+        ? (allImages.length === 1 ? allImages[0].data : JSON.stringify(allImages.map(img => ({ data: img.data, mimeType: img.mimeType }))))
+        : undefined;
+      const imageMimeTypeStr = allImages.length > 0
+        ? (allImages.length === 1 ? allImages[0].mimeType : 'application/json')
+        : undefined;
+      await conversationManager.addMessage({
+        conversationId: activeConversationId,
+        role: 'user',
+        content: userContent,
+        imageData: imageDataStr,
+        imageMimeType: imageMimeTypeStr,
+        sourceType,
+      });
+    }
 
     // ── Build LLM messages with context ──
     const contextMessages = await conversationManager.buildContextMessages(activeConversationId);
