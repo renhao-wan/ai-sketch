@@ -12,11 +12,10 @@ import {
   AlertCircle,
   Upload,
 } from 'lucide-react';
-import { imageStrategy, orchestrator } from '@/lib/input-strategies/registry';
 import { setInitData } from '@/lib/init-data';
 import { useLocale } from '@/locales';
+import { useFileUpload } from '@/composables/useFileUpload';
 import type { DiagramFormat } from '@/types/diagram-strategy';
-import type { MessagePayload } from '@/types/input-strategy';
 
 const FORMATS = [
   { key: 'excalidraw', label: 'Excalidraw' },
@@ -36,11 +35,10 @@ export default function AIPromptBox() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Unified attachment state — all paths go through orchestrator
-  const [attachments, setAttachments] = useState<File[]>([]);
-  const [attachStatus, setAttachStatus] = useState<'' | 'processing' | 'success' | 'error'>('');
-  const [attachError, setAttachError] = useState('');
-  const [payload, setPayload] = useState<MessagePayload | null>(null);
+  // Unified attachment state via useFileUpload hook
+  const { attachments, payload, attachStatus, attachError, handleFiles: handleFilesRaw, clearAttachments, getSourceType, setAttachError, setAttachStatus } = useFileUpload({
+    diagramFormat: activeFormat as DiagramFormat,
+  });
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -50,26 +48,9 @@ export default function AIPromptBox() {
     }
   }, [prompt]);
 
-  /** Core handler — all file inputs (single, multi, drag) funnel here */
+  /** Core handler — wraps the hook's handleFiles with prompt */
   const handleFiles = async (files: File[]) => {
-    if (files.length === 0) return;
-
-    clearAttachments();
-    setAttachStatus('processing');
-    setAttachError('');
-
-    // Set diagram format on image strategy before orchestrator runs
-    imageStrategy.setDiagramFormat(activeFormat as DiagramFormat);
-
-    const result = await orchestrator.handleFiles(files, prompt, 'auto');
-    if (result.success) {
-      setAttachments(files);
-      setPayload(result.payload);
-      setAttachStatus('success');
-    } else {
-      setAttachError(result.errors.map(e => `${e.fileName}: ${e.error}`).join('; '));
-      setAttachStatus('error');
-    }
+    await handleFilesRaw(files, prompt);
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -80,11 +61,9 @@ export default function AIPromptBox() {
     handleFiles(Array.from(e.target.files || []));
   };
 
-  const clearAttachments = () => {
-    setAttachments([]);
-    setAttachStatus('');
-    setAttachError('');
-    setPayload(null);
+  /** Clear attachments and reset file input elements */
+  const clearAttachmentsLocal = () => {
+    clearAttachments();
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (imageInputRef.current) imageInputRef.current.value = '';
   };
@@ -100,9 +79,8 @@ export default function AIPromptBox() {
 
     try {
       if (attachStatus === 'success' && payload) {
-        const sourceType = payload.type === 'image' ? 'image' : 'file';
         setInitData({ type: payload.type, data: payload.content, format: activeFormat as DiagramFormat });
-        router.push(`/editor?source=${sourceType}`);
+        router.push(`/editor?source=${getSourceType()}`);
       } else if (prompt.trim()) {
         setInitData({ type: 'text', data: prompt.trim(), format: activeFormat as DiagramFormat });
         router.push('/editor?source=text');
@@ -168,7 +146,7 @@ export default function AIPromptBox() {
           {!isImage && <Paperclip size={13} className="text-[var(--muted)] flex-shrink-0" />}
           <span className="text-xs text-[var(--fg)] truncate flex-1">{file.name}</span>
           {attachStatus === 'error' && <span className="text-[10px] text-red-500 flex-shrink-0">{attachError}</span>}
-          <button onClick={clearAttachments} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
+          <button onClick={clearAttachmentsLocal} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
             <X size={13} />
           </button>
         </div>
@@ -189,7 +167,7 @@ export default function AIPromptBox() {
         {attachStatus === 'error' && <AlertCircle size={13} className="text-red-500 flex-shrink-0" />}
         <span className="text-xs text-[var(--fg)] truncate flex-1">{parts.join(' + ')}</span>
         {attachStatus === 'error' && <span className="text-[10px] text-red-500 flex-shrink-0">{attachError}</span>}
-        <button onClick={clearAttachments} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
+        <button onClick={clearAttachmentsLocal} className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors flex-shrink-0 ml-1">
           <X size={13} />
         </button>
       </div>
