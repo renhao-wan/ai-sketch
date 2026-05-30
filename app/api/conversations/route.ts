@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { conversationManager } from '@/lib/conversation-manager';
+import { conversationManager } from '@/lib/db/conversation-manager';
 
 /**
  * GET /api/conversations

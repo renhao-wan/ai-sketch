@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { callLLM } from '@/lib/llm-client';
-import { configManager } from '@/lib/config-manager';
-import { conversationManager } from '@/lib/conversation-manager';
+import { callLLM } from '@/lib/llm/client';
+import { configManager } from '@/lib/db/config-manager';
+import { conversationManager } from '@/lib/db/conversation-manager';
 import { getStrategy } from '@/lib/strategies/registry';
 import type { LLMConfig, LLMMessage, ImageData } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';

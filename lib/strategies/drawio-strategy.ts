@@ -4,8 +4,8 @@
  */
 
 import type { DiagramStrategy, ValidationResult } from '@/types/diagram-strategy';
-import { CHART_TYPES, getChartTypeName } from '@/lib/constants';
-import { stripCodeFences } from '@/lib/json-repair';
+import { CHART_TYPES, getChartTypeName } from '@/lib/diagram/constants';
+import { stripCodeFences } from '@/lib/diagram/json-repair';
 import { createExportBlob, identityOptimize, buildImagePrompt } from './helpers';
 
 // Chart type to Draw.io guidance mapping (only guidance, names come from CHART_TYPES)

@@ -14,8 +14,8 @@ import {
 } from 'lucide-react';
 import { setInitData } from '@/lib/init-data';
 import { useLocale } from '@/locales';
-import { useFileUpload } from '@/composables/useFileUpload';
-import Notification from './Notification';
+import { useFileUpload } from '@/hooks/useFileUpload';
+import Notification from '../Notification';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
 const FORMATS = [

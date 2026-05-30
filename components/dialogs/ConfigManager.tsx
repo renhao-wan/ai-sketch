@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import * as api from '@/lib/api-client';
-import Notification from './Notification';
+import Notification from '../Notification';
 import ConfirmDialog from './ConfirmDialog';
-import ScrollToTop from './ScrollToTop';
+import ScrollToTop from '../ScrollToTop';
 import { Settings, Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2 } from 'lucide-react';
-import Dropdown from './ui/Dropdown';
+import Dropdown from '../ui/Dropdown';
 import { useLocale } from '@/locales';
 import type { LLMConfig, ModelInfo, NotificationState, ConfirmDialogState } from '@/types';
 

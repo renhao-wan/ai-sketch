@@ -17,10 +17,10 @@ import {
   AlertCircle,
   Plus,
 } from 'lucide-react';
-import { AppIcon } from './TopBar';
-import ChartTypeSelect from './ChartTypeSelect';
-import { useFileUpload } from '@/composables/useFileUpload';
-import Notification from './Notification';
+import { AppIcon } from '../layout/TopBar';
+import ChartTypeSelect from '../ChartTypeSelect';
+import { useFileUpload } from '@/hooks/useFileUpload';
+import Notification from '../Notification';
 import MessageBubble from './MessageBubble';
 import ConversationList from './ConversationList';
 import { useLocale } from '@/locales';

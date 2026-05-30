@@ -221,8 +221,8 @@ export const SYSTEM_PROMPT = `## 任务
 \`\`\`
 `;
 
-// Chart type display names — single source of truth in lib/constants.ts
-import { CHART_TYPES } from './constants';
+// Chart type display names — single source of truth in lib/diagram/constants.ts
+import { CHART_TYPES } from '../diagram/constants';
 const CHART_TYPE_NAMES: Record<string, string> = CHART_TYPES;
 
 // Visual specifications for different chart types

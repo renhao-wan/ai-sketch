@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { fetchModels } from '@/lib/llm-client';
-import { configManager } from '@/lib/config-manager';
+import { fetchModels } from '@/lib/llm/client';
+import { configManager } from '@/lib/db/config-manager';
 
 /**
  * GET /api/models

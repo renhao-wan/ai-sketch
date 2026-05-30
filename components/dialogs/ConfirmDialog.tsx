@@ -1,7 +1,7 @@
 'use client';
 
-import Modal from './ui/Modal';
-import Button from './ui/Button';
+import Modal from '../ui/Modal';
+import Button from '../ui/Button';
 import { useLocale } from '@/locales';
 
 interface ConfirmDialogProps {

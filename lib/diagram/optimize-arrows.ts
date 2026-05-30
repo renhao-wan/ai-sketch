@@ -3,7 +3,7 @@
  */
 
 import type { ExcalidrawElement } from '@/types';
-import { extractFirstJsonArray } from '@/lib/json-repair';
+import { extractFirstJsonArray } from './json-repair';
 
 type Edge = 'left' | 'right' | 'top' | 'bottom';
 

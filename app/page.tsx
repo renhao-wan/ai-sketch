@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AppIcon } from '@/components/TopBar';
+import { AppIcon } from '@/components/layout/TopBar';
 import { setInitData } from '@/lib/init-data';
-import AIPromptBox from '@/components/AIPromptBox';
-import ConfigManager from '@/components/ConfigManager';
-import HistoryModal from '@/components/HistoryModal';
+import AIPromptBox from '@/components/ai/AIPromptBox';
+import ConfigManager from '@/components/dialogs/ConfigManager';
+import HistoryModal from '@/components/dialogs/HistoryModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useLocale } from '@/locales';
 import { timeAgo } from '@/lib/time-ago';

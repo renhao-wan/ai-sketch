@@ -1,6 +1,6 @@
 'use client';
 
-import { getChartTypeLabel } from '@/lib/constants';
+import { getChartTypeLabel } from '@/lib/diagram/constants';
 import { useLocale } from '@/locales';
 import Dropdown from './ui/Dropdown';
 

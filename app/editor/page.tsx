@@ -1,19 +1,19 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { AppIcon } from '@/components/TopBar';
-import AICopilotPanel from '@/components/AICopilotPanel';
-import FloatingAIActions from '@/components/FloatingAIActions';
-import BottomContextPanel from '@/components/BottomContextPanel';
+import { AppIcon } from '@/components/layout/TopBar';
+import AICopilotPanel from '@/components/ai/AICopilotPanel';
+import FloatingAIActions from '@/components/ai/FloatingAIActions';
+import BottomContextPanel from '@/components/layout/BottomContextPanel';
 import CodeEditor from '@/components/CodeEditor';
-import ConfigManager from '@/components/ConfigManager';
+import ConfigManager from '@/components/dialogs/ConfigManager';
 import Notification from '@/components/Notification';
-import DiagramCanvas from '@/components/DiagramCanvas';
-import type { StreamRendererRef } from '@/components/ExcalidrawCanvas';
+import DiagramCanvas from '@/components/canvases/DiagramCanvas';
+import type { StreamRendererRef } from '@/components/canvases/ExcalidrawCanvas';
 import * as api from '@/lib/api-client';
 import { isConfigValid } from '@/lib/config-validator';
 import { getStrategy } from '@/lib/strategies/registry';
-import { stripCodeFences } from '@/lib/json-repair';
+import { stripCodeFences } from '@/lib/diagram/json-repair';
 import { consumeInitData } from '@/lib/init-data';
 import { runMigrationIfNeeded } from '@/lib/migration';
 import { useLocale } from '@/locales';

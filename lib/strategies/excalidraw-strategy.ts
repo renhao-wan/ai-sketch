@@ -4,10 +4,10 @@
  */
 
 import type { DiagramStrategy, ValidationResult } from '@/types/diagram-strategy';
-import { SYSTEM_PROMPT, USER_PROMPT_TEMPLATE } from '@/lib/prompts';
-import { CHART_TYPES } from '@/lib/constants';
-import { optimizeExcalidrawCode } from '@/lib/optimizeArrows';
-import { repairJsonClosure, stripCodeFences, extractFirstJsonArray } from '@/lib/json-repair';
+import { SYSTEM_PROMPT, USER_PROMPT_TEMPLATE } from '@/lib/llm/prompts';
+import { CHART_TYPES } from '@/lib/diagram/constants';
+import { optimizeExcalidrawCode } from '@/lib/diagram/optimize-arrows';
+import { repairJsonClosure, stripCodeFences, extractFirstJsonArray } from '@/lib/diagram/json-repair';
 import { createExportBlob, buildImagePrompt } from './helpers';
 
 class ExcalidrawStrategy implements DiagramStrategy {

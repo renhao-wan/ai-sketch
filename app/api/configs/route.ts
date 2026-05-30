@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { configManager } from '@/lib/config-manager';
+import { configManager } from '@/lib/db/config-manager';
 import type { LLMConfig } from '@/types';
 
 /**

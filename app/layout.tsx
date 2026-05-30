@@ -1,6 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ClientProviders from "@/components/ClientProviders";
+import ClientProviders from "@/components/layout/ClientProviders";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 

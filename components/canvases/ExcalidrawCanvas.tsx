@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import '@excalidraw/excalidraw/index.css';
 import type { ExcalidrawElement } from '@/types';
-import { extractCompleteElements } from '@/lib/json-repair';
+import { extractCompleteElements } from '@/lib/diagram/json-repair';
 
 const Excalidraw = dynamic(
   async () => (await import('@excalidraw/excalidraw')).Excalidraw,
@@ -179,8 +179,14 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
 
         if (hasNew && sceneRef.current.length > 0) {
           try {
-            apiRef.current.updateScene({ elements: sceneRef.current });
-            apiRef.current.scrollToContent(sceneRef.current, { fitToContent: true, animate: false, padding: 20 });
+            // Defer to next frame — avoids "setState inside update" warning
+            // when Excalidraw API is called during React render cycle
+            requestAnimationFrame(() => {
+              try {
+                apiRef.current?.updateScene({ elements: sceneRef.current });
+                apiRef.current?.scrollToContent(sceneRef.current, { fitToContent: true, animate: false, padding: 20 });
+              } catch {}
+            });
           } catch {}
         }
       },
@@ -216,8 +222,13 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
 
     if (converted.length > 0) {
       try {
-        apiRef.current.updateScene({ elements: converted });
-        apiRef.current.scrollToContent(converted, { fitToContent: true, animate: true, duration: 300, padding: 20 });
+        // Defer to next frame — avoids "setState inside update" warning
+        requestAnimationFrame(() => {
+          try {
+            apiRef.current?.updateScene({ elements: converted });
+            apiRef.current?.scrollToContent(converted, { fitToContent: true, animate: true, duration: 300, padding: 20 });
+          } catch {}
+        });
       } catch {}
     }
 

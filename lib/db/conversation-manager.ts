@@ -1,5 +1,5 @@
-import { getDb, saveToDisk } from './db';
-import { generateId } from './utils';
+import { getDb, saveToDisk } from './index';
+import { generateId } from '@/lib/utils';
 import type { Conversation, ConversationMessage, ConversationWithMessages, LLMMessage } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 

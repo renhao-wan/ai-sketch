@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import * as api from '@/lib/api-client';
 import ConfirmDialog from './ConfirmDialog';
-import ScrollToTop from './ScrollToTop';
+import ScrollToTop from '../ScrollToTop';
 import { useLocale } from '@/locales';
 import { Trash2, Clock, ArrowRight } from 'lucide-react';
 import type { Conversation, ConfirmDialogState } from '@/types';

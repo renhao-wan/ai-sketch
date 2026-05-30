@@ -1,5 +1,6 @@
-import { getDb, saveToDisk } from './db';
-import { testConnection } from './llm-client';
+import { getDb, saveToDisk } from './index';
+import { testConnection } from '@/lib/llm/client';
+import { generateId } from '@/lib/utils';
 import type { LLMConfig, TestConnectionResult } from '@/types';
 
 interface ConfigStats {
@@ -40,8 +41,6 @@ function rowToConfig(row: ConfigRow): LLMConfig {
     updatedAt: row.updated_at,
   };
 }
-
-import { generateId } from './utils';
 
 class ConfigManager {
   generateId = generateId;
