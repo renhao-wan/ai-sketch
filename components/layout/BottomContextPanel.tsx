@@ -59,13 +59,6 @@ export default function BottomContextPanel({
 
   const activeTab = controlledTab ?? internalTab;
 
-  // 自动展开面板当有新内容时
-  useEffect(() => {
-    if (explanation || generatedCode) {
-      setIsCollapsed(false);
-    }
-  }, [explanation, generatedCode]);
-
   const handleTabChange = (tab: string) => {
     if (onTabChange) {
       onTabChange(tab);
