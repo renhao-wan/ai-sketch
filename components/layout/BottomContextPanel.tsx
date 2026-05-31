@@ -1,28 +1,45 @@
 'use client';
 
 import { useState, type ReactNode, type MouseEvent } from 'react';
-import { ChevronDown, ChevronUp, Code2, Sparkles, GitCompare, Terminal } from 'lucide-react';
+import { ChevronDown, ChevronUp, Code2, Sparkles } from 'lucide-react';
 import { useLocale } from '@/locales';
 import type { TranslationKey } from '@/locales';
 
 const TABS: { id: string; labelKey: TranslationKey; icon: typeof Code2 }[] = [
   { id: 'code', labelKey: 'panel.generatedCode', icon: Code2 },
-  { id: 'ai', labelKey: 'panel.aiExplanation', icon: Sparkles },
-  { id: 'diff', labelKey: 'panel.versionCompare', icon: GitCompare },
-  { id: 'logs', labelKey: 'panel.logs', icon: Terminal },
+  { id: 'explain', labelKey: 'aiAction.explain', icon: Sparkles },
 ];
 
 interface BottomContextPanelProps {
   generatedCode?: string;
   children?: ReactNode;
+  explanation?: string;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-export default function BottomContextPanel({ generatedCode, children }: BottomContextPanelProps) {
+export default function BottomContextPanel({
+  generatedCode,
+  children,
+  explanation,
+  activeTab: controlledTab,
+  onTabChange,
+}: BottomContextPanelProps) {
   const { t } = useLocale();
   const [isCollapsed, setIsCollapsed] = useState(true);
-  const [activeTab, setActiveTab] = useState('code');
+  const [internalTab, setInternalTab] = useState('code');
   const [height, setHeight] = useState(180);
   const [isResizing, setIsResizing] = useState(false);
+
+  const activeTab = controlledTab ?? internalTab;
+
+  const handleTabChange = (tab: string) => {
+    if (onTabChange) {
+      onTabChange(tab);
+    } else {
+      setInternalTab(tab);
+    }
+  };
 
   const handleMouseDown = (e: MouseEvent) => {
     setIsResizing(true);
@@ -78,7 +95,7 @@ export default function BottomContextPanel({ generatedCode, children }: BottomCo
           {TABS.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${
                 activeTab === tab.id
                   ? 'bg-[var(--accent-indigo)]/8 text-[var(--accent-indigo)] shadow-sm'
@@ -106,12 +123,14 @@ export default function BottomContextPanel({ generatedCode, children }: BottomCo
           <pre className="text-xs font-mono text-[var(--fg)]/80 whitespace-pre-wrap break-words">
             {generatedCode}
           </pre>
+        ) : activeTab === 'explain' && explanation ? (
+          <div className="text-sm text-[var(--fg)]/80 whitespace-pre-wrap break-words leading-relaxed">
+            {explanation}
+          </div>
         ) : (
           <div className="flex items-center justify-center h-full text-xs text-[var(--muted)]/50">
-            {activeTab === 'ai' && t('panel.aiExplanationEmpty')}
-            {activeTab === 'diff' && t('panel.versionCompareSoon')}
-            {activeTab === 'logs' && t('panel.noLogs')}
             {activeTab === 'code' && t('panel.codeWillAppear')}
+            {activeTab === 'explain' && t('aiAction.noCode')}
           </div>
         )}
       </div>
