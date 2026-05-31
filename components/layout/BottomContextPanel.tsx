@@ -4,8 +4,15 @@ import { useState, useEffect, useRef, useCallback, type ReactNode, type MouseEve
 import { ChevronDown, ChevronUp, Code2, Sparkles, Copy, Download, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import rehypeHighlight from 'rehype-highlight';
 import { useLocale } from '@/locales';
 import type { TranslationKey } from '@/locales';
+
+import 'katex/dist/katex.min.css';
+import 'highlight.js/styles/github-dark.min.css';
 
 const TABS: { id: string; labelKey: TranslationKey; icon: typeof Code2 }[] = [
   { id: 'code', labelKey: 'panel.generatedCode', icon: Code2 },
@@ -181,8 +188,14 @@ export default function BottomContextPanel({
             prose-strong:text-[var(--fg)] prose-strong:font-semibold
             prose-a:text-[var(--accent-indigo)] prose-a:underline
             prose-hr:my-3 prose-hr:border-[var(--border)]
+            prose-table:border-collapse prose-table:w-full prose-table:my-2
+            prose-th:border prose-th:border-[var(--border)] prose-th:px-2 prose-th:py-1.5 prose-th:bg-[var(--surface-warm-hover)] prose-th:text-xs prose-th:font-semibold prose-th:text-left
+            prose-td:border prose-td:border-[var(--border)] prose-td:px-2 prose-td:py-1.5 prose-td:text-xs
           ">
-            <ReactMarkdown remarkPlugins={[remarkBreaks]}>{explanation}</ReactMarkdown>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
+              rehypePlugins={[rehypeKatex, rehypeHighlight]}
+            >{explanation}</ReactMarkdown>
           </div>
         ) : (
           <div className="flex items-center justify-center h-full text-xs text-[var(--muted)]/50">
