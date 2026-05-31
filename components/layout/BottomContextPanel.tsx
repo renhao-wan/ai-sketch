@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, type ReactNode, type MouseEvent } from 'react';
 import { ChevronDown, ChevronUp, Code2, Sparkles, Copy, Download, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
 import { useLocale } from '@/locales';
 import type { TranslationKey } from '@/locales';
 
@@ -170,7 +171,7 @@ export default function BottomContextPanel({
           </pre>
         ) : activeTab === 'explain' && explanation ? (
           <div className="prose prose-sm max-w-none text-[var(--fg)]/80">
-            <ReactMarkdown>{explanation}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkBreaks]}>{explanation}</ReactMarkdown>
           </div>
         ) : (
           <div className="flex items-center justify-center h-full text-xs text-[var(--muted)]/50">
