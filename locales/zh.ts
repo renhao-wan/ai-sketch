@@ -81,6 +81,7 @@ export const zh = {
   'copilot.dropFiles': '拖放文件到此处',
   'copilot.regenerate': '重新生成',
   'copilot.copy': '复制',
+  'copilot.showDiagram': '展示图表',
 
   // Bottom Context Panel
   'panel.generatedCode': '生成代码',
@@ -153,7 +154,7 @@ export const zh = {
   'history.confirmDeleteMsg': '确定要删除这条历史记录吗？',
   'history.confirmClear': '确认清空',
   'history.confirmClearMsg': '确定要清空所有历史记录吗？此操作不可恢复。',
-  'history.apply': '应用',
+  'history.apply': '打开',
   'history.modelPrefix': '模型:',
 
   // Conversation List
@@ -161,6 +162,7 @@ export const zh = {
   'conversation.new': '新建对话',
   'conversation.empty': '暂无对话',
   'conversation.messages': '条消息',
+  'conversation.rename': '重命名',
 
   // Floating AI Actions
   'aiAction.optimize': 'AI 优化',

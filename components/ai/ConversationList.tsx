@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { MessageSquare, Trash2, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { MessageSquare, Trash2, ChevronDown, Pencil, Check, X } from 'lucide-react';
 import * as api from '@/lib/api-client';
 import { useLocale } from '@/locales';
 import { timeAgo } from '@/lib/time-ago';
@@ -25,10 +25,20 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
   const { t } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) loadConversations();
   }, [isOpen]);
+
+  useEffect(() => {
+    if (renamingId && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingId]);
 
   const loadConversations = async () => {
     try {
@@ -44,6 +54,24 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
     await api.deleteConversation(id);
     onDelete(id);
     await loadConversations();
+  };
+
+  const handleRenameStart = (e: React.MouseEvent, conv: Conversation) => {
+    e.stopPropagation();
+    setRenamingId(conv.id);
+    setRenameValue(conv.title);
+  };
+
+  const handleRenameSave = async () => {
+    if (!renamingId || !renameValue.trim()) { setRenamingId(null); return; }
+    await api.updateConversationTitle(renamingId, renameValue.trim());
+    setRenamingId(null);
+    await loadConversations();
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleRenameSave();
+    if (e.key === 'Escape') setRenamingId(null);
   };
 
   const current = conversations.find(c => c.id === currentId);
@@ -79,32 +107,64 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
               ) : (
                 conversations.map((conv) => {
                   const badge = FORMAT_BADGES[conv.format] || FORMAT_BADGES.excalidraw;
+                  const isRenaming = renamingId === conv.id;
                   return (
                     <div
                       key={conv.id}
-                      onClick={() => { onSelect(conv.id); setIsOpen(false); }}
-                      className={`group flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors ${
+                      onClick={() => { if (!isRenaming) { onSelect(conv.id); setIsOpen(false); } }}
+                      className={`group flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
                         conv.id === currentId ? 'bg-[var(--accent-indigo)]/5' : 'hover:bg-[var(--surface-warm-hover)]'
                       }`}
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded ${badge.color}`}>
-                            {badge.label}
-                          </span>
-                          <span className="text-sm text-[var(--fg)] truncate">{conv.title}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-[11px] text-[var(--muted)]">
-                          <span>{conv.messageCount} {t('conversation.messages')}</span>
-                          <span>{timeAgo(conv.updatedAt, t)}</span>
-                        </div>
+                        {isRenaming ? (
+                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              ref={renameInputRef}
+                              value={renameValue}
+                              onChange={(e) => setRenameValue(e.target.value)}
+                              onKeyDown={handleRenameKeyDown}
+                              className="flex-1 min-w-0 text-sm text-[var(--fg)] bg-white border border-[var(--accent-indigo)]/30 rounded-md px-2 py-0.5 outline-none focus:border-[var(--accent-indigo)] focus:ring-1 focus:ring-[var(--accent-indigo)]/20"
+                            />
+                            <button onClick={handleRenameSave} className="p-1 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors">
+                              <Check size={14} />
+                            </button>
+                            <button onClick={() => setRenamingId(null)} className="p-1 text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded transition-colors">
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded ${badge.color}`}>
+                                {badge.label}
+                              </span>
+                              <span className="text-sm text-[var(--fg)] truncate">{conv.title}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] text-[var(--muted)]">
+                              <span>{conv.messageCount} {t('conversation.messages')}</span>
+                              <span>{timeAgo(conv.updatedAt, t)}</span>
+                            </div>
+                          </>
+                        )}
                       </div>
-                      <button
-                        onClick={(e) => handleDelete(e, conv.id)}
-                        className="opacity-0 group-hover:opacity-100 p-1 text-[var(--muted)] hover:text-red-500 transition-all"
-                      >
-                        <Trash2 size={12} />
-                      </button>
+                      {!isRenaming && (
+                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => handleRenameStart(e, conv)}
+                            className="p-1.5 text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-md transition-colors"
+                            title={t('conversation.rename')}
+                          >
+                            <Pencil size={13} />
+                          </button>
+                          <button
+                            onClick={(e) => handleDelete(e, conv.id)}
+                            className="p-1.5 text-[var(--muted)] hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })

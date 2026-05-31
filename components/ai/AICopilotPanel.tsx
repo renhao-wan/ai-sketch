@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  Download,
   Wand2,
   Loader2,
   X,
@@ -58,6 +57,7 @@ interface AICopilotPanelProps {
   onOpenConfig: () => void;
   onExport: () => void;
   onRegenerate: () => void;
+  onShowDiagram: (content: string) => void;
   apiError: string | null;
   onClearError: () => void;
   panelWidth?: number;
@@ -81,6 +81,7 @@ export default function AICopilotPanel({
   onOpenConfig,
   onExport,
   onRegenerate,
+  onShowDiagram,
   apiError,
   onClearError,
   panelWidth = 360,
@@ -217,14 +218,6 @@ export default function AICopilotPanel({
         >
           <ChevronRight size={18} />
         </button>
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 mt-8">
-          <button className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200" title={t('copilot.aiChat')}>
-            <Sparkles size={18} />
-          </button>
-          <button onClick={onExport} className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200" title={t('copilot.export')}>
-            <Download size={18} />
-          </button>
-        </div>
       </div>
     );
   }
@@ -305,6 +298,7 @@ export default function AICopilotPanel({
                 onRegenerate={isLastAssistant && !isGenerating ? onRegenerate : undefined}
                 onCopy={isAssistant && !isMsgStreaming ? () => navigator.clipboard.writeText(msg.content) : undefined}
                 onExport={isAssistant && !isMsgStreaming ? () => exportMessage(msg.content, currentFormat) : undefined}
+                onShowDiagram={isAssistant && !isMsgStreaming ? () => onShowDiagram(msg.content) : undefined}
               />
             );
           })}

@@ -116,6 +116,14 @@ export async function deleteConversation(id: string): Promise<void> {
   await request<{ success: boolean }>(`/api/conversations/${id}`, { method: 'DELETE' });
 }
 
+export async function updateConversationTitle(id: string, title: string): Promise<Conversation> {
+  return request<Conversation>(`/api/conversations/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title }),
+  });
+}
+
 export async function clearAllConversations(): Promise<void> {
   await request<{ success: boolean }>('/api/conversations', { method: 'DELETE' });
 }

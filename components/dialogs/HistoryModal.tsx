@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as api from '@/lib/api-client';
 import ConfirmDialog from './ConfirmDialog';
 import ScrollToTop from '../ScrollToTop';
 import { useLocale } from '@/locales';
-import { Trash2, Clock, ArrowRight } from 'lucide-react';
+import { Trash2, Clock, ArrowRight, Pencil, Check, X } from 'lucide-react';
 import type { Conversation, ConfirmDialogState } from '@/types';
 
 interface HistoryModalProps {
@@ -18,8 +18,18 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
   const { t } = useLocale();
   const [items, setItems] = useState<Conversation[]>([]);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (isOpen) loadConversations(); }, [isOpen]);
+
+  useEffect(() => {
+    if (renamingId && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingId]);
 
   const loadConversations = async () => {
     try {
@@ -50,6 +60,24 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
         await loadConversations();
       },
     });
+  };
+
+  const handleRenameStart = (e: React.MouseEvent, item: Conversation) => {
+    e.stopPropagation();
+    setRenamingId(item.id);
+    setRenameValue(item.title);
+  };
+
+  const handleRenameSave = async () => {
+    if (!renamingId || !renameValue.trim()) { setRenamingId(null); return; }
+    await api.updateConversationTitle(renamingId, renameValue.trim());
+    setRenamingId(null);
+    await loadConversations();
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleRenameSave();
+    if (e.key === 'Escape') setRenamingId(null);
   };
 
   if (!isOpen) return null;
@@ -84,10 +112,12 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
             {items.length === 0 ? (
               <div className="text-center py-12 text-sm text-[var(--muted)]">{t('history.empty')}</div>
             ) : (
-              items.map((item) => (
+              items.map((item) => {
+                const isRenaming = renamingId === item.id;
+                return (
                 <div key={item.id} className="group p-4 rounded-2xl bg-black/[0.03] hover:bg-black/[0.05] border border-transparent hover:border-black/[0.06] transition-all duration-200">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
                         <span className="px-2 py-0.5 text-[11px] font-medium bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] rounded-lg">
                           {item.format}
@@ -96,20 +126,44 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
                           {new Date(item.updatedAt).toLocaleString()}
                         </span>
                       </div>
-                      <p className="text-sm text-[var(--fg)] mb-1">{item.title}</p>
+                      {isRenaming ? (
+                        <div className="flex items-center gap-2 mb-1">
+                          <input
+                            ref={renameInputRef}
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onKeyDown={handleRenameKeyDown}
+                            className="flex-1 min-w-0 text-sm text-[var(--fg)] bg-white border border-[var(--accent-indigo)]/30 rounded-lg px-3 py-1.5 outline-none focus:border-[var(--accent-indigo)] focus:ring-2 focus:ring-[var(--accent-indigo)]/10"
+                          />
+                          <button onClick={handleRenameSave} className="p-1.5 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
+                            <Check size={16} />
+                          </button>
+                          <button onClick={() => setRenamingId(null)} className="p-1.5 text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-lg transition-colors">
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-[var(--fg)] mb-1">{item.title}</p>
+                      )}
                       {item.configName && <p className="text-[11px] text-[var(--muted)]">{t('history.modelPrefix')} {item.configName} - {item.configModel}</p>}
                     </div>
-                    <div className="flex items-center gap-1.5 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <button onClick={() => handleApply(item)} className="flex items-center gap-1 px-3 py-1.5 text-xs text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg transition-all duration-200">
-                        <ArrowRight size={12} /><span>{t('history.apply')}</span>
-                      </button>
-                      <button onClick={() => handleDelete(item.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs text-red-600 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-all duration-200">
-                        <Trash2 size={12} /><span>{t('common.delete')}</span>
-                      </button>
-                    </div>
+                    {!isRenaming && (
+                      <div className="flex items-center gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button onClick={() => handleApply(item)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors">
+                          <ArrowRight size={13} /><span>{t('history.apply')}</span>
+                        </button>
+                        <button onClick={(e) => handleRenameStart(e, item)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-lg transition-colors" title={t('conversation.rename')}>
+                          <Pencil size={13} /><span>{t('conversation.rename')}</span>
+                        </button>
+                        <button onClick={() => handleDelete(item.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                          <Trash2 size={13} /><span>{t('common.delete')}</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         </ScrollToTop>

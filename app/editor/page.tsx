@@ -73,6 +73,14 @@ function EditorContent() {
     runMigrationIfNeeded().then(() => loadConfig());
   }, [loadConfig]);
 
+  // Load conversation from sessionStorage on mount (set by homepage history)
+  useEffect(() => {
+    const convId = sessionStorage.getItem('ai-sketch-load-conversation');
+    if (!convId) return;
+    sessionStorage.removeItem('ai-sketch-load-conversation');
+    handleLoadConversation(convId);
+  }, []);
+
   // Consume init data from sessionStorage on mount (set by homepage before navigation)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -112,9 +120,11 @@ function EditorContent() {
   const formatRef = useRef(format);
   useEffect(() => { formatRef.current = format; }, [format]);
   const isFirstFormatRef = useRef(true);
+  const skipFormatClearRef = useRef(false);
   const isStreamingRef = useRef(false);
   useEffect(() => {
     if (isFirstFormatRef.current) { isFirstFormatRef.current = false; return; }
+    if (skipFormatClearRef.current) { skipFormatClearRef.current = false; return; }
     setGeneratedCode('');
     setJsonError(null);
     setRenderData(null);
@@ -315,18 +325,9 @@ function EditorContent() {
       if (conv.format && ['excalidraw', 'mermaid', 'drawio'].includes(conv.format)) {
         setFormat(conv.format);
       }
-      const strat = getStrategy(conv.format);
-      const code = conv.currentCode ? strat.optimize(conv.currentCode) : '';
-      setGeneratedCode(code);
-      if (code) {
-        const result = strat.validate(code);
-        if (result.valid) {
-          setRenderData(result.data);
-          setJsonError(null);
-        } else {
-          setJsonError(result.error);
-        }
-      }
+      setGeneratedCode('');
+      setRenderData(null);
+      setJsonError(null);
     } catch (err) {
       console.error('Failed to load conversation:', err);
       setApiError('Failed to load conversation');
@@ -351,6 +352,32 @@ function EditorContent() {
       handleNewConversation();
     }
   }, [conversationId, handleNewConversation]);
+
+  const detectCodeFormat = (code: string): DiagramFormat => {
+    const trimmed = code.trim();
+    if (trimmed.startsWith('<')) return 'drawio';
+    if (trimmed.startsWith('{') && trimmed.includes('"elements"')) return 'excalidraw';
+    return 'mermaid';
+  };
+
+  const handleShowDiagram = useCallback((content: string) => {
+    const detectedFormat = detectCodeFormat(content);
+    if (detectedFormat !== format) {
+      skipFormatClearRef.current = true;
+      setFormat(detectedFormat);
+    }
+    const strat = getStrategy(detectedFormat);
+    const processed = strat.postProcess(content);
+    const optimized = strat.optimize(processed);
+    setGeneratedCode(optimized);
+    const result = strat.validate(optimized);
+    if (result.valid) {
+      setRenderData(result.data);
+      setJsonError(null);
+    } else {
+      setJsonError(result.error);
+    }
+  }, [format]);
 
   const handleRegenerate = useCallback(async () => {
     if (isGenerating || messages.length === 0) return;
@@ -516,6 +543,7 @@ function EditorContent() {
           onOpenConfig={() => setIsConfigManagerOpen(true)}
           onExport={handleExport}
           onRegenerate={handleRegenerate}
+          onShowDiagram={handleShowDiagram}
           apiError={apiError}
           onClearError={() => setApiError(null)}
           panelWidth={panelWidth}

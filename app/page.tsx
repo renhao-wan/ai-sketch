@@ -34,8 +34,8 @@ export default function HomePage() {
   }, []);
 
   const handleApplyConversation = (item: Conversation) => {
-    setInitData({ type: 'text', data: item.title, format: item.format || 'excalidraw' });
-    router.push('/editor?source=text');
+    sessionStorage.setItem('ai-sketch-load-conversation', item.id);
+    router.push('/editor');
   };
 
   return (

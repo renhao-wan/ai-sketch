@@ -83,6 +83,7 @@ export const en: TranslationDict = {
   'copilot.dropFiles': 'Drop files here',
   'copilot.regenerate': 'Regenerate',
   'copilot.copy': 'Copy',
+  'copilot.showDiagram': 'Show Diagram',
 
   // Bottom Context Panel
   'panel.generatedCode': 'Generated Code',
@@ -155,7 +156,7 @@ export const en: TranslationDict = {
   'history.confirmDeleteMsg': 'Are you sure you want to delete this history record?',
   'history.confirmClear': 'Confirm Clear',
   'history.confirmClearMsg': 'Are you sure you want to clear all history records? This action cannot be undone.',
-  'history.apply': 'Apply',
+  'history.apply': 'Open',
   'history.modelPrefix': 'Model:',
 
   // Conversation List
@@ -163,6 +164,7 @@ export const en: TranslationDict = {
   'conversation.new': 'New Conversation',
   'conversation.empty': 'No conversations',
   'conversation.messages': 'messages',
+  'conversation.rename': 'Rename',
 
   // Floating AI Actions
   'aiAction.optimize': 'AI Optimize',

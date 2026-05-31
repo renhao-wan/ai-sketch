@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useMemo } from 'react';
-import { User, Bot, RefreshCw, Copy, Download, Check } from 'lucide-react';
+import { User, Bot, RefreshCw, Copy, Download, Check, Play } from 'lucide-react';
 import { useLocale } from '@/locales';
 import { parseStoredImages } from '@/lib/utils';
 import type { ConversationMessage } from '@/types';
@@ -12,9 +12,10 @@ interface MessageBubbleProps {
   onRegenerate?: () => void;
   onCopy?: () => void;
   onExport?: () => void;
+  onShowDiagram?: () => void;
 }
 
-export default function MessageBubble({ message, isStreaming, onRegenerate, onCopy, onExport }: MessageBubbleProps) {
+export default function MessageBubble({ message, isStreaming, onRegenerate, onCopy, onExport, onShowDiagram }: MessageBubbleProps) {
   const { t } = useLocale();
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
@@ -28,7 +29,7 @@ export default function MessageBubble({ message, isStreaming, onRegenerate, onCo
     timerRef.current = setTimeout(() => setCopied(false), 1500);
   }, [onCopy]);
 
-  const hasActions = onRegenerate || onCopy || onExport;
+  const hasActions = onRegenerate || onCopy || onExport || onShowDiagram;
   const actionButtons = hasActions ? (
     <div className="flex items-center gap-0.5">
       {onRegenerate && (
@@ -44,6 +45,11 @@ export default function MessageBubble({ message, isStreaming, onRegenerate, onCo
       {onExport && (
         <button onClick={onExport} className="flex items-center justify-center w-5 h-5 text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 rounded transition-all duration-200" title={t('copilot.export')}>
           <Download size={11} />
+        </button>
+      )}
+      {onShowDiagram && (
+        <button onClick={onShowDiagram} className="flex items-center justify-center w-5 h-5 text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 rounded transition-all duration-200" title={t('copilot.showDiagram')}>
+          <Play size={11} />
         </button>
       )}
     </div>
