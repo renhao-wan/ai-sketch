@@ -82,7 +82,8 @@ export default function BottomContextPanel({
 
     const onMouseMove = (e: globalThis.MouseEvent) => {
       const delta = startY - e.clientY;
-      setHeight(Math.min(Math.max(startHeight + delta, 100), 400));
+      const maxHeight = window.innerHeight * 0.4;
+      setHeight(Math.min(Math.max(startHeight + delta, 100), maxHeight));
     };
 
     const onMouseUp = () => {
