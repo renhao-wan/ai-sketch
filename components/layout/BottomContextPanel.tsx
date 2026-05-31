@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, type ReactNode, type MouseEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, type ReactNode, type MouseEvent } from 'react';
 import { ChevronDown, ChevronUp, Code2, Sparkles, Copy, Download, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
@@ -58,6 +58,13 @@ export default function BottomContextPanel({
   }, [generatedCode, format]);
 
   const activeTab = controlledTab ?? internalTab;
+
+  // 自动展开面板当有新内容时
+  useEffect(() => {
+    if (explanation || generatedCode) {
+      setIsCollapsed(false);
+    }
+  }, [explanation, generatedCode]);
 
   const handleTabChange = (tab: string) => {
     if (onTabChange) {
@@ -170,7 +177,18 @@ export default function BottomContextPanel({
             {generatedCode}
           </pre>
         ) : activeTab === 'explain' && explanation ? (
-          <div className="prose prose-sm max-w-none text-[var(--fg)]/80">
+          <div className="prose prose-sm max-w-none text-[var(--fg)]/80
+            prose-headings:text-[var(--fg)] prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1.5
+            prose-h1:text-base prose-h2:text-sm prose-h3:text-xs
+            prose-p:my-1 prose-p:leading-relaxed
+            prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5
+            prose-code:bg-[var(--surface-warm-hover)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:font-mono
+            prose-pre:bg-[var(--surface-warm-hover)] prose-pre:rounded-lg prose-pre:p-3 prose-pre:my-2
+            prose-blockquote:border-l-2 prose-blockquote:border-[var(--accent-indigo)] prose-blockquote:pl-3 prose-blockquote:my-2 prose-blockquote:text-[var(--muted)]
+            prose-strong:text-[var(--fg)] prose-strong:font-semibold
+            prose-a:text-[var(--accent-indigo)] prose-a:underline
+            prose-hr:my-3 prose-hr:border-[var(--border)]
+          ">
             <ReactMarkdown remarkPlugins={[remarkBreaks]}>{explanation}</ReactMarkdown>
           </div>
         ) : (
