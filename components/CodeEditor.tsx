@@ -13,24 +13,22 @@ function ensureMonacoLoaded(): Promise<void> {
   }
   return monacoLoadPromise;
 }
-import { Trash2, Wand2, ArrowRight, Loader2, X } from 'lucide-react';
+import { Trash2, ArrowRight, Loader2, X } from 'lucide-react';
 import { useLocale } from '@/locales';
 
 interface CodeEditorProps {
   code: string;
   onChange?: (value: string | undefined) => void;
   onApply: () => void;
-  onOptimize: () => void;
   onClear: () => void;
   jsonError: string | null;
   onClearJsonError: () => void;
   isGenerating: boolean;
   isApplyingCode: boolean;
-  isOptimizingCode: boolean;
   language?: string;
 }
 
-export default function CodeEditor({ code, onChange, onApply, onOptimize, onClear, jsonError, onClearJsonError, isGenerating, isApplyingCode, isOptimizingCode, language = 'javascript' }: CodeEditorProps) {
+export default function CodeEditor({ code, onChange, onApply, onClear, jsonError, onClearJsonError, isGenerating, isApplyingCode, language = 'javascript' }: CodeEditorProps) {
   const { t } = useLocale();
   return (
     <div className="flex flex-col h-full relative">
@@ -40,23 +38,15 @@ export default function CodeEditor({ code, onChange, onApply, onOptimize, onClea
         <div className="flex items-center gap-1">
           <button
             onClick={onClear}
-            disabled={isGenerating || isApplyingCode || isOptimizingCode}
+            disabled={isGenerating || isApplyingCode}
             title={t('codeEditor.clear')}
             className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
           >
             <Trash2 size={14} />
           </button>
           <button
-            onClick={onOptimize}
-            disabled={isGenerating || isApplyingCode || isOptimizingCode || !code?.trim()}
-            title={t('codeEditor.optimizeLayout')}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
-          >
-            {isOptimizingCode ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
-          </button>
-          <button
             onClick={onApply}
-            disabled={isGenerating || isApplyingCode || isOptimizingCode || !code?.trim()}
+            disabled={isGenerating || isApplyingCode || !code?.trim()}
             title={t('codeEditor.applyToCanvas')}
             className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
           >

@@ -32,7 +32,7 @@ function EditorContent() {
   const [renderData, setRenderData] = useState<unknown>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isApplyingCode, setIsApplyingCode] = useState(false);
-  const [isOptimizingCode, setIsOptimizingCode] = useState(false);
+
   const [apiError, setApiError] = useState<string | null>(null);
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [currentInput, setCurrentInput] = useState('');
@@ -305,16 +305,6 @@ function EditorContent() {
     setIsApplyingCode(true);
     try { await new Promise(r => setTimeout(r, 300)); tryParseAndApply(generatedCode); }
     finally { setIsApplyingCode(false); }
-  };
-
-  const handleOptimizeCode = async () => {
-    setIsOptimizingCode(true);
-    try {
-      await new Promise(r => setTimeout(r, 500));
-      const optimizedCode = strategy.optimize(generatedCode);
-      setGeneratedCode(optimizedCode);
-      tryParseAndApply(optimizedCode);
-    } finally { setIsOptimizingCode(false); }
   };
 
   const handleConfigSelect = (selectedConfig: LLMConfig | null) => { if (selectedConfig) setConfig(selectedConfig); };
@@ -648,13 +638,11 @@ function EditorContent() {
               code={generatedCode}
               onChange={(v) => setGeneratedCode(v ?? '')}
               onApply={handleApplyCode}
-              onOptimize={handleOptimizeCode}
               onClear={() => setGeneratedCode('')}
               jsonError={jsonError}
               onClearJsonError={() => setJsonError(null)}
               isGenerating={isGenerating}
               isApplyingCode={isApplyingCode}
-              isOptimizingCode={isOptimizingCode}
               language={strategy.codeLanguage}
             />
           </BottomContextPanel>
