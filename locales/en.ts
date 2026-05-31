@@ -167,11 +167,12 @@ export const en: TranslationDict = {
   'conversation.rename': 'Rename',
 
   // Floating AI Actions
-  'aiAction.optimize': 'AI Optimize',
-  'aiAction.layout': 'Auto Layout',
-  'aiAction.beautify': 'Beautify',
-  'aiAction.explain': 'Explain',
-  'aiAction.generate': 'Generate Node',
+  'aiAction.layout': 'AI Layout',
+  'aiAction.beautify': 'AI Beautify',
+  'aiAction.simplify': 'AI Simplify',
+  'aiAction.explain': 'AI Explain',
+  'aiAction.noCode': 'Please generate a diagram first',
+  'aiAction.loading': 'AI processing...',
 
   // Floating Toolbar
   'toolbar.select': 'Select',

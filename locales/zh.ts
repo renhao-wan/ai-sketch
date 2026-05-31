@@ -165,11 +165,12 @@ export const zh = {
   'conversation.rename': '重命名',
 
   // Floating AI Actions
-  'aiAction.optimize': 'AI 优化',
-  'aiAction.layout': '自动布局',
-  'aiAction.beautify': '美化图表',
-  'aiAction.explain': '解释图表',
-  'aiAction.generate': '生成节点',
+  'aiAction.layout': 'AI 布局',
+  'aiAction.beautify': 'AI 美化',
+  'aiAction.simplify': 'AI 简化',
+  'aiAction.explain': 'AI 解释',
+  'aiAction.noCode': '请先生成图表',
+  'aiAction.loading': 'AI 处理中...',
 
   // Floating Toolbar
   'toolbar.select': '选择',

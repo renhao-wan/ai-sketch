@@ -55,7 +55,7 @@ export interface ModelInfo {
 }
 
 /** AI action IDs */
-export type AIActionId = 'optimize' | 'layout' | 'beautify' | 'explain' | 'generate';
+export type AIActionId = 'layout' | 'beautify' | 'simplify' | 'explain';
 
 /** Input source type */
 export type SourceType = 'text' | 'file' | 'image';
