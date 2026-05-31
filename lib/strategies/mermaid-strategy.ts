@@ -272,11 +272,32 @@ class MermaidStrategy implements DiagramStrategy {
     // 1. 移除代码块标记（如果有残留）
     code = code.replace(/^```mermaid\s*/i, '').replace(/```\s*$/, '');
 
-    // 2. 修复箭头语法
+    // 2. 尝试提取 Mermaid 代码（如果前面有解释文字）
+    const validStarts = ['flowchart', 'graph', 'sequenceDiagram', 'classDiagram',
+      'erDiagram', 'gantt', 'pie', 'stateDiagram', 'journey',
+      'mindmap', 'timeline', 'block-beta', 'sankey-beta', 'xychart-beta',
+      'requirementDiagram', 'gitGraph', 'C4Context', 'C4Container', 'C4Component'];
+
+    const lines = code.split('\n');
+    let startIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const trimmedLine = lines[i].trim();
+      if (validStarts.some(kw => trimmedLine.startsWith(kw))) {
+        startIndex = i;
+        break;
+      }
+    }
+
+    if (startIndex > 0) {
+      // Found valid Mermaid code after some prefix text
+      code = lines.slice(startIndex).join('\n');
+    }
+
+    // 3. 修复箭头语法
     code = code.replace(/-- >/g, '-->');
     code = code.replace(/== >/g, '==>');
 
-    // 3. 确保 flowchart 方向声明存在
+    // 4. 确保 flowchart 方向声明存在
     if (code.trim().startsWith('flowchart') && !code.trim().match(/^flowchart\s+(TD|LR|TB|RL|BT)/i)) {
       code = code.replace(/^flowchart/i, 'flowchart TD');
     }

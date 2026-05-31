@@ -349,6 +349,8 @@ function EditorContent() {
   const detectCodeFormat = (code: string): DiagramFormat => {
     const trimmed = code.trim();
     if (trimmed.startsWith('<')) return 'drawio';
+    // Excalidraw: JSON array (elements) or object with elements array
+    if (trimmed.startsWith('[')) return 'excalidraw';
     if (trimmed.startsWith('{') && trimmed.includes('"elements"')) return 'excalidraw';
     return 'mermaid';
   };

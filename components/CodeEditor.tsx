@@ -66,28 +66,6 @@ export default function CodeEditor({ code, onChange, onApply, onClear, jsonError
           }}
         />
       </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-end gap-1.5 px-3 py-2 border-t border-black/[0.06] flex-shrink-0">
-        <button
-          onClick={onClear}
-          disabled={isGenerating || isApplyingCode}
-          title={t('codeEditor.clear')}
-          className="h-7 px-2.5 flex items-center gap-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
-        >
-          <Trash2 size={12} />
-          <span>{t('codeEditor.clear')}</span>
-        </button>
-        <button
-          onClick={onApply}
-          disabled={isGenerating || isApplyingCode || !code?.trim()}
-          title={t('codeEditor.applyToCanvas')}
-          className="h-7 px-2.5 flex items-center gap-1.5 text-xs font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
-        >
-          {isApplyingCode ? <Loader2 size={12} className="animate-spin" /> : <ArrowRight size={12} />}
-          <span>{t('codeEditor.applyToCanvas')}</span>
-        </button>
-      </div>
     </div>
   );
 }
