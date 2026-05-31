@@ -107,19 +107,12 @@ export default function MessageBubble({ message, isStreaming, onRegenerate, onCo
               <pre className="text-xs font-mono bg-[var(--surface-warm-hover)] rounded-lg p-2.5 overflow-x-auto max-h-40 scrollbar-thin">
                 <code>{message.content.length > 300 ? message.content.substring(0, 300) + '...' : message.content}</code>
               </pre>
-              {message.content.length > 300 && (
-                <div className="flex items-center justify-between mt-1">
-                  <p className="text-[11px] text-[var(--muted)]">
-                    {message.content.length} {t('message.characters')}
-                  </p>
-                  {actionButtons}
-                </div>
-              )}
-              {message.content.length <= 300 && actionButtons && (
-                <div className="flex items-center justify-end mt-1">
-                  {actionButtons}
-                </div>
-              )}
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-[11px] text-[var(--muted)]">
+                  {message.content.length} {t('message.characters')}
+                </p>
+                {actionButtons}
+              </div>
             </div>
           )}
         </div>
