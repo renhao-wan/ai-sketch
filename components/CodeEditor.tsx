@@ -32,29 +32,6 @@ export default function CodeEditor({ code, onChange, onApply, onClear, jsonError
   const { t } = useLocale();
   return (
     <div className="flex flex-col h-full relative">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 flex-shrink-0">
-        <h3 className="text-xs font-medium text-[var(--muted)]">{t('codeEditor.generatedCode')}</h3>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={onClear}
-            disabled={isGenerating || isApplyingCode}
-            title={t('codeEditor.clear')}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
-          >
-            <Trash2 size={14} />
-          </button>
-          <button
-            onClick={onApply}
-            disabled={isGenerating || isApplyingCode || !code?.trim()}
-            title={t('codeEditor.applyToCanvas')}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
-          >
-            {isApplyingCode ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
-          </button>
-        </div>
-      </div>
-
       {/* JSON Error Banner */}
       {jsonError && (
         <div className="mx-3 mb-2 px-3 py-2 rounded-xl bg-red-50/80 border border-red-200/50 flex items-start gap-2">
