@@ -499,11 +499,10 @@ function EditorContent() {
 
   const handleAIAction = (actionId: AIActionId) => {
     switch (actionId) {
-      case 'optimize': handleOptimizeCode(); break;
       case 'layout': setNotification({ isOpen: true, title: t('editor.layoutOptimize'), message: t('editor.layoutOptimizing'), type: 'info' }); break;
       case 'beautify': setNotification({ isOpen: true, title: t('editor.beautifyChart'), message: t('editor.beautifying'), type: 'info' }); break;
+      case 'simplify': break;
       case 'explain': break;
-      case 'generate': setNotification({ isOpen: true, title: t('editor.generateNode'), message: t('editor.describeNode'), type: 'info' }); break;
     }
   };
 
