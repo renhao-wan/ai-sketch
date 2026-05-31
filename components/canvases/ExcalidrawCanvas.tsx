@@ -124,6 +124,12 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
   const apiRef = useRef<any>(null);
   const [convertFn, setConvertFn] = useState<ConvertFn | null>(null);
 
+  // 计算 elements 内容哈希，用于检测变化
+  const elementsHash = useMemo(() => {
+    if (!elements?.length) return '';
+    return JSON.stringify(elements);
+  }, [elements]);
+
   const consumedRef = useRef(0);
   const allRawRef = useRef<unknown[]>([]);
   const idMapRef = useRef(new Map<string, Record<string, unknown>>());
@@ -236,9 +242,15 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
     }
 
     if (converted.length > 0) {
-      apiRef.current.updateScene({ elements: converted });
-      // 与流式期间完全相同的 scrollToContent 调用
-      apiRef.current.scrollToContent(converted, { fitToContent: true, animate: false, padding: 20 });
+      // 先清空再设置，强制触发重新渲染
+      apiRef.current.updateScene({ elements: [] });
+      // 使用 requestAnimationFrame 确保清空操作完成后再设置新元素
+      requestAnimationFrame(() => {
+        if (apiRef.current) {
+          apiRef.current.updateScene({ elements: converted });
+          apiRef.current.scrollToContent(converted, { fitToContent: true, animate: false, padding: 20 });
+        }
+      });
     }
 
     consumedRef.current = 0;
@@ -247,7 +259,7 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
     convertedIdsRef.current = new Set();
     sceneRef.current = [];
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elements?.length, isStreaming, convertFn]);
+  }, [elementsHash, isStreaming, convertFn]);
 
   return (
     <div className="w-full h-full canvas-grid-bg">
