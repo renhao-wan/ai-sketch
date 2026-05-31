@@ -14,6 +14,7 @@ interface BottomContextPanelProps {
   generatedCode?: string;
   children?: ReactNode;
   explanation?: string;
+  format?: string;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
 }
@@ -22,6 +23,7 @@ export default function BottomContextPanel({
   generatedCode,
   children,
   explanation,
+  format,
   activeTab: controlledTab,
   onTabChange,
 }: BottomContextPanelProps) {
@@ -43,14 +45,15 @@ export default function BottomContextPanel({
 
   const handleExport = useCallback(() => {
     if (!generatedCode) return;
+    const ext = format === 'excalidraw' ? 'json' : format === 'mermaid' ? 'mmd' : 'drawio';
     const blob = new Blob([generatedCode], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'diagram.txt';
+    a.download = `diagram.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [generatedCode]);
+  }, [generatedCode, format]);
 
   const activeTab = controlledTab ?? internalTab;
 

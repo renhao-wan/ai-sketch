@@ -631,6 +631,7 @@ function EditorContent() {
           <BottomContextPanel
             generatedCode={generatedCode}
             explanation={aiExplanation}
+            format={format}
             activeTab={bottomPanelTab}
             onTabChange={setBottomPanelTab}
           >
