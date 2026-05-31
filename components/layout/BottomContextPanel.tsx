@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, type ReactNode, type MouseEvent } from 'react';
 import { ChevronDown, ChevronUp, Code2, Sparkles, Copy, Download, Check } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { useLocale } from '@/locales';
 import type { TranslationKey } from '@/locales';
 
@@ -113,35 +114,63 @@ export default function BottomContextPanel({
         <div className="w-8 h-0.5 bg-black/10 rounded-full mx-auto mt-0.5 group-hover:bg-[var(--accent-indigo)]/40 transition-colors duration-200" />
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto px-4 pb-3 scrollbar-thin relative">
-        {activeTab === 'code' && children ? (
-          children
-        ) : activeTab === 'code' && generatedCode ? (
-          <>
-            <div className="flex items-center justify-end gap-0.5 mb-1">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 h-10 flex-shrink-0">
+        <div className="flex items-center gap-1">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${
+                activeTab === tab.id
+                  ? 'bg-[var(--accent-indigo)]/8 text-[var(--accent-indigo)] shadow-sm'
+                  : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+              }`}
+            >
+              <tab.icon size={13} />
+              <span>{t(tab.labelKey)}</span>
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-0.5">
+          {activeTab === 'code' && generatedCode && (
+            <>
               <button
                 onClick={handleCopy}
-                className="w-6 h-6 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
                 title={t('copilot.copy')}
               >
-                {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
               </button>
               <button
                 onClick={handleExport}
-                className="w-6 h-6 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
                 title={t('copilot.export')}
               >
-                <Download size={12} />
+                <Download size={13} />
               </button>
-            </div>
-            <pre className="text-xs font-mono text-[var(--fg)]/80 whitespace-pre-wrap break-words">
-              {generatedCode}
-            </pre>
-          </>
+            </>
+          )}
+          <button
+            onClick={() => setIsCollapsed(true)}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+          >
+            <ChevronDown size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto px-4 pb-3 scrollbar-thin">
+        {activeTab === 'code' && children ? (
+          children
+        ) : activeTab === 'code' && generatedCode ? (
+          <pre className="text-xs font-mono text-[var(--fg)]/80 whitespace-pre-wrap break-words">
+            {generatedCode}
+          </pre>
         ) : activeTab === 'explain' && explanation ? (
-          <div className="text-sm text-[var(--fg)]/80 whitespace-pre-wrap break-words leading-relaxed">
-            {explanation}
+          <div className="prose prose-sm max-w-none text-[var(--fg)]/80">
+            <ReactMarkdown>{explanation}</ReactMarkdown>
           </div>
         ) : (
           <div className="flex items-center justify-center h-full text-xs text-[var(--muted)]/50">
