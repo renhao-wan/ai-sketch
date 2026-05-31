@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, type ReactNode, type MouseEvent } from 'react';
-import { ChevronDown, ChevronUp, Code2, Sparkles } from 'lucide-react';
+import { useState, useRef, useCallback, type ReactNode, type MouseEvent } from 'react';
+import { ChevronDown, ChevronUp, Code2, Sparkles, Copy, Download, Check } from 'lucide-react';
 import { useLocale } from '@/locales';
 import type { TranslationKey } from '@/locales';
 
@@ -30,6 +30,27 @@ export default function BottomContextPanel({
   const [internalTab, setInternalTab] = useState('code');
   const [height, setHeight] = useState(180);
   const [isResizing, setIsResizing] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleCopy = useCallback(() => {
+    if (!generatedCode) return;
+    navigator.clipboard.writeText(generatedCode);
+    setCopied(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setCopied(false), 1500);
+  }, [generatedCode]);
+
+  const handleExport = useCallback(() => {
+    if (!generatedCode) return;
+    const blob = new Blob([generatedCode], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'diagram.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [generatedCode]);
 
   const activeTab = controlledTab ?? internalTab;
 
@@ -107,12 +128,32 @@ export default function BottomContextPanel({
             </button>
           ))}
         </div>
-        <button
-          onClick={() => setIsCollapsed(true)}
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-        >
-          <ChevronDown size={14} />
-        </button>
+        <div className="flex items-center gap-0.5">
+          {activeTab === 'code' && generatedCode && (
+            <>
+              <button
+                onClick={handleCopy}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+                title={t('copilot.copy')}
+              >
+                {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+              </button>
+              <button
+                onClick={handleExport}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+                title={t('copilot.export')}
+              >
+                <Download size={13} />
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => setIsCollapsed(true)}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+          >
+            <ChevronDown size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Content */}
