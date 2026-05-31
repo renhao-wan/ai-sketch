@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { callLLM } from '@/lib/llm/client';
 import { configManager } from '@/lib/db/config-manager';
 import { getActionSystemPrompt, getActionUserPrompt, type AIActionType } from '@/lib/ai-action/prompts';
+import { stripCodeFences } from '@/lib/diagram/json-repair';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
 interface AIActionRequest {
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
 
     // Build messages
     const messages = [
-      { role: 'system' as const, content: getActionSystemPrompt(action) },
+      { role: 'system' as const, content: getActionSystemPrompt(action, format) },
       { role: 'user' as const, content: getActionUserPrompt(action, code, format) },
     ];
 
@@ -55,14 +56,11 @@ export async function POST(request: Request) {
             controller.enqueue(encoder.encode(data));
           }, combinedController.signal);
 
-          // For non-explain actions, post-process the result
+          // For non-explain actions, only strip code fences (don't run full postProcess
+          // which would repair/restore content the LLM intentionally removed)
           if (action !== 'explain') {
-            const { getStrategy } = await import('@/lib/strategies/registry');
-            const strat = getStrategy(format);
-            const processed = strat.postProcess(result);
-            const optimized = strat.optimize(processed);
-            // Send final processed result
-            const finalData = `data: ${JSON.stringify({ type: 'result', content: optimized })}\n\n`;
+            const cleaned = stripCodeFences(result);
+            const finalData = `data: ${JSON.stringify({ type: 'result', content: cleaned })}\n\n`;
             controller.enqueue(encoder.encode(finalData));
           }
 

@@ -29,6 +29,7 @@ function EditorContent() {
   const [isConfigManagerOpen, setIsConfigManagerOpen] = useState(false);
   const [generatedCode, setGeneratedCode] = useState('');
   const [format, setFormat] = useState<DiagramFormat>('excalidraw');
+
   const [renderData, setRenderData] = useState<unknown>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isApplyingCode, setIsApplyingCode] = useState(false);
