@@ -12,7 +12,7 @@
 
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { imageStrategy, orchestrator } from '@/lib/input-strategies/registry';
 import { getStrategy } from '@/lib/strategies/registry';
 import type { DiagramFormat } from '@/types/diagram-strategy';
@@ -74,7 +74,11 @@ export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadRetu
   const [attachError, setAttachError] = useState('');
   const [notification, setNotification] = useState<NotificationState>({ isOpen: false, title: '', message: '', type: 'warning' });
   const attachmentsRef = useRef<File[]>([]);
-  attachmentsRef.current = attachments;
+
+  // Keep attachmentsRef in sync
+  useEffect(() => {
+    attachmentsRef.current = attachments;
+  }, [attachments]);
 
   const closeNotification = useCallback(() => {
     setNotification(prev => ({ ...prev, isOpen: false }));

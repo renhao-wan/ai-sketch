@@ -22,15 +22,16 @@ export const LocaleContext = createContext<LocaleContextValue | null>(null);
 const STORAGE_KEY = 'ai-sketch-locale';
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('zh');
-
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'zh' || stored === 'en') {
-      setLocaleState(stored);
-      document.documentElement.lang = stored === 'zh' ? 'zh-CN' : 'en';
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === 'zh' || stored === 'en') {
+        document.documentElement.lang = stored === 'zh' ? 'zh-CN' : 'en';
+        return stored;
+      }
     }
-  }, []);
+    return 'zh';
+  });
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);

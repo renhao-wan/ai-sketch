@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { callLLM } from '@/lib/llm/client';
 import { configManager } from '@/lib/db/config-manager';
-import { getActionSystemPrompt, getActionUserPrompt, type AIActionType } from '@/lib/ai-action/prompts';
+import { getActionSystemPrompt, getActionUserPrompt } from '@/lib/prompts/ai-actions';
+import type { AIActionType, DiagramFormat } from '@/lib/prompts/types';
 import { stripCodeFences } from '@/lib/diagram/json-repair';
-import type { DiagramFormat } from '@/types/diagram-strategy';
 
 interface AIActionRequest {
   code: string;

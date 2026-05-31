@@ -31,7 +31,9 @@ export default function DrawioCanvas({ code }: DrawioCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Keep codeRef in sync
-  codeRef.current = code;
+  useEffect(() => {
+    codeRef.current = code;
+  }, [code]);
 
   const { scale, handleZoomIn, handleZoomOut, handleSetScale, handleResetTranslate, handleWheel } = useZoomControls();
 
@@ -72,27 +74,34 @@ export default function DrawioCanvas({ code }: DrawioCanvasProps) {
   }, [t]);
 
   // Send XML when embed is ready and code changes
-  const sendXml = useCallback(() => {
-    if (!iframeRef.current || !embedReady) return;
+  const sendXml = useCallback((): string | null => {
+    if (!iframeRef.current || !embedReady) return null;
     const code = codeRef.current;
     if (code && (code.includes('</mxGraphModel>') || code.includes('</mxfile>'))) {
       // 有完整 XML，发送给 draw.io
       try {
         iframeRef.current.contentWindow?.postMessage(buildLoadPayload(code), DRAWIO_ORIGIN);
+        return null;
       } catch {
-        setError(t('drawio.loadError'));
+        return t('drawio.loadError');
       }
     } else {
       // 无代码，发送空白图让 draw.io 停止加载动画
       try {
         const emptyXml = '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel>';
         iframeRef.current.contentWindow?.postMessage(buildLoadPayload(emptyXml), DRAWIO_ORIGIN);
-      } catch { /* ignore */ }
+        return null;
+      } catch { return null; }
     }
   }, [embedReady, t]);
 
+  // 发送 XML 到 draw.io（合理用例，需要在 effect 中处理错误）
   useEffect(() => {
-    if (embedReady) sendXml();
+    if (embedReady) {
+      const error = sendXml();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (error) setError(error);
+    }
   }, [embedReady, sendXml, code]);
 
   // Timeout: if embed doesn't signal init within 15s, show error

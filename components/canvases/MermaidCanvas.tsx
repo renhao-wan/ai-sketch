@@ -68,7 +68,11 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
   const [error, setError] = useState<string | null>(null);
   const renderIdRef = useRef(0);
   const isStreamingRef = useRef(isStreaming);
-  isStreamingRef.current = isStreaming;
+
+  // Keep isStreamingRef in sync
+  useEffect(() => {
+    isStreamingRef.current = isStreaming;
+  }, [isStreaming]);
 
   const {
     scale, translate, isPanning,
@@ -86,6 +90,54 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
     handleFitToView(wrapperRect.width, wrapperRect.height, svgWidth, svgHeight);
   }, [handleFitToView]);
 
+  // 使用 useCallback 包裹渲染逻辑，避免在 effect 中直接调用 setState
+  const renderDiagram = useCallback(async (currentRenderId: number) => {
+    try {
+      await initMermaid();
+      if (!mermaidInstance || !containerRef.current) return;
+      if (currentRenderId !== renderIdRef.current) return;
+
+      const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const { svg, bindFunctions } = await mermaidInstance.render(id, code);
+
+      if (currentRenderId !== renderIdRef.current) return;
+      if (containerRef.current) {
+        containerRef.current.innerHTML = svg;
+        if (bindFunctions) {
+          bindFunctions(containerRef.current);
+        }
+        // 自动适应视图（75% 容器大小）
+        requestAnimationFrame(() => {
+          if (!containerRef.current || !wrapperRef.current) return;
+          const svgEl = containerRef.current.querySelector('svg');
+          if (!svgEl) return;
+          const svgWidth = containerRef.current.scrollWidth;
+          const svgHeight = containerRef.current.scrollHeight;
+          const wrapperRect = wrapperRef.current.getBoundingClientRect();
+          handleFitToView(wrapperRect.width, wrapperRect.height, svgWidth, svgHeight);
+        });
+      }
+      return null; // 成功
+    } catch (e) {
+      if (currentRenderId !== renderIdRef.current) return null;
+      if (!isStreamingRef.current) {
+        const rawMsg = (e as Error).message || t('mermaid.renderFailed');
+        const lineMatch = rawMsg.match(/Parse error on line (\d+)(?:, column (\d+))?/);
+        const msg = lineMatch
+          ? `Line ${lineMatch[1]}${lineMatch[2] ? `, Column ${lineMatch[2]}` : ''}: ${rawMsg.replace(lineMatch[0], '').trim()}`
+          : rawMsg;
+        return msg; // 返回错误信息
+      }
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+      }
+      return null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, initMermaid, mermaidInstance, handleFitToView, t]);
+
+  // 渲染 Mermaid 图表（合理用例，需要在 effect 中处理错误）
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -98,51 +150,14 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
 
     const currentRenderId = ++renderIdRef.current;
 
-    const renderDiagram = async () => {
-      try {
-        setError(null);
-        await initMermaid();
-        if (!mermaidInstance || !containerRef.current) return;
-        if (currentRenderId !== renderIdRef.current) return;
+    // 清除之前的错误
+    setError(null);
 
-        const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        const { svg, bindFunctions } = await mermaidInstance.render(id, code);
-
-        if (currentRenderId !== renderIdRef.current) return;
-        if (containerRef.current) {
-          containerRef.current.innerHTML = svg;
-          if (bindFunctions) {
-            bindFunctions(containerRef.current);
-          }
-          setError(null);
-          // 自动适应视图（75% 容器大小）
-          requestAnimationFrame(() => {
-            if (!containerRef.current || !wrapperRef.current) return;
-            const svgEl = containerRef.current.querySelector('svg');
-            if (!svgEl) return;
-            const svgWidth = containerRef.current.scrollWidth;
-            const svgHeight = containerRef.current.scrollHeight;
-            const wrapperRect = wrapperRef.current.getBoundingClientRect();
-            handleFitToView(wrapperRect.width, wrapperRect.height, svgWidth, svgHeight);
-          });
-        }
-      } catch (e) {
-        if (currentRenderId !== renderIdRef.current) return;
-        if (!isStreamingRef.current) {
-          const rawMsg = (e as Error).message || t('mermaid.renderFailed');
-          const lineMatch = rawMsg.match(/Parse error on line (\d+)(?:, column (\d+))?/);
-          const msg = lineMatch
-            ? `Line ${lineMatch[1]}${lineMatch[2] ? `, Column ${lineMatch[2]}` : ''}: ${rawMsg.replace(lineMatch[0], '').trim()}`
-            : rawMsg;
-          setError(msg);
-        }
-        if (containerRef.current) {
-          containerRef.current.innerHTML = '';
-        }
+    renderDiagram(currentRenderId).then((error) => {
+      if (error && currentRenderId === renderIdRef.current) {
+        setError(error);
       }
-    };
-
-    renderDiagram();
+    });
 
     return () => { renderIdRef.current++; };
   }, [code, t]);

@@ -16,7 +16,7 @@ export function useZoomControls(options: UseZoomControlsOptions = {}) {
   const { minScale = 0.25, maxScale = 3, step = 0.25 } = options;
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
-  const isPanning = useRef(false);
+  const [isPanning, setIsPanning] = useState(false);
   const panStart = useRef({ x: 0, y: 0 });
 
   const handleZoomIn = useCallback(() => {
@@ -55,28 +55,28 @@ export function useZoomControls(options: UseZoomControlsOptions = {}) {
   // 鼠标拖拽平移
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button === 1 || (e.button === 0 && e.altKey)) {
-      isPanning.current = true;
+      setIsPanning(true);
       panStart.current = { x: e.clientX - translate.x, y: e.clientY - translate.y };
     }
   }, [translate]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (isPanning.current) {
+    if (isPanning) {
       setTranslate({
         x: e.clientX - panStart.current.x,
         y: e.clientY - panStart.current.y,
       });
     }
-  }, []);
+  }, [isPanning]);
 
   const handleMouseUp = useCallback(() => {
-    isPanning.current = false;
+    setIsPanning(false);
   }, []);
 
   return {
     scale,
     translate,
-    isPanning: isPanning.current,
+    isPanning,
     handleZoomIn,
     handleZoomOut,
     handleSetScale,

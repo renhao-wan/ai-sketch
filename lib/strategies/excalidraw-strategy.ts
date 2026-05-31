@@ -4,7 +4,7 @@
  */
 
 import type { DiagramStrategy, ValidationResult } from '@/types/diagram-strategy';
-import { SYSTEM_PROMPT, USER_PROMPT_TEMPLATE } from '@/lib/llm/prompts';
+import { EXCALIDRAW_SYSTEM_PROMPT, buildExcalidrawUserPrompt } from '@/lib/prompts/excalidraw';
 import { CHART_TYPES } from '@/lib/diagram/constants';
 import { optimizeExcalidrawCode } from '@/lib/diagram/optimize-arrows';
 import { repairJsonClosure, stripCodeFences, extractFirstJsonArray } from '@/lib/diagram/json-repair';
@@ -18,11 +18,11 @@ class ExcalidrawStrategy implements DiagramStrategy {
   readonly mimeType = 'application/json';
 
   getSystemPrompt(): string {
-    return SYSTEM_PROMPT;
+    return EXCALIDRAW_SYSTEM_PROMPT;
   }
 
   getUserPrompt(userInput: string, chartType: string): string {
-    return USER_PROMPT_TEMPLATE(userInput, chartType);
+    return buildExcalidrawUserPrompt(userInput, chartType);
   }
 
   postProcess(rawCode: string): string {

@@ -96,6 +96,8 @@ export default function AICopilotPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const prevInputRef = useRef(currentInput);
+  const prevChartTypeRef = useRef(currentChartType);
 
   const { attachments, payload, attachStatus, attachError, notification, closeNotification, handleFiles, clearAttachments, removeAttachment, canSend, getSourceType } = useFileUpload({ diagramFormat: currentFormat });
 
@@ -131,12 +133,23 @@ export default function AICopilotPanel({
     }
   }, [messages, conversationId]);
 
+  // 从 props 同步到 state（合理用例，避免级联渲染）
   useEffect(() => {
-    if (currentInput !== undefined) setPrompt(currentInput);
+    if (currentInput !== undefined && currentInput !== prevInputRef.current) {
+      prevInputRef.current = currentInput;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPrompt(currentInput);
+    }
   }, [currentInput]);
 
+  // 从 props 同步到 state（合理用例，避免级联渲染）
   useEffect(() => {
-    setChartType(currentChartType || 'auto');
+    const newChartType = currentChartType || 'auto';
+    if (newChartType !== prevChartTypeRef.current) {
+      prevChartTypeRef.current = newChartType;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setChartType(newChartType);
+    }
   }, [currentChartType, conversationId]);
 
   useEffect(() => {
