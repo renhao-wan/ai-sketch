@@ -43,6 +43,9 @@ function EditorContent() {
     message: '',
     type: 'info',
   });
+  const [aiActionLoading, setAiActionLoading] = useState<AIActionId | null>(null);
+  const [aiExplanation, setAiExplanation] = useState('');
+  const [bottomPanelTab, setBottomPanelTab] = useState('code');
 
   // Conversation state
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -497,12 +500,83 @@ function EditorContent() {
     }
   }, [isGenerating, messages, config, currentChartType, format, conversationId, t]);
 
-  const handleAIAction = (actionId: AIActionId) => {
-    switch (actionId) {
-      case 'layout': setNotification({ isOpen: true, title: t('editor.layoutOptimize'), message: t('editor.layoutOptimizing'), type: 'info' }); break;
-      case 'beautify': setNotification({ isOpen: true, title: t('editor.beautifyChart'), message: t('editor.beautifying'), type: 'info' }); break;
-      case 'simplify': break;
-      case 'explain': break;
+  const handleAIAction = async (actionId: AIActionId) => {
+    if (!generatedCode) {
+      setNotification({ isOpen: true, title: t('aiAction.noCode'), message: '', type: 'warning' });
+      return;
+    }
+
+    setAiActionLoading(actionId);
+
+    try {
+      const response = await fetch('/api/ai-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: generatedCode,
+          format,
+          action: actionId,
+          configId: config?.id,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'AI action failed');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response stream');
+
+      let accumulated = '';
+      let finalResult = '';
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6);
+          if (data === '[DONE]') continue;
+
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === 'content') {
+              accumulated += parsed.content;
+            } else if (parsed.type === 'result') {
+              finalResult = parsed.content;
+            } else if (parsed.type === 'error') {
+              throw new Error(parsed.error);
+            }
+          } catch (e) {
+            // Skip invalid JSON
+          }
+        }
+      }
+
+      if (actionId === 'explain') {
+        setAiExplanation(accumulated);
+        setBottomPanelTab('explain');
+      } else {
+        const codeToApply = finalResult || accumulated;
+        setGeneratedCode(codeToApply);
+        tryParseAndApply(codeToApply);
+      }
+    } catch (error) {
+      console.error('AI action error:', error);
+      setNotification({
+        isOpen: true,
+        title: t('aiAction.loading'),
+        message: (error as Error).message,
+        type: 'error',
+      });
+    } finally {
+      setAiActionLoading(null);
     }
   };
 
@@ -552,7 +626,11 @@ function EditorContent() {
         {/* Main Canvas Area */}
         <div className="flex-1 flex flex-col relative">
           {/* Floating AI Actions */}
-          <FloatingAIActions onAction={handleAIAction} />
+          <FloatingAIActions
+            onAction={handleAIAction}
+            loadingAction={aiActionLoading}
+            disabled={isGenerating || !generatedCode}
+          />
 
           {/* Canvas */}
           <div className="flex-1 relative">
@@ -560,7 +638,12 @@ function EditorContent() {
           </div>
 
           {/* Bottom Context Panel */}
-          <BottomContextPanel generatedCode={generatedCode}>
+          <BottomContextPanel
+            generatedCode={generatedCode}
+            explanation={aiExplanation}
+            activeTab={bottomPanelTab}
+            onTabChange={setBottomPanelTab}
+          >
             <CodeEditor
               code={generatedCode}
               onChange={(v) => setGeneratedCode(v ?? '')}
