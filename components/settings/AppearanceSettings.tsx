@@ -79,11 +79,12 @@ export function AppearanceSettings() {
 
       {/* 全局字体大小 */}
       <section>
-        <h3 className="text-lg font-semibold text-[var(--fg)] mb-1">{t('settings.fontSize')}</h3>
+        <h3 id="fontSizeLabel" className="text-lg font-semibold text-[var(--fg)] mb-1">{t('settings.fontSize')}</h3>
         <p className="text-sm text-[var(--muted)] mb-3">{t('settings.fontSizeDesc')}</p>
         <div className="flex items-center gap-4">
           <input
             type="range"
+            aria-labelledby="fontSizeLabel"
             min={12}
             max={20}
             step={1}
