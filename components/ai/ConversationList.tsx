@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, Trash2, ChevronDown, Pencil, Check, X, Search } from 'lucide-react';
+import { MessageSquare, Trash2, ChevronDown, Pencil, Check, X, Search, Plus } from 'lucide-react';
 import * as api from '@/lib/api-client';
 import { useLocale } from '@/locales';
 import { timeAgo } from '@/lib/time-ago';
 import Tooltip from '@/components/ui/Tooltip';
 import Dropdown from '@/components/ui/Dropdown';
-import type { Conversation } from '@/types';
+import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
+import type { Conversation, ConfirmDialogState } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
 interface ConversationListProps {
@@ -40,6 +41,7 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({ isOpen: false, title: '', message: '', onConfirm: null });
 
   const loadConversations = async (reset = false, pageNum = 0) => {
     try {
@@ -130,6 +132,29 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
     if (e.key === 'Escape') setRenamingId(null);
   };
 
+  /** 创建新会话前检查数量限制 */
+  const handleCreateConversation = async () => {
+    try {
+      const { count, limit } = await api.fetchConversationCount();
+      if (count >= limit) {
+        setConfirmDialog({
+          isOpen: true,
+          title: t('conversation.limitReached'),
+          message: t('conversation.limitReachedMsg').replace('{limit}', String(limit)),
+          onConfirm: null,
+        });
+        return;
+      }
+      onNew();
+      setIsOpen(false);
+    } catch (err) {
+      console.error('检查会话数量失败:', err);
+      // 检查失败时仍允许创建，避免阻断用户操作
+      onNew();
+      setIsOpen(false);
+    }
+  };
+
   const current = conversations.find(c => c.id === currentId);
 
   return (
@@ -149,10 +174,10 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
           <div className="absolute top-full left-0 mt-1 z-50 w-72 bg-[var(--surface-warm)] backdrop-blur-xl rounded-2xl border border-[var(--border)] shadow-[0_10px_40px_rgba(28,25,23,0.10)] overflow-hidden animate-slide-up">
             {/* New chat button */}
             <button
-              onClick={() => { onNew(); setIsOpen(false); }}
+              onClick={handleCreateConversation}
               className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 transition-colors border-b border-black/5"
             >
-              <MessageSquare size={14} />
+              <Plus size={14} />
               {t('conversation.new')}
             </button>
 
@@ -275,6 +300,15 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
           </div>
         </>
       )}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onConfirm={() => { confirmDialog.onConfirm?.(); setConfirmDialog({ ...confirmDialog, isOpen: false }); }}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        type="warning"
+        confirmText={t('confirm.confirm')}
+      />
     </div>
   );
 }
