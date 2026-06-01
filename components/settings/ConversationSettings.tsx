@@ -7,6 +7,7 @@ import Notification from '@/components/Notification';
 import ScrollToTop from '@/components/ScrollToTop';
 import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/locales';
+import Tooltip from '@/components/ui/Tooltip';
 import { Trash2, Search, Edit3, Check, X } from 'lucide-react';
 import type { Conversation, ConfirmDialogState, NotificationState } from '@/types';
 
@@ -202,8 +203,8 @@ export default function ConversationSettings() {
       </div>
 
       {/* 可滚动的会话列表 */}
-      <ScrollToTop className="flex-1 overflow-y-auto scrollbar-thin pt-4" onScroll={handleScroll}>
-        <div className="space-y-2 pb-4">
+      <ScrollToTop className="flex-1 overflow-y-auto scrollbar-thin" onScroll={handleScroll}>
+        <div className="space-y-2">
           {items.length === 0 ? (
             <div className="text-center py-12 text-sm text-[var(--muted)]">
               {searchQuery ? t('conversation.noResults') : t('history.empty')}
@@ -258,18 +259,22 @@ export default function ConversationSettings() {
                   </div>
                   {editingId !== item.id && (
                     <div className="flex items-center gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <button
-                        onClick={() => handleStartRename(item)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm)] rounded-lg transition-colors"
-                      >
-                        <Edit3 size={13} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      <Tooltip content={t('conversation.rename')} side="top">
+                        <button
+                          onClick={() => handleStartRename(item)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm)] rounded-lg transition-colors"
+                        >
+                          <Edit3 size={13} />
+                        </button>
+                      </Tooltip>
+                      <Tooltip content={t('common.delete')} side="top">
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </Tooltip>
                     </div>
                   )}
                 </div>
