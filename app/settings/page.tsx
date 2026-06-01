@@ -90,7 +90,7 @@ export default function SettingsPage() {
                   {t(tabDescriptions[activeTab])}
                 </p>
               </div>
-              <div className="flex-1 overflow-y-auto pb-8">
+              <div className="flex-1 overflow-y-auto pb-8 scrollbar-hide">
                 {renderContent()}
               </div>
             </main>
