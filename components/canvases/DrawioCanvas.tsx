@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useLocale } from '@/locales';
 import { useZoomControls } from '@/hooks/useZoomControls';
+import { useSettings } from '@/hooks/useSettings';
 import ZoomToolbar from './ZoomToolbar';
 
 interface DrawioCanvasProps {
@@ -24,6 +25,7 @@ function buildLoadPayload(xml: string) {
 
 export default function DrawioCanvas({ code }: DrawioCanvasProps) {
   const { t } = useLocale();
+  const { settings } = useSettings();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [embedReady, setEmbedReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -116,7 +118,7 @@ export default function DrawioCanvas({ code }: DrawioCanvasProps) {
   }, [embedReady, t]);
 
   return (
-    <div className="w-full h-full canvas-grid-bg relative overflow-hidden">
+    <div className={`w-full h-full canvas-bg-${settings.canvasBg} relative overflow-hidden`}>
       <ZoomToolbar scale={scale} onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} onFitToView={handleFitToView} />
 
       {/* 错误提示 */}

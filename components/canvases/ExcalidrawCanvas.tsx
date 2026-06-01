@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import '@excalidraw/excalidraw/index.css';
 import type { ExcalidrawElement } from '@/types';
 import { extractCompleteElements } from '@/lib/diagram/json-repair';
+import { useSettings } from '@/hooks/useSettings';
 
 const Excalidraw = dynamic(
   async () => (await import('@excalidraw/excalidraw')).Excalidraw,
@@ -120,6 +121,7 @@ interface Props {
 }
 
 export default function ExcalidrawCanvas({ elements, isStreaming, streamRendererRef }: Props) {
+  const { settings } = useSettings();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const apiRef = useRef<any>(null);
   const [convertFn, setConvertFn] = useState<ConvertFn | null>(null);
@@ -262,7 +264,7 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
   }, [elementsHash, isStreaming, convertFn]);
 
   return (
-    <div className="w-full h-full canvas-grid-bg">
+    <div className={`w-full h-full canvas-bg-${settings.canvasBg}`}>
       <Excalidraw
         excalidrawAPI={handleAPI}
         initialData={initialData}
