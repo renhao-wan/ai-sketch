@@ -6,8 +6,10 @@ import ConfirmDialog from './ConfirmDialog';
 import ScrollToTop from '../ScrollToTop';
 import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/locales';
-import { Trash2, Clock, ArrowRight, Pencil, Check, X, Search, AlertTriangle } from 'lucide-react';
+import { Trash2, Clock, ArrowRight, Pencil, Check, X, Search } from 'lucide-react';
 import Tooltip from '@/components/ui/Tooltip';
+import CountBanner from '@/components/ui/CountBanner';
+import { useCountBanner } from '@/hooks/useCountBanner';
 import type { Conversation, ConfirmDialogState } from '@/types';
 
 interface HistoryModalProps {
@@ -35,25 +37,11 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
   const [totalCount, setTotalCount] = useState(0);
   const pageRef = useRef(0);
 
-  // Banner state
-  const [showBanner, setShowBanner] = useState(false);
-
-  // Check banner visibility when totalCount changes
-  useEffect(() => {
-    if (totalCount >= 50) {
-      const dismissed = sessionStorage.getItem('history-banner-dismissed');
-      if (!dismissed) {
-        setShowBanner(true);
-      }
-    } else {
-      setShowBanner(false);
-    }
-  }, [totalCount]);
-
-  const handleDismissBanner = () => {
-    setShowBanner(false);
-    sessionStorage.setItem('history-banner-dismissed', 'true');
-  };
+  const { showBanner, handleDismissBanner } = useCountBanner({
+    count: totalCount,
+    threshold: 50,
+    storageKey: 'history-banner-dismissed',
+  });
 
   /** Load conversations with search/sort/pagination support */
   const loadConversations = async (reset = false, pageNum = 0) => {
@@ -229,27 +217,12 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
         <ScrollToTop className="px-7 pb-6 scrollbar-thin" onScroll={handleScroll}>
           <div className="space-y-2">
             {/* Banner */}
-            {showBanner && (
-              <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-500/5">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                    <AlertTriangle size={16} className="text-amber-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[var(--fg)]">{t('conversation.bannerTitle')}</p>
-                    <p className="text-xs text-[var(--muted)] mt-0.5">
-                      {t('conversation.bannerDescription').replace('{count}', String(totalCount))}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleDismissBanner}
-                    className="w-6 h-6 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200 flex-shrink-0"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-            )}
+            <CountBanner
+              show={showBanner}
+              title={t('conversation.bannerTitle')}
+              description={t('conversation.bannerDescription').replace('{count}', String(totalCount))}
+              onDismiss={handleDismissBanner}
+            />
             {items.length === 0 ? (
               <div className="text-center py-12 text-sm text-[var(--muted)]">
                 {searchQuery ? t('conversation.noResults') : t('history.empty')}

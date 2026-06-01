@@ -5,10 +5,12 @@ import * as api from '@/lib/api-client';
 import Notification from '../Notification';
 import ConfirmDialog from './ConfirmDialog';
 import ScrollToTop from '../ScrollToTop';
-import { Settings, Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2, AlertTriangle } from 'lucide-react';
+import { Settings, Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2 } from 'lucide-react';
 import Dropdown from '../ui/Dropdown';
 import { useLocale } from '@/locales';
 import Tooltip from '@/components/ui/Tooltip';
+import CountBanner from '@/components/ui/CountBanner';
+import { useCountBanner } from '@/hooks/useCountBanner';
 import type { LLMConfig, ModelInfo, NotificationState, ConfirmDialogState } from '@/types';
 
 interface ConfigManagerProps {
@@ -35,25 +37,14 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
   const [error, setError] = useState('');
   const [notification, setNotification] = useState<NotificationState>({ isOpen: false, title: '', message: '', type: 'info' });
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({ isOpen: false, title: '', message: '', onConfirm: null });
-  const [showBanner, setShowBanner] = useState(false);
+
+  const { showBanner, handleDismissBanner } = useCountBanner({
+    count: configs.length,
+    threshold: 15,
+    storageKey: 'config-banner-dismissed',
+  });
 
   useEffect(() => { if (isOpen) loadConfigs(); }, [isOpen]);
-
-  useEffect(() => {
-    if (configs.length >= 15) {
-      const dismissed = sessionStorage.getItem('config-banner-dismissed');
-      if (!dismissed) {
-        setShowBanner(true);
-      }
-    } else {
-      setShowBanner(false);
-    }
-  }, [configs.length]);
-
-  const handleDismissBanner = () => {
-    setShowBanner(false);
-    sessionStorage.setItem('config-banner-dismissed', 'true');
-  };
 
   const loadConfigs = async () => {
     try {
@@ -200,32 +191,12 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
         {/* Scrollable List */}
         <ScrollToTop className="px-7 pb-6 scrollbar-thin">
           <div className="space-y-2">
-            {showBanner && (
-              <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-500/5">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                    <AlertTriangle size={16} className="text-amber-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[var(--fg)]">{t('config.bannerTitle')}</p>
-                    <p className="text-xs text-[var(--muted)] mt-0.5">
-                      {t('config.bannerDescription').replace('{count}', String(configs.length))}
-                    </p>
-                    <p className="text-xs text-[var(--muted)] mt-0.5">
-                      {t('config.bannerStats')
-                        .replace('{total}', String(filteredConfigs.length))
-                        .replace('{active}', String(configs.filter(c => c.id === activeConfigId).length))}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleDismissBanner}
-                    className="w-6 h-6 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200 flex-shrink-0"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-            )}
+            <CountBanner
+              show={showBanner}
+              title={t('config.bannerTitle')}
+              description={t('config.bannerDescription').replace('{count}', String(configs.length))}
+              onDismiss={handleDismissBanner}
+            />
             {filteredConfigs.length === 0 ? (
               <div className="text-center py-12 text-sm text-[var(--muted)]">{searchQuery ? t('config.noMatch') : t('config.noConfig')}</div>
             ) : filteredConfigs.map((config) => (
