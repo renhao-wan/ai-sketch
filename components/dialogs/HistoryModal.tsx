@@ -103,17 +103,17 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white backdrop-blur-2xl rounded-3xl border border-[var(--border)] shadow-[0_20px_60px_rgba(28,25,23,0.10)] w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-slide-up">
+      <div className="relative bg-[var(--bg-glass)] backdrop-blur-2xl rounded-3xl border border-[var(--border)] shadow-[var(--shadow-floating)] w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-slide-up">
         {/* Header */}
         <div className="flex items-center justify-between px-7 pt-6 pb-4 flex-shrink-0">
           <div className="flex items-center gap-2">
             <Clock size={18} className="text-[var(--muted)]" />
             <h2 className="text-lg font-semibold tracking-tight text-[var(--fg)]">{t('history.title')}</h2>
             {totalCount > 0 && (
-              <span className="text-xs text-[var(--muted)] bg-black/[0.04] px-2 py-0.5 rounded-full">{totalCount}</span>
+              <span className="text-xs text-[var(--muted)] bg-[var(--surface-warm-hover)] px-2 py-0.5 rounded-full">{totalCount}</span>
             )}
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 transition-all duration-200">
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
@@ -169,7 +169,7 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
               </div>
             ) : (
               items.map((item) => (
-                <div key={item.id} className="group p-4 rounded-2xl bg-black/[0.03] hover:bg-black/[0.05] border border-transparent hover:border-black/[0.06] transition-all duration-200 cursor-pointer" onClick={() => handleApply(item)}>
+                <div key={item.id} className="group p-4 rounded-2xl bg-[var(--surface-warm-hover)] hover:bg-[var(--border)] border border-transparent hover:border-[var(--border)] transition-all duration-200 cursor-pointer" onClick={() => handleApply(item)}>
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">

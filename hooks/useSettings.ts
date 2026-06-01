@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-export type Theme = 'dark' | 'light' | 'warm' | 'cool' | 'forest' | 'lavender';
+export type Theme = 'dark' | 'light' | 'ocean' | 'sakura' | 'emerald' | 'sunset';
 
 export interface Settings {
   locale: 'zh' | 'en';
@@ -33,7 +33,7 @@ function getStoredValue<T>(key: string, defaultValue: T, validator?: (v: unknown
 }
 
 function isValidTheme(v: unknown): v is Theme {
-  return typeof v === 'string' && ['dark', 'light', 'warm', 'cool', 'forest', 'lavender'].includes(v);
+  return typeof v === 'string' && ['dark', 'light', 'ocean', 'sakura', 'emerald', 'sunset'].includes(v);
 }
 
 function isValidLocale(v: unknown): v is 'zh' | 'en' {

@@ -368,7 +368,7 @@ export default function AICopilotPanel({
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={hasMessages ? t('copilot.continueDescribe') : t('copilot.describeChart') + '...'}
-              className="w-full resize-none bg-white/60 text-sm leading-relaxed text-[var(--fg)] placeholder:text-[var(--muted)]/60 focus:outline-none focus:ring-1 focus:ring-[var(--accent-indigo)]/20 min-h-[60px] max-h-[160px] rounded-xl px-3 py-2.5 border border-black/[0.1] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+              className="w-full resize-none bg-[var(--surface-warm)] text-sm leading-relaxed text-[var(--fg)] placeholder:text-[var(--muted)]/60 focus:outline-none focus:ring-1 focus:ring-[var(--accent-indigo)]/20 min-h-[60px] max-h-[160px] rounded-xl px-3 py-2.5 border border-[var(--border)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
             />
           </div>
 

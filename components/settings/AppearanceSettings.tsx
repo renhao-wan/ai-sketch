@@ -5,12 +5,12 @@ import { useSettings, Theme } from '@/hooks/useSettings';
 import { Check } from 'lucide-react';
 
 const themes: { key: Theme; bg: string; fg: string; accent: string }[] = [
-  { key: 'dark', bg: '#1a1a2e', fg: '#e0e0e0', accent: '#818cf8' },
   { key: 'light', bg: '#FAF8F5', fg: '#1C1917', accent: '#7C3AED' },
-  { key: 'warm', bg: '#1c1412', fg: '#fef3c7', accent: '#fbbf24' },
-  { key: 'cool', bg: '#0f172a', fg: '#e2e8f0', accent: '#38bdf8' },
-  { key: 'forest', bg: '#0f1f1a', fg: '#d1fae5', accent: '#34d399' },
-  { key: 'lavender', bg: '#1e1b2e', fg: '#ede9fe', accent: '#a78bfa' },
+  { key: 'dark', bg: '#1a1a2e', fg: '#e0e0e0', accent: '#818cf8' },
+  { key: 'ocean', bg: '#0a1628', fg: '#c8dce8', accent: '#3ea8d6' },
+  { key: 'sakura', bg: '#1a1218', fg: '#f0dde8', accent: '#e8749a' },
+  { key: 'emerald', bg: '#0a1a14', fg: '#c8e8d8', accent: '#34d399' },
+  { key: 'sunset', bg: '#1a1410', fg: '#f0e0d0', accent: '#f59e0b' },
 ];
 
 export function AppearanceSettings() {

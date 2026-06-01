@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocale } from '@/locales';
 import { useZoomControls } from '@/hooks/useZoomControls';
+import { getMermaidThemeVariables, getCurrentTheme } from '@/lib/theme-utils';
 import ZoomToolbar from './ZoomToolbar';
 
 interface MermaidCanvasProps {
@@ -12,13 +13,20 @@ interface MermaidCanvasProps {
 
 let mermaidInstance: typeof import('mermaid').default | null = null;
 let mermaidInitPromise: Promise<void> | null = null;
+let lastTheme: string | null = null;
 
 async function initMermaid() {
-  if (mermaidInstance) return;
+  const currentTheme = getCurrentTheme();
+
+  // 如果主题变化，需要重新初始化
+  if (mermaidInstance && lastTheme === currentTheme) return;
+
   if (mermaidInitPromise) {
     await mermaidInitPromise;
-    return;
+    // 检查主题是否变化
+    if (lastTheme === currentTheme) return;
   }
+
   mermaidInitPromise = (async () => {
     const mermaid = (await import('mermaid')).default;
     mermaid.initialize({
@@ -26,16 +34,7 @@ async function initMermaid() {
       theme: 'neutral',
       securityLevel: 'loose',
       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
-      themeVariables: {
-        fontSize: '14px',
-        fontFamily: 'inherit',
-        lineColor: '#6b7280',
-        primaryColor: '#3b82f6',
-        primaryTextColor: '#1f2937',
-        primaryBorderColor: '#93c5fd',
-        secondaryColor: '#f3f4f6',
-        tertiaryColor: '#ffffff',
-      },
+      themeVariables: getMermaidThemeVariables(),
       flowchart: {
         useMaxWidth: true,
         htmlLabels: true,
@@ -52,6 +51,7 @@ async function initMermaid() {
       },
     });
     mermaidInstance = mermaid;
+    lastTheme = currentTheme;
   })();
   try {
     await mermaidInitPromise;

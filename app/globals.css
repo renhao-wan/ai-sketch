@@ -69,92 +69,92 @@
   --scrollbar-thumb-subtle: rgba(255, 255, 255, 0.06);
 }
 
-/* 暖色主题 */
-[data-theme="warm"] {
-  --bg: #1c1412;
-  --bg-glass: rgba(28, 20, 18, 0.72);
-  --fg: #fef3c7;
-  --muted: #d4a574;
-  --border: rgba(255, 255, 255, 0.1);
-  --card: rgba(28, 20, 18, 0.85);
-  --primary: #fbbf24;
-  --accent-indigo: #f59e0b;
-  --accent-violet: #fb923c;
-  --accent-cyan: #fbbf24;
-  --surface-warm: rgba(28, 20, 18, 0.9);
-  --surface-warm-hover: rgba(255, 255, 255, 0.06);
-  --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
-  --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
-  --shadow-glow: 0 0 40px rgba(251, 191, 36, 0.2);
-  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
-  --scrollbar-thumb-subtle: rgba(255, 255, 255, 0.06);
-}
-
-/* 冷色主题 */
-[data-theme="cool"] {
-  --bg: #0f172a;
-  --bg-glass: rgba(15, 23, 42, 0.72);
-  --fg: #e2e8f0;
-  --muted: #94a3b8;
-  --border: rgba(255, 255, 255, 0.1);
-  --card: rgba(15, 23, 42, 0.85);
-  --primary: #38bdf8;
-  --accent-indigo: #38bdf8;
-  --accent-violet: #818cf8;
+/* 深海蓝夜 - 灵感来自深海的神秘与宁静 */
+[data-theme="ocean"] {
+  --bg: #0a1628;
+  --bg-glass: rgba(10, 22, 40, 0.78);
+  --fg: #c8dce8;
+  --muted: #5a7a8a;
+  --border: rgba(100, 180, 220, 0.12);
+  --card: rgba(15, 30, 55, 0.85);
+  --primary: #3ea8d6;
+  --accent-indigo: #3ea8d6;
+  --accent-violet: #6366f1;
   --accent-cyan: #22d3ee;
-  --surface-warm: rgba(15, 23, 42, 0.9);
-  --surface-warm-hover: rgba(255, 255, 255, 0.06);
-  --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
-  --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
-  --shadow-glow: 0 0 40px rgba(56, 189, 248, 0.2);
-  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
-  --scrollbar-thumb-subtle: rgba(255, 255, 255, 0.06);
+  --surface-warm: rgba(12, 25, 45, 0.9);
+  --surface-warm-hover: rgba(62, 168, 214, 0.08);
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-floating: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 60px rgba(62, 168, 214, 0.15);
+  --scrollbar-thumb: rgba(62, 168, 214, 0.2);
+  --scrollbar-thumb-hover: rgba(62, 168, 214, 0.35);
+  --scrollbar-thumb-subtle: rgba(62, 168, 214, 0.08);
 }
 
-/* 森林主题 */
-[data-theme="forest"] {
-  --bg: #0f1f1a;
-  --bg-glass: rgba(15, 31, 26, 0.72);
-  --fg: #d1fae5;
-  --muted: #6b8f7a;
-  --border: rgba(255, 255, 255, 0.1);
-  --card: rgba(15, 31, 26, 0.85);
+/* 樱花 - 灵感来自春日樱花的温柔与优雅 */
+[data-theme="sakura"] {
+  --bg: #1a1218;
+  --bg-glass: rgba(26, 18, 24, 0.78);
+  --fg: #f0dde8;
+  --muted: #a07888;
+  --border: rgba(220, 140, 170, 0.12);
+  --card: rgba(30, 22, 28, 0.85);
+  --primary: #e8749a;
+  --accent-indigo: #e8749a;
+  --accent-violet: #c084fc;
+  --accent-cyan: #f472b6;
+  --surface-warm: rgba(28, 20, 26, 0.9);
+  --surface-warm-hover: rgba(232, 116, 154, 0.08);
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-floating: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 60px rgba(232, 116, 154, 0.15);
+  --scrollbar-thumb: rgba(232, 116, 154, 0.2);
+  --scrollbar-thumb-hover: rgba(232, 116, 154, 0.35);
+  --scrollbar-thumb-subtle: rgba(232, 116, 154, 0.08);
+}
+
+/* 翡翠 - 灵感来自珍贵宝石的深邃与自然 */
+[data-theme="emerald"] {
+  --bg: #0a1a14;
+  --bg-glass: rgba(10, 26, 20, 0.78);
+  --fg: #c8e8d8;
+  --muted: #5a8a70;
+  --border: rgba(80, 200, 140, 0.12);
+  --card: rgba(12, 28, 22, 0.85);
   --primary: #34d399;
   --accent-indigo: #34d399;
   --accent-violet: #a78bfa;
   --accent-cyan: #2dd4bf;
-  --surface-warm: rgba(15, 31, 26, 0.9);
-  --surface-warm-hover: rgba(255, 255, 255, 0.06);
-  --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
-  --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
-  --shadow-glow: 0 0 40px rgba(52, 211, 153, 0.2);
-  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
-  --scrollbar-thumb-subtle: rgba(255, 255, 255, 0.06);
+  --surface-warm: rgba(10, 24, 18, 0.9);
+  --surface-warm-hover: rgba(52, 211, 153, 0.08);
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-floating: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 60px rgba(52, 211, 153, 0.15);
+  --scrollbar-thumb: rgba(52, 211, 153, 0.2);
+  --scrollbar-thumb-hover: rgba(52, 211, 153, 0.35);
+  --scrollbar-thumb-subtle: rgba(52, 211, 153, 0.08);
 }
 
-/* 薰衣草主题 */
-[data-theme="lavender"] {
-  --bg: #1e1b2e;
-  --bg-glass: rgba(30, 27, 46, 0.72);
-  --fg: #ede9fe;
-  --muted: #a78bfa;
-  --border: rgba(255, 255, 255, 0.1);
-  --card: rgba(30, 27, 46, 0.85);
-  --primary: #a78bfa;
-  --accent-indigo: #a78bfa;
-  --accent-violet: #c084fc;
-  --accent-cyan: #818cf8;
-  --surface-warm: rgba(30, 27, 46, 0.9);
-  --surface-warm-hover: rgba(255, 255, 255, 0.06);
-  --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
-  --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
-  --shadow-glow: 0 0 40px rgba(167, 139, 250, 0.2);
-  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
-  --scrollbar-thumb-subtle: rgba(255, 255, 255, 0.06);
+/* 日落 - 灵感来自黄昏时分的温暖与浪漫 */
+[data-theme="sunset"] {
+  --bg: #1a1410;
+  --bg-glass: rgba(26, 20, 16, 0.78);
+  --fg: #f0e0d0;
+  --muted: #a08060;
+  --border: rgba(220, 160, 80, 0.12);
+  --card: rgba(30, 24, 18, 0.85);
+  --primary: #f59e0b;
+  --accent-indigo: #f59e0b;
+  --accent-violet: #fb923c;
+  --accent-cyan: #fbbf24;
+  --surface-warm: rgba(28, 22, 16, 0.9);
+  --surface-warm-hover: rgba(245, 158, 11, 0.08);
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-floating: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 60px rgba(245, 158, 11, 0.15);
+  --scrollbar-thumb: rgba(245, 158, 11, 0.2);
+  --scrollbar-thumb-hover: rgba(245, 158, 11, 0.35);
+  --scrollbar-thumb-subtle: rgba(245, 158, 11, 0.08);
 }
 
 @theme inline {
@@ -170,6 +170,15 @@
 
 * {
   box-sizing: border-box;
+}
+
+/* 主题切换过渡动画 */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html * {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 body {

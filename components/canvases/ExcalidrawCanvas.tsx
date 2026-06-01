@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import '@excalidraw/excalidraw/index.css';
 import type { ExcalidrawElement } from '@/types';
 import { extractCompleteElements } from '@/lib/diagram/json-repair';
+import { getExcalidrawBackgroundColor } from '@/lib/theme-utils';
 
 const Excalidraw = dynamic(
   async () => (await import('@excalidraw/excalidraw')).Excalidraw,
@@ -146,7 +147,7 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
 
   const initialData = useMemo(() => ({
     elements: [],
-    appState: { viewBackgroundColor: '#FAF8F5', currentItemFontFamily: 1 },
+    appState: { viewBackgroundColor: getExcalidrawBackgroundColor(), currentItemFontFamily: 1 },
   }), []);
 
   useEffect(() => {
