@@ -81,7 +81,7 @@ export default function SettingsPage() {
             <SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
             {/* 内容区 */}
-            <main className="flex-1 min-w-0 flex flex-col">
+            <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
               <div className="mb-6 flex-shrink-0">
                 <h2 className="text-2xl font-bold text-[var(--fg)]">
                   {t(`settings.${activeTab}`)}
@@ -90,7 +90,7 @@ export default function SettingsPage() {
                   {t(tabDescriptions[activeTab])}
                 </p>
               </div>
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto pb-8">
                 {renderContent()}
               </div>
             </main>
