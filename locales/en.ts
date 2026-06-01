@@ -168,6 +168,17 @@ export const en: TranslationDict = {
   'conversation.empty': 'No conversations',
   'conversation.messages': 'messages',
   'conversation.rename': 'Rename',
+  'conversation.search': 'Search conversations',
+  'conversation.sortBy': 'Sort by',
+  'conversation.recentlyUpdated': 'Recently updated',
+  'conversation.oldestUpdated': 'Oldest updated',
+  'conversation.recentlyCreated': 'Recently created',
+  'conversation.oldestCreated': 'Oldest created',
+  'conversation.loadMore': 'Load more...',
+  'conversation.loading': 'Loading...',
+  'conversation.limitReached': 'Conversation limit reached',
+  'conversation.limitReachedMsg': 'You have {limit} conversations, which is the limit. Please delete some old conversations before creating new ones.',
+  'conversation.noResults': 'No matching conversations found',
 
   // Floating AI Actions
   'aiAction.layout': 'AI Layout',

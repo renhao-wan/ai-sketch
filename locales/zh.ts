@@ -166,6 +166,17 @@ export const zh = {
   'conversation.empty': '暂无对话',
   'conversation.messages': '条消息',
   'conversation.rename': '重命名',
+  'conversation.search': '搜索会话',
+  'conversation.sortBy': '排序方式',
+  'conversation.recentlyUpdated': '最近更新',
+  'conversation.oldestUpdated': '最早更新',
+  'conversation.recentlyCreated': '最新创建',
+  'conversation.oldestCreated': '最早创建',
+  'conversation.loadMore': '加载更多...',
+  'conversation.loading': '加载中...',
+  'conversation.limitReached': '会话数量已达上限',
+  'conversation.limitReachedMsg': '您已有 {limit} 个会话，达到上限。请删除一些旧会话后再创建新会话。',
+  'conversation.noResults': '未找到匹配的会话',
 
   // Floating AI Actions
   'aiAction.layout': 'AI 布局',
