@@ -7,7 +7,7 @@ import Notification from '@/components/Notification';
 import ScrollToTop from '@/components/ScrollToTop';
 import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/locales';
-import { Database, Download, Upload, Trash2, Search, HardDrive } from 'lucide-react';
+import { Database, Trash2, Search, HardDrive } from 'lucide-react';
 import type { Conversation, ConfirmDialogState, NotificationState } from '@/types';
 
 const PAGE_SIZE = 20;
@@ -47,11 +47,8 @@ export default function DataSettings() {
     type: 'info',
   });
 
-  // ── Import/Export state ──
-  const [isExporting, setIsExporting] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
+  // ── Clear history state ──
   const [isClearing, setIsClearing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   /** Load storage statistics */
   const loadStats = useCallback(async () => {
@@ -154,72 +151,6 @@ export default function DataSettings() {
     });
   };
 
-  /** Export all data as JSON */
-  const handleExport = async () => {
-    setIsExporting(true);
-    try {
-      // Export configs
-      const configsJson = await api.exportConfigs();
-
-      // Export all conversations (fetch all, not just one page)
-      const allConversations = await api.fetchConversations({ limit: 10000, offset: 0 });
-
-      const exportData = {
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        configs: configsJson,
-        conversations: allConversations.conversations,
-      };
-
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ai-sketch-backup-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showNotification('success', t('settings.exportSuccess'));
-    } catch (err) {
-      console.error('Export failed:', err);
-      showNotification('error', t('settings.exportFailed'));
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  /** Import LLM configs from JSON file (conversations are not importable) */
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsImporting(true);
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-
-      // Only configs can be imported — conversations have no bulk import API
-      if (data.configs) {
-        await api.importConfigs(data.configs);
-      }
-
-      // Refresh data
-      await loadConversations(true, 0);
-      await loadStats();
-      showNotification('success', t('settings.importSuccess'));
-    } catch (err) {
-      console.error('Import failed:', err);
-      showNotification('error', t('settings.importFailed'));
-    } finally {
-      setIsImporting(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
   /** Clear all conversation history */
   const handleClearHistory = () => {
     setConfirmDialog({
@@ -268,59 +199,19 @@ export default function DataSettings() {
         </div>
       </section>
 
-      {/* Import / Export */}
+      {/* Clear History */}
       <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Database size={18} className="text-[var(--accent-indigo)]" />
-          <h3 className="text-lg font-semibold text-[var(--fg)]">{t('settings.data')}</h3>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Export */}
-          <button
-            onClick={handleExport}
-            disabled={isExporting}
-            className="flex items-center gap-3 p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)] hover:border-[var(--accent-indigo)]/30 transition-all duration-200 disabled:opacity-50"
-          >
-            <Download size={18} className="text-[var(--accent-indigo)]" />
-            <div className="text-left">
-              <p className="text-sm font-medium text-[var(--fg)]">{t('settings.exportAll')}</p>
-              <p className="text-xs text-[var(--muted)]">{t('settings.exportAllDesc')}</p>
-            </div>
-          </button>
-
-          {/* Import */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isImporting}
-            className="flex items-center gap-3 p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)] hover:border-[var(--accent-indigo)]/30 transition-all duration-200 disabled:opacity-50"
-          >
-            <Upload size={18} className="text-[var(--accent-indigo)]" />
-            <div className="text-left">
-              <p className="text-sm font-medium text-[var(--fg)]">{t('settings.importData')}</p>
-              <p className="text-xs text-[var(--muted)]">{t('settings.importDataDesc')}</p>
-            </div>
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            onChange={handleImport}
-            className="hidden"
-          />
-
-          {/* Clear History */}
-          <button
-            onClick={handleClearHistory}
-            disabled={isClearing || conversationCount === 0}
-            className="flex items-center gap-3 p-4 rounded-xl bg-red-500/5 border border-red-500/20 hover:bg-red-500/10 transition-all duration-200 disabled:opacity-50"
-          >
-            <Trash2 size={18} className="text-red-500" />
-            <div className="text-left">
-              <p className="text-sm font-medium text-red-600">{t('settings.clearHistory')}</p>
-              <p className="text-xs text-red-500/70">{t('settings.clearHistoryDesc')}</p>
-            </div>
-          </button>
-        </div>
+        <button
+          onClick={handleClearHistory}
+          disabled={isClearing || conversationCount === 0}
+          className="flex items-center gap-3 p-4 rounded-xl bg-red-500/5 border border-red-500/20 hover:bg-red-500/10 transition-all duration-200 disabled:opacity-50"
+        >
+          <Trash2 size={18} className="text-red-500" />
+          <div className="text-left">
+            <p className="text-sm font-medium text-red-600">{t('settings.clearHistory')}</p>
+            <p className="text-xs text-red-500/70">{t('settings.clearHistoryDesc')}</p>
+          </div>
+        </button>
       </section>
 
       {/* Conversation History List */}
