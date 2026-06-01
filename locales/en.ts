@@ -147,6 +147,9 @@ export const en: TranslationDict = {
   'config.fillRequired': 'Please fill in provider type, base URL, and API key first',
   'config.loadModelFailed': 'Failed to load models',
   'config.fillAllRequired': 'Please fill in all required fields',
+  'config.bannerTitle': 'Many configurations, consider cleanup',
+  'config.bannerDescription': 'You have {count} configurations. Consider cleaning up unused ones.',
+  'config.bannerStats': 'Currently showing {total} configurations, {active} active.',
 
   // History
   'history.title': 'History',

@@ -145,6 +145,9 @@ export const zh = {
   'config.fillRequired': '请先填写提供商类型、基础 URL 和 API 密钥',
   'config.loadModelFailed': '加载模型失败',
   'config.fillAllRequired': '请填写所有必填字段',
+  'config.bannerTitle': '配置较多，建议清理',
+  'config.bannerDescription': '您已有 {count} 个配置，建议清理不常用的配置。',
+  'config.bannerStats': '当前显示 {total} 个配置，其中 {active} 个处于活跃状态。',
 
   // History
   'history.title': '历史记录',
