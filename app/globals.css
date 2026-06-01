@@ -11,7 +11,7 @@
   --bg-glass: rgba(250, 248, 245, 0.72);
   --fg: #1C1917;
   --muted: #78716C;
-  --border: rgba(250, 248, 245, 0.15);
+  --border: rgba(0, 0, 0, 0.08);
   --card: rgba(250, 248, 245, 0.78);
 
   /* Primary */
@@ -56,22 +56,9 @@
   --accent-cyan: #fbbf24;
   --surface-warm: rgba(26, 26, 46, 0.9);
   --surface-warm-hover: rgba(255, 255, 255, 0.06);
-}
-
-/* 浅色主题 (默认) */
-[data-theme="light"] {
-  --bg: #FAF8F5;
-  --bg-glass: rgba(250, 248, 245, 0.72);
-  --fg: #1C1917;
-  --muted: #78716C;
-  --border: rgba(250, 248, 245, 0.15);
-  --card: rgba(250, 248, 245, 0.78);
-  --primary: #1C1917;
-  --accent-indigo: #7C3AED;
-  --accent-violet: #A855F7;
-  --accent-cyan: #D97706;
-  --surface-warm: rgba(250, 248, 245, 0.85);
-  --surface-warm-hover: rgba(0, 0, 0, 0.04);
+  --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
+  --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
+  --shadow-glow: 0 0 40px rgba(129, 140, 248, 0.2);
 }
 
 /* 暖色主题 */
@@ -88,6 +75,9 @@
   --accent-cyan: #fbbf24;
   --surface-warm: rgba(28, 20, 18, 0.9);
   --surface-warm-hover: rgba(255, 255, 255, 0.06);
+  --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
+  --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
+  --shadow-glow: 0 0 40px rgba(251, 191, 36, 0.2);
 }
 
 /* 冷色主题 */
@@ -104,6 +94,9 @@
   --accent-cyan: #22d3ee;
   --surface-warm: rgba(15, 23, 42, 0.9);
   --surface-warm-hover: rgba(255, 255, 255, 0.06);
+  --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
+  --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
+  --shadow-glow: 0 0 40px rgba(56, 189, 248, 0.2);
 }
 
 /* 森林主题 */
@@ -111,7 +104,7 @@
   --bg: #0f1f1a;
   --bg-glass: rgba(15, 31, 26, 0.72);
   --fg: #d1fae5;
-  --muted: #6ee7b7;
+  --muted: #6b8f7a;
   --border: rgba(255, 255, 255, 0.1);
   --card: rgba(15, 31, 26, 0.85);
   --primary: #34d399;
@@ -120,6 +113,9 @@
   --accent-cyan: #2dd4bf;
   --surface-warm: rgba(15, 31, 26, 0.9);
   --surface-warm-hover: rgba(255, 255, 255, 0.06);
+  --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
+  --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
+  --shadow-glow: 0 0 40px rgba(52, 211, 153, 0.2);
 }
 
 /* 薰衣草主题 */
@@ -136,6 +132,9 @@
   --accent-cyan: #818cf8;
   --surface-warm: rgba(30, 27, 46, 0.9);
   --surface-warm-hover: rgba(255, 255, 255, 0.06);
+  --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
+  --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
+  --shadow-glow: 0 0 40px rgba(167, 139, 250, 0.2);
 }
 
 @theme inline {
