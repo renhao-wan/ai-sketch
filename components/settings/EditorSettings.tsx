@@ -44,6 +44,9 @@ export function EditorSettings() {
             <p className="text-sm text-[var(--muted)]">{t('settings.autoSaveDesc')}</p>
           </div>
           <button
+            role="switch"
+            aria-checked={settings.autoSave}
+            aria-label={t('settings.autoSave')}
             onClick={() => updateSetting('autoSave', !settings.autoSave)}
             className={`
               relative w-12 h-7 rounded-full transition-colors duration-200
