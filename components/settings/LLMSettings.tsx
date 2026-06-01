@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import * as api from '@/lib/api-client';
-import Modal from '@/components/ui/Modal';
 import Notification from '@/components/Notification';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
 import ScrollToTop from '@/components/ScrollToTop';
@@ -372,21 +371,34 @@ export function LLMSettings() {
       />
 
       {/* 配置编辑器弹窗 */}
-      <Modal
-        isOpen={!!editingConfig}
-        onClose={() => { setEditingConfig(null); setIsCreating(false); }}
-        title={isCreating ? t('config.new') : t('config.edit')}
-        maxWidth="max-w-2xl"
-      >
-        {editingConfig && (
-          <ConfigEditor
-            config={editingConfig}
-            isCreating={isCreating}
-            onSave={handleSaveConfig}
-            onCancel={() => { setEditingConfig(null); setIsCreating(false); }}
-          />
-        )}
-      </Modal>
+      {editingConfig && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => { setEditingConfig(null); setIsCreating(false); }} />
+          <div className="relative bg-[var(--surface-warm)] backdrop-blur-2xl rounded-3xl border border-[var(--border)] shadow-[0_20px_60px_rgba(28,25,23,0.10)] w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col animate-slide-up">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+              <h2 className="text-lg font-semibold text-[var(--fg)]">
+                {isCreating ? t('config.new') : t('config.edit')}
+              </h2>
+              <button
+                onClick={() => { setEditingConfig(null); setIsCreating(false); }}
+                className="w-8 h-8 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <ConfigEditor
+                config={editingConfig}
+                isCreating={isCreating}
+                onSave={handleSaveConfig}
+                onCancel={() => { setEditingConfig(null); setIsCreating(false); }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
