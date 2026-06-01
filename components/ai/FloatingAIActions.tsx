@@ -8,6 +8,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useLocale } from '@/locales';
+import Tooltip from '@/components/ui/Tooltip';
 import type { AIActionId } from '@/types';
 import type { TranslationKey } from '@/locales';
 
@@ -34,25 +35,21 @@ export default function FloatingAIActions({ onAction, loadingAction, disabled }:
           const isLoading = loadingAction === action.id;
           const Icon = isLoading ? Loader2 : action.icon;
           return (
-            <button
-              key={action.id}
-              onClick={() => onAction?.(action.id)}
-              disabled={disabled || !!loadingAction}
-              title={t(action.labelKey)}
-              className={`group relative w-10 h-10 flex items-center justify-center rounded-2xl backdrop-blur-xl bg-[var(--bg-glass)] border border-[var(--border)] shadow-[0_4px_20px_rgba(28,25,23,0.05)] transition-all duration-300 ${
-                isLoading
-                  ? 'animate-pulse cursor-wait'
-                  : disabled || loadingAction
-                    ? 'opacity-50 cursor-not-allowed'
-                    : 'hover:shadow-[0_0_30px_rgba(124,58,237,0.12)] hover:bg-[var(--card)] hover:-translate-y-px hover-lift'
-              }`}
-            >
-              <Icon size={17} className={`text-[var(--muted)] group-hover:text-[var(--fg)] transition-colors duration-200 ${isLoading ? 'animate-spin' : ''}`} />
-              {/* Tooltip */}
-              <div className="absolute right-full mr-3 px-3 py-1.5 rounded-xl bg-[var(--primary)] text-white text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 shadow-[0_4px_16px_rgba(28,25,23,0.12)]">
-                {isLoading ? t('aiAction.loading') : t(action.labelKey)}
-              </div>
-            </button>
+            <Tooltip key={action.id} content={isLoading ? t('aiAction.loading') : t(action.labelKey)} side="left">
+              <button
+                onClick={() => onAction?.(action.id)}
+                disabled={disabled || !!loadingAction}
+                className={`group relative w-10 h-10 flex items-center justify-center rounded-2xl backdrop-blur-xl bg-[var(--bg-glass)] border border-[var(--border)] shadow-[0_4px_20px_rgba(28,25,23,0.05)] transition-all duration-300 ${
+                  isLoading
+                    ? 'animate-pulse cursor-wait'
+                    : disabled || loadingAction
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'hover:shadow-[0_0_30px_rgba(124,58,237,0.12)] hover:bg-[var(--card)] hover:-translate-y-px hover-lift'
+                }`}
+              >
+                <Icon size={17} className={`text-[var(--muted)] group-hover:text-[var(--fg)] transition-colors duration-200 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+            </Tooltip>
           );
         })}
       </div>

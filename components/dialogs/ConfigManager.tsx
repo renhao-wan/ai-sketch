@@ -8,6 +8,7 @@ import ScrollToTop from '../ScrollToTop';
 import { Settings, Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2 } from 'lucide-react';
 import Dropdown from '../ui/Dropdown';
 import { useLocale } from '@/locales';
+import Tooltip from '@/components/ui/Tooltip';
 import type { LLMConfig, ModelInfo, NotificationState, ConfirmDialogState } from '@/types';
 
 interface ConfigManagerProps {
@@ -201,23 +202,33 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
                   </div>
                   <div className="flex items-center gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     {config.id !== activeConfigId && (
-                      <button onClick={() => handleSetActive(config.id!)} title={t('config.setActive')} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 transition-all duration-200">
-                        <Check size={14} />
-                      </button>
+                      <Tooltip content={t('config.setActive')} side="top">
+                        <button onClick={() => handleSetActive(config.id!)} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 transition-all duration-200">
+                          <Check size={14} />
+                        </button>
+                      </Tooltip>
                     )}
-                    <button onClick={() => handleTestConnection(config)} disabled={isLoading} title={t('config.testConnection')} className="w-8 h-8 flex items-center justify-center rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200 disabled:opacity-50">
-                      {isLoading ? <Loader2 size={14} className="animate-spin" /> : <TestTube size={14} />}
-                    </button>
-                    <button onClick={() => handleEdit(config)} title={t('common.edit')} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200">
-                      <Edit3 size={14} />
-                    </button>
-                    <button onClick={() => handleClone(config)} title={t('config.clone')} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200">
-                      <Copy size={14} />
-                    </button>
-                    {configs.length > 1 && (
-                      <button onClick={() => handleDelete(config.id!)} title={t('common.delete')} className="w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10 transition-all duration-200">
-                        <Trash2 size={14} />
+                    <Tooltip content={t('config.testConnection')} side="top">
+                      <button onClick={() => handleTestConnection(config)} disabled={isLoading} className="w-8 h-8 flex items-center justify-center rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200 disabled:opacity-50">
+                        {isLoading ? <Loader2 size={14} className="animate-spin" /> : <TestTube size={14} />}
                       </button>
+                    </Tooltip>
+                    <Tooltip content={t('common.edit')} side="top">
+                      <button onClick={() => handleEdit(config)} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200">
+                        <Edit3 size={14} />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content={t('config.clone')} side="top">
+                      <button onClick={() => handleClone(config)} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200">
+                        <Copy size={14} />
+                      </button>
+                    </Tooltip>
+                    {configs.length > 1 && (
+                      <Tooltip content={t('common.delete')} side="top">
+                        <button onClick={() => handleDelete(config.id!)} className="w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10 transition-all duration-200">
+                          <Trash2 size={14} />
+                        </button>
+                      </Tooltip>
                     )}
                   </div>
                 </div>

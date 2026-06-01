@@ -24,6 +24,7 @@ import MessageBubble from './MessageBubble';
 import ConversationList from './ConversationList';
 import { useLocale } from '@/locales';
 import FormatSelector from '../FormatSelector';
+import Tooltip from '@/components/ui/Tooltip';
 import type { SourceType, ConversationMessage } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
@@ -224,13 +225,14 @@ export default function AICopilotPanel({
   if (isCollapsed) {
     return (
       <div className="h-full flex flex-col items-center py-4 bg-[var(--bg-glass)] backdrop-blur-2xl border-r border-[var(--accent-violet)]/20 animate-fade-in">
-        <button
-          onClick={() => setIsCollapsed(false)}
-          className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-          title={t('copilot.expandPanel')}
-        >
-          <ChevronRight size={18} />
-        </button>
+        <Tooltip content={t('copilot.expandPanel')} side="right">
+          <button
+            onClick={() => setIsCollapsed(false)}
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </Tooltip>
       </div>
     );
   }
@@ -252,14 +254,15 @@ export default function AICopilotPanel({
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-14 border-b border-[var(--surface-warm-hover)] flex-shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <button
-            onClick={() => router.push('/')}
-            className="hover:opacity-80 transition-opacity duration-200 relative"
-            title={t('copilot.backHome')}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-indigo)] to-[var(--accent-violet)] rounded-lg blur-md opacity-20" />
-            <div className="relative"><AppIcon size={22} /></div>
-          </button>
+          <Tooltip content={t('copilot.backHome')} side="bottom">
+            <button
+              onClick={() => router.push('/')}
+              className="hover:opacity-80 transition-opacity duration-200 relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-indigo)] to-[var(--accent-violet)] rounded-lg blur-md opacity-20" />
+              <div className="relative"><AppIcon size={22} /></div>
+            </button>
+          </Tooltip>
           <ConversationList
             currentId={conversationId}
             onSelect={onLoadConversation}
@@ -268,13 +271,14 @@ export default function AICopilotPanel({
           />
         </div>
         <div className="flex items-center gap-1">
-          <button
-            onClick={onOpenConfig}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-            title={t('copilot.config')}
-          >
-            <Wand2 size={15} />
-          </button>
+          <Tooltip content={t('copilot.config')} side="bottom">
+            <button
+              onClick={onOpenConfig}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+            >
+              <Wand2 size={15} />
+            </button>
+          </Tooltip>
           <button
             onClick={() => setIsCollapsed(true)}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
@@ -420,26 +424,28 @@ export default function AICopilotPanel({
             className="hidden"
             onChange={(e) => handleFiles(Array.from(e.target.files || []))}
           />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isGenerating}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 disabled:opacity-40 ${
-              attachments.length > 0 && getSourceType() === 'file' ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-            }`}
-            title={t('copilot.uploadFile')}
-          >
-            <Paperclip size={15} />
-          </button>
-          <button
-            onClick={() => imageInputRef.current?.click()}
-            disabled={isGenerating}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 disabled:opacity-40 ${
-              attachments.length > 0 && getSourceType() === 'image' ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-            }`}
-            title={t('copilot.uploadImage')}
-          >
-            <Image size={15} />
-          </button>
+          <Tooltip content={t('copilot.uploadFile')} side="top">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isGenerating}
+              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 disabled:opacity-40 ${
+                attachments.length > 0 && getSourceType() === 'file' ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+              }`}
+            >
+              <Paperclip size={15} />
+            </button>
+          </Tooltip>
+          <Tooltip content={t('copilot.uploadImage')} side="top">
+            <button
+              onClick={() => imageInputRef.current?.click()}
+              disabled={isGenerating}
+              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 disabled:opacity-40 ${
+                attachments.length > 0 && getSourceType() === 'image' ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+              }`}
+            >
+              <Image size={15} />
+            </button>
+          </Tooltip>
           <div className="flex-1" />
           {isGenerating ? (
             <button

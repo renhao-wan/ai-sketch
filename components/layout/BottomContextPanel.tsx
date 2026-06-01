@@ -9,6 +9,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
 import { useLocale } from '@/locales';
+import Tooltip from '@/components/ui/Tooltip';
 import type { TranslationKey } from '@/locales';
 
 import 'katex/dist/katex.min.css';
@@ -144,20 +145,22 @@ export default function BottomContextPanel({
         <div className="flex items-center gap-0.5">
           {activeTab === 'code' && generatedCode && (
             <>
-              <button
-                onClick={handleCopy}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-                title={t('copilot.copy')}
-              >
-                {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-              </button>
-              <button
-                onClick={handleExport}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-                title={t('copilot.export')}
-              >
-                <Download size={13} />
-              </button>
+              <Tooltip content={t('copilot.copy')} side="top">
+                <button
+                  onClick={handleCopy}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+                >
+                  {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                </button>
+              </Tooltip>
+              <Tooltip content={t('copilot.export')} side="top">
+                <button
+                  onClick={handleExport}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+                >
+                  <Download size={13} />
+                </button>
+              </Tooltip>
             </>
           )}
           <button

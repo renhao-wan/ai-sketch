@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useLocale } from '@/locales';
 import type { TranslationKey } from '@/locales';
+import Tooltip from '@/components/ui/Tooltip';
 
 interface FloatingToolbarProps {
   activeTool: string;
@@ -46,18 +47,18 @@ export default function FloatingToolbar({ activeTool, onToolChange }: FloatingTo
       <div className="flex items-center gap-1 px-2 py-1.5 rounded-full backdrop-blur-xl bg-[var(--bg-glass)] border border-[var(--border)] shadow-[0_10px_40px_rgba(28,25,23,0.06)]">
         {/* Tools */}
         {TOOLS.map((tool) => (
-          <button
-            key={tool.id}
-            onClick={() => onToolChange?.(tool.id)}
-            title={t(tool.labelKey)}
-            className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 ${
-              activeTool === tool.id
-                ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]'
-                : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-            }`}
-          >
-            <tool.icon size={16} />
-          </button>
+          <Tooltip key={tool.id} content={t(tool.labelKey)} side="bottom">
+            <button
+              onClick={() => onToolChange?.(tool.id)}
+              className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 ${
+                activeTool === tool.id
+                  ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]'
+                  : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+              }`}
+            >
+              <tool.icon size={16} />
+            </button>
+          </Tooltip>
         ))}
 
         {/* Divider */}
@@ -65,13 +66,11 @@ export default function FloatingToolbar({ activeTool, onToolChange }: FloatingTo
 
         {/* Actions */}
         {ACTIONS.map((action) => (
-          <button
-            key={action.id}
-            title={t(action.labelKey)}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-          >
-            <action.icon size={16} />
-          </button>
+          <Tooltip key={action.id} content={t(action.labelKey)} side="bottom">
+            <button className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200">
+              <action.icon size={16} />
+            </button>
+          </Tooltip>
         ))}
       </div>
     </div>

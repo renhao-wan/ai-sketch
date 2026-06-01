@@ -5,6 +5,7 @@ import { MessageSquare, Trash2, ChevronDown, Pencil, Check, X } from 'lucide-rea
 import * as api from '@/lib/api-client';
 import { useLocale } from '@/locales';
 import { timeAgo } from '@/lib/time-ago';
+import Tooltip from '@/components/ui/Tooltip';
 import type { Conversation } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
@@ -29,6 +30,15 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
   const [renameValue, setRenameValue] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
 
+  const loadConversations = async () => {
+    try {
+      const data = await api.fetchConversations();
+      setConversations(data);
+    } catch (err) {
+      console.error('Failed to load conversations:', err);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) loadConversations();
   }, [isOpen]);
@@ -39,15 +49,6 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
       renameInputRef.current.select();
     }
   }, [renamingId]);
-
-  const loadConversations = async () => {
-    try {
-      const data = await api.fetchConversations();
-      setConversations(data);
-    } catch (err) {
-      console.error('Failed to load conversations:', err);
-    }
-  };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -150,13 +151,14 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
                       </div>
                       {!isRenaming && (
                         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => handleRenameStart(e, conv)}
-                            className="p-1.5 text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-md transition-colors"
-                            title={t('conversation.rename')}
-                          >
-                            <Pencil size={13} />
-                          </button>
+                          <Tooltip content={t('conversation.rename')} side="top">
+                            <button
+                              onClick={(e) => handleRenameStart(e, conv)}
+                              className="p-1.5 text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-md transition-colors"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                          </Tooltip>
                           <button
                             onClick={(e) => handleDelete(e, conv.id)}
                             className="p-1.5 text-[var(--muted)] hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"

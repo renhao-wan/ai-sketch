@@ -18,6 +18,7 @@ import { useFileUpload } from '@/hooks/useFileUpload';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import FormatSelector from '../FormatSelector';
 import Notification from '../Notification';
+import Tooltip from '@/components/ui/Tooltip';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
 export default function AIPromptBox() {
@@ -182,24 +183,26 @@ export default function AIPromptBox() {
             <span className="text-[10px] text-[var(--muted)]/40">{t('prompt.attachments')}</span>
             <input ref={fileInputRef} type="file" accept=".md,.txt" multiple className="hidden" onChange={handleFileChange} />
             <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 ${
-                hasAttachment && getSourceType() === 'file' ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-              }`}
-              title={t('prompt.uploadFile')}
-            >
-              <Paperclip size={18} />
-            </button>
-            <button
-              onClick={() => imageInputRef.current?.click()}
-              className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 ${
-                hasAttachment && getSourceType() === 'image' ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-              }`}
-              title={t('prompt.uploadImage')}
-            >
-              <Image size={18} />
-            </button>
+            <Tooltip content={t('prompt.uploadFile')} side="top">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 ${
+                  hasAttachment && getSourceType() === 'file' ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                }`}
+              >
+                <Paperclip size={18} />
+              </button>
+            </Tooltip>
+            <Tooltip content={t('prompt.uploadImage')} side="top">
+              <button
+                onClick={() => imageInputRef.current?.click()}
+                className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 ${
+                  hasAttachment && getSourceType() === 'image' ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                }`}
+              >
+                <Image size={18} />
+              </button>
+            </Tooltip>
             <button
               onClick={handleGenerate}
               disabled={!canGenerate()}

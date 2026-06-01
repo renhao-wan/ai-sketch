@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Globe } from 'lucide-react';
 import { useLocale, type Locale } from '@/locales';
+import Tooltip from '@/components/ui/Tooltip';
 
 const LANGUAGES: { value: Locale; label: string }[] = [
   { value: 'zh', label: '中文' },
@@ -50,13 +51,14 @@ export default function LanguageSwitcher() {
 
   return (
     <div ref={containerRef} className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-        title={t('lang.label')}
-      >
-        <Globe size={15} />
-      </button>
+      <Tooltip content={t('lang.label')} side="bottom">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+        >
+          <Globe size={15} />
+        </button>
+      </Tooltip>
       {isOpen && createPortal(
         <div
           id="lang-panel"

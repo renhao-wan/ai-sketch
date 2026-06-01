@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, type ReactNode, type UIEvent } from 'react';
 import { ArrowUp } from 'lucide-react';
 import { useLocale } from '@/locales';
+import Tooltip from '@/components/ui/Tooltip';
 
 interface ScrollToTopProps {
   children: ReactNode;
@@ -29,13 +30,14 @@ export default function ScrollToTop({ children, className, threshold = 200 }: Sc
         {children}
       </div>
       {show && (
-        <button
-          onClick={scrollToTop}
-          className="absolute bottom-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-[var(--primary)] text-white shadow-lg hover:bg-[var(--primary)]/90 active:scale-95 transition-all duration-200 z-10"
-          title={t('scrollToTop')}
-        >
-          <ArrowUp size={16} />
-        </button>
+        <Tooltip content={t('scrollToTop')} side="top">
+          <button
+            onClick={scrollToTop}
+            className="absolute bottom-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-[var(--primary)] text-white shadow-lg hover:bg-[var(--primary)]/90 active:scale-95 transition-all duration-200 z-10"
+          >
+            <ArrowUp size={16} />
+          </button>
+        </Tooltip>
       )}
     </div>
   );

@@ -6,6 +6,7 @@ import ConfirmDialog from './ConfirmDialog';
 import ScrollToTop from '../ScrollToTop';
 import { useLocale } from '@/locales';
 import { Trash2, Clock, ArrowRight, Pencil, Check, X } from 'lucide-react';
+import Tooltip from '@/components/ui/Tooltip';
 import type { Conversation, ConfirmDialogState } from '@/types';
 
 interface HistoryModalProps {
@@ -22,15 +23,6 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
   const [renameValue, setRenameValue] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { if (isOpen) loadConversations(); }, [isOpen]);
-
-  useEffect(() => {
-    if (renamingId && renameInputRef.current) {
-      renameInputRef.current.focus();
-      renameInputRef.current.select();
-    }
-  }, [renamingId]);
-
   const loadConversations = async () => {
     try {
       const data = await api.fetchConversations();
@@ -39,6 +31,15 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
       console.error('Failed to load conversations:', err);
     }
   };
+
+  useEffect(() => { if (isOpen) loadConversations(); }, [isOpen]);
+
+  useEffect(() => {
+    if (renamingId && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingId]);
 
   const handleApply = (item: Conversation) => { onApply?.(item); onClose(); };
 
@@ -152,9 +153,11 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
                         <button onClick={() => handleApply(item)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors">
                           <ArrowRight size={13} /><span>{t('history.apply')}</span>
                         </button>
-                        <button onClick={(e) => handleRenameStart(e, item)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-lg transition-colors" title={t('conversation.rename')}>
-                          <Pencil size={13} /><span>{t('conversation.rename')}</span>
-                        </button>
+                        <Tooltip content={t('conversation.rename')} side="top">
+                          <button onClick={(e) => handleRenameStart(e, item)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-lg transition-colors">
+                            <Pencil size={13} /><span>{t('conversation.rename')}</span>
+                          </button>
+                        </Tooltip>
                         <button onClick={() => handleDelete(item.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                           <Trash2 size={13} /><span>{t('common.delete')}</span>
                         </button>

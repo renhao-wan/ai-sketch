@@ -13,6 +13,7 @@ import { timeAgo } from '@/lib/time-ago';
 import { Settings, History, FileText, PenTool } from 'lucide-react';
 import * as api from '@/lib/api-client';
 import { runMigrationIfNeeded } from '@/lib/migration';
+import Tooltip from '@/components/ui/Tooltip';
 import type { Conversation } from '@/types';
 
 export default function HomePage() {
@@ -47,29 +48,32 @@ export default function HomePage() {
           <span className="text-[13px] font-semibold tracking-tight text-[var(--fg)]">AI Sketch</span>
         </div>
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => router.push('/editor')}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5 hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors duration-150"
-            title={t('home.enterEditor')}
-          >
-            <PenTool size={13} />
-            <span>{t('home.editor')}</span>
-          </button>
+          <Tooltip content={t('home.enterEditor')} side="bottom">
+            <button
+              onClick={() => router.push('/editor')}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5 hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors duration-150"
+            >
+              <PenTool size={13} />
+              <span>{t('home.editor')}</span>
+            </button>
+          </Tooltip>
           <LanguageSwitcher />
-          <button
-            onClick={() => setIsHistoryOpen(true)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
-            title={t('home.history')}
-          >
-            <History size={15} />
-          </button>
-          <button
-            onClick={() => setIsConfigOpen(true)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
-            title={t('home.settings')}
-          >
-            <Settings size={15} />
-          </button>
+          <Tooltip content={t('home.history')} side="bottom">
+            <button
+              onClick={() => setIsHistoryOpen(true)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
+            >
+              <History size={15} />
+            </button>
+          </Tooltip>
+          <Tooltip content={t('home.settings')} side="bottom">
+            <button
+              onClick={() => setIsConfigOpen(true)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
+            >
+              <Settings size={15} />
+            </button>
+          </Tooltip>
         </div>
       </header>
 

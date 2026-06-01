@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useMemo } from 'react';
 import { User, Bot, RefreshCw, Copy, Download, Check, Play } from 'lucide-react';
 import { useLocale } from '@/locales';
 import { parseStoredImages } from '@/lib/utils';
+import Tooltip from '@/components/ui/Tooltip';
 import type { ConversationMessage } from '@/types';
 
 interface MessageBubbleProps {
@@ -33,24 +34,32 @@ export default function MessageBubble({ message, isStreaming, onRegenerate, onCo
   const actionButtons = hasActions ? (
     <div className="flex items-center gap-0.5">
       {onRegenerate && (
-        <button onClick={onRegenerate} className="flex items-center justify-center w-5 h-5 text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 rounded transition-all duration-200" title={t('copilot.regenerate')}>
-          <RefreshCw size={11} />
-        </button>
+        <Tooltip content={t('copilot.regenerate')} side="top">
+          <button onClick={onRegenerate} className="flex items-center justify-center w-5 h-5 text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 rounded transition-all duration-200">
+            <RefreshCw size={11} />
+          </button>
+        </Tooltip>
       )}
       {onCopy && (
-        <button onClick={handleCopy} className={`flex items-center justify-center w-5 h-5 rounded transition-all duration-200 ${copied ? 'text-emerald-500' : 'text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5'}`} title={t('copilot.copy')}>
-          {copied ? <Check size={11} /> : <Copy size={11} />}
-        </button>
+        <Tooltip content={t('copilot.copy')} side="top">
+          <button onClick={handleCopy} className={`flex items-center justify-center w-5 h-5 rounded transition-all duration-200 ${copied ? 'text-emerald-500' : 'text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5'}`}>
+            {copied ? <Check size={11} /> : <Copy size={11} />}
+          </button>
+        </Tooltip>
       )}
       {onExport && (
-        <button onClick={onExport} className="flex items-center justify-center w-5 h-5 text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 rounded transition-all duration-200" title={t('copilot.export')}>
-          <Download size={11} />
-        </button>
+        <Tooltip content={t('copilot.export')} side="top">
+          <button onClick={onExport} className="flex items-center justify-center w-5 h-5 text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 rounded transition-all duration-200">
+            <Download size={11} />
+          </button>
+        </Tooltip>
       )}
       {onShowDiagram && (
-        <button onClick={onShowDiagram} className="flex items-center justify-center w-5 h-5 text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 rounded transition-all duration-200" title={t('copilot.showDiagram')}>
-          <Play size={11} />
-        </button>
+        <Tooltip content={t('copilot.showDiagram')} side="top">
+          <button onClick={onShowDiagram} className="flex items-center justify-center w-5 h-5 text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 rounded transition-all duration-200">
+            <Play size={11} />
+          </button>
+        </Tooltip>
       )}
     </div>
   ) : null;
