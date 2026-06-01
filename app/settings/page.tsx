@@ -10,6 +10,8 @@ import ConversationSettings from '@/components/settings/ConversationSettings';
 import DataSettings from '@/components/settings/DataSettings';
 import { KeyboardShortcutsSettings } from '@/components/settings/KeyboardShortcutsSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
+import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
+import { useShortcuts } from '@/hooks/useShortcuts';
 import { ArrowLeft, Search } from 'lucide-react';
 
 const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'conversations', 'data', 'shortcuts', 'about'];
@@ -26,6 +28,7 @@ const tabDescriptions: Record<SettingsTab, TranslationKey> = {
 export default function SettingsPage() {
   const { t } = useLocale();
   const router = useRouter();
+  const { isHelpOpen, setIsHelpOpen } = useShortcuts();
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
   const [shortcutsSearchQuery, setShortcutsSearchQuery] = useState('');
 
@@ -114,6 +117,12 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* 快捷键帮助弹窗 */}
+      <KeyboardShortcutsHelp
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+      />
     </div>
   );
 }
