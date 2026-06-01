@@ -349,6 +349,21 @@ export const en: TranslationDict = {
   'settings.configs': 'Configurations',
   'settings.clearSuccess': 'Clear successful',
   'settings.clearFailed': 'Clear failed',
+  'settings.about': 'About',
+  'settings.aboutDesc': 'App information and version details',
+
+  // About
+  'about.defaultDescription': 'AI Sketch is an AI-powered diagram generation web app. Users describe their ideas in natural language, and the LLM generates renderable diagram code in three formats: Excalidraw JSON, Mermaid, and Draw.io XML.',
+  'about.developer': 'Developer',
+  'about.repository': 'Repository',
+  'about.license': 'License',
+  'about.licenseDescription': 'This project is open-sourced under the MIT License. You are free to use, modify, and distribute it.',
+  'about.privacy': 'Privacy & Terms',
+  'about.dataCollection': 'Data Collection',
+  'about.dataCollectionDesc': 'This app does not collect any personal user information. All data (including session records and configurations) is stored in your browser\'s local SQLite database and is never uploaded to any server.',
+  'about.thirdPartyServices': 'Third-Party Services',
+  'about.thirdPartyServicesDesc': 'This app uses LLM providers configured by the user (such as OpenAI, Anthropic, etc.) for diagram generation. API requests are sent directly from your browser to the respective service providers; this app does not proxy or store these requests.',
+  'about.dependencies': 'Core Dependencies',
 
   // Keyboard shortcuts
   'shortcuts.title': 'Keyboard Shortcuts',

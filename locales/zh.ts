@@ -347,6 +347,21 @@ export const zh = {
   'settings.configs': '配置数量',
   'settings.clearSuccess': '清除成功',
   'settings.clearFailed': '清除失败',
+  'settings.about': '关于',
+  'settings.aboutDesc': '应用信息与版本详情',
+
+  // 关于应用
+  'about.defaultDescription': 'AI Sketch 是一款 AI 驱动的图表生成 Web 应用。用户通过自然语言描述，由 LLM 生成可渲染的图表代码，支持 Excalidraw JSON、Mermaid、Draw.io XML 三种格式。',
+  'about.developer': '开发者信息',
+  'about.repository': '开源仓库',
+  'about.license': '许可证',
+  'about.licenseDescription': '本项目基于 MIT 许可证开源，您可以自由使用、修改和分发。',
+  'about.privacy': '隐私与条款',
+  'about.dataCollection': '数据收集',
+  'about.dataCollectionDesc': '本应用不收集任何用户个人信息。所有数据（包括会话记录和配置）均存储在您的浏览器本地 SQLite 数据库中，不会上传到任何服务器。',
+  'about.thirdPartyServices': '第三方服务',
+  'about.thirdPartyServicesDesc': '本应用通过用户自行配置的 LLM 提供商（如 OpenAI、Anthropic 等）进行图表生成。API 请求直接从您的浏览器发送到对应服务商，本应用不代理或存储这些请求。',
+  'about.dependencies': '核心依赖',
 
   // 快捷键设置
   'shortcuts.title': '键盘快捷键',
