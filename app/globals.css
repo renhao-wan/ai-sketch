@@ -38,6 +38,11 @@
 
   /* Easing */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Scrollbar */
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
+  --scrollbar-thumb-subtle: rgba(0, 0, 0, 0.06);
 }
 
 /* ========== 主题系统 ========== */
@@ -59,6 +64,9 @@
   --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
   --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
   --shadow-glow: 0 0 40px rgba(129, 140, 248, 0.2);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+  --scrollbar-thumb-subtle: rgba(255, 255, 255, 0.06);
 }
 
 /* 暖色主题 */
@@ -78,6 +86,9 @@
   --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
   --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
   --shadow-glow: 0 0 40px rgba(251, 191, 36, 0.2);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+  --scrollbar-thumb-subtle: rgba(255, 255, 255, 0.06);
 }
 
 /* 冷色主题 */
@@ -97,6 +108,9 @@
   --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
   --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
   --shadow-glow: 0 0 40px rgba(56, 189, 248, 0.2);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+  --scrollbar-thumb-subtle: rgba(255, 255, 255, 0.06);
 }
 
 /* 森林主题 */
@@ -116,6 +130,9 @@
   --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
   --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
   --shadow-glow: 0 0 40px rgba(52, 211, 153, 0.2);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+  --scrollbar-thumb-subtle: rgba(255, 255, 255, 0.06);
 }
 
 /* 薰衣草主题 */
@@ -135,6 +152,9 @@
   --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
   --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
   --shadow-glow: 0 0 40px rgba(167, 139, 250, 0.2);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+  --scrollbar-thumb-subtle: rgba(255, 255, 255, 0.06);
 }
 
 @theme inline {
@@ -383,8 +403,14 @@ html, body {
   display: none;
 }
 
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
 .scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
+  height: 6px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {
@@ -392,26 +418,27 @@ html, body {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(28, 25, 23, 0.1);
+  background: var(--scrollbar-thumb);
   border-radius: 999px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(28, 25, 23, 0.18);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Subtle scrollbar: very faint by default, vivid on hover */
 .scrollbar-subtle {
   scrollbar-width: thin;
-  scrollbar-color: rgba(124, 58, 237, 0.06) transparent;
+  scrollbar-color: var(--scrollbar-thumb-subtle) transparent;
 }
 
 .scrollbar-subtle:hover {
-  scrollbar-color: rgba(124, 58, 237, 0.2) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 .scrollbar-subtle::-webkit-scrollbar {
   width: 5px;
+  height: 5px;
 }
 
 .scrollbar-subtle::-webkit-scrollbar-track {
@@ -419,16 +446,16 @@ html, body {
 }
 
 .scrollbar-subtle::-webkit-scrollbar-thumb {
-  background: rgba(124, 58, 237, 0.06);
+  background: var(--scrollbar-thumb-subtle);
   border-radius: 999px;
 }
 
 .scrollbar-subtle:hover::-webkit-scrollbar-thumb {
-  background: rgba(124, 58, 237, 0.2);
+  background: var(--scrollbar-thumb);
 }
 
 .scrollbar-subtle:hover::-webkit-scrollbar-thumb:hover {
-  background: rgba(124, 58, 237, 0.38);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* ============================================

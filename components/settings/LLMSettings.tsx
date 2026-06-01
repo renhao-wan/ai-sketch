@@ -263,7 +263,7 @@ export function LLMSettings() {
       </div>
 
       {/* 可滚动的配置列表 */}
-      <ScrollToTop className="flex-1 overflow-y-auto scrollbar-thin">
+      <ScrollToTop className="flex-1 overflow-y-auto scrollbar-thin pt-2">
         <div className="space-y-2">
           {filteredConfigs.length === 0 ? (
             <div className="text-center py-12 text-sm text-[var(--muted)]">
