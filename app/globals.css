@@ -487,21 +487,8 @@ html, body {
    Excalidraw Canvas Grid Background
    ============================================ */
 
-/* 画布背景样式 */
-.canvas-bg-grid {
-  background-color: var(--bg);
-  background-image:
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+.canvas-grid-bg {
+  background-color: #FAF8F5;
+  background-image: radial-gradient(circle, #D6D3D1 0.8px, transparent 0.8px);
   background-size: 24px 24px;
-}
-
-.canvas-bg-dots {
-  background-color: var(--bg);
-  background-image: radial-gradient(circle, var(--muted) 0.8px, transparent 0.8px);
-  background-size: 24px 24px;
-}
-
-.canvas-bg-blank {
-  background-color: var(--bg);
 }

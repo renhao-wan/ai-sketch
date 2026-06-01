@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocale } from '@/locales';
 import { useZoomControls } from '@/hooks/useZoomControls';
-import { useSettings } from '@/hooks/useSettings';
 import ZoomToolbar from './ZoomToolbar';
 
 interface MermaidCanvasProps {
@@ -64,7 +63,6 @@ async function initMermaid() {
 
 export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps) {
   const { t } = useLocale();
-  const { settings } = useSettings();
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -165,7 +163,7 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
   }, [code, t]);
 
   return (
-    <div className={`w-full h-full overflow-hidden canvas-bg-${settings.canvasBg} relative`}>
+    <div className="w-full h-full overflow-hidden canvas-grid-bg relative">
       <ZoomToolbar scale={scale} onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} onFitToView={handleFitToViewLocal} />
 
       {/* 图表容器 */}

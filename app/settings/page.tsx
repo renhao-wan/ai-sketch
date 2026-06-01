@@ -6,14 +6,12 @@ import { useLocale, type TranslationKey } from '@/locales';
 import { SettingsSidebar, SettingsTab } from '@/components/settings/SettingsSidebar';
 import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
 import { LLMSettings } from '@/components/settings/LLMSettings';
-import { EditorSettings } from '@/components/settings/EditorSettings';
 import DataSettings from '@/components/settings/DataSettings';
 import { ArrowLeft } from 'lucide-react';
 
 const tabDescriptions: Record<SettingsTab, TranslationKey> = {
   appearance: 'settings.appearanceDesc',
   llm: 'settings.llmDesc',
-  editor: 'settings.editorDesc',
   data: 'settings.dataDesc',
 };
 
@@ -28,8 +26,6 @@ export default function SettingsPage() {
         return <AppearanceSettings />;
       case 'llm':
         return <LLMSettings />;
-      case 'editor':
-        return <EditorSettings />;
       case 'data':
         return <DataSettings />;
     }
