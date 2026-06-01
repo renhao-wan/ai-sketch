@@ -62,23 +62,30 @@ export function AppearanceSettings() {
                 }
               `}
             >
-              {/* Theme preview */}
+              {/* Theme preview with gradient effect */}
               <div
-                className="p-3 space-y-2"
+                className="p-3 space-y-2 relative"
                 style={{ backgroundColor: bg }}
               >
+                {/* Subtle gradient overlay for depth */}
+                <div
+                  className="absolute inset-0 opacity-30"
+                  style={{
+                    background: `radial-gradient(ellipse at 30% 30%, ${accent}15 0%, transparent 70%)`
+                  }}
+                />
                 {/* Preview header */}
-                <div className="flex items-center gap-2">
+                <div className="relative flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: accent }} />
                   <div className="h-2 w-16 rounded-full" style={{ backgroundColor: fg, opacity: 0.6 }} />
                 </div>
                 {/* Preview content */}
-                <div className="space-y-1.5">
+                <div className="relative space-y-1.5">
                   <div className="h-1.5 w-full rounded-full" style={{ backgroundColor: fg, opacity: 0.3 }} />
                   <div className="h-1.5 w-3/4 rounded-full" style={{ backgroundColor: fg, opacity: 0.2 }} />
                 </div>
                 {/* Preview accent bar */}
-                <div className="h-1 w-12 rounded-full" style={{ backgroundColor: accent }} />
+                <div className="relative h-1 w-12 rounded-full" style={{ backgroundColor: accent }} />
               </div>
               {/* Theme name */}
               <div className="px-3 py-2 bg-[var(--surface-warm)] border-t border-[var(--border)]">

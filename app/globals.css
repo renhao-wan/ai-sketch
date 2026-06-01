@@ -157,6 +157,62 @@
   --scrollbar-thumb-subtle: rgba(245, 158, 11, 0.08);
 }
 
+/* ============================================
+   Theme-specific Background Effects
+   ============================================ */
+
+/* 深海蓝夜 - 微妙的波纹效果 */
+[data-theme="ocean"] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(62, 168, 214, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 樱花 - 温柔的花瓣飘落效果 */
+[data-theme="sakura"] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(232, 116, 154, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgba(192, 132, 252, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 90%, rgba(244, 114, 182, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 翡翠 - 自然的光影效果 */
+[data-theme="emerald"] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 40% 30%, rgba(52, 211, 153, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 70%, rgba(167, 139, 250, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 80%, rgba(45, 212, 191, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 日落 - 温暖的光晕效果 */
+[data-theme="sunset"] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(245, 158, 11, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 60%, rgba(251, 146, 60, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(251, 191, 36, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--fg);
