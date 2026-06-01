@@ -315,6 +315,61 @@ class ConversationManager {
     db.run('UPDATE conversations SET title = ? WHERE id = ?', [title, conversationId]);
     saveToDisk();
   }
+
+  /** 搜索会话，支持标题模糊搜索、排序和分页 */
+  async search(params: {
+    query?: string;
+    sort?: string;
+    order?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{
+    conversations: Conversation[];
+    total: number;
+  }> {
+    const db = await getDb();
+    const { query, sort = 'updated_at', order = 'desc', limit = 20, offset = 0 } = params;
+
+    // 构建 WHERE 子句
+    const whereClauses: string[] = [];
+    const queryParams: unknown[] = [];
+
+    if (query && query.trim()) {
+      whereClauses.push('LOWER(title) LIKE ?');
+      queryParams.push(`%${query.toLowerCase()}%`);
+    }
+
+    const whereStr = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    // 验证排序字段，防止 SQL 注入
+    const validSortFields = ['updated_at', 'created_at'];
+    const validOrders = ['asc', 'desc'];
+    const sortField = validSortFields.includes(sort) ? sort : 'updated_at';
+    const sortOrder = validOrders.includes(order) ? order : 'desc';
+
+    // 获取总数
+    const countSql = `SELECT COUNT(*) as total FROM conversations ${whereStr}`;
+    const countResult = db.exec(countSql, queryParams);
+    const total = countResult.length > 0 ? (countResult[0].values[0][0] as number) : 0;
+
+    // 获取分页数据
+    const dataSql = `SELECT * FROM conversations ${whereStr} ORDER BY ${sortField} ${sortOrder} LIMIT ? OFFSET ?`;
+    const dataParams = [...queryParams, limit, offset];
+    const result = db.exec(dataSql, dataParams);
+
+    const conversations = result.length > 0
+      ? result[0].values.map((row: unknown[]) => parseConversationRow(row))
+      : [];
+
+    return { conversations, total };
+  }
+
+  /** 获取会话总数，用于数量限制检查 */
+  async getCount(): Promise<number> {
+    const db = await getDb();
+    const result = db.exec('SELECT COUNT(*) as count FROM conversations');
+    return result.length > 0 ? (result[0].values[0][0] as number) : 0;
+  }
 }
 
 export const conversationManager = new ConversationManager();
