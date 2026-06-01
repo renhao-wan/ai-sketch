@@ -9,16 +9,18 @@ interface ScrollToTopProps {
   children: ReactNode;
   className?: string;
   threshold?: number;
+  onScroll?: (e: UIEvent<HTMLDivElement>) => void;
 }
 
-export default function ScrollToTop({ children, className, threshold = 200 }: ScrollToTopProps) {
+export default function ScrollToTop({ children, className, threshold = 200, onScroll }: ScrollToTopProps) {
   const { t } = useLocale();
   const [show, setShow] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const handleScroll = useCallback((e: UIEvent<HTMLDivElement>) => {
     setShow((e.target as HTMLDivElement).scrollTop > threshold);
-  }, [threshold]);
+    onScroll?.(e);
+  }, [threshold, onScroll]);
 
   const scrollToTop = () => {
     ref.current?.scrollTo({ top: 0, behavior: 'smooth' });

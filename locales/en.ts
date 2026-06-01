@@ -179,6 +179,9 @@ export const en: TranslationDict = {
   'conversation.limitReached': 'Conversation limit reached',
   'conversation.limitReachedMsg': 'You have {limit} conversations, which is the limit. Please delete some old conversations before creating new ones.',
   'conversation.noResults': 'No matching conversations found',
+  'conversation.countTotal': '{count} total records',
+  'conversation.bannerTitle': 'Many conversations, consider cleanup',
+  'conversation.bannerDescription': 'You have {count} conversations. Consider cleaning up unused ones.',
 
   // Floating AI Actions
   'aiAction.layout': 'AI Layout',

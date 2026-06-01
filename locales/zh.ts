@@ -177,6 +177,9 @@ export const zh = {
   'conversation.limitReached': '会话数量已达上限',
   'conversation.limitReachedMsg': '您已有 {limit} 个会话，达到上限。请删除一些旧会话后再创建新会话。',
   'conversation.noResults': '未找到匹配的会话',
+  'conversation.countTotal': '共 {count} 条记录',
+  'conversation.bannerTitle': '会话较多，建议清理',
+  'conversation.bannerDescription': '您已有 {count} 个会话，建议清理不常用的会话。',
 
   // Floating AI Actions
   'aiAction.layout': 'AI 布局',
