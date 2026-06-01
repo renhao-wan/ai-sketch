@@ -1,6 +1,6 @@
 'use client';
 
-import { Palette, Bot, Code, Database } from 'lucide-react';
+import { Palette, Bot, Code, Database, LucideIcon } from 'lucide-react';
 import { useLocale } from '@/locales';
 import type { TranslationKey } from '@/locales';
 
@@ -11,7 +11,7 @@ interface SettingsSidebarProps {
   onTabChange: (tab: SettingsTab) => void;
 }
 
-const tabs: { key: SettingsTab; icon: typeof Palette; labelKey: TranslationKey }[] = [
+const tabs: { key: SettingsTab; icon: LucideIcon; labelKey: TranslationKey }[] = [
   { key: 'appearance', icon: Palette, labelKey: 'settings.appearance' },
   { key: 'llm', icon: Bot, labelKey: 'settings.llm' },
   { key: 'editor', icon: Code, labelKey: 'settings.editor' },
@@ -22,12 +22,13 @@ export function SettingsSidebar({ activeTab, onTabChange }: SettingsSidebarProps
   const { t } = useLocale();
 
   return (
-    <nav className="w-48 flex-shrink-0 border-r border-[var(--border)] bg-[var(--surface-warm)] p-3">
+    <nav aria-label="Settings navigation" className="w-48 flex-shrink-0 border-r border-[var(--border)] bg-[var(--surface-warm)] p-3">
       <div className="space-y-1">
         {tabs.map(({ key, icon: Icon, labelKey }) => (
           <button
             key={key}
             onClick={() => onTabChange(key)}
+            aria-current={activeTab === key ? 'page' : undefined}
             className={`
               w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
               ${activeTab === key
