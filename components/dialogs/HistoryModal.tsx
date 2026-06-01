@@ -2,15 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import * as api from '@/lib/api-client';
-import ConfirmDialog from './ConfirmDialog';
 import ScrollToTop from '../ScrollToTop';
 import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/locales';
-import { Trash2, Clock, ArrowRight, Pencil, Check, X, Search } from 'lucide-react';
-import Tooltip from '@/components/ui/Tooltip';
+import { Clock, ArrowRight, Search } from 'lucide-react';
 import CountBanner from '@/components/ui/CountBanner';
 import { useCountBanner } from '@/hooks/useCountBanner';
-import type { Conversation, ConfirmDialogState } from '@/types';
+import type { Conversation } from '@/types';
 
 interface HistoryModalProps {
   isOpen: boolean;
@@ -20,13 +18,10 @@ interface HistoryModalProps {
 
 const PAGE_SIZE = 20;
 
+/** 历史记录弹窗 — 快速浏览和恢复会话 */
 export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalProps) {
   const { t } = useLocale();
   const [items, setItems] = useState<Conversation[]>([]);
-  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({ isOpen: false, title: '', message: '', onConfirm: null });
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState('');
-  const renameInputRef = useRef<HTMLInputElement>(null);
 
   // Search, sort, pagination state
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,13 +75,6 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, searchQuery, sortBy, sortOrder]);
 
-  useEffect(() => {
-    if (renamingId && renameInputRef.current) {
-      renameInputRef.current.focus();
-      renameInputRef.current.select();
-    }
-  }, [renamingId]);
-
   /** Infinite scroll: load next page when near bottom */
   const loadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore) return;
@@ -110,47 +98,6 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
 
   const handleApply = (item: Conversation) => { onApply?.(item); onClose(); };
 
-  const handleDelete = (id: string) => {
-    setConfirmDialog({
-      isOpen: true, title: t('history.confirmDelete'), message: t('history.confirmDeleteMsg'),
-      onConfirm: async () => {
-        await api.deleteConversation(id);
-        pageRef.current = 0;
-        await loadConversations(true, 0);
-      },
-    });
-  };
-
-  const handleClearAll = () => {
-    setConfirmDialog({
-      isOpen: true, title: t('history.confirmClear'), message: t('history.confirmClearMsg'),
-      onConfirm: async () => {
-        await api.clearAllConversations();
-        pageRef.current = 0;
-        await loadConversations(true, 0);
-      },
-    });
-  };
-
-  const handleRenameStart = (e: React.MouseEvent, item: Conversation) => {
-    e.stopPropagation();
-    setRenamingId(item.id);
-    setRenameValue(item.title);
-  };
-
-  const handleRenameSave = async () => {
-    if (!renamingId || !renameValue.trim()) { setRenamingId(null); return; }
-    await api.updateConversationTitle(renamingId, renameValue.trim());
-    setRenamingId(null);
-    pageRef.current = 0;
-    await loadConversations(true, 0);
-  };
-
-  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleRenameSave();
-    if (e.key === 'Escape') setRenamingId(null);
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -172,9 +119,9 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
         </div>
 
         {/* Search and Sort Controls */}
-        <div className="px-7 pb-3 flex-shrink-0 space-y-3">
+        <div className="px-7 pb-3 flex-shrink-0">
           {/* Search Input */}
-          <div className="relative">
+          <div className="relative mb-3">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]/50" />
             <input
               type="text"
@@ -185,31 +132,24 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
             />
           </div>
 
-          {/* Sort Dropdown + Clear All */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--muted)]">{t('conversation.sortBy')}:</span>
-              <Dropdown
-                options={[
-                  { value: 'updated_at-desc', label: t('conversation.recentlyUpdated') },
-                  { value: 'updated_at-asc', label: t('conversation.oldestUpdated') },
-                  { value: 'created_at-desc', label: t('conversation.recentlyCreated') },
-                  { value: 'created_at-asc', label: t('conversation.oldestCreated') },
-                ]}
-                value={`${sortBy}-${sortOrder}`}
-                onChange={(v) => {
-                  const [sort, order] = v.split('-');
-                  setSortBy((sort || 'updated_at') as 'updated_at' | 'created_at');
-                  setSortOrder((order || 'desc') as 'asc' | 'desc');
-                }}
-                className="!py-1.5 !px-3 !text-xs !rounded-lg"
-              />
-            </div>
-            {items.length > 0 && (
-              <button onClick={handleClearAll} className="px-3 py-1.5 text-xs text-red-600 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-all duration-200">
-                {t('history.clearAll')}
-              </button>
-            )}
+          {/* Sort Dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[var(--muted)]">{t('conversation.sortBy')}:</span>
+            <Dropdown
+              options={[
+                { value: 'updated_at-desc', label: t('conversation.recentlyUpdated') },
+                { value: 'updated_at-asc', label: t('conversation.oldestUpdated') },
+                { value: 'created_at-desc', label: t('conversation.recentlyCreated') },
+                { value: 'created_at-asc', label: t('conversation.oldestCreated') },
+              ]}
+              value={`${sortBy}-${sortOrder}`}
+              onChange={(v) => {
+                const [sort, order] = v.split('-');
+                setSortBy((sort || 'updated_at') as 'updated_at' | 'created_at');
+                setSortOrder((order || 'desc') as 'asc' | 'desc');
+              }}
+              className="!py-1.5 !px-3 !text-xs !rounded-lg"
+            />
           </div>
         </div>
 
@@ -228,10 +168,8 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
                 {searchQuery ? t('conversation.noResults') : t('history.empty')}
               </div>
             ) : (
-              items.map((item) => {
-                const isRenaming = renamingId === item.id;
-                return (
-                <div key={item.id} className="group p-4 rounded-2xl bg-black/[0.03] hover:bg-black/[0.05] border border-transparent hover:border-black/[0.06] transition-all duration-200">
+              items.map((item) => (
+                <div key={item.id} className="group p-4 rounded-2xl bg-black/[0.03] hover:bg-black/[0.05] border border-transparent hover:border-black/[0.06] transition-all duration-200 cursor-pointer" onClick={() => handleApply(item)}>
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
@@ -242,46 +180,17 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
                           {new Date(item.updatedAt).toLocaleString()}
                         </span>
                       </div>
-                      {isRenaming ? (
-                        <div className="flex items-center gap-2 mb-1">
-                          <input
-                            ref={renameInputRef}
-                            value={renameValue}
-                            onChange={(e) => setRenameValue(e.target.value)}
-                            onKeyDown={handleRenameKeyDown}
-                            className="flex-1 min-w-0 text-sm text-[var(--fg)] bg-white border border-[var(--accent-indigo)]/30 rounded-lg px-3 py-1.5 outline-none focus:border-[var(--accent-indigo)] focus:ring-2 focus:ring-[var(--accent-indigo)]/10"
-                          />
-                          <button onClick={handleRenameSave} className="p-1.5 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
-                            <Check size={16} />
-                          </button>
-                          <button onClick={() => setRenamingId(null)} className="p-1.5 text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-lg transition-colors">
-                            <X size={16} />
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-[var(--fg)] mb-1">{item.title}</p>
-                      )}
+                      <p className="text-sm text-[var(--fg)] mb-1">{item.title}</p>
                       {item.configName && <p className="text-[11px] text-[var(--muted)]">{t('history.modelPrefix')} {item.configName} - {item.configModel}</p>}
                     </div>
-                    {!isRenaming && (
-                      <div className="flex items-center gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <button onClick={() => handleApply(item)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors">
-                          <ArrowRight size={13} /><span>{t('history.apply')}</span>
-                        </button>
-                        <Tooltip content={t('conversation.rename')} side="top">
-                          <button onClick={(e) => handleRenameStart(e, item)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-lg transition-colors">
-                            <Pencil size={13} /><span>{t('conversation.rename')}</span>
-                          </button>
-                        </Tooltip>
-                        <button onClick={() => handleDelete(item.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                          <Trash2 size={13} /><span>{t('common.delete')}</span>
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <button onClick={(e) => { e.stopPropagation(); handleApply(item); }} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors">
+                        <ArrowRight size={13} /><span>{t('history.apply')}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-                );
-              })
+              ))
             )}
 
             {/* Infinite scroll loading indicator */}
@@ -304,13 +213,6 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
           </div>
         </ScrollToTop>
       </div>
-
-      <ConfirmDialog
-        isOpen={confirmDialog.isOpen}
-        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
-        onConfirm={() => { confirmDialog.onConfirm?.(); setConfirmDialog({ ...confirmDialog, isOpen: false }); }}
-        title={confirmDialog.title} message={confirmDialog.message} type="danger"
-      />
     </div>
   );
 }
