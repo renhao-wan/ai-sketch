@@ -25,8 +25,8 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
 
   const loadConversations = async () => {
     try {
-      const data = await api.fetchConversations();
-      setItems(data);
+      const { conversations } = await api.fetchConversations();
+      setItems(conversations);
     } catch (err) {
       console.error('Failed to load conversations:', err);
     }

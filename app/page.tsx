@@ -26,7 +26,7 @@ export default function HomePage() {
   useEffect(() => {
     runMigrationIfNeeded().then(async () => {
       try {
-        const conversations = await api.fetchConversations(5);
+        const { conversations } = await api.fetchConversations({ limit: 5 });
         setRecentItems(conversations);
       } catch (err) {
         console.error('Failed to load conversations:', err);

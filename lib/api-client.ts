@@ -102,10 +102,34 @@ export async function migrateFromLocalStorage(data: {
 
 // ── Conversation operations ──
 
-export async function fetchConversations(limit?: number): Promise<Conversation[]> {
-  const url = limit ? `/api/conversations?limit=${limit}` : '/api/conversations';
-  const data = await request<{ conversations: Conversation[] }>(url);
-  return data.conversations;
+export async function fetchConversations(params?: {
+  search?: string;
+  sort?: string;
+  order?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{
+  conversations: Conversation[];
+  total: number;
+  hasMore: boolean;
+}> {
+  const searchParams = new URLSearchParams();
+
+  if (params?.search) searchParams.set('search', params.search);
+  if (params?.sort) searchParams.set('sort', params.sort);
+  if (params?.order) searchParams.set('order', params.order);
+  if (params?.limit) searchParams.set('limit', String(params.limit));
+  if (params?.offset) searchParams.set('offset', String(params.offset));
+
+  const url = `/api/conversations${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+  return request(url);
+}
+
+export async function fetchConversationCount(): Promise<{
+  count: number;
+  limit: number;
+}> {
+  return request('/api/conversations/count');
 }
 
 export async function getConversation(id: string): Promise<ConversationWithMessages> {
