@@ -9,7 +9,7 @@ import HistoryModal from '@/components/dialogs/HistoryModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useLocale } from '@/locales';
 import { timeAgo } from '@/lib/time-ago';
-import { Settings, History, FileText, PenTool } from 'lucide-react';
+import { Wand2, History, FileText, PenTool } from 'lucide-react';
 import * as api from '@/lib/api-client';
 import { runMigrationIfNeeded } from '@/lib/migration';
 import Tooltip from '@/components/ui/Tooltip';
@@ -69,7 +69,7 @@ export default function HomePage() {
               onClick={() => router.push('/settings')}
               className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
             >
-              <Settings size={15} />
+              <Wand2 size={15} />
             </button>
           </Tooltip>
         </div>
