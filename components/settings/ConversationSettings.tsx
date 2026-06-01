@@ -304,7 +304,7 @@ export default function ConversationSettings() {
             onClick={() => setShowBatchPanel(!showBatchPanel)}
             className={`flex items-center gap-1.5 px-4 py-2 text-sm rounded-xl transition-all duration-200 ${
               showBatchPanel
-                ? 'text-white bg-[var(--primary)]'
+                ? 'text-[var(--btn-primary-text)] bg-[var(--btn-primary)]'
                 : 'text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--surface-warm-hover)]'
             }`}
           >

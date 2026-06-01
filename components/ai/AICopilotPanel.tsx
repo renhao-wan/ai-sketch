@@ -455,7 +455,7 @@ export default function AICopilotPanel({
             <button
               onClick={handleSend}
               disabled={!canSendNow()}
-              className="h-8 px-4 flex items-center gap-1.5 bg-[var(--primary)] text-white text-xs font-medium rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-[0_2px_10px_rgba(28,25,23,0.08)]"
+              className="h-8 px-4 flex items-center gap-1.5 bg-[var(--btn-primary)] text-[var(--btn-primary-text)] text-xs font-medium rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-[0_2px_10px_rgba(28,25,23,0.08)]"
             >
               <><Send size={13} /><span>{hasMessages ? t('copilot.send') : t('copilot.generate')}</span></>
             </button>

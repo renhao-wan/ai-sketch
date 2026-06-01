@@ -15,7 +15,12 @@
   --card: rgba(250, 248, 245, 0.78);
 
   /* Primary */
-  --primary: #1C1917;
+  --primary: #4f46e5;
+
+  /* Button colors */
+  --btn-primary: #4f46e5;
+  --btn-primary-hover: #4338ca;
+  --btn-primary-text: #ffffff;
 
   /* Accent spectrum — plum + copper */
   --accent-indigo: #7C3AED;
@@ -47,142 +52,157 @@
 
 /* ========== 主题系统 ========== */
 
-/* 深色主题 */
+/* 深色主题 - 改为浅色靛蓝 */
 [data-theme="dark"] {
-  --bg: #1a1a2e;
-  --bg-glass: rgba(26, 26, 46, 0.72);
-  --fg: #e0e0e0;
-  --muted: #9ca3af;
-  --border: rgba(255, 255, 255, 0.1);
-  --card: rgba(26, 26, 46, 0.85);
-  --primary: #818cf8;
-  --accent-indigo: #818cf8;
-  --accent-violet: #a78bfa;
-  --accent-cyan: #fbbf24;
-  --surface-warm: rgba(26, 26, 46, 0.9);
-  --surface-warm-hover: rgba(255, 255, 255, 0.06);
-  --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.04);
-  --shadow-floating: 0 10px 40px rgba(255, 255, 255, 0.06);
-  --shadow-glow: 0 0 40px rgba(129, 140, 248, 0.2);
-  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
-  --scrollbar-thumb-subtle: rgba(255, 255, 255, 0.06);
+  --bg: #eef2ff;
+  --bg-glass: rgba(238, 242, 255, 0.72);
+  --fg: #1e1b4b;
+  --muted: #6366f1;
+  --border: rgba(99, 102, 241, 0.12);
+  --card: rgba(238, 242, 255, 0.85);
+  --primary: #4f46e5;
+  --btn-primary: #4f46e5;
+  --btn-primary-hover: #4338ca;
+  --btn-primary-text: #ffffff;
+  --accent-indigo: #7C3AED;
+  --accent-violet: #8b5cf6;
+  --accent-cyan: #06b6d4;
+  --surface-warm: rgba(238, 242, 255, 0.9);
+  --surface-warm-hover: rgba(99, 102, 241, 0.06);
+  --shadow-soft: 0 4px 20px rgba(99, 102, 241, 0.08);
+  --shadow-floating: 0 10px 40px rgba(99, 102, 241, 0.12);
+  --shadow-glow: 0 0 40px rgba(124, 58, 237, 0.15);
+  --scrollbar-thumb: rgba(99, 102, 241, 0.2);
+  --scrollbar-thumb-hover: rgba(99, 102, 241, 0.35);
+  --scrollbar-thumb-subtle: rgba(99, 102, 241, 0.08);
 }
 
-/* 深海蓝夜 - 灵感来自深海的神秘与宁静 */
+/* 海洋 - 浅蓝清新风格 */
 [data-theme="ocean"] {
-  --bg: #0a1628;
-  --bg-glass: rgba(10, 22, 40, 0.78);
-  --fg: #c8dce8;
-  --muted: #5a7a8a;
-  --border: rgba(100, 180, 220, 0.12);
-  --card: rgba(15, 30, 55, 0.85);
-  --primary: #3ea8d6;
-  --accent-indigo: #3ea8d6;
-  --accent-violet: #6366f1;
-  --accent-cyan: #22d3ee;
-  --surface-warm: rgba(12, 25, 45, 0.9);
-  --surface-warm-hover: rgba(62, 168, 214, 0.08);
-  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
-  --shadow-floating: 0 10px 40px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 60px rgba(62, 168, 214, 0.15);
-  --scrollbar-thumb: rgba(62, 168, 214, 0.2);
-  --scrollbar-thumb-hover: rgba(62, 168, 214, 0.35);
-  --scrollbar-thumb-subtle: rgba(62, 168, 214, 0.08);
+  --bg: #e0f2fe;
+  --bg-glass: rgba(224, 242, 254, 0.72);
+  --fg: #0c4a6e;
+  --muted: #0369a1;
+  --border: rgba(14, 165, 233, 0.12);
+  --card: rgba(224, 242, 254, 0.85);
+  --primary: #0ea5e9;
+  --btn-primary: #0ea5e9;
+  --btn-primary-hover: #0284c7;
+  --btn-primary-text: #ffffff;
+  --accent-indigo: #7C3AED;
+  --accent-violet: #8b5cf6;
+  --accent-cyan: #06b6d4;
+  --surface-warm: rgba(224, 242, 254, 0.9);
+  --surface-warm-hover: rgba(14, 165, 233, 0.06);
+  --shadow-soft: 0 4px 20px rgba(14, 165, 233, 0.08);
+  --shadow-floating: 0 10px 40px rgba(14, 165, 233, 0.12);
+  --shadow-glow: 0 0 40px rgba(124, 58, 237, 0.15);
+  --scrollbar-thumb: rgba(14, 165, 233, 0.2);
+  --scrollbar-thumb-hover: rgba(14, 165, 233, 0.35);
+  --scrollbar-thumb-subtle: rgba(14, 165, 233, 0.08);
 }
 
-/* 樱花 - 灵感来自春日樱花的温柔与优雅 */
+/* 樱花 - 浅粉温柔风格 */
 [data-theme="sakura"] {
-  --bg: #1a1218;
-  --bg-glass: rgba(26, 18, 24, 0.78);
-  --fg: #f0dde8;
-  --muted: #a07888;
-  --border: rgba(220, 140, 170, 0.12);
-  --card: rgba(30, 22, 28, 0.85);
-  --primary: #e8749a;
-  --accent-indigo: #e8749a;
-  --accent-violet: #c084fc;
-  --accent-cyan: #f472b6;
-  --surface-warm: rgba(28, 20, 26, 0.9);
-  --surface-warm-hover: rgba(232, 116, 154, 0.08);
-  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
-  --shadow-floating: 0 10px 40px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 60px rgba(232, 116, 154, 0.15);
-  --scrollbar-thumb: rgba(232, 116, 154, 0.2);
-  --scrollbar-thumb-hover: rgba(232, 116, 154, 0.35);
-  --scrollbar-thumb-subtle: rgba(232, 116, 154, 0.08);
+  --bg: #fce7f3;
+  --bg-glass: rgba(252, 231, 243, 0.72);
+  --fg: #831843;
+  --muted: #9d174d;
+  --border: rgba(236, 72, 153, 0.12);
+  --card: rgba(252, 231, 243, 0.85);
+  --primary: #ec4899;
+  --btn-primary: #ec4899;
+  --btn-primary-hover: #db2777;
+  --btn-primary-text: #ffffff;
+  --accent-indigo: #7C3AED;
+  --accent-violet: #8b5cf6;
+  --accent-cyan: #06b6d4;
+  --surface-warm: rgba(252, 231, 243, 0.9);
+  --surface-warm-hover: rgba(236, 72, 153, 0.06);
+  --shadow-soft: 0 4px 20px rgba(236, 72, 153, 0.08);
+  --shadow-floating: 0 10px 40px rgba(236, 72, 153, 0.12);
+  --shadow-glow: 0 0 40px rgba(124, 58, 237, 0.15);
+  --scrollbar-thumb: rgba(236, 72, 153, 0.2);
+  --scrollbar-thumb-hover: rgba(236, 72, 153, 0.35);
+  --scrollbar-thumb-subtle: rgba(236, 72, 153, 0.08);
 }
 
-/* 翡翠 - 灵感来自珍贵宝石的深邃与自然 */
+/* 翡翠 - 浅绿清新风格 */
 [data-theme="emerald"] {
-  --bg: #0a1a14;
-  --bg-glass: rgba(10, 26, 20, 0.78);
-  --fg: #c8e8d8;
-  --muted: #5a8a70;
-  --border: rgba(80, 200, 140, 0.12);
-  --card: rgba(12, 28, 22, 0.85);
-  --primary: #34d399;
-  --accent-indigo: #34d399;
-  --accent-violet: #a78bfa;
-  --accent-cyan: #2dd4bf;
-  --surface-warm: rgba(10, 24, 18, 0.9);
-  --surface-warm-hover: rgba(52, 211, 153, 0.08);
-  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
-  --shadow-floating: 0 10px 40px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 60px rgba(52, 211, 153, 0.15);
-  --scrollbar-thumb: rgba(52, 211, 153, 0.2);
-  --scrollbar-thumb-hover: rgba(52, 211, 153, 0.35);
-  --scrollbar-thumb-subtle: rgba(52, 211, 153, 0.08);
+  --bg: #d1fae5;
+  --bg-glass: rgba(209, 250, 229, 0.72);
+  --fg: #064e3b;
+  --muted: #047857;
+  --border: rgba(16, 185, 129, 0.12);
+  --card: rgba(209, 250, 229, 0.85);
+  --primary: #10b981;
+  --btn-primary: #10b981;
+  --btn-primary-hover: #059669;
+  --btn-primary-text: #ffffff;
+  --accent-indigo: #7C3AED;
+  --accent-violet: #8b5cf6;
+  --accent-cyan: #06b6d4;
+  --surface-warm: rgba(209, 250, 229, 0.9);
+  --surface-warm-hover: rgba(16, 185, 129, 0.06);
+  --shadow-soft: 0 4px 20px rgba(16, 185, 129, 0.08);
+  --shadow-floating: 0 10px 40px rgba(16, 185, 129, 0.12);
+  --shadow-glow: 0 0 40px rgba(124, 58, 237, 0.15);
+  --scrollbar-thumb: rgba(16, 185, 129, 0.2);
+  --scrollbar-thumb-hover: rgba(16, 185, 129, 0.35);
+  --scrollbar-thumb-subtle: rgba(16, 185, 129, 0.08);
 }
 
-/* 日落 - 灵感来自黄昏时分的温暖与浪漫 */
+/* 日落 - 浅橙温暖风格 */
 [data-theme="sunset"] {
-  --bg: #1a1410;
-  --bg-glass: rgba(26, 20, 16, 0.78);
-  --fg: #f0e0d0;
-  --muted: #a08060;
-  --border: rgba(220, 160, 80, 0.12);
-  --card: rgba(30, 24, 18, 0.85);
-  --primary: #f59e0b;
-  --accent-indigo: #f59e0b;
-  --accent-violet: #fb923c;
-  --accent-cyan: #fbbf24;
-  --surface-warm: rgba(28, 22, 16, 0.9);
-  --surface-warm-hover: rgba(245, 158, 11, 0.08);
-  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
-  --shadow-floating: 0 10px 40px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 60px rgba(245, 158, 11, 0.15);
-  --scrollbar-thumb: rgba(245, 158, 11, 0.2);
-  --scrollbar-thumb-hover: rgba(245, 158, 11, 0.35);
-  --scrollbar-thumb-subtle: rgba(245, 158, 11, 0.08);
+  --bg: #fff7ed;
+  --bg-glass: rgba(255, 247, 237, 0.72);
+  --fg: #7c2d12;
+  --muted: #9a3412;
+  --border: rgba(249, 115, 22, 0.12);
+  --card: rgba(255, 247, 237, 0.85);
+  --primary: #f97316;
+  --btn-primary: #f97316;
+  --btn-primary-hover: #ea580c;
+  --btn-primary-text: #ffffff;
+  --accent-indigo: #7C3AED;
+  --accent-violet: #8b5cf6;
+  --accent-cyan: #06b6d4;
+  --surface-warm: rgba(255, 247, 237, 0.9);
+  --surface-warm-hover: rgba(249, 115, 22, 0.06);
+  --shadow-soft: 0 4px 20px rgba(249, 115, 22, 0.08);
+  --shadow-floating: 0 10px 40px rgba(249, 115, 22, 0.12);
+  --shadow-glow: 0 0 40px rgba(124, 58, 237, 0.15);
+  --scrollbar-thumb: rgba(249, 115, 22, 0.2);
+  --scrollbar-thumb-hover: rgba(249, 115, 22, 0.35);
+  --scrollbar-thumb-subtle: rgba(249, 115, 22, 0.08);
 }
 
 /* ============================================
-   Theme-specific Background Effects
+   Theme-specific Background Effects (Light versions)
    ============================================ */
 
-/* 深海蓝夜 - 微妙的波纹效果 */
+/* 海洋 - 清新的波纹效果 */
 [data-theme="ocean"] body::before {
   content: '';
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(62, 168, 214, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 50%, rgba(14, 165, 233, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(124, 58, 237, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(6, 182, 212, 0.04) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
 
-/* 樱花 - 温柔的花瓣飘落效果 */
+/* 樱花 - 温柔的花瓣效果 */
 [data-theme="sakura"] body::before {
   content: '';
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse at 30% 20%, rgba(232, 116, 154, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 60%, rgba(192, 132, 252, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 90%, rgba(244, 114, 182, 0.05) 0%, transparent 50%);
+    radial-gradient(ellipse at 30% 20%, rgba(236, 72, 153, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgba(124, 58, 237, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 90%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -193,9 +213,9 @@
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse at 40% 30%, rgba(52, 211, 153, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 60% 70%, rgba(167, 139, 250, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 20% 80%, rgba(45, 212, 191, 0.05) 0%, transparent 50%);
+    radial-gradient(ellipse at 40% 30%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 70%, rgba(124, 58, 237, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 80%, rgba(6, 182, 212, 0.04) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -206,9 +226,9 @@
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse at 50% 20%, rgba(245, 158, 11, 0.1) 0%, transparent 50%),
-    radial-gradient(ellipse at 20% 60%, rgba(251, 146, 60, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(251, 191, 36, 0.05) 0%, transparent 50%);
+    radial-gradient(ellipse at 50% 20%, rgba(249, 115, 22, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 60%, rgba(124, 58, 237, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -587,7 +607,7 @@ html, body {
    ============================================ */
 
 .canvas-grid-bg {
-  background-color: #FAF8F5;
-  background-image: radial-gradient(circle, #D6D3D1 0.8px, transparent 0.8px);
+  background-color: var(--bg);
+  background-image: radial-gradient(circle, var(--border) 0.8px, transparent 0.8px);
   background-size: 24px 24px;
 }

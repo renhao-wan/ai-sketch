@@ -20,9 +20,8 @@ export function getCurrentTheme(): Theme {
 
 /** 检测当前是否为深色主题 */
 export function isDarkTheme(): boolean {
-  const theme = getCurrentTheme();
-  // light 主题是浅色，其他都是深色
-  return theme !== 'light';
+  // 所有主题现在都是浅色
+  return false;
 }
 
 /** 获取 Mermaid 主题变量（根据当前主题） */

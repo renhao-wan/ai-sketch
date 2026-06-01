@@ -231,7 +231,7 @@ export function LLMSettings() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={handleCreateNew}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 font-medium"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200 font-medium"
           >
             <Plus size={14} /><span>{t('config.new')}</span>
           </button>
@@ -555,7 +555,7 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
           </button>
           <button
             onClick={handleSave}
-            className="px-5 py-2 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 font-medium"
+            className="px-5 py-2 text-sm text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200 font-medium"
           >
             {isCreating ? t('common.create') : t('common.save')}
           </button>

@@ -51,7 +51,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             )}
             <button
               onClick={() => window.location.reload()}
-              className="w-full bg-[var(--primary)] text-white px-4 py-2.5 rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 text-sm font-medium"
+              className="w-full bg-[var(--btn-primary)] text-[var(--btn-primary-text)] px-4 py-2.5 rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200 text-sm font-medium"
             >
               {t('error.refresh')}
             </button>
