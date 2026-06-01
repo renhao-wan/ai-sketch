@@ -8,21 +8,18 @@ export type CanvasBg = 'grid' | 'dots' | 'blank';
 export interface Settings {
   locale: 'zh' | 'en';
   theme: Theme;
-  autoSave: boolean;
   canvasBg: CanvasBg;
 }
 
 const DEFAULT_SETTINGS: Settings = {
   locale: 'zh',
   theme: 'light',
-  autoSave: true,
   canvasBg: 'grid',
 };
 
 const STORAGE_KEYS = {
   locale: 'ai-sketch-locale',
   theme: 'ai-sketch-theme',
-  autoSave: 'ai-sketch-auto-save',
   canvasBg: 'ai-sketch-canvas-bg',
 } as const;
 
@@ -55,7 +52,6 @@ export function useSettings() {
   const [settings, setSettings] = useState<Settings>(() => ({
     locale: getStoredValue(STORAGE_KEYS.locale, DEFAULT_SETTINGS.locale, isValidLocale),
     theme: getStoredValue(STORAGE_KEYS.theme, DEFAULT_SETTINGS.theme, isValidTheme),
-    autoSave: getStoredValue(STORAGE_KEYS.autoSave, DEFAULT_SETTINGS.autoSave),
     canvasBg: getStoredValue(STORAGE_KEYS.canvasBg, DEFAULT_SETTINGS.canvasBg, isValidCanvasBg),
   }));
 
