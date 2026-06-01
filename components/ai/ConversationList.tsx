@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Trash2, ChevronDown, Pencil, Check, X } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { MessageSquare, Trash2, ChevronDown, Pencil, Check, X, Search, ArrowUpDown } from 'lucide-react';
 import * as api from '@/lib/api-client';
 import { useLocale } from '@/locales';
 import { timeAgo } from '@/lib/time-ago';
@@ -30,18 +30,66 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
   const [renameValue, setRenameValue] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
 
-  const loadConversations = async () => {
+  // 搜索、排序、分页状态
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'updated_at' | 'created_at'>('updated_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const loadConversations = async (reset = false, pageNum = 0) => {
     try {
-      const { conversations } = await api.fetchConversations();
-      setConversations(conversations);
+      const offset = pageNum * 20;
+      const result = await api.fetchConversations({
+        search: searchQuery || undefined,
+        sort: sortBy,
+        order: sortOrder,
+        limit: 20,
+        offset,
+      });
+
+      if (reset) {
+        setConversations(result.conversations);
+      } else {
+        setConversations(prev => [...prev, ...result.conversations]);
+      }
+
+      setTotalCount(result.total);
+      setHasMore(result.hasMore);
     } catch (err) {
-      console.error('Failed to load conversations:', err);
+      console.error('加载会话失败:', err);
     }
   };
 
+  // 防抖搜索效果：搜索词、排序方式变化时自动重新加载
   useEffect(() => {
-    if (isOpen) loadConversations();
-  }, [isOpen]);
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      setPage(0);
+      loadConversations(true, 0);
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, searchQuery, sortBy, sortOrder]);
+
+  const loadMore = async () => {
+    if (isLoadingMore) return;
+    setIsLoadingMore(true);
+    const nextPage = page + 1;
+    await loadConversations(false, nextPage);
+    setPage(nextPage);
+    setIsLoadingMore(false);
+  };
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop - clientHeight < 50 && hasMore && !isLoadingMore) {
+      loadMore();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, isLoadingMore]);
 
   useEffect(() => {
     if (renamingId && renameInputRef.current) {
@@ -54,7 +102,7 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
     e.stopPropagation();
     await api.deleteConversation(id);
     onDelete(id);
-    await loadConversations();
+    await loadConversations(true, 0);
   };
 
   const handleRenameStart = (e: React.MouseEvent, conv: Conversation) => {
@@ -67,7 +115,7 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
     if (!renamingId || !renameValue.trim()) { setRenamingId(null); return; }
     await api.updateConversationTitle(renamingId, renameValue.trim());
     setRenamingId(null);
-    await loadConversations();
+    await loadConversations(true, 0);
   };
 
   const handleRenameKeyDown = (e: React.KeyboardEvent) => {
@@ -101,10 +149,37 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
               {t('conversation.new')}
             </button>
 
+            {/* Search and sort controls */}
+            <div className="flex items-center gap-1.5 px-3 py-2 border-b border-black/5">
+              <div className="flex-1 relative">
+                <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('conversation.search') || '搜索会话...'}
+                  className="w-full pl-7 pr-2 py-1.5 text-xs text-[var(--fg)] bg-white/50 border border-[var(--border)] rounded-lg outline-none focus:border-[var(--accent-indigo)] focus:ring-1 focus:ring-[var(--accent-indigo)]/20 placeholder:text-[var(--muted)]"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+                }}
+                className="p-1.5 text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-md transition-colors flex-shrink-0"
+                title={sortOrder === 'desc' ? '降序' : '升序'}
+              >
+                <ArrowUpDown size={13} className={sortOrder === 'asc' ? 'rotate-180' : ''} />
+              </button>
+            </div>
+
             {/* List */}
-            <div className="max-h-64 overflow-y-auto scrollbar-thin">
+            <div className="max-h-64 overflow-y-auto scrollbar-thin" onScroll={handleScroll}>
               {conversations.length === 0 ? (
-                <div className="px-4 py-6 text-center text-sm text-[var(--muted)]">{t('conversation.empty')}</div>
+                <div className="px-4 py-6 text-center text-sm text-[var(--muted)]">
+                  {searchQuery ? '未找到匹配的会话' : t('conversation.empty')}
+                </div>
               ) : (
                 conversations.map((conv) => {
                   const badge = FORMAT_BADGES[conv.format] || FORMAT_BADGES.excalidraw;
@@ -170,6 +245,17 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
                     </div>
                   );
                 })
+              )}
+              {/* 无限滚动加载指示器 */}
+              {isLoadingMore && (
+                <div className="px-4 py-2 text-center text-xs text-[var(--muted)]">
+                  加载中...
+                </div>
+              )}
+              {!hasMore && conversations.length > 0 && totalCount > 0 && (
+                <div className="px-4 py-1.5 text-center text-[10px] text-[var(--muted)]">
+                  共 {totalCount} 条会话
+                </div>
               )}
             </div>
           </div>
