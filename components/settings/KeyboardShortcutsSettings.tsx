@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useLocale } from '@/locales';
 import { useShortcuts, formatKeys } from '@/hooks/useShortcuts';
-import { Search, Keyboard, RotateCcw } from 'lucide-react';
+import { Keyboard, RotateCcw } from 'lucide-react';
 import type { Shortcut, ShortcutScope } from '@/types/shortcuts';
 
 interface ShortcutItemProps {
@@ -46,7 +46,11 @@ function ShortcutItem({ shortcut, enabled, onToggle }: ShortcutItemProps) {
   );
 }
 
-export function KeyboardShortcutsSettings() {
+interface KeyboardShortcutsSettingsProps {
+  searchQuery?: string;
+}
+
+export function KeyboardShortcutsSettings({ searchQuery = '' }: KeyboardShortcutsSettingsProps) {
   const { t } = useLocale();
   const {
     shortcuts,
@@ -60,8 +64,6 @@ export function KeyboardShortcutsSettings() {
     DEFAULT_GLOBAL_SHORTCUTS,
     DEFAULT_EDITOR_SHORTCUTS,
   } = useShortcuts();
-
-  const [searchQuery, setSearchQuery] = useState('');
 
   // 获取按作用域分组的快捷键
   const shortcutsByScope = useMemo(() => {
@@ -102,18 +104,6 @@ export function KeyboardShortcutsSettings() {
 
   return (
     <div className="space-y-6">
-      {/* 搜索框 */}
-      <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
-        <input
-          type="text"
-          placeholder={t('shortcuts.search')}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)]"
-        />
-      </div>
-
       {/* 快捷键列表 */}
       <div className="space-y-6">
         {renderShortcuts('global', shortcutsByScope.global)}

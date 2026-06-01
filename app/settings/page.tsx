@@ -10,7 +10,7 @@ import ConversationSettings from '@/components/settings/ConversationSettings';
 import DataSettings from '@/components/settings/DataSettings';
 import { KeyboardShortcutsSettings } from '@/components/settings/KeyboardShortcutsSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Search } from 'lucide-react';
 
 const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'conversations', 'data', 'shortcuts', 'about'];
 
@@ -27,6 +27,7 @@ export default function SettingsPage() {
   const { t } = useLocale();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
+  const [shortcutsSearchQuery, setShortcutsSearchQuery] = useState('');
 
   // Read tab from query parameter on mount
   useEffect(() => {
@@ -50,7 +51,7 @@ export default function SettingsPage() {
       case 'data':
         return <DataSettings />;
       case 'shortcuts':
-        return <KeyboardShortcutsSettings />;
+        return <KeyboardShortcutsSettings searchQuery={shortcutsSearchQuery} />;
       case 'about':
         return <AboutSettings />;
     }
@@ -83,12 +84,28 @@ export default function SettingsPage() {
             {/* 内容区 */}
             <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
               <div className="mb-6 flex-shrink-0">
-                <h2 className="text-2xl font-bold text-[var(--fg)]">
-                  {t(`settings.${activeTab}`)}
-                </h2>
-                <p className="text-sm text-[var(--muted)] mt-1">
-                  {t(tabDescriptions[activeTab])}
-                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-[var(--fg)]">
+                      {t(`settings.${activeTab}`)}
+                    </h2>
+                    <p className="text-sm text-[var(--muted)] mt-1">
+                      {t(tabDescriptions[activeTab])}
+                    </p>
+                  </div>
+                  {activeTab === 'shortcuts' && (
+                    <div className="relative w-64">
+                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+                      <input
+                        type="text"
+                        placeholder={t('shortcuts.search')}
+                        value={shortcutsSearchQuery}
+                        onChange={(e) => setShortcutsSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)] text-sm"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="flex-1 overflow-y-auto pb-8 scrollbar-hide">
                 {renderContent()}
