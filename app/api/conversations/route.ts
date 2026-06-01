@@ -38,14 +38,22 @@ export async function GET(request: Request) {
 
 /**
  * DELETE /api/conversations
- * Clear all conversations and their messages
+ * Clear all conversations or delete specific conversations by IDs
  */
-export async function DELETE() {
+export async function DELETE(request: Request) {
   try {
-    await conversationManager.clearAll();
+    const body = await request.json().catch(() => ({}));
+    const ids = body.ids as string[] | undefined;
+
+    if (ids && ids.length > 0) {
+      await conversationManager.deleteMany(ids);
+    } else {
+      await conversationManager.clearAll();
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error clearing conversations:', error);
+    console.error('Error deleting conversations:', error);
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }

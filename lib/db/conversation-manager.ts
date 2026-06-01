@@ -183,6 +183,15 @@ class ConversationManager {
     saveToDisk();
   }
 
+  async deleteMany(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    const db = await getDb();
+    const placeholders = ids.map(() => '?').join(',');
+    db.run(`DELETE FROM messages WHERE conversation_id IN (${placeholders})`, ids);
+    db.run(`DELETE FROM conversations WHERE id IN (${placeholders})`, ids);
+    saveToDisk();
+  }
+
   async clearAll(): Promise<void> {
     const db = await getDb();
     db.run('DELETE FROM messages');

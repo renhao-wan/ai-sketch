@@ -151,3 +151,11 @@ export async function updateConversationTitle(id: string, title: string): Promis
 export async function clearAllConversations(): Promise<void> {
   await request<{ success: boolean }>('/api/conversations', { method: 'DELETE' });
 }
+
+export async function deleteConversations(ids: string[]): Promise<void> {
+  await request<{ success: boolean }>('/api/conversations', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+}

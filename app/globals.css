@@ -359,6 +359,7 @@ html, body {
   100% { background-position: 0% 50%; }
 }
 
+
 /* ============================================
    Animation Utilities
    ============================================ */
@@ -401,6 +402,7 @@ html, body {
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
 
 /* ============================================
    Blur Orb Background Decorations

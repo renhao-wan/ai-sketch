@@ -8,14 +8,14 @@ import ScrollToTop from '@/components/ScrollToTop';
 import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/locales';
 import Tooltip from '@/components/ui/Tooltip';
-import { Trash2, Search, Edit3, Check, X } from 'lucide-react';
+import { Trash2, Search, Edit3, Check, X, ChevronDown, ChevronUp, ListChecks } from 'lucide-react';
 import CountBanner from '@/components/ui/CountBanner';
 import { useCountBanner } from '@/hooks/useCountBanner';
 import type { Conversation, ConfirmDialogState, NotificationState } from '@/types';
 
 const PAGE_SIZE = 20;
 
-/** 会话管理组件 — 搜索、排序、重命名、删除 */
+/** 会话管理组件 — 搜索、排序、重命名、删除（支持多种删除方式） */
 export default function ConversationSettings() {
   const { t } = useLocale();
 
@@ -35,6 +35,12 @@ export default function ConversationSettings() {
     threshold: 50,
     storageKey: 'conversation-settings-banner-dismissed',
   });
+
+  // ── Batch operations state ──
+  const [showBatchPanel, setShowBatchPanel] = useState(false);
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [keepCount, setKeepCount] = useState('');
 
   // ── Rename state ──
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -117,6 +123,12 @@ export default function ConversationSettings() {
     setNotification({ isOpen: true, title: '', message, type });
   }, []);
 
+  /** Toggle select mode */
+  const toggleSelectMode = () => {
+    setIsSelectMode(prev => !prev);
+    setSelectedIds(new Set());
+  };
+
   /** Start editing a conversation title */
   const handleStartRename = (item: Conversation) => {
     setEditingId(item.id);
@@ -171,65 +183,314 @@ export default function ConversationSettings() {
     });
   };
 
+  /** Toggle selection */
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  /** Select/deselect all */
+  const handleSelectAll = () => {
+    if (selectedIds.size === items.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(items.map(item => item.id)));
+    }
+  };
+
+  /** Batch delete selected conversations */
+  const handleBatchDelete = () => {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    setConfirmDialog({
+      isOpen: true,
+      title: t('conversation.batchDelete'),
+      message: t('conversation.batchDeleteConfirm').replace('{count}', String(count)),
+      onConfirm: async () => {
+        try {
+          await api.deleteConversations(Array.from(selectedIds));
+          pageRef.current = 0;
+          setSelectedIds(new Set());
+          setIsSelectMode(false);
+          await loadConversations(true, 0);
+          showNotification('success', t('conversation.batchDeleteSuccess').replace('{count}', String(count)));
+        } catch (err) {
+          console.error('Batch delete failed:', err);
+          showNotification('error', t('conversation.batchDeleteFailed'));
+        }
+      },
+    });
+  };
+
+  /** Clear all conversations */
+  const handleClearAll = () => {
+    setConfirmDialog({
+      isOpen: true,
+      title: t('conversation.clearAll'),
+      message: t('conversation.clearAllConfirm'),
+      onConfirm: async () => {
+        try {
+          await api.clearAllConversations();
+          pageRef.current = 0;
+          await loadConversations(true, 0);
+          showNotification('success', t('conversation.clearAllSuccess'));
+        } catch (err) {
+          console.error('Clear all conversations failed:', err);
+          showNotification('error', t('conversation.clearAllFailed'));
+        }
+      },
+    });
+  };
+
+  /** Keep only first N conversations */
+  const handleKeepFirstN = () => {
+    const count = parseInt(keepCount, 10);
+    if (isNaN(count) || count < 0) {
+      showNotification('error', t('conversation.keepCountInvalid'));
+      return;
+    }
+    if (count >= totalCount) {
+      showNotification('info', t('conversation.keepCountNoChange'));
+      return;
+    }
+
+    const deleteCount = totalCount - count;
+    setConfirmDialog({
+      isOpen: true,
+      title: t('conversation.keepFirstN'),
+      message: t('conversation.keepFirstNConfirm')
+        .replace('{keep}', String(count))
+        .replace('{delete}', String(deleteCount)),
+      onConfirm: async () => {
+        try {
+          const result = await api.fetchConversations({
+            sort: sortBy,
+            order: sortOrder,
+            limit: totalCount,
+            offset: 0,
+          });
+          const idsToDelete = result.conversations.slice(count).map(c => c.id);
+
+          if (idsToDelete.length > 0) {
+            await api.deleteConversations(idsToDelete);
+          }
+
+          pageRef.current = 0;
+          setKeepCount('');
+          await loadConversations(true, 0);
+          showNotification('success', t('conversation.keepFirstNSuccess').replace('{count}', String(deleteCount)));
+        } catch (err) {
+          console.error('Keep first N failed:', err);
+          showNotification('error', t('conversation.keepFirstNFailed'));
+        }
+      },
+    });
+  };
+
   return (
     <div className="h-full flex flex-col">
-      {/* 固定头部：搜索和排序 */}
+      {/* 固定头部：操作栏 + 搜索 */}
       <div className="flex-shrink-0 space-y-3 mb-4">
+        {/* 操作栏 */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setShowBatchPanel(!showBatchPanel)}
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm rounded-xl transition-all duration-200 ${
+              showBatchPanel
+                ? 'text-white bg-[var(--primary)]'
+                : 'text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--surface-warm-hover)]'
+            }`}
+          >
+            {showBatchPanel ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            <span>{t('conversation.batchOperations')}</span>
+          </button>
+          <button
+            onClick={handleClearAll}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm text-red-500 bg-red-500/10 hover:bg-red-500/15 rounded-xl transition-all duration-200"
+          >
+            <Trash2 size={14} />
+            <span>{t('conversation.clearAll')}</span>
+          </button>
+          {totalCount > 0 && (
+            <p className="flex items-center text-xs text-[var(--muted)] ml-auto">
+              {t('conversation.countTotal').replace('{count}', String(totalCount))}
+            </p>
+          )}
+        </div>
+
+        {/* 批量操作面板 - 可折叠 */}
+        {showBatchPanel && totalCount > 0 && (
+          <div className="p-4 bg-[var(--surface-warm-hover)] rounded-xl space-y-4">
+            {/* 多选删除 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleSelectMode}
+                  className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
+                    isSelectMode
+                      ? 'bg-[var(--accent-indigo)] text-white'
+                      : 'text-[var(--muted)] bg-[var(--surface-warm)] hover:bg-[var(--surface-warm)]'
+                  }`}
+                >
+                  <ListChecks size={14} />
+                  <span>{isSelectMode ? t('conversation.exitSelect') : t('conversation.multiSelect')}</span>
+                </button>
+                {isSelectMode && (
+                  <button
+                    onClick={handleSelectAll}
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[var(--muted)] bg-[var(--surface-warm)] hover:bg-[var(--surface-warm)] rounded-xl transition-colors"
+                  >
+                    {selectedIds.size === items.length ? (
+                      <>
+                        <Check size={14} className="text-[var(--accent-indigo)]" />
+                        <span>{t('conversation.deselectAll')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <X size={14} />
+                        <span>{t('conversation.selectAll')}</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                {isSelectMode && (
+                  <>
+                    <span className="text-sm text-[var(--muted)]">
+                      {selectedIds.size > 0
+                        ? t('conversation.selectedCount').replace('{count}', String(selectedIds.size))
+                        : t('conversation.selectHint')
+                      }
+                    </span>
+                    <button
+                      onClick={handleBatchDelete}
+                      disabled={selectedIds.size === 0}
+                      className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
+                        selectedIds.size > 0
+                          ? 'bg-red-500 text-white hover:bg-red-600'
+                          : 'bg-[var(--surface-warm)] text-[var(--muted)]/50 cursor-not-allowed'
+                      }`}
+                    >
+                      <Trash2 size={14} />
+                      <span>{t('conversation.batchDelete')}{selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* 分隔线 */}
+            <div className="h-px bg-[var(--border)]" />
+
+            {/* 保留前 N 条 */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-[var(--muted)] whitespace-nowrap">{t('conversation.keepFirst')}</span>
+              <input
+                type="number"
+                min="0"
+                max={totalCount}
+                value={keepCount}
+                onChange={(e) => setKeepCount(e.target.value)}
+                placeholder={String(Math.min(10, totalCount))}
+                className="w-20 px-3 py-2 text-sm text-center bg-[var(--surface-warm)] border border-[var(--border)] rounded-xl text-[var(--fg)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleKeepFirstN();
+                }}
+              />
+              <span className="text-sm text-[var(--muted)] whitespace-nowrap">{t('conversation.keepLast')}</span>
+              <button
+                onClick={handleKeepFirstN}
+                disabled={!keepCount || parseInt(keepCount, 10) >= totalCount}
+                className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
+                  keepCount && parseInt(keepCount, 10) < totalCount
+                    ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/15'
+                    : 'text-[var(--muted)]/50 bg-[var(--surface-warm)] cursor-not-allowed'
+                }`}
+              >
+                {t('conversation.apply')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 搜索和排序 */}
         <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]/50" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('conversation.search')}
-            className="w-full pl-9 pr-3 py-2 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200"
+          <div className="relative flex-1">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]/50" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('conversation.search')}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200"
+            />
+          </div>
+          <Dropdown
+            options={[
+              { value: 'updated_at-desc', label: t('conversation.recentlyUpdated') },
+              { value: 'updated_at-asc', label: t('conversation.oldestUpdated') },
+              { value: 'created_at-desc', label: t('conversation.recentlyCreated') },
+              { value: 'created_at-asc', label: t('conversation.oldestCreated') },
+            ]}
+            value={`${sortBy}-${sortOrder}`}
+            onChange={(v) => {
+              const [sort, order] = v.split('-');
+              setSortBy((sort || 'updated_at') as 'updated_at' | 'created_at');
+              setSortOrder((order || 'desc') as 'asc' | 'desc');
+            }}
+            className="!py-2 !px-3 !text-sm !rounded-xl"
           />
         </div>
-        <Dropdown
-          options={[
-            { value: 'updated_at-desc', label: t('conversation.recentlyUpdated') },
-            { value: 'updated_at-asc', label: t('conversation.oldestUpdated') },
-            { value: 'created_at-desc', label: t('conversation.recentlyCreated') },
-            { value: 'created_at-asc', label: t('conversation.oldestCreated') },
-          ]}
-          value={`${sortBy}-${sortOrder}`}
-          onChange={(v) => {
-            const [sort, order] = v.split('-');
-            setSortBy((sort || 'updated_at') as 'updated_at' | 'created_at');
-            setSortOrder((order || 'desc') as 'asc' | 'desc');
-          }}
-          className="!py-2 !px-3 !text-sm !rounded-xl"
-        />
-      </div>
 
-        {/* Total count */}
-        {totalCount > 0 && (
-          <p className="text-xs text-[var(--muted)]">
-            {t('conversation.countTotal').replace('{count}', String(totalCount))}
-          </p>
-        )}
+        {/* 数量提示 Banner */}
+        <CountBanner
+          show={showBanner}
+          title={t('conversation.bannerTitle')}
+          description={t('conversation.bannerDescription').replace('{count}', String(totalCount))}
+          onDismiss={handleDismissBanner}
+        />
       </div>
 
       {/* 可滚动的会话列表 */}
       <ScrollToTop className="flex-1 overflow-y-auto scrollbar-thin pt-2" onScroll={handleScroll}>
         <div className="space-y-2">
-          {/* 数量提示 Banner */}
-          <CountBanner
-            show={showBanner}
-            title={t('conversation.bannerTitle')}
-            description={t('conversation.bannerDescription').replace('{count}', String(totalCount))}
-            onDismiss={handleDismissBanner}
-          />
-
           {items.length === 0 ? (
             <div className="text-center py-12 text-sm text-[var(--muted)]">
               {searchQuery ? t('conversation.noResults') : t('history.empty')}
             </div>
           ) : (
             items.map((item) => (
-              <div key={item.id} className="group p-4 rounded-2xl bg-[var(--surface-warm-hover)] border border-transparent hover:border-[var(--border)] transition-all duration-200">
-                <div className="flex items-start justify-between">
+              <div
+                key={item.id}
+                onClick={isSelectMode ? () => handleToggleSelect(item.id) : undefined}
+                className={`group p-4 rounded-2xl border transition-all duration-200 ${
+                  isSelectMode ? 'cursor-pointer' : ''
+                } ${
+                  selectedIds.has(item.id)
+                    ? 'bg-[var(--accent-indigo)]/5 border-[var(--accent-indigo)]/30'
+                    : 'bg-[var(--surface-warm-hover)] border-transparent hover:border-[var(--border)]'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {/* 选择框 - 仅选择模式显示 */}
+                  {isSelectMode && (
+                    <div className={`w-5 h-5 mt-0.5 flex items-center justify-center rounded border-2 transition-all duration-200 ${
+                      selectedIds.has(item.id)
+                        ? 'bg-[var(--accent-indigo)] border-[var(--accent-indigo)] text-white'
+                        : 'border-[var(--border)] hover:border-[var(--accent-indigo)]/50'
+                    }`}>
+                      {selectedIds.has(item.id) && <Check size={12} strokeWidth={3} />}
+                    </div>
+                  )}
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="px-2 py-0.5 text-[11px] font-medium bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] rounded-lg">
@@ -250,16 +511,17 @@ export default function ConversationSettings() {
                             if (e.key === 'Enter') handleSaveRename();
                             if (e.key === 'Escape') handleCancelRename();
                           }}
+                          onClick={(e) => e.stopPropagation()}
                           className="flex-1 px-2 py-1 text-sm bg-[var(--surface-warm)] border border-[var(--accent-indigo)]/30 rounded-lg text-[var(--fg)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30"
                         />
                         <button
-                          onClick={handleSaveRename}
+                          onClick={(e) => { e.stopPropagation(); handleSaveRename(); }}
                           className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 transition-colors"
                         >
                           <Check size={14} />
                         </button>
                         <button
-                          onClick={handleCancelRename}
+                          onClick={(e) => { e.stopPropagation(); handleCancelRename(); }}
                           className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-warm-hover)] transition-colors"
                         >
                           <X size={14} />
@@ -274,22 +536,24 @@ export default function ConversationSettings() {
                       </p>
                     )}
                   </div>
-                  {editingId !== item.id && (
+
+                  {/* 操作按钮 - 非选择模式显示 */}
+                  {editingId !== item.id && !isSelectMode && (
                     <div className="flex items-center gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <Tooltip content={t('conversation.rename')} side="top">
                         <button
-                          onClick={() => handleStartRename(item)}
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm)] rounded-lg transition-colors"
+                          onClick={(e) => { e.stopPropagation(); handleStartRename(item); }}
+                          className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
                         >
-                          <Edit3 size={13} />
+                          <Edit3 size={14} />
                         </button>
                       </Tooltip>
                       <Tooltip content={t('common.delete')} side="top">
                         <button
-                          onClick={() => handleDelete(item.id)}
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                          className="w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10 transition-all duration-200"
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={14} />
                         </button>
                       </Tooltip>
                     </div>
