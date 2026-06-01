@@ -35,8 +35,25 @@ export default function ConfigManager({ isOpen, onClose, onConfigSelect }: Confi
   const [error, setError] = useState('');
   const [notification, setNotification] = useState<NotificationState>({ isOpen: false, title: '', message: '', type: 'info' });
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => { if (isOpen) loadConfigs(); }, [isOpen]);
+
+  useEffect(() => {
+    if (configs.length >= 15) {
+      const dismissed = sessionStorage.getItem('config-banner-dismissed');
+      if (!dismissed) {
+        setShowBanner(true);
+      }
+    } else {
+      setShowBanner(false);
+    }
+  }, [configs.length]);
+
+  const handleDismissBanner = () => {
+    setShowBanner(false);
+    sessionStorage.setItem('config-banner-dismissed', 'true');
+  };
 
   const loadConfigs = async () => {
     try {
