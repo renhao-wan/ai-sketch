@@ -47,7 +47,6 @@ interface AICopilotPanelProps {
   isStreaming: boolean;
   onLoadConversation: (id: string) => void;
   onNewConversation: () => void;
-  onDeleteConversation: (id: string) => void;
   onSendMessage: (message: string | { text: string; images: unknown[] }, chartType: string, source: SourceType) => void;
   onCancel: () => void;
   isGenerating: boolean;
@@ -71,7 +70,6 @@ export default function AICopilotPanel({
   isStreaming,
   onLoadConversation,
   onNewConversation,
-  onDeleteConversation,
   onSendMessage,
   onCancel,
   isGenerating,
@@ -266,7 +264,6 @@ export default function AICopilotPanel({
           <ConversationList
             currentId={conversationId}
             onSelect={onLoadConversation}
-            onDelete={onDeleteConversation}
             onNew={onNewConversation}
           />
         </div>

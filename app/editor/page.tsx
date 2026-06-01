@@ -341,12 +341,6 @@ function EditorContent() {
     streamRendererRef.current?.reset();
   }, []);
 
-  const handleDeleteConversation = useCallback((id: string) => {
-    if (id === conversationId) {
-      handleNewConversation();
-    }
-  }, [conversationId, handleNewConversation]);
-
   const detectCodeFormat = (code: string): DiagramFormat => {
     const trimmed = code.trim();
     if (trimmed.startsWith('<')) return 'drawio';
@@ -598,7 +592,6 @@ function EditorContent() {
           isStreaming={isStreaming}
           onLoadConversation={handleLoadConversation}
           onNewConversation={handleNewConversation}
-          onDeleteConversation={handleDeleteConversation}
           onSendMessage={handleSendMessage}
           onCancel={handleCancelGeneration}
           isGenerating={isGenerating}

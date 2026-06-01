@@ -162,9 +162,10 @@ export default function ConversationSettings() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Search and Sort Controls */}
-      <div className="flex items-center gap-3">
+    <div className="h-full flex flex-col">
+      {/* 固定头部：搜索和排序 */}
+      <div className="flex-shrink-0 space-y-3 mb-4">
+        <div className="flex items-center gap-3">
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]/50" />
           <input
@@ -192,14 +193,15 @@ export default function ConversationSettings() {
         />
       </div>
 
-      {/* Total count */}
-      {totalCount > 0 && (
-        <p className="text-xs text-[var(--muted)]">
-          {t('conversation.countTotal').replace('{count}', String(totalCount))}
-        </p>
-      )}
+        {/* Total count */}
+        {totalCount > 0 && (
+          <p className="text-xs text-[var(--muted)]">
+            {t('conversation.countTotal').replace('{count}', String(totalCount))}
+          </p>
+        )}
+      </div>
 
-      {/* Scrollable List */}
+      {/* 可滚动的会话列表 */}
       <ScrollToTop className="flex-1 overflow-y-auto scrollbar-thin" onScroll={handleScroll}>
         <div className="space-y-2">
           {items.length === 0 ? (

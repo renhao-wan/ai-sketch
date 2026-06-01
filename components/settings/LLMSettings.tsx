@@ -209,42 +209,45 @@ export function LLMSettings() {
   ).sort((a, b) => (a.id === activeConfigId ? -1 : b.id === activeConfigId ? 1 : 0));
 
   return (
-    <div className="space-y-4">
-      {/* 错误提示 */}
-      {error && (
-        <div className="px-4 py-3 bg-red-500/10 rounded-xl">
-          <p className="text-sm text-red-700">{error}</p>
+    <div className="h-full flex flex-col">
+      {/* 固定头部：错误提示 + Banner + 操作栏 + 搜索 */}
+      <div className="flex-shrink-0 space-y-4 mb-4">
+        {/* 错误提示 */}
+        {error && (
+          <div className="px-4 py-3 bg-red-500/10 rounded-xl">
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        )}
+
+        {/* 数量提示 Banner */}
+        <CountBanner
+          show={showBanner}
+          title={t('config.bannerTitle')}
+          description={t('config.bannerDescription').replace('{count}', String(configs.length))}
+          onDismiss={handleDismissBanner}
+        />
+
+        {/* 操作栏：新建 + 导入导出 */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleCreateNew}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 font-medium"
+          >
+            <Plus size={14} /><span>{t('config.new')}</span>
+          </button>
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--surface-warm-hover)] rounded-xl transition-all duration-200"
+          >
+            <Download size={14} /><span>{t('common.export')}</span>
+          </button>
+          <button
+            onClick={handleImport}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--surface-warm-hover)] rounded-xl transition-all duration-200"
+          >
+            <Upload size={14} /><span>{t('common.import')}</span>
+          </button>
         </div>
-      )}
-
-      {/* 数量提示 Banner */}
-      <CountBanner
-        show={showBanner}
-        title={t('config.bannerTitle')}
-        description={t('config.bannerDescription').replace('{count}', String(configs.length))}
-        onDismiss={handleDismissBanner}
-      />
-
-      {/* 操作栏：新建 + 导入导出 */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={handleCreateNew}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 font-medium"
-        >
-          <Plus size={14} /><span>{t('config.new')}</span>
-        </button>
-        <button
-          onClick={handleExport}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--surface-warm-hover)] rounded-xl transition-all duration-200"
-        >
-          <Download size={14} /><span>{t('common.export')}</span>
-        </button>
-        <button
-          onClick={handleImport}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--surface-warm-hover)] rounded-xl transition-all duration-200"
-        >
-          <Upload size={14} /><span>{t('common.import')}</span>
-        </button>
       </div>
 
       {/* 搜索框 */}
@@ -259,8 +262,8 @@ export function LLMSettings() {
         />
       </div>
 
-      {/* 配置列表 */}
-      <ScrollToTop className="max-h-[calc(100vh-20rem)] scrollbar-thin">
+      {/* 可滚动的配置列表 */}
+      <ScrollToTop className="flex-1 overflow-y-auto scrollbar-thin">
         <div className="space-y-2">
           {filteredConfigs.length === 0 ? (
             <div className="text-center py-12 text-sm text-[var(--muted)]">
@@ -350,35 +353,6 @@ export function LLMSettings() {
           )}
         </div>
       </ScrollToTop>
-
-      {/* 通知组件 */}
-      <Notification
-        isOpen={notification.isOpen}
-        onClose={() => setNotification({ ...notification, isOpen: false })}
-        title={notification.title}
-        message={notification.message}
-        type={notification.type}
-      />
-
-      {/* 确认对话框 */}
-      <ConfirmDialog
-        isOpen={confirmDialog.isOpen}
-        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
-        onConfirm={() => { confirmDialog.onConfirm?.(); setConfirmDialog({ ...confirmDialog, isOpen: false }); }}
-        title={confirmDialog.title}
-        message={confirmDialog.message}
-        type="danger"
-      />
-
-      {/* 配置编辑器弹窗 */}
-      {editingConfig && (
-        <ConfigEditor
-          config={editingConfig}
-          isCreating={isCreating}
-          onSave={handleSaveConfig}
-          onCancel={() => { setEditingConfig(null); setIsCreating(false); }}
-        />
-      )}
     </div>
   );
 }
@@ -462,15 +436,15 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
 
           <div>
             <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.configName')} <span className="text-red-500">*</span></label>
-          <input
-            id="configName"
-            type="text"
-            value={formData.name || ''}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder={t('config.configNamePlaceholder')}
-            className={inputClass}
-          />
-        </div>
+            <input
+              id="configName"
+              type="text"
+              value={formData.name || ''}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder={t('config.configNamePlaceholder')}
+              className={inputClass}
+            />
+          </div>
 
         <div>
           <label htmlFor="configDescription" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.description')}</label>
