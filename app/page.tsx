@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { AppIcon } from '@/components/layout/TopBar';
 import { setInitData } from '@/lib/init-data';
 import AIPromptBox from '@/components/ai/AIPromptBox';
-import ConfigManager from '@/components/dialogs/ConfigManager';
 import HistoryModal from '@/components/dialogs/HistoryModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useLocale } from '@/locales';
@@ -19,7 +18,6 @@ import type { Conversation } from '@/types';
 export default function HomePage() {
   const router = useRouter();
   const { t } = useLocale();
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [recentItems, setRecentItems] = useState<Conversation[]>([]);
 
@@ -68,7 +66,7 @@ export default function HomePage() {
           </Tooltip>
           <Tooltip content={t('home.settings')} side="bottom">
             <button
-              onClick={() => setIsConfigOpen(true)}
+              onClick={() => router.push('/settings')}
               className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
             >
               <Settings size={15} />
@@ -155,7 +153,6 @@ export default function HomePage() {
       </main>
 
       {/* Modals */}
-      <ConfigManager isOpen={isConfigOpen} onClose={() => setIsConfigOpen(false)} onConfigSelect={() => {}} />
       <HistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} onApply={handleApplyConversation} />
     </div>
   );
