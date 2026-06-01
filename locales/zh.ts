@@ -366,6 +366,8 @@ export const zh = {
   'settings.resetAllConfirm': '确定要重置所有数据吗？这将清除所有会话、配置和用户偏好设置。此操作不可撤销。',
   'settings.resetAllSuccess': '所有数据已重置',
   'settings.operationFailed': '操作失败',
+  'settings.shortcuts': '快捷键',
+  'settings.shortcutsDesc': '查看和管理键盘快捷键',
   'settings.about': '关于',
   'settings.aboutDesc': '应用信息与版本详情',
 

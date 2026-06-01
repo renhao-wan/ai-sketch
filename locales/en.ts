@@ -368,6 +368,8 @@ export const en: TranslationDict = {
   'settings.resetAllConfirm': 'Are you sure you want to reset all data? This will clear all conversations, configs, and user preferences. This action cannot be undone.',
   'settings.resetAllSuccess': 'All data has been reset',
   'settings.operationFailed': 'Operation failed',
+  'settings.shortcuts': 'Shortcuts',
+  'settings.shortcutsDesc': 'View and manage keyboard shortcuts',
   'settings.about': 'About',
   'settings.aboutDesc': 'App information and version details',
 
