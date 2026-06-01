@@ -133,8 +133,8 @@ export default function ConfigSelector({ isOpen, onClose, onConfigSelect }: Conf
         {/* Footer - Link to Settings */}
         <div className="p-3 border-t border-[var(--border)]">
           <a
-            href="/settings"
-            onClick={(e) => { e.preventDefault(); onClose(); window.location.href = '/settings'; }}
+            href="/settings?tab=llm"
+            onClick={(e) => { e.preventDefault(); onClose(); window.location.href = '/settings?tab=llm'; }}
             className="flex items-center justify-center gap-2 w-full py-2 text-sm text-[var(--muted)] hover:text-[var(--accent-indigo)] transition-colors"
           >
             <ExternalLink size={14} />

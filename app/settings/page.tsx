@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, type TranslationKey } from '@/locales';
 import { SettingsSidebar, SettingsTab } from '@/components/settings/SettingsSidebar';
@@ -8,6 +8,8 @@ import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
 import { LLMSettings } from '@/components/settings/LLMSettings';
 import DataSettings from '@/components/settings/DataSettings';
 import { ArrowLeft } from 'lucide-react';
+
+const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'data'];
 
 const tabDescriptions: Record<SettingsTab, TranslationKey> = {
   appearance: 'settings.appearanceDesc',
@@ -19,6 +21,17 @@ export default function SettingsPage() {
   const { t } = useLocale();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
+
+  // Read tab from query parameter on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam && VALID_TABS.includes(tabParam as SettingsTab)) {
+        setActiveTab(tabParam as SettingsTab);
+      }
+    }
+  }, []);
 
   const renderContent = () => {
     switch (activeTab) {

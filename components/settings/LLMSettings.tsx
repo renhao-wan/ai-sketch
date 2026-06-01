@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import * as api from '@/lib/api-client';
+import Modal from '@/components/ui/Modal';
 import Notification from '@/components/Notification';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
 import ScrollToTop from '@/components/ScrollToTop';
-import { Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2, ChevronLeft } from 'lucide-react';
+import { Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2 } from 'lucide-react';
 import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/locales';
 import Tooltip from '@/components/ui/Tooltip';
@@ -208,18 +209,6 @@ export function LLMSettings() {
     : configs
   ).sort((a, b) => (a.id === activeConfigId ? -1 : b.id === activeConfigId ? 1 : 0));
 
-  // 编辑模式：显示内联编辑表单
-  if (editingConfig) {
-    return (
-      <ConfigEditor
-        config={editingConfig}
-        isCreating={isCreating}
-        onSave={handleSaveConfig}
-        onCancel={() => { setEditingConfig(null); setIsCreating(false); }}
-      />
-    );
-  }
-
   return (
     <div className="space-y-4">
       {/* 错误提示 */}
@@ -381,13 +370,30 @@ export function LLMSettings() {
         message={confirmDialog.message}
         type="danger"
       />
+
+      {/* 配置编辑器弹窗 */}
+      <Modal
+        isOpen={!!editingConfig}
+        onClose={() => { setEditingConfig(null); setIsCreating(false); }}
+        title={isCreating ? t('config.new') : t('config.edit')}
+        maxWidth="max-w-2xl"
+      >
+        {editingConfig && (
+          <ConfigEditor
+            config={editingConfig}
+            isCreating={isCreating}
+            onSave={handleSaveConfig}
+            onCancel={() => { setEditingConfig(null); setIsCreating(false); }}
+          />
+        )}
+      </Modal>
     </div>
   );
 }
 
 /**
- * 配置编辑器子组件（内联版本）
- * 从 ConfigManager 的 ConfigEditor 迁移，去除 Modal 包装
+ * 配置编辑器子组件
+ * 用于新增/编辑配置的表单
  */
 function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProps) {
   const { t } = useLocale();
@@ -438,20 +444,7 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
   const inputClass = "w-full px-4 py-2.5 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200";
 
   return (
-    <div className="space-y-6">
-      {/* 返回按钮 + 标题 */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onCancel}
-          className="w-8 h-8 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-        >
-          <ChevronLeft size={18} />
-        </button>
-        <h3 className="text-lg font-semibold tracking-tight text-[var(--fg)]">
-          {isCreating ? t('config.new') : t('config.edit')}
-        </h3>
-      </div>
-
+    <div className="space-y-4">
       {/* 表单内容 */}
       <div className="space-y-4">
         {error && (
