@@ -349,6 +349,8 @@ export const zh = {
   'settings.clearFailed': '清除失败',
 
   // 快捷键设置
+  'shortcuts.title': '键盘快捷键',
+  'shortcuts.helpDescription': '查看和管理所有可用的键盘快捷键',
   'shortcuts.search': '搜索快捷键...',
   'shortcuts.scope.global': '全局快捷键',
   'shortcuts.scope.editor': '编辑器快捷键',

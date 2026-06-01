@@ -351,6 +351,8 @@ export const en: TranslationDict = {
   'settings.clearFailed': 'Clear failed',
 
   // Keyboard shortcuts
+  'shortcuts.title': 'Keyboard Shortcuts',
+  'shortcuts.helpDescription': 'View and manage all available keyboard shortcuts',
   'shortcuts.search': 'Search shortcuts...',
   'shortcuts.scope.global': 'Global Shortcuts',
   'shortcuts.scope.editor': 'Editor Shortcuts',
