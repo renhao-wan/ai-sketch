@@ -6,7 +6,7 @@ import AICopilotPanel from '@/components/ai/AICopilotPanel';
 import FloatingAIActions from '@/components/ai/FloatingAIActions';
 import BottomContextPanel from '@/components/layout/BottomContextPanel';
 import CodeEditor from '@/components/CodeEditor';
-import ConfigManager from '@/components/dialogs/ConfigManager';
+import ConfigSelector from '@/components/dialogs/ConfigSelector';
 import Notification from '@/components/Notification';
 import DiagramCanvas from '@/components/canvases/DiagramCanvas';
 import type { StreamRendererRef } from '@/components/canvases/ExcalidrawCanvas';
@@ -654,7 +654,7 @@ function EditorContent() {
       </div>
 
       {/* Modals */}
-      <ConfigManager isOpen={isConfigManagerOpen} onClose={() => setIsConfigManagerOpen(false)} onConfigSelect={handleConfigSelect} />
+      <ConfigSelector isOpen={isConfigManagerOpen} onClose={() => setIsConfigManagerOpen(false)} onConfigSelect={handleConfigSelect} />
       <Notification isOpen={notification.isOpen} onClose={() => setNotification({ ...notification, isOpen: false })} title={notification.title} message={notification.message} type={notification.type} />
     </>
   );

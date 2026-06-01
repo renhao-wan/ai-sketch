@@ -107,6 +107,7 @@ export const zh = {
   'config.search': '搜索配置...',
   'config.noMatch': '没有找到匹配的配置',
   'config.noConfig': '暂无配置，点击"新建配置"创建第一个配置',
+  'config.manageInSettings': '在设置中管理配置',
   'config.active': '当前使用',
   'config.model': '模型',
   'config.modelPrefix': '模型:',

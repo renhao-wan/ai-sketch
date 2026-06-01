@@ -109,6 +109,7 @@ export const en: TranslationDict = {
   'config.search': 'Search configs...',
   'config.noMatch': 'No matching configurations found',
   'config.noConfig': 'No configurations yet. Click "New Config" to create one.',
+  'config.manageInSettings': 'Manage in Settings',
   'config.active': 'Active',
   'config.model': 'Model',
   'config.modelPrefix': 'Model:',
