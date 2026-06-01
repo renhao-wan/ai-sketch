@@ -6,7 +6,8 @@ import * as api from '@/lib/api-client';
 import { useLocale } from '@/locales';
 import { timeAgo } from '@/lib/time-ago';
 import Tooltip from '@/components/ui/Tooltip';
-import type { Conversation } from '@/types';
+import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
+import type { Conversation, ConfirmDialogState } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
 interface ConversationListProps {
@@ -29,6 +30,7 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({ isOpen: false, title: '', message: '', onConfirm: null });
 
   const loadConversations = async () => {
     try {
@@ -50,11 +52,18 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
     }
   }, [renamingId]);
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
+  const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    await api.deleteConversation(id);
-    onDelete(id);
-    await loadConversations();
+    setConfirmDialog({
+      isOpen: true,
+      title: t('history.confirmDelete'),
+      message: t('history.confirmDeleteMsg'),
+      onConfirm: async () => {
+        await api.deleteConversation(id);
+        onDelete(id);
+        await loadConversations();
+      },
+    });
   };
 
   const handleRenameStart = (e: React.MouseEvent, conv: Conversation) => {
@@ -175,6 +184,15 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
           </div>
         </>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onConfirm={() => { confirmDialog.onConfirm?.(); setConfirmDialog({ ...confirmDialog, isOpen: false }); }}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        type="danger"
+      />
     </div>
   );
 }
