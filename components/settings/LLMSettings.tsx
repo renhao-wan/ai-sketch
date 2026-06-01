@@ -40,7 +40,7 @@ export function LLMSettings() {
   const [editingConfig, setEditingConfig] = useState<Partial<LLMConfig> | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [testingConfigId, setTestingConfigId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [notification, setNotification] = useState<NotificationState>({ isOpen: false, title: '', message: '', type: 'info' });
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({ isOpen: false, title: '', message: '', onConfirm: null });
@@ -119,7 +119,7 @@ export function LLMSettings() {
 
   /** 测试连接 */
   const handleTestConnection = async (config: LLMConfig) => {
-    setIsLoading(true);
+    setTestingConfigId(config.id!);
     setError('');
     try {
       const result = await api.testConnection(config);
@@ -132,7 +132,7 @@ export function LLMSettings() {
     } catch (err) {
       setNotification({ isOpen: true, title: t('config.testFailed'), message: (err as Error).message, type: 'error' });
     } finally {
-      setIsLoading(false);
+      setTestingConfigId(null);
     }
   };
 
@@ -323,10 +323,10 @@ export function LLMSettings() {
                     <Tooltip content={t('config.testConnection')} side="top">
                       <button
                         onClick={() => handleTestConnection(config)}
-                        disabled={isLoading}
+                        disabled={testingConfigId !== null}
                         className="w-8 h-8 flex items-center justify-center rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200 disabled:opacity-50"
                       >
-                        {isLoading ? <Loader2 size={14} className="animate-spin" /> : <TestTube size={14} />}
+                        {testingConfigId === config.id ? <Loader2 size={14} className="animate-spin" /> : <TestTube size={14} />}
                       </button>
                     </Tooltip>
                     <Tooltip content={t('common.edit')} side="top">
@@ -461,8 +461,9 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
         )}
 
         <div>
-          <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.configName')} <span className="text-red-500">*</span></label>
+          <label htmlFor="configName" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.configName')} <span className="text-red-500">*</span></label>
           <input
+            id="configName"
             type="text"
             value={formData.name || ''}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -472,8 +473,9 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.description')}</label>
+          <label htmlFor="configDescription" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.description')}</label>
           <textarea
+            id="configDescription"
             value={formData.description || ''}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder={t('config.descriptionPlaceholder')}
@@ -483,7 +485,7 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.providerType')} <span className="text-red-500">*</span></label>
+          <label htmlFor="configProviderType" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.providerType')} <span className="text-red-500">*</span></label>
           <Dropdown
             options={[{ value: 'openai', label: 'OpenAI' }, { value: 'anthropic', label: 'Anthropic' }]}
             value={formData.type || 'openai'}
@@ -492,8 +494,9 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.baseUrl')} <span className="text-red-500">*</span></label>
+          <label htmlFor="configBaseUrl" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.baseUrl')} <span className="text-red-500">*</span></label>
           <input
+            id="configBaseUrl"
             type="text"
             value={formData.baseUrl || ''}
             onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
@@ -503,8 +506,9 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.apiKey')} <span className="text-red-500">*</span></label>
+          <label htmlFor="configApiKey" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.apiKey')} <span className="text-red-500">*</span></label>
           <input
+            id="configApiKey"
             type="password"
             value={formData.apiKey || ''}
             onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
@@ -524,12 +528,13 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.model')} <span className="text-red-500">*</span></label>
+          <label htmlFor="configModel" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.model')} <span className="text-red-500">*</span></label>
           {models.length > 0 && (
             <div className="mb-2 flex items-center gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
+                  name="modelSelection"
                   checked={!useCustomModel}
                   onChange={() => { setUseCustomModel(false); if (models.length > 0) setFormData({ ...formData, model: models[0].id }); }}
                 />
@@ -538,6 +543,7 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
+                  name="modelSelection"
                   checked={useCustomModel}
                   onChange={() => { setUseCustomModel(true); setFormData({ ...formData, model: '' }); }}
                 />
@@ -554,6 +560,7 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
           )}
           {(useCustomModel || models.length === 0) && (
             <input
+              id="configModel"
               type="text"
               value={formData.model || ''}
               onChange={(e) => setFormData({ ...formData, model: e.target.value })}
