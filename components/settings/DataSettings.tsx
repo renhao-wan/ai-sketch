@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import * as api from '@/lib/api-client';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
+import Notification from '@/components/Notification';
 import ScrollToTop from '@/components/ScrollToTop';
 import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/locales';
-import { Database, Download, Upload, Trash2, Search, ArrowRight, HardDrive } from 'lucide-react';
-import type { Conversation, ConfirmDialogState } from '@/types';
+import { Database, Download, Upload, Trash2, Search, HardDrive } from 'lucide-react';
+import type { Conversation, ConfirmDialogState, NotificationState } from '@/types';
 
 const PAGE_SIZE = 20;
 
@@ -36,6 +37,14 @@ export default function DataSettings() {
     title: '',
     message: '',
     onConfirm: null,
+  });
+
+  // ── Notification ──
+  const [notification, setNotification] = useState<NotificationState>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
   });
 
   // ── Import/Export state ──
@@ -120,6 +129,11 @@ export default function DataSettings() {
     }
   }, [hasMore, isLoadingMore, loadMore]);
 
+  /** Show a notification toast */
+  const showNotification = useCallback((type: NotificationState['type'], message: string) => {
+    setNotification({ isOpen: true, title: '', message, type });
+  }, []);
+
   /** Delete a single conversation */
   const handleDelete = (id: string) => {
     setConfirmDialog({
@@ -127,10 +141,15 @@ export default function DataSettings() {
       title: t('history.confirmDelete'),
       message: t('history.confirmDeleteMsg'),
       onConfirm: async () => {
-        await api.deleteConversation(id);
-        pageRef.current = 0;
-        await loadConversations(true, 0);
-        await loadStats();
+        try {
+          await api.deleteConversation(id);
+          pageRef.current = 0;
+          await loadConversations(true, 0);
+          await loadStats();
+        } catch (err) {
+          console.error('Delete conversation failed:', err);
+          showNotification('error', t('settings.clearFailed'));
+        }
       },
     });
   };
@@ -161,14 +180,16 @@ export default function DataSettings() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      showNotification('success', t('settings.exportSuccess'));
     } catch (err) {
       console.error('Export failed:', err);
+      showNotification('error', t('settings.exportFailed'));
     } finally {
       setIsExporting(false);
     }
   };
 
-  /** Import data from JSON file */
+  /** Import LLM configs from JSON file (conversations are not importable) */
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -178,7 +199,7 @@ export default function DataSettings() {
       const text = await file.text();
       const data = JSON.parse(text);
 
-      // Import configs if present
+      // Only configs can be imported — conversations have no bulk import API
       if (data.configs) {
         await api.importConfigs(data.configs);
       }
@@ -186,8 +207,10 @@ export default function DataSettings() {
       // Refresh data
       await loadConversations(true, 0);
       await loadStats();
+      showNotification('success', t('settings.importSuccess'));
     } catch (err) {
       console.error('Import failed:', err);
+      showNotification('error', t('settings.importFailed'));
     } finally {
       setIsImporting(false);
       // Reset file input
@@ -210,8 +233,10 @@ export default function DataSettings() {
           pageRef.current = 0;
           await loadConversations(true, 0);
           await loadStats();
+          showNotification('success', t('settings.clearSuccess'));
         } catch (err) {
           console.error('Clear history failed:', err);
+          showNotification('error', t('settings.clearFailed'));
         } finally {
           setIsClearing(false);
         }
@@ -414,6 +439,15 @@ export default function DataSettings() {
         title={confirmDialog.title}
         message={confirmDialog.message}
         type="danger"
+      />
+
+      {/* Notification Toast */}
+      <Notification
+        isOpen={notification.isOpen}
+        onClose={() => setNotification({ ...notification, isOpen: false })}
+        title={notification.title || undefined}
+        message={notification.message}
+        type={notification.type}
       />
     </div>
   );
