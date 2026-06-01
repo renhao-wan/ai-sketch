@@ -202,8 +202,8 @@ export default function ConversationSettings() {
       </div>
 
       {/* 可滚动的会话列表 */}
-      <ScrollToTop className="flex-1 overflow-y-auto scrollbar-thin" onScroll={handleScroll}>
-        <div className="space-y-2">
+      <ScrollToTop className="flex-1 overflow-y-auto scrollbar-thin pt-2" onScroll={handleScroll}>
+        <div className="space-y-2 pb-4">
           {items.length === 0 ? (
             <div className="text-center py-12 text-sm text-[var(--muted)]">
               {searchQuery ? t('conversation.noResults') : t('history.empty')}
