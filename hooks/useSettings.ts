@@ -8,8 +8,6 @@ export type CanvasBg = 'grid' | 'dots' | 'blank';
 export interface Settings {
   locale: 'zh' | 'en';
   theme: Theme;
-  globalFontSize: number;
-  editorFontSize: number;
   autoSave: boolean;
   canvasBg: CanvasBg;
 }
@@ -17,8 +15,6 @@ export interface Settings {
 const DEFAULT_SETTINGS: Settings = {
   locale: 'zh',
   theme: 'light',
-  globalFontSize: 14,
-  editorFontSize: 14,
   autoSave: true,
   canvasBg: 'grid',
 };
@@ -26,8 +22,6 @@ const DEFAULT_SETTINGS: Settings = {
 const STORAGE_KEYS = {
   locale: 'ai-sketch-locale',
   theme: 'ai-sketch-theme',
-  globalFontSize: 'ai-sketch-global-font-size',
-  editorFontSize: 'ai-sketch-editor-font-size',
   autoSave: 'ai-sketch-auto-save',
   canvasBg: 'ai-sketch-canvas-bg',
 } as const;
@@ -61,8 +55,6 @@ export function useSettings() {
   const [settings, setSettings] = useState<Settings>(() => ({
     locale: getStoredValue(STORAGE_KEYS.locale, DEFAULT_SETTINGS.locale, isValidLocale),
     theme: getStoredValue(STORAGE_KEYS.theme, DEFAULT_SETTINGS.theme, isValidTheme),
-    globalFontSize: getStoredValue(STORAGE_KEYS.globalFontSize, DEFAULT_SETTINGS.globalFontSize),
-    editorFontSize: getStoredValue(STORAGE_KEYS.editorFontSize, DEFAULT_SETTINGS.editorFontSize),
     autoSave: getStoredValue(STORAGE_KEYS.autoSave, DEFAULT_SETTINGS.autoSave),
     canvasBg: getStoredValue(STORAGE_KEYS.canvasBg, DEFAULT_SETTINGS.canvasBg, isValidCanvasBg),
   }));
@@ -71,11 +63,6 @@ export function useSettings() {
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
   }, [settings.theme]);
-
-  // Apply global font size
-  useEffect(() => {
-    document.documentElement.style.fontSize = `${settings.globalFontSize}px`;
-  }, [settings.globalFontSize]);
 
   const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings(prev => {

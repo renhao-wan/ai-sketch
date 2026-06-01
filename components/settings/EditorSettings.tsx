@@ -15,27 +15,6 @@ export function EditorSettings() {
 
   return (
     <div className="space-y-8">
-      {/* 编辑器字体大小 */}
-      <section>
-        <h3 id="editorFontSizeLabel" className="text-lg font-semibold text-[var(--fg)] mb-1">{t('settings.editorFontSize')}</h3>
-        <p className="text-sm text-[var(--muted)] mb-3">{t('settings.editorFontSizeDesc')}</p>
-        <div className="flex items-center gap-4">
-          <input
-            type="range"
-            min={12}
-            max={20}
-            step={1}
-            aria-labelledby="editorFontSizeLabel"
-            value={settings.editorFontSize}
-            onChange={(e) => updateSetting('editorFontSize', Number(e.target.value))}
-            className="flex-1 h-2 bg-[var(--surface-warm-hover)] rounded-lg appearance-none cursor-pointer accent-[var(--accent-indigo)]"
-          />
-          <span className="text-sm font-mono text-[var(--fg)] w-12 text-right">
-            {settings.editorFontSize}px
-          </span>
-        </div>
-      </section>
-
       {/* 自动保存 */}
       <section>
         <div className="flex items-center justify-between">

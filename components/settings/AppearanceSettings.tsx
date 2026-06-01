@@ -96,27 +96,6 @@ export function AppearanceSettings() {
           ))}
         </div>
       </section>
-
-      {/* 全局字体大小 */}
-      <section>
-        <h3 id="fontSizeLabel" className="text-lg font-semibold text-[var(--fg)] mb-1">{t('settings.fontSize')}</h3>
-        <p className="text-sm text-[var(--muted)] mb-3">{t('settings.fontSizeDesc')}</p>
-        <div className="flex items-center gap-4">
-          <input
-            type="range"
-            aria-labelledby="fontSizeLabel"
-            min={12}
-            max={20}
-            step={1}
-            value={settings.globalFontSize}
-            onChange={(e) => updateSetting('globalFontSize', Number(e.target.value))}
-            className="flex-1 h-2 bg-[var(--surface-warm-hover)] rounded-lg appearance-none cursor-pointer accent-[var(--accent-indigo)]"
-          />
-          <span className="text-sm font-mono text-[var(--fg)] w-12 text-right">
-            {settings.globalFontSize}px
-          </span>
-        </div>
-      </section>
     </div>
   );
 }
