@@ -15,9 +15,9 @@ interface ConversationListProps {
 }
 
 const FORMAT_BADGES: Record<DiagramFormat, { label: string; color: string }> = {
-  excalidraw: { label: 'EX', color: 'bg-purple-500/10 text-purple-600' },
-  mermaid: { label: 'MM', color: 'bg-blue-500/10 text-blue-600' },
-  drawio: { label: 'DX', color: 'bg-orange-500/10 text-orange-600' },
+  excalidraw: { label: 'EX', color: 'bg-[var(--accent-violet)]/10 text-[var(--accent-violet)]' },
+  mermaid: { label: 'MM', color: 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' },
+  drawio: { label: 'DX', color: 'bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)]' },
 };
 
 /** 会话列表 — 快速切换当前会话 */

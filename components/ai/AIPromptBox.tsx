@@ -121,7 +121,7 @@ export default function AIPromptBox() {
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-[var(--fg)] truncate">{file.name}</p>
                   {attachStatus === 'processing' && <p className="text-[10px] text-[var(--muted)]">处理中...</p>}
-                  {attachStatus === 'success' && <p className="text-[10px] text-emerald-500">就绪</p>}
+                  {attachStatus === 'success' && <p className="text-[10px] text-[var(--accent-indigo)]">就绪</p>}
                   {attachStatus === 'error' && <p className="text-[10px] text-red-500">{attachError}</p>}
                 </div>
                 <button onClick={() => removeAttachment(i)} className="opacity-0 group-hover:opacity-100 text-[var(--muted)] hover:text-[var(--fg)] transition-all flex-shrink-0">

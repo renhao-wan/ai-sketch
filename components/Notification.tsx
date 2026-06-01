@@ -30,9 +30,9 @@ export default function Notification({
   if (!isOpen) return null;
 
   const typeConfig = {
-    success: { icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    success: { icon: CheckCircle, color: 'text-[var(--accent-indigo)]', bg: 'bg-[var(--accent-indigo)]/10' },
     error: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-500/10' },
-    warning: { icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    warning: { icon: AlertTriangle, color: 'text-[var(--accent-cyan)]', bg: 'bg-[var(--accent-cyan)]/10' },
     info: { icon: Info, color: 'text-[var(--accent-indigo)]', bg: 'bg-[var(--accent-indigo)]/10' },
   };
 

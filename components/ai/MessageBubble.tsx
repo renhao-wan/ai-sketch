@@ -42,7 +42,7 @@ export default function MessageBubble({ message, isStreaming, onRegenerate, onCo
       )}
       {onCopy && (
         <Tooltip content={t('copilot.copy')} side="top">
-          <button onClick={handleCopy} className={`flex items-center justify-center w-5 h-5 rounded transition-all duration-200 ${copied ? 'text-emerald-500' : 'text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5'}`}>
+          <button onClick={handleCopy} className={`flex items-center justify-center w-5 h-5 rounded transition-all duration-200 ${copied ? 'text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5'}`}>
             {copied ? <Check size={11} /> : <Copy size={11} />}
           </button>
         </Tooltip>

@@ -29,10 +29,10 @@ export default function CountBanner({ show, title, description, onDismiss }: Cou
   if (!show) return null;
 
   return (
-    <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-500/5">
+    <div className="p-4 rounded-2xl border border-[var(--accent-cyan)]/20 bg-[var(--accent-cyan)]/5">
       <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-          <AlertTriangle size={16} className="text-amber-500" />
+        <div className="w-8 h-8 rounded-xl bg-[var(--accent-cyan)]/10 flex items-center justify-center flex-shrink-0">
+          <AlertTriangle size={16} className="text-[var(--accent-cyan)]" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-[var(--fg)]">{title}</p>

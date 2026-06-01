@@ -150,7 +150,7 @@ export default function BottomContextPanel({
                   onClick={handleCopy}
                   className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
                 >
-                  {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                  {copied ? <Check size={13} className="text-[var(--accent-indigo)]" /> : <Copy size={13} />}
                 </button>
               </Tooltip>
               <Tooltip content={t('copilot.export')} side="top">

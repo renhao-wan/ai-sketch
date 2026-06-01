@@ -315,7 +315,7 @@ export function LLMSettings() {
                       <button
                         onClick={() => handleTestConnection(config)}
                         disabled={testingConfigId !== null}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200 disabled:opacity-50"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 transition-all duration-200 disabled:opacity-50"
                       >
                         {testingConfigId === config.id ? <Loader2 size={14} className="animate-spin" /> : <TestTube size={14} />}
                       </button>
