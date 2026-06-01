@@ -22,30 +22,33 @@ export default function Tooltip({
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
   const calculatePosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const gap = 8;
+    const tooltipWidth = tooltipRef.current?.offsetWidth || 0;
+    const tooltipHeight = tooltipRef.current?.offsetHeight || 0;
 
     let top = 0;
     let left = 0;
 
     switch (side) {
       case 'top':
-        top = rect.top - gap;
-        left = align === 'start' ? rect.left : align === 'end' ? rect.right : (rect.left + rect.right) / 2;
+        top = rect.top - gap - tooltipHeight;
+        left = align === 'start' ? rect.left : align === 'end' ? rect.right - tooltipWidth : (rect.left + rect.right) / 2 - tooltipWidth / 2;
         break;
       case 'bottom':
         top = rect.bottom + gap;
-        left = align === 'start' ? rect.left : align === 'end' ? rect.right : (rect.left + rect.right) / 2;
+        left = align === 'start' ? rect.left : align === 'end' ? rect.right - tooltipWidth : (rect.left + rect.right) / 2 - tooltipWidth / 2;
         break;
       case 'left':
-        top = align === 'start' ? rect.top : align === 'end' ? rect.bottom : (rect.top + rect.bottom) / 2;
-        left = rect.left - gap;
+        top = align === 'start' ? rect.top : align === 'end' ? rect.bottom - tooltipHeight : (rect.top + rect.bottom) / 2 - tooltipHeight / 2;
+        left = rect.left - gap - tooltipWidth;
         break;
       case 'right':
-        top = align === 'start' ? rect.top : align === 'end' ? rect.bottom : (rect.top + rect.bottom) / 2;
+        top = align === 'start' ? rect.top : align === 'end' ? rect.bottom - tooltipHeight : (rect.top + rect.bottom) / 2 - tooltipHeight / 2;
         left = rect.right + gap;
         break;
     }
@@ -55,10 +58,15 @@ export default function Tooltip({
 
   const showTooltip = () => {
     timeoutRef.current = setTimeout(() => {
-      calculatePosition();
       setIsVisible(true);
     }, delay);
   };
+
+  useEffect(() => {
+    if (isVisible) {
+      calculatePosition();
+    }
+  }, [isVisible, calculatePosition]);
 
   const hideTooltip = () => {
     if (timeoutRef.current) {
@@ -79,13 +87,10 @@ export default function Tooltip({
   const getTransform = () => {
     switch (side) {
       case 'top':
-        return align === 'center' ? 'translate(-50%, -100%)' : align === 'end' ? 'translate(-100%, -100%)' : 'translate(0, -100%)';
       case 'bottom':
-        return align === 'center' ? 'translate(-50%, 0)' : align === 'end' ? 'translate(-100%, 0)' : 'translate(0, 0)';
       case 'left':
-        return align === 'center' ? 'translate(-100%, -50%)' : align === 'end' ? 'translate(-100%, -100%)' : 'translate(-100%, 0)';
       case 'right':
-        return align === 'center' ? 'translate(0, -50%)' : align === 'end' ? 'translate(0, -100%)' : 'translate(0, 0)';
+        return 'none';
     }
   };
 
@@ -101,13 +106,13 @@ export default function Tooltip({
 
     switch (side) {
       case 'top':
-        return { ...base, bottom: '-5px', left: align === 'center' ? '50%' : align === 'end' ? '12px' : undefined, right: align === 'start' ? '12px' : undefined, transform: align === 'center' ? 'translateX(-50%) rotate(45deg)' : 'rotate(45deg)' };
+        return { ...base, bottom: '-5px', left: 'calc(50% - 4px)' };
       case 'bottom':
-        return { ...base, top: '-5px', left: align === 'center' ? '50%' : align === 'end' ? '12px' : undefined, right: align === 'start' ? '12px' : undefined, transform: align === 'center' ? 'translateX(-50%) rotate(45deg)' : 'rotate(45deg)' };
+        return { ...base, top: '-5px', left: 'calc(50% - 4px)' };
       case 'left':
-        return { ...base, right: '-5px', top: align === 'center' ? '50%' : align === 'end' ? '12px' : undefined, bottom: align === 'start' ? '12px' : undefined, transform: align === 'center' ? 'translateY(-50%) rotate(45deg)' : 'rotate(45deg)' };
+        return { ...base, right: '-5px', top: 'calc(50% - 4px)' };
       case 'right':
-        return { ...base, left: '-5px', top: align === 'center' ? '50%' : align === 'end' ? '12px' : undefined, bottom: align === 'start' ? '12px' : undefined, transform: align === 'center' ? 'translateY(-50%) rotate(45deg)' : 'rotate(45deg)' };
+        return { ...base, left: '-5px', top: 'calc(50% - 4px)' };
     }
   };
 
@@ -122,11 +127,11 @@ export default function Tooltip({
 
   const tooltipContent = isVisible ? createPortal(
     <div
-      className="fixed z-[9999] px-3 py-1.5 text-xs font-medium text-[var(--fg)] bg-[var(--bg-glass)] backdrop-blur-xl border border-[var(--border)] rounded-lg shadow-[0_4px_20px_rgba(28,25,23,0.08)] whitespace-nowrap pointer-events-none animate-fade-in"
+      ref={tooltipRef}
+      className="fixed z-[9999] px-3 py-1.5 text-xs font-medium text-[var(--fg)] bg-[var(--bg-glass)] backdrop-blur-xl border border-[var(--border)] rounded-lg shadow-[0_4px_20px_rgba(28,25,23,0.08)] whitespace-nowrap pointer-events-none animate-tooltip-fade-in text-center"
       style={{
         top: `${position.top}px`,
         left: `${position.left}px`,
-        transform: getTransform(),
       }}
       role="tooltip"
     >
