@@ -5,11 +5,10 @@ import { useRouter } from 'next/navigation';
 import { AppIcon } from '@/components/layout/TopBar';
 import { setInitData } from '@/lib/init-data';
 import AIPromptBox from '@/components/ai/AIPromptBox';
-import ConfigManager from '@/components/dialogs/ConfigManager';
 import HistoryModal from '@/components/dialogs/HistoryModal';
 import { useLocale } from '@/locales';
 import { timeAgo } from '@/lib/time-ago';
-import { Settings, Wand2, History, FileText, PenTool } from 'lucide-react';
+import { Settings, History, FileText, PenTool } from 'lucide-react';
 import * as api from '@/lib/api-client';
 import { runMigrationIfNeeded } from '@/lib/migration';
 import Tooltip from '@/components/ui/Tooltip';
@@ -18,7 +17,6 @@ import type { Conversation } from '@/types';
 export default function HomePage() {
   const router = useRouter();
   const { t } = useLocale();
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [recentItems, setRecentItems] = useState<Conversation[]>([]);
 
@@ -62,14 +60,6 @@ export default function HomePage() {
               className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
             >
               <History size={15} />
-            </button>
-          </Tooltip>
-          <Tooltip content={t('config.title')} side="bottom">
-            <button
-              onClick={() => setIsConfigOpen(true)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
-            >
-              <Wand2 size={15} />
             </button>
           </Tooltip>
           <Tooltip content={t('home.settings')} side="bottom">
@@ -161,7 +151,6 @@ export default function HomePage() {
       </main>
 
       {/* Modals */}
-      <ConfigManager isOpen={isConfigOpen} onClose={() => setIsConfigOpen(false)} onConfigSelect={() => {}} />
       <HistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} onApply={handleApplyConversation} />
     </div>
   );
