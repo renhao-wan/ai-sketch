@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, Trash2, ChevronDown, Pencil, Check, X, Search, ArrowUpDown } from 'lucide-react';
+import { MessageSquare, Trash2, ChevronDown, Pencil, Check, X, Search } from 'lucide-react';
 import * as api from '@/lib/api-client';
 import { useLocale } from '@/locales';
 import { timeAgo } from '@/lib/time-ago';
 import Tooltip from '@/components/ui/Tooltip';
+import Dropdown from '@/components/ui/Dropdown';
 import type { Conversation } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
@@ -163,28 +164,35 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t('conversation.search') || '搜索会话...'}
+                  placeholder={t('conversation.search')}
                   className="w-full pl-7 pr-2 py-1.5 text-xs text-[var(--fg)] bg-white/50 border border-[var(--border)] rounded-lg outline-none focus:border-[var(--accent-indigo)] focus:ring-1 focus:ring-[var(--accent-indigo)]/20 placeholder:text-[var(--muted)]"
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
-                }}
-                className="p-1.5 text-[var(--muted)] hover:text-[var(--fg)] hover:bg-black/5 rounded-md transition-colors flex-shrink-0"
-                title={sortOrder === 'desc' ? '降序' : '升序'}
-              >
-                <ArrowUpDown size={13} className={sortOrder === 'asc' ? 'rotate-180' : ''} />
-              </button>
+              <div className="w-[140px] flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                <Dropdown
+                  options={[
+                    { value: 'updated_at-desc', label: t('conversation.recentlyUpdated') },
+                    { value: 'updated_at-asc', label: t('conversation.oldestUpdated') },
+                    { value: 'created_at-desc', label: t('conversation.recentlyCreated') },
+                    { value: 'created_at-asc', label: t('conversation.oldestCreated') },
+                  ]}
+                  value={`${sortBy}-${sortOrder}`}
+                  onChange={(v) => {
+                    const [sort, order] = v.split('-');
+                    setSortBy(sort as 'updated_at' | 'created_at');
+                    setSortOrder(order as 'asc' | 'desc');
+                  }}
+                  className="!py-1 !px-2 !text-[11px] !rounded-lg"
+                />
+              </div>
             </div>
 
             {/* List */}
             <div className="max-h-64 overflow-y-auto scrollbar-thin" onScroll={handleScroll}>
               {conversations.length === 0 ? (
                 <div className="px-4 py-6 text-center text-sm text-[var(--muted)]">
-                  {searchQuery ? '未找到匹配的会话' : t('conversation.empty')}
+                  {searchQuery ? t('conversation.noResults') : t('conversation.empty')}
                 </div>
               ) : (
                 conversations.map((conv) => {
@@ -255,12 +263,12 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
               {/* 无限滚动加载指示器 */}
               {isLoadingMore && (
                 <div className="px-4 py-2 text-center text-xs text-[var(--muted)]">
-                  加载中...
+                  {t('conversation.loading')}
                 </div>
               )}
               {!hasMore && conversations.length > 0 && totalCount > 0 && (
                 <div className="px-4 py-1.5 text-center text-[10px] text-[var(--muted)]">
-                  共 {totalCount} 条会话
+                  {t('conversation.countTotal').replace('{count}', String(totalCount))}
                 </div>
               )}
             </div>
