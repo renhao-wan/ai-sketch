@@ -35,6 +35,7 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
   const [sortBy, setSortBy] = useState<'updated_at' | 'created_at'>('updated_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(0);
+  const pageRef = useRef(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
@@ -67,6 +68,7 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
   useEffect(() => {
     if (!isOpen) return;
     const timer = setTimeout(() => {
+      pageRef.current = 0;
       setPage(0);
       loadConversations(true, 0);
     }, 300);
@@ -74,14 +76,18 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, searchQuery, sortBy, sortOrder]);
 
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (isLoadingMore) return;
     setIsLoadingMore(true);
-    const nextPage = page + 1;
-    await loadConversations(false, nextPage);
-    setPage(nextPage);
-    setIsLoadingMore(false);
-  };
+    try {
+      const nextPage = pageRef.current + 1;
+      await loadConversations(false, nextPage);
+      pageRef.current = nextPage;
+      setPage(nextPage);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, loadConversations]);
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
