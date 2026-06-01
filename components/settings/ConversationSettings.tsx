@@ -9,6 +9,8 @@ import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/locales';
 import Tooltip from '@/components/ui/Tooltip';
 import { Trash2, Search, Edit3, Check, X } from 'lucide-react';
+import CountBanner from '@/components/ui/CountBanner';
+import { useCountBanner } from '@/hooks/useCountBanner';
 import type { Conversation, ConfirmDialogState, NotificationState } from '@/types';
 
 const PAGE_SIZE = 20;
@@ -26,6 +28,13 @@ export default function ConversationSettings() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const pageRef = useRef(0);
+
+  // ── Count banner ──
+  const { showBanner, handleDismissBanner } = useCountBanner({
+    count: totalCount,
+    threshold: 50,
+    storageKey: 'conversation-settings-banner-dismissed',
+  });
 
   // ── Rename state ──
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -205,6 +214,14 @@ export default function ConversationSettings() {
       {/* 可滚动的会话列表 */}
       <ScrollToTop className="flex-1 overflow-y-auto scrollbar-thin pt-2" onScroll={handleScroll}>
         <div className="space-y-2">
+          {/* 数量提示 Banner */}
+          <CountBanner
+            show={showBanner}
+            title={t('conversation.bannerTitle')}
+            description={t('conversation.bannerDescription').replace('{count}', String(totalCount))}
+            onDismiss={handleDismissBanner}
+          />
+
           {items.length === 0 ? (
             <div className="text-center py-12 text-sm text-[var(--muted)]">
               {searchQuery ? t('conversation.noResults') : t('history.empty')}

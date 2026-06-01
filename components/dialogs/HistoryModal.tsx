@@ -6,8 +6,6 @@ import ScrollToTop from '../ScrollToTop';
 import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/locales';
 import { Clock, ArrowRight, Search } from 'lucide-react';
-import CountBanner from '@/components/ui/CountBanner';
-import { useCountBanner } from '@/hooks/useCountBanner';
 import type { Conversation } from '@/types';
 
 interface HistoryModalProps {
@@ -31,12 +29,6 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const pageRef = useRef(0);
-
-  const { showBanner, handleDismissBanner } = useCountBanner({
-    count: totalCount,
-    threshold: 50,
-    storageKey: 'history-banner-dismissed',
-  });
 
   /** Load conversations with search/sort/pagination support */
   const loadConversations = async (reset = false, pageNum = 0) => {
@@ -156,13 +148,6 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
         {/* Scrollable List */}
         <ScrollToTop className="px-7 pb-6 scrollbar-thin" onScroll={handleScroll}>
           <div className="space-y-2">
-            {/* Banner */}
-            <CountBanner
-              show={showBanner}
-              title={t('conversation.bannerTitle')}
-              description={t('conversation.bannerDescription').replace('{count}', String(totalCount))}
-              onDismiss={handleDismissBanner}
-            />
             {items.length === 0 ? (
               <div className="text-center py-12 text-sm text-[var(--muted)]">
                 {searchQuery ? t('conversation.noResults') : t('history.empty')}
