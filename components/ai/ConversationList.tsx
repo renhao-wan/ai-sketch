@@ -1,14 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, Trash2, ChevronDown, Pencil, Check, X, Search, Plus } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { MessageSquare, Trash2, ChevronDown, Pencil, Check, X } from 'lucide-react';
 import * as api from '@/lib/api-client';
 import { useLocale } from '@/locales';
 import { timeAgo } from '@/lib/time-ago';
 import Tooltip from '@/components/ui/Tooltip';
-import Dropdown from '@/components/ui/Dropdown';
-import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
-import type { Conversation, ConfirmDialogState } from '@/types';
+import type { Conversation } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
 interface ConversationListProps {
@@ -32,73 +30,18 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
   const [renameValue, setRenameValue] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
 
-  // 搜索、排序、分页状态
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'updated_at' | 'created_at'>('updated_at');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [page, setPage] = useState(0);
-  const pageRef = useRef(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [totalCount, setTotalCount] = useState(0);
-  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({ isOpen: false, title: '', message: '', onConfirm: null });
-
-  const loadConversations = async (reset = false, pageNum = 0) => {
+  const loadConversations = async () => {
     try {
-      const offset = pageNum * 20;
-      const result = await api.fetchConversations({
-        search: searchQuery || undefined,
-        sort: sortBy,
-        order: sortOrder,
-        limit: 20,
-        offset,
-      });
-
-      if (reset) {
-        setConversations(result.conversations);
-      } else {
-        setConversations(prev => [...prev, ...result.conversations]);
-      }
-
-      setTotalCount(result.total);
-      setHasMore(result.hasMore);
+      const { conversations } = await api.fetchConversations();
+      setConversations(conversations);
     } catch (err) {
-      console.error('加载会话失败:', err);
+      console.error('Failed to load conversations:', err);
     }
   };
 
-  // 防抖搜索效果：搜索词、排序方式变化时自动重新加载
   useEffect(() => {
-    if (!isOpen) return;
-    const timer = setTimeout(() => {
-      pageRef.current = 0;
-      setPage(0);
-      loadConversations(true, 0);
-    }, 300);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, searchQuery, sortBy, sortOrder]);
-
-  const loadMore = useCallback(async () => {
-    if (isLoadingMore) return;
-    setIsLoadingMore(true);
-    try {
-      const nextPage = pageRef.current + 1;
-      await loadConversations(false, nextPage);
-      pageRef.current = nextPage;
-      setPage(nextPage);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [isLoadingMore, loadConversations]);
-
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollHeight - scrollTop - clientHeight < 50 && hasMore && !isLoadingMore) {
-      loadMore();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasMore, isLoadingMore]);
+    if (isOpen) loadConversations();
+  }, [isOpen]);
 
   useEffect(() => {
     if (renamingId && renameInputRef.current) {
@@ -111,7 +54,7 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
     e.stopPropagation();
     await api.deleteConversation(id);
     onDelete(id);
-    await loadConversations(true, 0);
+    await loadConversations();
   };
 
   const handleRenameStart = (e: React.MouseEvent, conv: Conversation) => {
@@ -124,35 +67,12 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
     if (!renamingId || !renameValue.trim()) { setRenamingId(null); return; }
     await api.updateConversationTitle(renamingId, renameValue.trim());
     setRenamingId(null);
-    await loadConversations(true, 0);
+    await loadConversations();
   };
 
   const handleRenameKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleRenameSave();
     if (e.key === 'Escape') setRenamingId(null);
-  };
-
-  /** 创建新会话前检查数量限制 */
-  const handleCreateConversation = async () => {
-    try {
-      const { count, limit } = await api.fetchConversationCount();
-      if (count >= limit) {
-        setConfirmDialog({
-          isOpen: true,
-          title: t('conversation.limitReached'),
-          message: t('conversation.limitReachedMsg').replace('{limit}', String(limit)),
-          onConfirm: null,
-        });
-        return;
-      }
-      onNew();
-      setIsOpen(false);
-    } catch (err) {
-      console.error('检查会话数量失败:', err);
-      // 检查失败时仍允许创建，避免阻断用户操作
-      onNew();
-      setIsOpen(false);
-    }
   };
 
   const current = conversations.find(c => c.id === currentId);
@@ -174,51 +94,17 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
           <div className="absolute top-full left-0 mt-1 z-50 w-72 bg-[var(--surface-warm)] backdrop-blur-xl rounded-2xl border border-[var(--border)] shadow-[0_10px_40px_rgba(28,25,23,0.10)] overflow-hidden animate-slide-up">
             {/* New chat button */}
             <button
-              onClick={handleCreateConversation}
+              onClick={() => { onNew(); setIsOpen(false); }}
               className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/5 transition-colors border-b border-black/5"
             >
-              <Plus size={14} />
+              <MessageSquare size={14} />
               {t('conversation.new')}
             </button>
 
-            {/* Search and sort controls */}
-            <div className="flex items-center gap-1.5 px-3 py-2 border-b border-black/5">
-              <div className="flex-1 relative">
-                <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t('conversation.search')}
-                  className="w-full pl-7 pr-2 py-1.5 text-xs text-[var(--fg)] bg-white/50 border border-[var(--border)] rounded-lg outline-none focus:border-[var(--accent-indigo)] focus:ring-1 focus:ring-[var(--accent-indigo)]/20 placeholder:text-[var(--muted)]"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-              <div className="w-[140px] flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                <Dropdown
-                  options={[
-                    { value: 'updated_at-desc', label: t('conversation.recentlyUpdated') },
-                    { value: 'updated_at-asc', label: t('conversation.oldestUpdated') },
-                    { value: 'created_at-desc', label: t('conversation.recentlyCreated') },
-                    { value: 'created_at-asc', label: t('conversation.oldestCreated') },
-                  ]}
-                  value={`${sortBy}-${sortOrder}`}
-                  onChange={(v) => {
-                    const [sort, order] = v.split('-');
-                    setSortBy(sort as 'updated_at' | 'created_at');
-                    setSortOrder(order as 'asc' | 'desc');
-                  }}
-                  className="!py-1 !px-2 !text-[11px] !rounded-lg"
-                />
-              </div>
-            </div>
-
             {/* List */}
-            <div className="max-h-64 overflow-y-auto scrollbar-thin" onScroll={handleScroll}>
+            <div className="max-h-64 overflow-y-auto scrollbar-thin">
               {conversations.length === 0 ? (
-                <div className="px-4 py-6 text-center text-sm text-[var(--muted)]">
-                  {searchQuery ? t('conversation.noResults') : t('conversation.empty')}
-                </div>
+                <div className="px-4 py-6 text-center text-sm text-[var(--muted)]">{t('conversation.empty')}</div>
               ) : (
                 conversations.map((conv) => {
                   const badge = FORMAT_BADGES[conv.format] || FORMAT_BADGES.excalidraw;
@@ -285,30 +171,10 @@ export default function ConversationList({ currentId, onSelect, onDelete, onNew 
                   );
                 })
               )}
-              {/* 无限滚动加载指示器 */}
-              {isLoadingMore && (
-                <div className="px-4 py-2 text-center text-xs text-[var(--muted)]">
-                  {t('conversation.loading')}
-                </div>
-              )}
-              {!hasMore && conversations.length > 0 && totalCount > 0 && (
-                <div className="px-4 py-1.5 text-center text-[10px] text-[var(--muted)]">
-                  {t('conversation.countTotal').replace('{count}', String(totalCount))}
-                </div>
-              )}
             </div>
           </div>
         </>
       )}
-      <ConfirmDialog
-        isOpen={confirmDialog.isOpen}
-        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
-        onConfirm={() => { confirmDialog.onConfirm?.(); setConfirmDialog({ ...confirmDialog, isOpen: false }); }}
-        title={confirmDialog.title}
-        message={confirmDialog.message}
-        type="warning"
-        confirmText={t('confirm.confirm')}
-      />
     </div>
   );
 }
