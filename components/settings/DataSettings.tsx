@@ -258,7 +258,7 @@ export default function DataSettings() {
         </div>
 
         {/* Scrollable List */}
-        <ScrollToTop className="max-h-96 scrollbar-thin" onScroll={handleScroll}>
+        <ScrollToTop className="max-h-[calc(100vh-20rem)] scrollbar-thin" onScroll={handleScroll}>
           <div className="space-y-2">
             {items.length === 0 ? (
               <div className="text-center py-12 text-sm text-[var(--muted)]">

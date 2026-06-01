@@ -32,9 +32,9 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)]">
+    <div className="h-screen flex flex-col bg-[var(--bg)]">
       {/* 顶部导航 */}
-      <header className="sticky top-0 z-10 backdrop-blur-xl bg-[var(--bg-glass)] border-b border-[var(--border)]">
+      <header className="flex-shrink-0 backdrop-blur-xl bg-[var(--bg-glass)] border-b border-[var(--border)]">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center gap-4">
           <button
             onClick={() => router.push('/')}
@@ -49,23 +49,25 @@ export default function SettingsPage() {
       </header>
 
       {/* 主内容区 */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex gap-8">
-          {/* 侧边栏 */}
-          <SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <div className="flex-1 overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6 py-8 h-full">
+          <div className="flex gap-8 h-full">
+            {/* 侧边栏 */}
+            <SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {/* 内容区 */}
-          <main className="flex-1 min-w-0">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-[var(--fg)]">
-                {t(`settings.${activeTab}`)}
-              </h2>
-              <p className="text-sm text-[var(--muted)] mt-1">
-                {t(tabDescriptions[activeTab])}
-              </p>
-            </div>
-            {renderContent()}
-          </main>
+            {/* 内容区 */}
+            <main className="flex-1 min-w-0 overflow-y-auto">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-[var(--fg)]">
+                  {t(`settings.${activeTab}`)}
+                </h2>
+                <p className="text-sm text-[var(--muted)] mt-1">
+                  {t(tabDescriptions[activeTab])}
+                </p>
+              </div>
+              {renderContent()}
+            </main>
+          </div>
         </div>
       </div>
     </div>

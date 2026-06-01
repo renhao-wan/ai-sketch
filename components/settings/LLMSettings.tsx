@@ -272,7 +272,7 @@ export function LLMSettings() {
       </div>
 
       {/* 配置列表 */}
-      <ScrollToTop className="scrollbar-thin">
+      <ScrollToTop className="max-h-[calc(100vh-20rem)] scrollbar-thin">
         <div className="space-y-2">
           {filteredConfigs.length === 0 ? (
             <div className="text-center py-12 text-sm text-[var(--muted)]">
