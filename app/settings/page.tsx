@@ -8,16 +8,18 @@ import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
 import { LLMSettings } from '@/components/settings/LLMSettings';
 import ConversationSettings from '@/components/settings/ConversationSettings';
 import DataSettings from '@/components/settings/DataSettings';
+import { KeyboardShortcutsSettings } from '@/components/settings/KeyboardShortcutsSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
 import { ArrowLeft } from 'lucide-react';
 
-const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'conversations', 'data', 'about'];
+const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'conversations', 'data', 'shortcuts', 'about'];
 
 const tabDescriptions: Record<SettingsTab, TranslationKey> = {
   appearance: 'settings.appearanceDesc',
   llm: 'settings.llmDesc',
   conversations: 'settings.conversationsTabDesc',
   data: 'settings.dataDesc',
+  shortcuts: 'settings.shortcutsDesc',
   about: 'settings.aboutDesc',
 };
 
@@ -47,6 +49,8 @@ export default function SettingsPage() {
         return <ConversationSettings />;
       case 'data':
         return <DataSettings />;
+      case 'shortcuts':
+        return <KeyboardShortcutsSettings />;
       case 'about':
         return <AboutSettings />;
     }
