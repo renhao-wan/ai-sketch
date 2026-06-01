@@ -372,39 +372,19 @@ export function LLMSettings() {
 
       {/* 配置编辑器弹窗 */}
       {editingConfig && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => { setEditingConfig(null); setIsCreating(false); }} />
-          <div className="relative bg-[var(--surface-warm)] backdrop-blur-2xl rounded-3xl border border-[var(--border)] shadow-[0_20px_60px_rgba(28,25,23,0.10)] w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col animate-slide-up">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
-              <h2 className="text-lg font-semibold text-[var(--fg)]">
-                {isCreating ? t('config.new') : t('config.edit')}
-              </h2>
-              <button
-                onClick={() => { setEditingConfig(null); setIsCreating(false); }}
-                className="w-8 h-8 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              <ConfigEditor
-                config={editingConfig}
-                isCreating={isCreating}
-                onSave={handleSaveConfig}
-                onCancel={() => { setEditingConfig(null); setIsCreating(false); }}
-              />
-            </div>
-          </div>
-        </div>
+        <ConfigEditor
+          config={editingConfig}
+          isCreating={isCreating}
+          onSave={handleSaveConfig}
+          onCancel={() => { setEditingConfig(null); setIsCreating(false); }}
+        />
       )}
     </div>
   );
 }
 
 /**
- * 配置编辑器子组件
+ * 配置编辑器子组件（带 Modal 包装）
  * 用于新增/编辑配置的表单
  */
 function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProps) {
@@ -456,17 +436,32 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
   const inputClass = "w-full px-4 py-2.5 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200";
 
   return (
-    <div className="space-y-4">
-      {/* 表单内容 */}
-      <div className="space-y-4">
-        {error && (
-          <div className="px-4 py-3 bg-red-500/10 rounded-xl">
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        )}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative bg-[var(--surface-warm)] backdrop-blur-2xl rounded-3xl border border-[var(--border)] shadow-[0_20px_60px_rgba(28,25,23,0.10)] w-full max-w-md max-h-[78vh] flex flex-col animate-slide-up">
+        {/* Header */}
+        <div className="flex items-center justify-between px-7 pt-6 pb-4 flex-shrink-0">
+          <h2 className="text-lg font-semibold tracking-tight text-[var(--fg)]">
+            {isCreating ? t('config.new') : t('config.edit')}
+          </h2>
+          <button
+            onClick={onCancel}
+            className="w-8 h-8 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+          >
+            <X size={18} />
+          </button>
+        </div>
 
-        <div>
-          <label htmlFor="configName" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.configName')} <span className="text-red-500">*</span></label>
+        {/* Scrollable Body */}
+        <div className="px-7 pb-6 space-y-4 overflow-y-auto scrollbar-hide flex-1 min-h-0">
+          {error && (
+            <div className="px-4 py-3 bg-red-500/10 rounded-xl">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.configName')} <span className="text-red-500">*</span></label>
           <input
             id="configName"
             type="text"
@@ -574,22 +569,23 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
             />
           )}
         </div>
-      </div>
+        </div>
 
-      {/* 操作按钮 */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-[var(--surface-warm-hover)]">
-        <button
-          onClick={onCancel}
-          className="px-4 py-2 text-sm text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-xl transition-all duration-200"
-        >
-          {t('common.cancel')}
-        </button>
-        <button
-          onClick={handleSave}
-          className="px-5 py-2 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 font-medium"
-        >
-          {isCreating ? t('common.create') : t('common.save')}
-        </button>
+        {/* Footer - Fixed */}
+        <div className="flex justify-end gap-3 px-7 py-4 border-t border-[var(--surface-warm-hover)] flex-shrink-0">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-xl transition-all duration-200"
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-5 py-2 text-sm text-white bg-[var(--primary)] rounded-xl hover:bg-[var(--primary)]/90 active:scale-[0.98] transition-all duration-200 font-medium"
+          >
+            {isCreating ? t('common.create') : t('common.save')}
+          </button>
+        </div>
       </div>
     </div>
   );
