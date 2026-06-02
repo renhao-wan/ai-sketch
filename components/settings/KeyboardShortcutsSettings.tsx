@@ -1,50 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useLocale } from '@/locales';
 import { useShortcuts, formatKeys } from '@/hooks/useShortcuts';
-import { Keyboard, RotateCcw } from 'lucide-react';
-import type { Shortcut, ShortcutScope } from '@/types/shortcuts';
-
-interface ShortcutItemProps {
-  shortcut: Shortcut;
-  enabled: boolean;
-  onToggle: (id: string) => void;
-}
-
-function ShortcutItem({ shortcut, enabled, onToggle }: ShortcutItemProps) {
-  return (
-    <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]">
-      <div className="flex items-center gap-3">
-        <div className="flex gap-1">
-          {shortcut.keys.map((key, index) => (
-            <kbd
-              key={index}
-              className="px-2 py-1 text-xs font-mono bg-[var(--surface-warm-hover)] border border-[var(--border)] rounded-md"
-            >
-              {key}
-            </kbd>
-          ))}
-        </div>
-        <span className="text-sm text-[var(--fg)]">{shortcut.description}</span>
-      </div>
-      <button
-        onClick={() => onToggle(shortcut.id)}
-        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-          enabled
-            ? 'bg-[var(--accent-indigo)]'
-            : 'bg-[var(--surface-warm-hover)] border border-[var(--border)]'
-        }`}
-      >
-        <div
-          className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-            enabled ? 'translate-x-5.5' : 'translate-x-0.5'
-          }`}
-        />
-      </button>
-    </div>
-  );
-}
+import { Keyboard } from 'lucide-react';
+import type { Shortcut } from '@/types/shortcuts';
 
 interface KeyboardShortcutsSettingsProps {
   searchQuery?: string;
@@ -52,82 +12,43 @@ interface KeyboardShortcutsSettingsProps {
 
 export function KeyboardShortcutsSettings({ searchQuery = '' }: KeyboardShortcutsSettingsProps) {
   const { t } = useLocale();
-  const {
-    shortcuts,
-    isHelpOpen,
-    toggleShortcut,
-    resetShortcuts,
-    isShortcutEnabled,
-    getShortcutsByScope,
-    searchShortcuts,
-    toggleHelp,
-    DEFAULT_GLOBAL_SHORTCUTS,
-    DEFAULT_EDITOR_SHORTCUTS,
-  } = useShortcuts();
-
-  // 获取按作用域分组的快捷键
-  const shortcutsByScope = useMemo(() => {
-    if (searchQuery) {
-      const filtered = searchShortcuts(searchQuery);
-      return {
-        global: filtered.filter(s => s.scope === 'global'),
-        editor: filtered.filter(s => s.scope === 'editor'),
-        settings: filtered.filter(s => s.scope === 'settings'),
-      };
-    }
-    return getShortcutsByScope();
-  }, [searchQuery, searchShortcuts, getShortcutsByScope]);
-
-  // 渲染快捷键列表
-  const renderShortcuts = (scope: ShortcutScope, shortcuts: Shortcut[]) => {
-    if (shortcuts.length === 0) return null;
-
-    return (
-      <div key={scope} className="space-y-3">
-        <h3 className="text-lg font-semibold text-[var(--fg)] flex items-center gap-2">
-          <Keyboard size={18} className="text-[var(--accent-indigo)]" />
-          {t(`shortcuts.scope.${scope}`)}
-        </h3>
-        <div className="space-y-2">
-          {shortcuts.map(shortcut => (
-            <ShortcutItem
-              key={shortcut.id}
-              shortcut={shortcut}
-              enabled={isShortcutEnabled(shortcut.id)}
-              onToggle={toggleShortcut}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  };
+  const { filteredShortcuts } = useShortcuts();
 
   return (
     <div className="space-y-6">
       {/* 快捷键列表 */}
-      <div className="space-y-6">
-        {renderShortcuts('global', shortcutsByScope.global)}
-        {renderShortcuts('editor', shortcutsByScope.editor)}
-        {shortcutsByScope.settings.length > 0 && renderShortcuts('settings', shortcutsByScope.settings)}
+      <div className="space-y-2">
+        {filteredShortcuts.map(shortcut => (
+          <div
+            key={shortcut.id}
+            className="flex items-center justify-between p-3 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1">
+                {shortcut.keys.map((key, index) => (
+                  <kbd
+                    key={index}
+                    className="px-2 py-1 text-xs font-mono bg-[var(--surface-warm-hover)] border border-[var(--border)] rounded-md"
+                  >
+                    {key}
+                  </kbd>
+                ))}
+              </div>
+              <span className="text-sm text-[var(--fg)]">{shortcut.description}</span>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* 操作按钮 */}
-      <div className="flex items-center justify-between pt-4 border-t border-[var(--border)]">
-        <button
-          onClick={toggleHelp}
-          className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors"
-        >
-          <Keyboard size={16} />
-          {t('shortcuts.showHelp')}
-        </button>
-        <button
-          onClick={resetShortcuts}
-          className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg transition-colors"
-        >
-          <RotateCcw size={16} />
-          {t('shortcuts.reset')}
-        </button>
-      </div>
+      {/* 空状态 */}
+      {filteredShortcuts.length === 0 && (
+        <div className="text-center py-8">
+          <Keyboard size={32} className="mx-auto mb-3 text-[var(--muted)]" />
+          <p className="text-sm text-[var(--muted)]">
+            {searchQuery ? '没有找到匹配的快捷键' : '暂无快捷键'}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

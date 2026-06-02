@@ -180,6 +180,7 @@ export const en: TranslationDict = {
   'conversation.limitReached': 'Conversation limit reached',
   'conversation.limitReachedMsg': 'You have {limit} conversations, which is the limit. Please delete some old conversations before creating new ones.',
   'conversation.noResults': 'No matching conversations found',
+  'conversation.noMore': 'No more',
   'conversation.countTotal': '{count} total records',
   'conversation.renameSuccess': 'Rename successful',
   'conversation.renameFailed': 'Rename failed',

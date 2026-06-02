@@ -178,6 +178,7 @@ export const zh = {
   'conversation.limitReached': '会话数量已达上限',
   'conversation.limitReachedMsg': '您已有 {limit} 个会话，达到上限。请删除一些旧会话后再创建新会话。',
   'conversation.noResults': '未找到匹配的会话',
+  'conversation.noMore': '没有更多了',
   'conversation.countTotal': '共 {count} 条记录',
   'conversation.renameSuccess': '重命名成功',
   'conversation.renameFailed': '重命名失败',
