@@ -91,6 +91,7 @@ export default function MessageBubble({ message, isStreaming, onRegenerate, onCo
               <div className={`mb-2 flex gap-1.5 flex-wrap ${images.length > 1 ? 'max-w-48' : ''}`}>
                 {images.slice(0, 3).map((img, i) => (
                   <div key={i} className="w-20 h-16 rounded-lg overflow-hidden bg-[var(--surface-warm-hover)] flex items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL 不支持 next/image */}
                     <img
                       src={`data:${img.mimeType};base64,${img.data}`}
                       alt={`Uploaded ${i + 1}`}

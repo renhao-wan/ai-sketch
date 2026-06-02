@@ -52,6 +52,7 @@ export default function SettingsPage() {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
       if (tabParam && VALID_TABS.includes(tabParam as SettingsTab)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- 从 URL 参数初始化 tab，仅执行一次
         setActiveTab(tabParam as SettingsTab);
       }
     }

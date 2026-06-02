@@ -84,6 +84,7 @@ export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadRetu
     setNotification(prev => ({ ...prev, isOpen: false }));
   }, []);
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- 使用可选链访问依赖属性，避免不必要的重渲染
   const handleFiles = useCallback(async (files: File[], prompt?: string) => {
     if (files.length === 0) return;
 
@@ -131,6 +132,7 @@ export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadRetu
     setAttachError('');
   }, []);
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- 使用可选链访问依赖属性，避免不必要的重渲染
   const removeAttachment = useCallback(async (index: number) => {
     const remaining = attachmentsRef.current.filter((_, i) => i !== index);
     if (remaining.length === 0) {

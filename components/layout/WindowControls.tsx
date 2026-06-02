@@ -30,6 +30,7 @@ export default function WindowControls() {
     window.electronAPI?.window?.close();
   };
 
+  /* eslint-disable react-hooks/set-state-in-effect -- 从外部系统（Electron）同步状态，仅执行一次 */
   useEffect(() => {
     // 检查是否在 Electron 环境中
     setIsElectron(typeof window !== 'undefined' && !!window.electronAPI);
@@ -68,6 +69,7 @@ export default function WindowControls() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // 非 Electron 环境不渲染
   if (!isElectron) return null;

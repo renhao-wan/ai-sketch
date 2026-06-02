@@ -35,6 +35,7 @@ interface UseCountBannerResult {
 export function useCountBanner({ count, threshold, storageKey }: UseCountBannerOptions): UseCountBannerResult {
   const [showBanner, setShowBanner] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- 根据 count 和 sessionStorage 同步 banner 状态 */
   useEffect(() => {
     if (count >= threshold) {
       const dismissed = sessionStorage.getItem(storageKey);
@@ -45,6 +46,7 @@ export function useCountBanner({ count, threshold, storageKey }: UseCountBannerO
     }
     setShowBanner(false);
   }, [count, threshold, storageKey]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleDismissBanner = () => {
     setShowBanner(false);

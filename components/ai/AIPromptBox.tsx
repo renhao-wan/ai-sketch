@@ -112,6 +112,7 @@ export default function AIPromptBox() {
             return (
               <div key={`${file.name}-${i}`} className="relative flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] group">
                 {isImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- blob URL 不支持 next/image
                   <img src={URL.createObjectURL(file)} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
                 ) : (
                   <div className="w-8 h-8 rounded bg-[var(--surface-warm)] flex items-center justify-center flex-shrink-0">
@@ -200,6 +201,7 @@ export default function AIPromptBox() {
                   hasAttachment && getSourceType() === 'image' ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]' : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
                 }`}
               >
+                {/* eslint-disable-next-line jsx-a11y/alt-text -- lucide Image 是 SVG 图标，不是 <img> */}
                 <Image size={18} />
               </button>
             </Tooltip>

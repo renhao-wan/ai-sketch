@@ -28,6 +28,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === 'zh' || stored === 'en') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 从 localStorage 同步语言设置，仅执行一次
       setLocaleState(stored);
       document.documentElement.lang = stored === 'zh' ? 'zh-CN' : 'en';
     }

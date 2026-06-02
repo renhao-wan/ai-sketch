@@ -96,13 +96,14 @@ export default function DrawioCanvas({ code }: DrawioCanvasProps) {
   }, [embedReady, t]);
 
   // 发送 XML 到 draw.io（合理用例，需要在 effect 中处理错误）
+  /* eslint-disable react-hooks/set-state-in-effect -- effect 中需要处理发送错误状态 */
   useEffect(() => {
     if (embedReady) {
       const error = sendXml();
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (error) setError(error);
     }
   }, [embedReady, sendXml, code]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Timeout: if embed doesn't signal init within 15s, show error
   useEffect(() => {

@@ -56,6 +56,7 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
       setHasMore(true);
       loadConversations(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadConversations 不应在依赖中，避免打开下拉时无限循环
   }, [isOpen]);
 
   /** 滚动到底部时加载更多 */

@@ -62,11 +62,13 @@ export default function Tooltip({
     }, delay);
   };
 
+  /* eslint-disable react-hooks/set-state-in-effect -- tooltip 可见时需要计算位置 */
   useEffect(() => {
     if (isVisible) {
       calculatePosition();
     }
   }, [isVisible, calculatePosition]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const hideTooltip = () => {
     if (timeoutRef.current) {

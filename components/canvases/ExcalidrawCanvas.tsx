@@ -12,7 +12,6 @@ const Excalidraw = dynamic(
   { ssr: false },
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ConvertFn = (elements: any[], opts?: { regenerateIds: boolean }) => any[];
 
 let _convertFn: ConvertFn | null = null;
@@ -121,7 +120,6 @@ interface Props {
 }
 
 export default function ExcalidrawCanvas({ elements, isStreaming, streamRendererRef }: Props) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const apiRef = useRef<any>(null);
   const [convertFn, setConvertFn] = useState<ConvertFn | null>(null);
 
@@ -135,14 +133,12 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
   const allRawRef = useRef<unknown[]>([]);
   const idMapRef = useRef(new Map<string, Record<string, unknown>>());
   const convertedIdsRef = useRef(new Set<string>());
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sceneRef = useRef<any[]>([]);
 
   useEffect(() => {
     loadConvertFn().then(fn => { if (typeof fn === 'function') setConvertFn(() => fn); });
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleAPI = useCallback((api: any) => { apiRef.current = api; }, []);
 
   const initialData = useMemo(() => ({
@@ -230,7 +226,6 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
       .filter(e => e.type && VALID.has(e.type as string));
     if (!valid.length) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let converted: any[];
     try {
       converted = convertFn(valid, { regenerateIds: true });

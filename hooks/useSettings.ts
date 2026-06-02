@@ -48,6 +48,7 @@ export function useSettings() {
   useEffect(() => {
     const locale = getStoredValue(STORAGE_KEYS.locale, DEFAULT_SETTINGS.locale, isValidLocale);
     const theme = getStoredValue(STORAGE_KEYS.theme, DEFAULT_SETTINGS.theme, isValidTheme);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 从 localStorage 同步初始设置，仅执行一次
     setSettings(prev => {
       if (prev.locale === locale && prev.theme === theme) return prev;
       return { locale, theme };

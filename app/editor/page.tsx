@@ -86,6 +86,7 @@ function EditorContent() {
     if (!convId) return;
     sessionStorage.removeItem('ai-sketch-load-conversation');
     handleLoadConversation(convId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅在挂载时读取 sessionStorage，不需要依赖 handleLoadConversation
   }, []);
 
   // Consume init data from sessionStorage on mount (set by homepage before navigation)
@@ -268,6 +269,7 @@ function EditorContent() {
       setIsGenerating(false);
       setIsStreaming(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t 和 tryParseAndApply 不应在依赖中，避免不必要的重渲染
   }, [config, format, conversationId, isGenerating]);
 
   // Send pending init data once config is loaded
@@ -495,6 +497,7 @@ function EditorContent() {
       setIsStreaming(false);
       abortControllerRef.current = null;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tryParseAndApply 不应在依赖中，避免不必要的重渲染
   }, [isGenerating, messages, config, currentChartType, format, conversationId, t]);
 
   const handleAIAction = async (actionId: AIActionId) => {

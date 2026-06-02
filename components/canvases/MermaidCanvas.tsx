@@ -133,11 +133,10 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
       }
       return null;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initMermaid 和 mermaidInstance 是模块级变量，不需要作为依赖
   }, [code, initMermaid, mermaidInstance, handleFitToView, t]);
 
   // 渲染 Mermaid 图表（合理用例，需要在 effect 中处理错误）
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -159,7 +158,9 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
       }
     });
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- currentRenderId 已在 effect 内捕获，用于清理；renderDiagram 不需要作为依赖
     return () => { renderIdRef.current++; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- renderDiagram 是 useCallback 包裹的函数，不需要作为依赖
   }, [code, t]);
 
   return (

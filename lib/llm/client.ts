@@ -58,7 +58,6 @@ async function getProxyAgent(): Promise<ProxyAgent | undefined> {
 async function proxyFetch(url: string, options?: RequestInit): Promise<Response> {
   const agent = await getProxyAgent();
   if (agent) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- undici fetch 与全局 fetch 类型略有差异
     return undiciFetch(url, { ...options, dispatcher: agent } as any) as unknown as Promise<Response>;
   }
   return fetch(url, options);

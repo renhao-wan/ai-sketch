@@ -62,6 +62,7 @@ export function LLMSettings() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅在挂载时加载配置
   useEffect(() => { loadConfigs(); }, []);
 
   /** 新建配置 */
