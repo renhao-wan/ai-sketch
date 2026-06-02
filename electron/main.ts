@@ -36,6 +36,7 @@ const isDev = process.env.ELECTRON_DEV === 'true';
  * 配置窗口属性：
  * - 默认尺寸 1400x900，最小尺寸 800x600
  * - 启用上下文隔离，禁用 Node.js 集成（安全最佳实践）
+ * - 延迟显示（show: false + ready-to-show），避免启动时白屏闪烁
  */
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -44,6 +45,8 @@ function createWindow(): void {
     minWidth: 800,
     minHeight: 600,
     frame: false, // 完全无边框，不显示原生标题栏和按钮
+    show: false, // 延迟显示，等待页面加载完成后再展示
+    backgroundColor: '#FAF8F5', // 与应用默认主题背景色一致，避免启动时白屏闪烁
     title: 'AI Sketch', // 窗口标题
     icon: path.join(__dirname, '..', 'electron', 'resources', 'icon.png'), // 应用图标
     webPreferences: {
@@ -59,6 +62,11 @@ function createWindow(): void {
   if (port) {
     mainWindow.loadURL(`http://localhost:${port}`);
   }
+
+  // 页面加载完成后再显示窗口，避免白屏闪烁
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.show();
+  });
 
   // 窗口关闭时清理引用
   mainWindow.on('closed', () => {

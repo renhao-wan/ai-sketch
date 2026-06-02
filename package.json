@@ -16,14 +16,6 @@
     "pack": "electron-builder --dir",
     "dist": "electron-builder"
   },
-  "build": {
-    "appId": "com.ai-sketch.app",
-    "productName": "AI Sketch",
-    "directories": {
-      "output": "dist",
-      "buildResources": "electron/resources"
-    }
-  },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",
     "@monaco-editor/react": "^4.7.0",
