@@ -14,6 +14,8 @@ files:
   - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
   - "!**/node_modules/.cache/**"
   - "!.next/**"
+  - ".next/**"
+  - "!.next/cache/**"
   - "!electron/**"
   - "app/**"
   - "lib/**"
