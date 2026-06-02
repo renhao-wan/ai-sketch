@@ -8,7 +8,7 @@
  * 4. 管理应用生命周期
  */
 
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
 import path from 'path';
 import { startServer, stopServer } from './server';
 
@@ -18,11 +18,11 @@ let mainWindow: BrowserWindow | null = null;
 /** Next.js 服务器端口 */
 let serverPort: number | null = null;
 
-/** 应用数据目录路径 */
-const userDataPath = app.getPath('userData');
+/** 应用数据目录路径（在 app.whenReady 后初始化） */
+let userDataPath: string;
 
-/** SQLite 数据库文件路径 */
-const dbPath = path.join(userDataPath, 'data', 'ai-sketch.db');
+/** SQLite 数据库文件路径（在 app.whenReady 后初始化） */
+let dbPath: string;
 
 /**
  * 创建主窗口
@@ -40,10 +40,12 @@ function createWindow(): void {
     minHeight: 600,
     frame: true, // 显示系统窗口框架
     titleBarStyle: 'hiddenInset', // macOS 隐藏标题栏
+    icon: path.join(__dirname, '..', 'build', 'icon.png'), // 应用图标
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      devTools: false, // 禁用开发者工具
     },
   });
 
@@ -58,17 +60,22 @@ function createWindow(): void {
   });
 }
 
+// 隐藏菜单栏
+Menu.setApplicationMenu(null);
+
 // 应用就绪后启动
 app.whenReady().then(async () => {
   try {
+    // 初始化路径
+    userDataPath = app.getPath('userData');
+    dbPath = path.join(userDataPath, 'data', 'ai-sketch.db');
+
     // 启动 Next.js 服务器
     serverPort = await startServer(dbPath);
-    console.log(`Next.js server started on port ${serverPort}`);
 
     // 创建窗口
     createWindow();
   } catch (error) {
-    console.error('Failed to start application:', error);
     dialog.showErrorBox(
       '启动失败',
       `应用启动失败: ${(error as Error).message}`

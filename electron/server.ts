@@ -44,7 +44,9 @@ function setupDatabasePath(dbPath: string): void {
 export async function startServer(dbPath: string): Promise<number> {
   setupDatabasePath(dbPath);
 
-  const dev = process.env.NODE_ENV !== 'production';
+  // 开发模式下，Next.js 开发服务器已经由 concurrently 启动
+  // 这里使用生产模式，避免锁文件冲突
+  const dev = false;
   const hostname = 'localhost';
   const port = 0; // 使用 0 让操作系统分配随机可用端口
 
@@ -77,9 +79,7 @@ export async function startServer(dbPath: string): Promise<number> {
     server.listen(port, hostname, () => {
       const address = server!.address();
       if (address && typeof address === 'object') {
-        const assignedPort = address.port;
-        console.log(`[Server] Next.js 服务器已启动，端口: ${assignedPort}`);
-        resolve(assignedPort);
+        resolve(address.port);
       } else {
         reject(new Error('无法获取服务器端口'));
       }
@@ -99,9 +99,7 @@ export async function startServer(dbPath: string): Promise<number> {
  */
 export function stopServer(): void {
   if (server) {
-    console.log('[Server] 正在停止服务器...');
     server.close();
     server = null;
-    console.log('[Server] 服务器已停止');
   }
 }
