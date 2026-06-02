@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "electron:dev": "concurrently \"next dev --webpack\" \"wait-on http://localhost:3000 && electron .\"",
-    "electron:build": "ts-node scripts/build.ts",
+    "electron:build": "ts-node --project scripts/tsconfig.json --transpile-only scripts/build.ts",
     "pack": "electron-builder --dir",
     "dist": "electron-builder"
   },
