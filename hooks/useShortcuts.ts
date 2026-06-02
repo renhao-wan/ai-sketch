@@ -5,20 +5,7 @@ import type { Shortcut } from '@/types/shortcuts';
 
 /** 默认快捷键定义 */
 const DEFAULT_SHORTCUTS: Shortcut[] = [
-  {
-    id: 'escape',
-    keys: ['Esc'],
-    description: '退出/取消',
-    descriptionKey: 'shortcuts.escape',
-    scope: 'global',
-  },
-  {
-    id: 'open-settings',
-    keys: ['Ctrl', ','],
-    description: '打开设置',
-    descriptionKey: 'shortcuts.openSettings',
-    scope: 'global',
-  },
+  // 页面导航
   {
     id: 'go-home',
     keys: ['Ctrl', 'Shift', 'H'],
@@ -34,17 +21,25 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     scope: 'global',
   },
   {
-    id: 'open-about',
-    keys: ['Ctrl', 'Shift', 'A'],
-    description: '关于应用',
-    descriptionKey: 'shortcuts.openAbout',
+    id: 'open-history',
+    keys: ['Ctrl', 'Shift', 'I'],
+    description: '历史记录',
+    descriptionKey: 'shortcuts.openHistory',
+    scope: 'global',
+  },
+  // 设置页面
+  {
+    id: 'open-settings',
+    keys: ['Ctrl', ','],
+    description: '打开设置',
+    descriptionKey: 'shortcuts.openSettings',
     scope: 'global',
   },
   {
-    id: 'open-data',
-    keys: ['Ctrl', 'Shift', 'D'],
-    description: '数据管理',
-    descriptionKey: 'shortcuts.openData',
+    id: 'open-appearance',
+    keys: ['Ctrl', 'Shift', 'O'],
+    description: '外观设置',
+    descriptionKey: 'shortcuts.openAppearance',
     scope: 'global',
   },
   {
@@ -62,19 +57,20 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     scope: 'global',
   },
   {
-    id: 'open-appearance',
-    keys: ['Ctrl', 'Shift', 'O'],
-    description: '外观设置',
-    descriptionKey: 'shortcuts.openAppearance',
+    id: 'open-data',
+    keys: ['Ctrl', 'Shift', 'D'],
+    description: '数据管理',
+    descriptionKey: 'shortcuts.openData',
     scope: 'global',
   },
   {
-    id: 'open-history',
-    keys: ['Ctrl', 'Shift', 'I'],
-    description: '历史记录',
-    descriptionKey: 'shortcuts.openHistory',
+    id: 'open-about',
+    keys: ['Ctrl', 'Shift', 'A'],
+    description: '关于应用',
+    descriptionKey: 'shortcuts.openAbout',
     scope: 'global',
   },
+  // 编辑操作
   {
     id: 'send-message',
     keys: ['Ctrl', 'Enter'],
@@ -103,11 +99,19 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     descriptionKey: 'shortcuts.save',
     scope: 'global',
   },
+  // 其他
   {
     id: 'fullscreen',
     keys: ['F11'],
     description: '全屏',
     descriptionKey: 'shortcuts.fullscreen',
+    scope: 'global',
+  },
+  {
+    id: 'escape',
+    keys: ['Esc'],
+    description: '退出/取消',
+    descriptionKey: 'shortcuts.escape',
     scope: 'global',
   },
 ];
