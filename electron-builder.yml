@@ -14,9 +14,10 @@ files:
   - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
   - "!**/node_modules/.cache/**"
   - "!.next/**"
+  - "!electron/**"
   - "app/**"
   - "lib/**"
-  - "electron/**"
+  - "dist-electron/**"
   - "package.json"
 
 extraResources:

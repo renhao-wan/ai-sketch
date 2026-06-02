@@ -2,7 +2,7 @@
   "name": "smart-excalidraw-next",
   "version": "0.1.0",
   "private": true,
-  "main": "electron/main.js",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",

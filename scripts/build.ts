@@ -87,6 +87,19 @@ function buildNext(): void {
 }
 
 /**
+ * 编译 Electron TypeScript 文件
+ *
+ * 使用 tsc 编译 electron/ 目录下的 TypeScript 文件到 dist-electron/ 目录。
+ * 编译产物包括 main.js、preload.js、server.js 等。
+ *
+ * @throws 编译失败时 execSync 会抛出异常
+ */
+function buildElectronTS(): void {
+  console.log('Compiling Electron TypeScript...');
+  execSync('npx tsc --project electron/tsconfig.json', { stdio: 'inherit' });
+}
+
+/**
  * 使用 electron-builder 打包 Electron 应用
  *
  * 根据平台和架构选择对应的打包命令：
@@ -125,8 +138,9 @@ function buildElectron(platform: string, arch: string): void {
  * 1. 检测平台和架构
  * 2. 清理旧构建产物
  * 3. 构建 Next.js
- * 4. 打包 Electron
- * 5. 输出完成信息和产物目录路径
+ * 4. 编译 Electron TypeScript
+ * 5. 打包 Electron
+ * 6. 输出完成信息和产物目录路径
  */
 async function main(): Promise<void> {
   const platform = detectPlatform();
@@ -136,15 +150,19 @@ async function main(): Promise<void> {
   console.log('');
 
   // Step 1: 清理
-  console.log('[1/3] Cleaning build directories...');
+  console.log('[1/4] Cleaning build directories...');
   cleanBuild();
 
   // Step 2: 构建 Next.js
-  console.log('[2/3] Building Next.js application...');
+  console.log('[2/4] Building Next.js application...');
   buildNext();
 
-  // Step 3: 打包 Electron
-  console.log('[3/3] Packaging Electron application...');
+  // Step 3: 编译 Electron TypeScript
+  console.log('[3/4] Compiling Electron TypeScript...');
+  buildElectronTS();
+
+  // Step 4: 打包 Electron
+  console.log('[4/4] Packaging Electron application...');
   buildElectron(platform, arch);
 
   console.log('');
