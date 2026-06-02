@@ -2,11 +2,24 @@
   "name": "smart-excalidraw-next",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "electron:dev": "concurrently \"next dev --webpack\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:build": "ts-node scripts/build.ts",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.ai-sketch.app",
+    "productName": "AI Sketch",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    }
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",
