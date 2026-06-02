@@ -16,17 +16,17 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { AppIcon } from '../layout/TopBar';
-import ChartTypeSelect from '../ChartTypeSelect';
+import ChartTypeSelect from '@/components/editor/ChartTypeSelect';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
-import Notification from '../Notification';
+import Notification from '@/components/ui/Notification';
 import MessageBubble from './MessageBubble';
 import ConversationList from './ConversationList';
-import { useLocale } from '@/locales';
-import FormatSelector from '../FormatSelector';
+import { useLocale } from '@/lib/locales';
+import FormatSelector from '@/components/editor/FormatSelector';
 import Tooltip from '@/components/ui/Tooltip';
-import type { SourceType, ConversationMessage } from '@/types';
-import type { DiagramFormat } from '@/types/diagram-strategy';
+import type { SourceType, ConversationMessage } from '@/lib/types';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 /** 导出消息内容为文件 */
 function exportMessage(content: string, format: DiagramFormat) {

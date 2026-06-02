@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 import { useZoomControls } from '@/hooks/useZoomControls';
-import { getMermaidThemeVariables, getCurrentTheme } from '@/lib/theme-utils';
+import { getMermaidThemeVariables, getCurrentTheme } from '@/lib/utils/theme-utils';
 import ZoomToolbar from './ZoomToolbar';
 
 interface MermaidCanvasProps {

@@ -15,8 +15,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { imageStrategy, orchestrator } from '@/lib/input-strategies/registry';
 import { getStrategy } from '@/lib/strategies/registry';
-import type { DiagramFormat } from '@/types/diagram-strategy';
-import type { MessagePayload } from '@/types/input-strategy';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
+import type { MessagePayload } from '@/lib/types/input-strategy';
 
 type AttachStatus = '' | 'processing' | 'success' | 'error';
 

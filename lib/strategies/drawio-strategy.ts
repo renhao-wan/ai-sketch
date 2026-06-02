@@ -3,7 +3,7 @@
  * Generates Draw.io XML (mxGraphModel format) for diagrams.
  */
 
-import type { DiagramStrategy, ValidationResult } from '@/types/diagram-strategy';
+import type { DiagramStrategy, ValidationResult } from '@/lib/types/diagram-strategy';
 import { DRAWIO_SYSTEM_PROMPT, buildDrawioUserPrompt, DRAWIO_GUIDANCE_MAP } from '@/lib/prompts/drawio';
 import { CHART_TYPES, getChartTypeName } from '@/lib/diagram/constants';
 import { stripCodeFences } from '@/lib/diagram/json-repair';

@@ -4,7 +4,7 @@ copyright: Copyright © 2024 AI Sketch
 
 directories:
   output: dist
-  buildResources: build
+  buildResources: electron/resources
 
 files:
   - "**/*"
@@ -30,31 +30,31 @@ win:
   target:
     - target: nsis
       arch: [x64]
-  icon: build/icon.ico
+  icon: electron/resources/icon.ico
 
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-  installerIcon: build/icon.ico
-  uninstallerIcon: build/icon.ico
-  installerHeaderIcon: build/icon.ico
+  installerIcon: electron/resources/icon.ico
+  uninstallerIcon: electron/resources/icon.ico
+  installerHeaderIcon: electron/resources/icon.ico
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: AI Sketch
   # 卸载时询问是否删除数据
-  include: build/uninstaller.nsh
+  include: electron/resources/uninstaller.nsh
 
 # macOS 配置
 mac:
   target:
     - target: dmg
       arch: [x64, arm64]
-  icon: build/icon.icns
+  icon: electron/resources/icon.icns
   category: public.app-category.developer-tools
   hardenedRuntime: true
   gatekeeperAssess: false
-  entitlements: build/entitlements.mac.plist
-  entitlementsInherit: build/entitlements.mac.plist
+  entitlements: electron/resources/entitlements.mac.plist
+  entitlementsInherit: electron/resources/entitlements.mac.plist
 
 dmg:
   contents:
@@ -70,7 +70,7 @@ linux:
   target:
     - target: AppImage
       arch: [x64]
-  icon: build/icon.png
+  icon: electron/resources/icon.png
   category: Development
   desktop:
     Name: AI Sketch

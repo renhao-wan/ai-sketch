@@ -1,10 +1,10 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useLocale, type TranslationKey } from '@/locales';
+import { useLocale, type TranslationKey } from '@/lib/locales';
 import { useShortcuts, formatKeys } from '@/hooks/useShortcuts';
 import { Keyboard, Navigation, Settings, Edit3, MoreHorizontal } from 'lucide-react';
-import type { Shortcut } from '@/types/shortcuts';
+import type { Shortcut } from '@/lib/types/shortcuts';
 
 interface KeyboardShortcutsSettingsProps {
   searchQuery?: string;

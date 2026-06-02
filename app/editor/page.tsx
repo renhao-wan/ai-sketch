@@ -6,24 +6,24 @@ import { AppIcon } from '@/components/layout/TopBar';
 import AICopilotPanel from '@/components/ai/AICopilotPanel';
 import FloatingAIActions from '@/components/ai/FloatingAIActions';
 import BottomContextPanel from '@/components/layout/BottomContextPanel';
-import CodeEditor from '@/components/CodeEditor';
+import CodeEditor from '@/components/editor/CodeEditor';
 import ConfigSelector from '@/components/dialogs/ConfigSelector';
-import Notification from '@/components/Notification';
+import Notification from '@/components/ui/Notification';
 import DiagramCanvas from '@/components/canvases/DiagramCanvas';
 import type { StreamRendererRef } from '@/components/canvases/ExcalidrawCanvas';
-import * as api from '@/lib/api-client';
-import { isConfigValid } from '@/lib/config-validator';
+import * as api from '@/lib/api/client';
+import { isConfigValid } from '@/lib/api/config-validator';
 import { getStrategy } from '@/lib/strategies/registry';
 import { stripCodeFences } from '@/lib/diagram/json-repair';
-import { consumeInitData } from '@/lib/init-data';
-import { runMigrationIfNeeded } from '@/lib/migration';
-import { useLocale } from '@/locales';
+import { consumeInitData } from '@/lib/utils/init-data';
+import { runMigrationIfNeeded } from '@/lib/api/migration';
+import { useLocale } from '@/lib/locales';
 import { useShortcuts } from '@/hooks/useShortcuts';
-import type { LLMConfig, NotificationState, AIActionId, ConversationMessage } from '@/types';
-import type { DiagramFormat } from '@/types/diagram-strategy';
+import type { LLMConfig, NotificationState, AIActionId, ConversationMessage } from '@/lib/types';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 import { generateId, parseStoredImages } from '@/lib/utils';
-import { consumeSSEStream, parseAPIError } from '@/lib/sse-consumer';
+import { consumeSSEStream, parseAPIError } from '@/lib/api/sse-consumer';
 
 function EditorContent() {
   const router = useRouter();
@@ -120,7 +120,7 @@ function EditorContent() {
     pendingSourceRef.current = source;
   }, []);
 
-  const pendingInitRef = useRef<import('@/lib/init-data').InitData | null>(null);
+  const pendingInitRef = useRef<import('@/lib/utils/init-data').InitData | null>(null);
   const pendingSourceRef = useRef<string>('text');
   const abortControllerRef = useRef<AbortController | null>(null);
   const streamRendererRef = useRef<StreamRendererRef | null>(null);

@@ -2,10 +2,10 @@
  * Image input strategy — validates image files, converts to base64, builds image message.
  */
 
-import type { InputStrategy, InputValidationResult, MessagePayload } from '@/types/input-strategy';
-import { validateImage, createImageObject, getImagePreviewUrl, SUPPORTED_IMAGE_TYPES } from '@/lib/image-utils';
+import type { InputStrategy, InputValidationResult, MessagePayload } from '@/lib/types/input-strategy';
+import { validateImage, createImageObject, getImagePreviewUrl, SUPPORTED_IMAGE_TYPES } from '@/lib/utils/image-utils';
 import { getStrategy } from '@/lib/strategies/registry';
-import type { DiagramFormat } from '@/types/diagram-strategy';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 export interface ImageProcessedData {
   imageObject: unknown;

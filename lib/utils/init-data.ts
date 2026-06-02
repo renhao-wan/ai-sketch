@@ -3,7 +3,7 @@
  * Uses sessionStorage — data lives for the tab session, auto-clears on tab close.
  */
 
-import type { DiagramFormat } from '@/types/diagram-strategy';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 const KEY = 'ai-sketch-init-data';
 

@@ -14,7 +14,7 @@
  *   else showErrors(result.errors);
  */
 
-import type { InputStrategy, ProcessedItem, MessagePayload, InputSourceType } from '@/types/input-strategy';
+import type { InputStrategy, ProcessedItem, MessagePayload, InputSourceType } from '@/lib/types/input-strategy';
 
 interface OrchestrationSuccess {
   success: true;

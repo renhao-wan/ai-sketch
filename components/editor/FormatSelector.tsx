@@ -1,6 +1,6 @@
 'use client';
 
-import type { DiagramFormat } from '@/types/diagram-strategy';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 const FORMATS = [
   { key: 'excalidraw' as DiagramFormat, label: 'Excalidraw' },

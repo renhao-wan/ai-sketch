@@ -2,7 +2,7 @@
  * Optimize Excalidraw arrow coordinates by aligning them to the center of bound element edges
  */
 
-import type { ExcalidrawElement } from '@/types';
+import type { ExcalidrawElement } from '@/lib/types';
 import { extractFirstJsonArray } from './json-repair';
 
 type Edge = 'left' | 'right' | 'top' | 'bottom';

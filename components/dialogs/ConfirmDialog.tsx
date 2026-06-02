@@ -2,7 +2,7 @@
 
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 
 interface ConfirmDialogProps {
   isOpen: boolean;

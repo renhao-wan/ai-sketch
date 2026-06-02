@@ -2,7 +2,7 @@
  * LLM Client for calling OpenAI and Anthropic APIs
  */
 
-import type { LLMConfig, LLMMessage, ModelInfo, TestConnectionResult } from '@/types';
+import type { LLMConfig, LLMMessage, ModelInfo, TestConnectionResult } from '@/lib/types';
 
 interface OpenAIMessage {
   role: string;

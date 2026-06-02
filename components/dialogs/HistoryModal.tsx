@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import * as api from '@/lib/api-client';
-import ScrollToTop from '../ScrollToTop';
+import * as api from '@/lib/api/client';
+import ScrollToTop from '@/components/ui/ScrollToTop';
 import Dropdown from '@/components/ui/Dropdown';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 import { Clock, ArrowRight, Search } from 'lucide-react';
-import type { Conversation } from '@/types';
+import type { Conversation } from '@/lib/types';
 
 interface HistoryModalProps {
   isOpen: boolean;

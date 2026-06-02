@@ -8,9 +8,9 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
-import type { TranslationKey } from '@/locales';
+import type { TranslationKey } from '@/lib/locales';
 
 import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github-dark.min.css';

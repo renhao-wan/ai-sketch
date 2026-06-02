@@ -2,7 +2,7 @@
 
 import { Component, type ReactNode, type ErrorInfo } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { LocaleContext } from '@/locales';
+import { LocaleContext } from '@/lib/locales';
 
 interface ErrorBoundaryProps {
   children: ReactNode;

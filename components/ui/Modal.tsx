@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 
 interface ModalProps {
   isOpen: boolean;

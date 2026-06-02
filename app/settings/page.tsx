@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useLocale, type TranslationKey } from '@/locales';
+import { useLocale, type TranslationKey } from '@/lib/locales';
 import { useShortcuts } from '@/hooks/useShortcuts';
 import { SettingsSidebar, SettingsTab } from '@/components/settings/SettingsSidebar';
 import { AppearanceSettings } from '@/components/settings/AppearanceSettings';

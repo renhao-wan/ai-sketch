@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Shortcut } from '@/types/shortcuts';
+import type { Shortcut } from '@/lib/types/shortcuts';
 
 /** 默认快捷键定义 */
 const DEFAULT_SHORTCUTS: Shortcut[] = [

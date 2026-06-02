@@ -1,7 +1,7 @@
 import { getDb, saveToDisk } from './index';
 import { testConnection } from '@/lib/llm/client';
 import { generateId } from '@/lib/utils';
-import type { LLMConfig, TestConnectionResult } from '@/types';
+import type { LLMConfig, TestConnectionResult } from '@/lib/types';
 
 interface ConfigStats {
   total: number;

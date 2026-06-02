@@ -1,17 +1,17 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import * as api from '@/lib/api-client';
+import * as api from '@/lib/api/client';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
-import Notification from '@/components/Notification';
-import ScrollToTop from '@/components/ScrollToTop';
+import Notification from '@/components/ui/Notification';
+import ScrollToTop from '@/components/ui/ScrollToTop';
 import Dropdown from '@/components/ui/Dropdown';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 import { Trash2, Search, Edit3, Check, X, ChevronDown, ChevronUp, ListChecks } from 'lucide-react';
 import CountBanner from '@/components/ui/CountBanner';
 import { useCountBanner } from '@/hooks/useCountBanner';
-import type { Conversation, ConfirmDialogState, NotificationState } from '@/types';
+import type { Conversation, ConfirmDialogState, NotificationState } from '@/lib/types';
 
 const PAGE_SIZE = 20;
 

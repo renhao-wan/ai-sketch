@@ -1,4 +1,4 @@
-import type { LLMConfig } from '@/types';
+import type { LLMConfig } from '@/lib/types';
 
 /**
  * Check if configuration is valid and complete

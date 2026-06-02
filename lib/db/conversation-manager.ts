@@ -1,7 +1,7 @@
 import { getDb, saveToDisk } from './index';
 import { generateId, parseStoredImages } from '@/lib/utils';
-import type { Conversation, ConversationMessage, ConversationWithMessages, LLMMessage } from '@/types';
-import type { DiagramFormat } from '@/types/diagram-strategy';
+import type { Conversation, ConversationMessage, ConversationWithMessages, LLMMessage } from '@/lib/types';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 interface ConversationRow {
   id: string;

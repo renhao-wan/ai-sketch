@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, type ReactNode, type UIEvent } from 'react';
 import { ArrowUp } from 'lucide-react';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 
 interface ScrollToTopProps {

@@ -3,7 +3,7 @@
  * Generates Mermaid syntax for flowcharts, sequence diagrams, class diagrams, etc.
  */
 
-import type { DiagramStrategy, ValidationResult } from '@/types/diagram-strategy';
+import type { DiagramStrategy, ValidationResult } from '@/lib/types/diagram-strategy';
 import { MERMAID_SYSTEM_PROMPT, buildMermaidUserPrompt, MERMAID_TYPE_MAP } from '@/lib/prompts/mermaid';
 import { CHART_TYPES, getChartTypeName } from '@/lib/diagram/constants';
 import { stripCodeFences } from '@/lib/diagram/json-repair';

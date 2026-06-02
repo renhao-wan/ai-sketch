@@ -3,8 +3,8 @@ import { callLLM } from '@/lib/llm/client';
 import { configManager } from '@/lib/db/config-manager';
 import { conversationManager } from '@/lib/db/conversation-manager';
 import { getStrategy } from '@/lib/strategies/registry';
-import type { LLMConfig, LLMMessage, ImageData } from '@/types';
-import type { DiagramFormat } from '@/types/diagram-strategy';
+import type { LLMConfig, LLMMessage, ImageData } from '@/lib/types';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 /**
  * POST /api/generate

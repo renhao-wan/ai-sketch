@@ -1,8 +1,8 @@
 'use client';
 
 import { Palette, Wand2, MessageSquare, Database, Keyboard, Info, LucideIcon } from 'lucide-react';
-import { useLocale } from '@/locales';
-import type { TranslationKey } from '@/locales';
+import { useLocale } from '@/lib/locales';
+import type { TranslationKey } from '@/lib/locales';
 
 export type SettingsTab = 'appearance' | 'llm' | 'conversations' | 'data' | 'shortcuts' | 'about';
 

@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import * as api from '@/lib/api-client';
-import ScrollToTop from '../ScrollToTop';
+import * as api from '@/lib/api/client';
+import ScrollToTop from '@/components/ui/ScrollToTop';
 import { Search, Check, ExternalLink } from 'lucide-react';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
-import type { LLMConfig } from '@/types';
+import type { LLMConfig } from '@/lib/types';
 
 interface ConfigSelectorProps {
   isOpen: boolean;

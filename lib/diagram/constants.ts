@@ -1,6 +1,6 @@
 // 统一的常量定义
 
-import type { TranslationKey } from '@/locales';
+import type { TranslationKey } from '@/lib/locales';
 
 // Chart type options
 // Must match CHART_TYPE_NAMES in lib/prompts.ts

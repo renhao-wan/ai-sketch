@@ -1,17 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import * as api from '@/lib/api-client';
-import Notification from '@/components/Notification';
+import * as api from '@/lib/api/client';
+import Notification from '@/components/ui/Notification';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
-import ScrollToTop from '@/components/ScrollToTop';
+import ScrollToTop from '@/components/ui/ScrollToTop';
 import { Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2 } from 'lucide-react';
 import Dropdown from '@/components/ui/Dropdown';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 import CountBanner from '@/components/ui/CountBanner';
 import { useCountBanner } from '@/hooks/useCountBanner';
-import type { LLMConfig, ModelInfo, NotificationState, ConfirmDialogState } from '@/types';
+import type { LLMConfig, ModelInfo, NotificationState, ConfirmDialogState } from '@/lib/types';
 
 /** ConfigEditor 子组件的 Props */
 interface ConfigEditorProps {

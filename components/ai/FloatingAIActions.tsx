@@ -7,10 +7,10 @@ import {
   HelpCircle,
   Loader2,
 } from 'lucide-react';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
-import type { AIActionId } from '@/types';
-import type { TranslationKey } from '@/locales';
+import type { AIActionId } from '@/lib/types';
+import type { TranslationKey } from '@/lib/locales';
 
 interface FloatingAIActionsProps {
   onAction?: (actionId: AIActionId) => void;

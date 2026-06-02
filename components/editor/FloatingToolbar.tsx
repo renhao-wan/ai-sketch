@@ -13,8 +13,8 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import { useLocale } from '@/locales';
-import type { TranslationKey } from '@/locales';
+import { useLocale } from '@/lib/locales';
+import type { TranslationKey } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 
 interface FloatingToolbarProps {

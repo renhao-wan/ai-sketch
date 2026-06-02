@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageSquare, ChevronDown, Loader2 } from 'lucide-react';
-import * as api from '@/lib/api-client';
-import { useLocale } from '@/locales';
-import { timeAgo } from '@/lib/time-ago';
-import type { Conversation } from '@/types';
-import type { DiagramFormat } from '@/types/diagram-strategy';
+import * as api from '@/lib/api/client';
+import { useLocale } from '@/lib/locales';
+import { timeAgo } from '@/lib/utils/time-ago';
+import type { Conversation } from '@/lib/types';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 interface ConversationListProps {
   currentId: string | null;

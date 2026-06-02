@@ -3,9 +3,9 @@
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import '@excalidraw/excalidraw/index.css';
-import type { ExcalidrawElement } from '@/types';
+import type { ExcalidrawElement } from '@/lib/types';
 import { extractCompleteElements } from '@/lib/diagram/json-repair';
-import { getExcalidrawBackgroundColor } from '@/lib/theme-utils';
+import { getExcalidrawBackgroundColor } from '@/lib/utils/theme-utils';
 
 const Excalidraw = dynamic(
   async () => (await import('@excalidraw/excalidraw')).Excalidraw,

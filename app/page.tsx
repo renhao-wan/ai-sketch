@@ -3,17 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppIcon } from '@/components/layout/TopBar';
-import { setInitData } from '@/lib/init-data';
+import { setInitData } from '@/lib/utils/init-data';
 import AIPromptBox from '@/components/ai/AIPromptBox';
 import HistoryModal from '@/components/dialogs/HistoryModal';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 import { useShortcuts } from '@/hooks/useShortcuts';
-import { timeAgo } from '@/lib/time-ago';
+import { timeAgo } from '@/lib/utils/time-ago';
 import { Settings, History, FileText, PenTool } from 'lucide-react';
-import * as api from '@/lib/api-client';
-import { runMigrationIfNeeded } from '@/lib/migration';
+import * as api from '@/lib/api/client';
+import { runMigrationIfNeeded } from '@/lib/api/migration';
 import Tooltip from '@/components/ui/Tooltip';
-import type { Conversation } from '@/types';
+import type { Conversation } from '@/lib/types';
 
 export default function HomePage() {
   const router = useRouter();

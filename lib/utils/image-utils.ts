@@ -3,8 +3,8 @@
  * 支持客户端图片验证、base64转换和元数据提取
  */
 
-import type { ImageObject } from '@/types';
-import type { InputValidationResult } from '@/types/input-strategy';
+import type { ImageObject } from '@/lib/types';
+import type { InputValidationResult } from '@/lib/types/input-strategy';
 
 // 支持的图片格式
 export const SUPPORTED_IMAGE_TYPES: Record<string, string> = {

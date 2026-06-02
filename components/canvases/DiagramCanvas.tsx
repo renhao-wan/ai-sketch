@@ -2,8 +2,8 @@
 
 import dynamic from 'next/dynamic';
 import type { MutableRefObject } from 'react';
-import { useLocale } from '@/locales';
-import type { DiagramFormat } from '@/types/diagram-strategy';
+import { useLocale } from '@/lib/locales';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 import type { StreamRendererRef } from './ExcalidrawCanvas';
 
 const ExcalidrawCanvas = dynamic(() => import('./ExcalidrawCanvas'), { ssr: false });

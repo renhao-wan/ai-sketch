@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { configManager } from '@/lib/db/config-manager';
-import type { LLMConfig } from '@/types';
+import type { LLMConfig } from '@/lib/types';
 
 /**
  * GET /api/configs/[id]

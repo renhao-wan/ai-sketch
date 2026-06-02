@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Globe } from 'lucide-react';
-import { useLocale, type Locale } from '@/locales';
+import { useLocale, type Locale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 
 const LANGUAGES: { value: Locale; label: string }[] = [

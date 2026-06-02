@@ -1,4 +1,4 @@
-import type { TranslationKey } from '@/locales';
+import type { TranslationKey } from '@/lib/locales';
 
 export function timeAgo(ts: number, t: (key: TranslationKey) => string): string {
   const diff = Date.now() - ts;

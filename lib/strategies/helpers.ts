@@ -3,7 +3,7 @@
  * Eliminates duplication across Excalidraw, Mermaid, and Drawio strategies.
  */
 
-import type { DiagramFormat } from '@/types/diagram-strategy';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 /**
  * Default exportBlob implementation — identical in all strategies.

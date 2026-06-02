@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import * as api from '@/lib/api-client';
-import { useLocale } from '@/locales';
+import * as api from '@/lib/api/client';
+import { useLocale } from '@/lib/locales';
 import { useSettings } from '@/hooks/useSettings';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
-import Notification from '@/components/Notification';
+import Notification from '@/components/ui/Notification';
 import { HardDrive, RotateCcw, Trash2, Database, Settings, AlertTriangle } from 'lucide-react';
-import type { ConfirmDialogState, NotificationState } from '@/types';
+import type { ConfirmDialogState, NotificationState } from '@/lib/types';
 
 /** 数据管理组件 — 存储统计、数据清理与重置 */
 export default function DataSettings() {

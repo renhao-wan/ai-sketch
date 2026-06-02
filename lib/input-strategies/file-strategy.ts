@@ -2,7 +2,7 @@
  * File input strategy — validates .md/.txt files, reads content, combines with user prompt.
  */
 
-import type { InputStrategy, InputValidationResult, MessagePayload } from '@/types/input-strategy';
+import type { InputStrategy, InputValidationResult, MessagePayload } from '@/lib/types/input-strategy';
 
 const ALLOWED_EXTENSIONS = ['.md', '.txt'];
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB

@@ -1,8 +1,8 @@
 'use client';
 
 import { getChartTypeLabel } from '@/lib/diagram/constants';
-import { useLocale } from '@/locales';
-import Dropdown from './ui/Dropdown';
+import { useLocale } from '@/lib/locales';
+import Dropdown from '@/components/ui/Dropdown';
 
 interface ChartTypeSelectProps {
   value: string;

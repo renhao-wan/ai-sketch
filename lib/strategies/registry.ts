@@ -3,7 +3,7 @@
  * Provides a single entry point to get the correct strategy by format key.
  */
 
-import type { DiagramFormat, DiagramStrategy } from '@/types/diagram-strategy';
+import type { DiagramFormat, DiagramStrategy } from '@/lib/types/diagram-strategy';
 import { excalidrawStrategy } from './excalidraw-strategy';
 import { mermaidStrategy } from './mermaid-strategy';
 import { drawioStrategy } from './drawio-strategy';

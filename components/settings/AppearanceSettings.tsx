@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 import { useSettings, Theme } from '@/hooks/useSettings';
 import { Check } from 'lucide-react';
 

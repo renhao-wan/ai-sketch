@@ -12,14 +12,14 @@ import {
   AlertCircle,
   Upload,
 } from 'lucide-react';
-import { setInitData } from '@/lib/init-data';
-import { useLocale } from '@/locales';
+import { setInitData } from '@/lib/utils/init-data';
+import { useLocale } from '@/lib/locales';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
-import FormatSelector from '../FormatSelector';
-import Notification from '../Notification';
+import FormatSelector from '@/components/editor/FormatSelector';
+import Notification from '@/components/ui/Notification';
 import Tooltip from '@/components/ui/Tooltip';
-import type { DiagramFormat } from '@/types/diagram-strategy';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 export default function AIPromptBox() {
   const router = useRouter();

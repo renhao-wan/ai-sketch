@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 
 export interface DropdownOption {
   value: string;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 import { AppIcon } from '@/components/layout/TopBar';
 import { User, Code2, FileText, Shield, ExternalLink } from 'lucide-react';
 

@@ -3,7 +3,7 @@
  * Extracts existing Excalidraw-specific logic into the strategy pattern.
  */
 
-import type { DiagramStrategy, ValidationResult } from '@/types/diagram-strategy';
+import type { DiagramStrategy, ValidationResult } from '@/lib/types/diagram-strategy';
 import { EXCALIDRAW_SYSTEM_PROMPT, buildExcalidrawUserPrompt } from '@/lib/prompts/excalidraw';
 import { CHART_TYPES } from '@/lib/diagram/constants';
 import { optimizeExcalidrawCode } from '@/lib/diagram/optimize-arrows';

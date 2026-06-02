@@ -14,7 +14,7 @@ function ensureMonacoLoaded(): Promise<void> {
   return monacoLoadPromise;
 }
 import { Trash2, ArrowRight, Loader2, X } from 'lucide-react';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 
 interface CodeEditorProps {
   code: string;

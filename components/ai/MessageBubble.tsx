@@ -2,10 +2,10 @@
 
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { User, Bot, RefreshCw, Copy, Download, Check, Play } from 'lucide-react';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 import { parseStoredImages } from '@/lib/utils';
 import Tooltip from '@/components/ui/Tooltip';
-import type { ConversationMessage } from '@/types';
+import type { ConversationMessage } from '@/lib/types';
 
 interface MessageBubbleProps {
   message: ConversationMessage;

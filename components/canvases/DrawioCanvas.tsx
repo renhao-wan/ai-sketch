@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { useLocale } from '@/locales';
+import { useLocale } from '@/lib/locales';
 import { useZoomControls } from '@/hooks/useZoomControls';
 import ZoomToolbar from './ZoomToolbar';
 
