@@ -313,6 +313,26 @@ class ConfigManager {
 
     return stats;
   }
+
+  /** 获取代理配置 */
+  async getProxy(): Promise<{ proxyUrl: string; proxyEnabled: boolean }> {
+    const db = await getDb();
+    const urlResult = db.exec("SELECT value FROM meta WHERE key = 'proxy_url'");
+    const enabledResult = db.exec("SELECT value FROM meta WHERE key = 'proxy_enabled'");
+    const proxyUrl = urlResult.length > 0 && urlResult[0].values.length > 0
+      ? (urlResult[0].values[0][0] as string) : 'http://127.0.0.1:7890';
+    const proxyEnabled = enabledResult.length > 0 && enabledResult[0].values.length > 0
+      ? (enabledResult[0].values[0][0] as string) === 'true' : false;
+    return { proxyUrl, proxyEnabled };
+  }
+
+  /** 设置代理配置 */
+  async setProxy(proxyUrl: string, proxyEnabled: boolean): Promise<void> {
+    const db = await getDb();
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('proxy_url', ?)", [proxyUrl]);
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('proxy_enabled', ?)", [proxyEnabled ? 'true' : 'false']);
+    saveToDisk();
+  }
 }
 
 export const configManager = new ConfigManager();

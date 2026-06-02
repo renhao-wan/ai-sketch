@@ -369,10 +369,21 @@ export const en: TranslationDict = {
   'settings.resetAllConfirm': 'Are you sure you want to reset all data? This will clear all conversations, configs, and user preferences. This action cannot be undone.',
   'settings.resetAllSuccess': 'All data has been reset',
   'settings.operationFailed': 'Operation failed',
+  'settings.network': 'Network',
+  'settings.networkDesc': 'Configure proxy for external LLM API access',
   'settings.shortcuts': 'Shortcuts',
   'settings.shortcutsDesc': 'View and manage keyboard shortcuts',
   'settings.about': 'About',
   'settings.aboutDesc': 'App information and version details',
+
+  // Proxy settings
+  'proxy.enable': 'Use Proxy',
+  'proxy.enableDesc': 'When enabled, server-side LLM API requests will be sent through the proxy',
+  'proxy.url': 'Proxy URL',
+  'proxy.urlHint': 'Supports HTTP/HTTPS/SOCKS proxy, e.g. http://127.0.0.1:7890',
+  'proxy.save': 'Save',
+  'proxy.saveSuccess': 'Proxy settings saved',
+  'proxy.saveFailed': 'Save failed',
 
   // About
   'about.defaultDescription': 'AI Sketch is an AI-powered diagram generation web app. Users describe their ideas in natural language, and the LLM generates renderable diagram code in three formats: Excalidraw JSON, Mermaid, and Draw.io XML.',
@@ -382,9 +393,9 @@ export const en: TranslationDict = {
   'about.licenseDescription': 'This project is open-sourced under the Apache License 2.0. You are free to use, modify, and distribute it.',
   'about.privacy': 'Privacy & Terms',
   'about.dataCollection': 'Data Collection',
-  'about.dataCollectionDesc': 'This app does not collect any personal user information. All data (including session records and configurations) is stored in your browser\'s local SQLite database and is never uploaded to any server.',
+  'about.dataCollectionDesc': 'This app does not collect any personal user information. All data (including session records and configurations) is stored in a server-side SQLite file and is never uploaded to any third-party server.',
   'about.thirdPartyServices': 'Third-Party Services',
-  'about.thirdPartyServicesDesc': 'This app uses LLM providers configured by the user (such as OpenAI, Anthropic, etc.) for diagram generation. API requests are sent directly from your browser to the respective service providers; this app does not proxy or store these requests.',
+  'about.thirdPartyServicesDesc': 'This app uses LLM providers configured by the user (such as OpenAI, Anthropic, etc.) for diagram generation. API requests are sent from the Next.js server to the respective service providers; this app does not proxy or store these requests.',
   'about.dependencies': 'Core Dependencies',
 
   // Keyboard shortcuts

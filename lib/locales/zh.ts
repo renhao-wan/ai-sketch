@@ -367,10 +367,21 @@ export const zh = {
   'settings.resetAllConfirm': '确定要重置所有数据吗？这将清除所有会话、配置和用户偏好设置。此操作不可撤销。',
   'settings.resetAllSuccess': '所有数据已重置',
   'settings.operationFailed': '操作失败',
+  'settings.network': '网络',
+  'settings.networkDesc': '配置代理以访问外部 LLM API',
   'settings.shortcuts': '快捷键',
   'settings.shortcutsDesc': '查看和管理键盘快捷键',
   'settings.about': '关于',
   'settings.aboutDesc': '应用信息与版本详情',
+
+  // 代理设置
+  'proxy.enable': '使用代理',
+  'proxy.enableDesc': '开启后，服务端 LLM API 请求将通过代理发送',
+  'proxy.url': '代理地址',
+  'proxy.urlHint': '支持 HTTP/HTTPS/SOCKS 代理，如 http://127.0.0.1:7890',
+  'proxy.save': '保存',
+  'proxy.saveSuccess': '代理配置已保存',
+  'proxy.saveFailed': '保存失败',
 
   // 关于应用
   'about.defaultDescription': 'AI Sketch 是一款 AI 驱动的图表生成 Web 应用。用户通过自然语言描述，由 LLM 生成可渲染的图表代码，支持 Excalidraw JSON、Mermaid、Draw.io XML 三种格式。',
@@ -380,9 +391,9 @@ export const zh = {
   'about.licenseDescription': '本项目基于 Apache License 2.0 开源，您可以自由使用、修改和分发。',
   'about.privacy': '隐私与条款',
   'about.dataCollection': '数据收集',
-  'about.dataCollectionDesc': '本应用不收集任何用户个人信息。所有数据（包括会话记录和配置）均存储在您的浏览器本地 SQLite 数据库中，不会上传到任何服务器。',
+  'about.dataCollectionDesc': '本应用不收集任何用户个人信息。所有数据（包括会话记录和配置）均存储在服务端 SQLite 文件中，不会上传到任何第三方服务器。',
   'about.thirdPartyServices': '第三方服务',
-  'about.thirdPartyServicesDesc': '本应用通过用户自行配置的 LLM 提供商（如 OpenAI、Anthropic 等）进行图表生成。API 请求直接从您的浏览器发送到对应服务商，本应用不代理或存储这些请求。',
+  'about.thirdPartyServicesDesc': '本应用通过用户自行配置的 LLM 提供商（如 OpenAI、Anthropic 等）进行图表生成。API 请求从 Next.js 服务端发送到对应服务商，本应用不代理或存储这些请求。',
   'about.dependencies': '核心依赖',
 
   // 快捷键设置

@@ -45,6 +45,17 @@ export async function POST(request: Request) {
         return NextResponse.json(stats);
       }
 
+      case 'get-proxy': {
+        const proxy = await configManager.getProxy();
+        return NextResponse.json(proxy);
+      }
+
+      case 'set-proxy': {
+        const { proxyUrl, proxyEnabled } = body as { proxyUrl: string; proxyEnabled: boolean };
+        await configManager.setProxy(proxyUrl || 'http://127.0.0.1:7890', !!proxyEnabled);
+        return NextResponse.json({ success: true });
+      }
+
       default:
         return NextResponse.json({ error: `未知操作: ${action}` }, { status: 400 });
     }

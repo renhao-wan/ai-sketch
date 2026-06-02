@@ -1,10 +1,10 @@
 'use client';
 
-import { Palette, Wand2, MessageSquare, Database, Keyboard, Info, LucideIcon } from 'lucide-react';
+import { Palette, Wand2, Globe, MessageSquare, Database, Keyboard, Info, LucideIcon } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
 import type { TranslationKey } from '@/lib/locales';
 
-export type SettingsTab = 'appearance' | 'llm' | 'conversations' | 'data' | 'shortcuts' | 'about';
+export type SettingsTab = 'appearance' | 'llm' | 'network' | 'conversations' | 'data' | 'shortcuts' | 'about';
 
 interface SettingsSidebarProps {
   activeTab: SettingsTab;
@@ -17,6 +17,7 @@ const tabs: { key: SettingsTab; icon: LucideIcon; labelKey: TranslationKey }[] =
   { key: 'conversations', icon: MessageSquare, labelKey: 'settings.conversations' },
   { key: 'data', icon: Database, labelKey: 'settings.data' },
   { key: 'shortcuts', icon: Keyboard, labelKey: 'settings.shortcuts' },
+  { key: 'network', icon: Globe, labelKey: 'settings.network' },
   { key: 'about', icon: Info, labelKey: 'settings.about' },
 ];
 

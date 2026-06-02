@@ -24,12 +24,17 @@ let userDataPath: string;
 /** SQLite 数据库文件路径（在 app.whenReady 后初始化） */
 let dbPath: string;
 
+/** 开发模式端口（与 concurrently 启动的 Next.js 开发服务器一致） */
+const DEV_PORT = 3000;
+
+/** 是否为开发模式（通过环境变量判断） */
+const isDev = process.env.ELECTRON_DEV === 'true';
+
 /**
  * 创建主窗口
  *
  * 配置窗口属性：
  * - 默认尺寸 1400x900，最小尺寸 800x600
- * - macOS 隐藏标题栏样式
  * - 启用上下文隔离，禁用 Node.js 集成（安全最佳实践）
  */
 function createWindow(): void {
@@ -39,19 +44,19 @@ function createWindow(): void {
     minWidth: 800,
     minHeight: 600,
     frame: true, // 显示系统窗口框架
-    titleBarStyle: 'hiddenInset', // macOS 隐藏标题栏
-    icon: path.join(__dirname, '..', 'build', 'icon.png'), // 应用图标
+    icon: path.join(__dirname, '..', 'electron', 'resources', 'icon.png'), // 应用图标
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      devTools: false, // 禁用开发者工具
+      devTools: isDev, // 开发模式启用开发者工具
     },
   });
 
   // 加载 Next.js 服务器
-  if (serverPort) {
-    mainWindow.loadURL(`http://localhost:${serverPort}`);
+  const port = isDev ? DEV_PORT : serverPort;
+  if (port) {
+    mainWindow.loadURL(`http://localhost:${port}`);
   }
 
   // 窗口关闭时清理引用
@@ -70,8 +75,10 @@ app.whenReady().then(async () => {
     userDataPath = app.getPath('userData');
     dbPath = path.join(userDataPath, 'data', 'ai-sketch.db');
 
-    // 启动 Next.js 服务器
-    serverPort = await startServer(dbPath);
+    // 生产模式下启动 Next.js 服务器
+    if (!isDev) {
+      serverPort = await startServer(dbPath);
+    }
 
     // 创建窗口
     createWindow();

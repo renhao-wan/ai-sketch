@@ -7,17 +7,19 @@ import { useShortcuts } from '@/hooks/useShortcuts';
 import { SettingsSidebar, SettingsTab } from '@/components/settings/SettingsSidebar';
 import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
 import { LLMSettings } from '@/components/settings/LLMSettings';
+import { NetworkSettings } from '@/components/settings/NetworkSettings';
 import ConversationSettings from '@/components/settings/ConversationSettings';
 import DataSettings from '@/components/settings/DataSettings';
 import { KeyboardShortcutsSettings } from '@/components/settings/KeyboardShortcutsSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
 import { ArrowLeft, Search } from 'lucide-react';
 
-const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'conversations', 'data', 'shortcuts', 'about'];
+const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'network', 'conversations', 'data', 'shortcuts', 'about'];
 
 const tabDescriptions: Record<SettingsTab, TranslationKey> = {
   appearance: 'settings.appearanceDesc',
   llm: 'settings.llmDesc',
+  network: 'settings.networkDesc',
   conversations: 'settings.conversationsTabDesc',
   data: 'settings.dataDesc',
   shortcuts: 'settings.shortcutsDesc',
@@ -58,6 +60,8 @@ export default function SettingsPage() {
         return <AppearanceSettings />;
       case 'llm':
         return <LLMSettings />;
+      case 'network':
+        return <NetworkSettings />;
       case 'conversations':
         return <ConversationSettings />;
       case 'data':
@@ -94,7 +98,7 @@ export default function SettingsPage() {
             <SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
             {/* 内容区 */}
-            <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
+            <main className="flex-1 min-w-0 flex flex-col overflow-y-auto">
               <div className="mb-6 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div>

@@ -3,6 +3,66 @@
  */
 
 import type { LLMConfig, LLMMessage, ModelInfo, TestConnectionResult } from '@/lib/types';
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
+
+// ── Proxy support ──
+// 优先从 DB 读取代理配置（用户在设置中配置），回退到环境变量
+let cachedAgent: ProxyAgent | undefined;
+let cachedProxyUrl: string | null = null;
+let lastCheck = 0;
+const CACHE_TTL = 5000; // 5 秒缓存
+
+/** 获取代理 Agent（带缓存，动态读取 DB 配置） */
+async function getProxyAgent(): Promise<ProxyAgent | undefined> {
+  const now = Date.now();
+  if (now - lastCheck < CACHE_TTL && cachedProxyUrl !== undefined) {
+    return cachedAgent;
+  }
+  lastCheck = now;
+
+  try {
+    const { configManager } = await import('@/lib/db/config-manager');
+    const { proxyUrl, proxyEnabled } = await configManager.getProxy();
+
+    if (proxyEnabled && proxyUrl) {
+      if (proxyUrl !== cachedProxyUrl) {
+        cachedProxyUrl = proxyUrl;
+        cachedAgent = new ProxyAgent(proxyUrl);
+      }
+      return cachedAgent;
+    }
+  } catch {
+    // DB 不可用时回退到环境变量
+  }
+
+  // 回退：环境变量
+  const envProxy = process.env.HTTPS_PROXY || process.env.https_proxy
+    || process.env.HTTP_PROXY || process.env.http_proxy;
+  if (envProxy) {
+    if (envProxy !== cachedProxyUrl) {
+      cachedProxyUrl = envProxy;
+      cachedAgent = new ProxyAgent(envProxy);
+    }
+    return cachedAgent;
+  }
+
+  cachedProxyUrl = null;
+  cachedAgent = undefined;
+  return undefined;
+}
+
+/**
+ * 代理感知的 fetch 封装
+ * 有代理时用 undici.fetch + ProxyAgent，无代理时用全局 fetch
+ */
+async function proxyFetch(url: string, options?: RequestInit): Promise<Response> {
+  const agent = await getProxyAgent();
+  if (agent) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- undici fetch 与全局 fetch 类型略有差异
+    return undiciFetch(url, { ...options, dispatcher: agent } as any) as unknown as Promise<Response>;
+  }
+  return fetch(url, options);
+}
 
 interface OpenAIMessage {
   role: string;
@@ -106,7 +166,7 @@ async function fetchWithRetry(
       throw new DOMException('The operation was aborted.', 'AbortError');
     }
 
-    const response = await fetch(url, options);
+    const response = await proxyFetch(url, options);
 
     if (response.status !== 429) {
       return response;
@@ -381,7 +441,7 @@ export async function testConnection(config: LLMConfig): Promise<TestConnectionR
 export async function fetchModels(type: string, baseUrl: string, apiKey: string): Promise<ModelInfo[]> {
   if (type === 'openai') {
     const url = `${baseUrl}/models`;
-    const response = await fetch(url, {
+    const response = await proxyFetch(url, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
       },
@@ -400,7 +460,7 @@ export async function fetchModels(type: string, baseUrl: string, apiKey: string)
       .filter((m: ModelInfo) => m.id);
   } else if (type === 'anthropic') {
     const url = `${baseUrl}/models`;
-    const response = await fetch(url, {
+    const response = await proxyFetch(url, {
       headers: {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
