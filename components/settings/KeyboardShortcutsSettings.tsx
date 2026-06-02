@@ -28,7 +28,7 @@ const SHORTCUT_CATEGORIES: { id: string; labelKey: TranslationKey; icon: typeof 
     id: 'edit',
     labelKey: 'shortcuts.category.edit',
     icon: Edit3,
-    shortcutIds: ['send-message', 'undo', 'save'],
+    shortcutIds: ['send-message', 'newline', 'undo', 'cut', 'copy', 'paste', 'select-all'],
   },
   {
     id: 'other',
