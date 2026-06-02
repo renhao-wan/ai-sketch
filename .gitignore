@@ -50,3 +50,4 @@ next-env.d.ts
 
 # electron build output
 dist-electron/
+dist/
