@@ -148,27 +148,34 @@ export function AboutSettings() {
           <FileText size={18} className="text-[var(--accent-indigo)]" />
           {t('about.dependencies')}
         </h3>
-        <div className="space-y-2 max-h-60 overflow-y-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {APP_INFO.dependencies.map(dep => (
             <div
               key={dep.name}
-              className="flex items-center justify-between p-3 rounded-lg bg-[var(--surface-warm)] border border-[var(--border)]"
+              className="p-4 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)] hover:border-[var(--accent-indigo)]/30 hover:shadow-sm transition-all duration-200"
             >
-              <div>
-                <p className="text-sm font-medium text-[var(--fg)]">
-                  {dep.name}
-                </p>
-                <p className="text-xs text-[var(--muted)]">
-                  {dep.description}
-                </p>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-[var(--accent-indigo)]/10 flex items-center justify-center">
+                  <span className="text-xs font-bold text-[var(--accent-indigo)]">
+                    {dep.name.charAt(0)}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[var(--fg)] truncate">
+                    {dep.name}
+                  </p>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-xs text-[var(--fg)]">
+              <p className="text-xs text-[var(--muted)] mb-2 line-clamp-2">
+                {dep.description}
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 px-2 py-0.5 rounded">
                   v{dep.version}
-                </p>
-                <p className="text-xs text-[var(--muted)]">
+                </span>
+                <span className="text-xs text-[var(--muted)]">
                   {dep.license}
-                </p>
+                </span>
               </div>
             </div>
           ))}
