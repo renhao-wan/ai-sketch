@@ -2,7 +2,17 @@ import initSqlJs, { Database } from 'sql.js';
 import fs from 'fs';
 import path from 'path';
 
-const DB_PATH = path.join(process.cwd(), 'data', 'ai-sketch.db');
+// 动态获取数据库路径
+function getDbPath(): string {
+  // 优先使用环境变量（Electron 模式）
+  if (process.env.AI_SKETCH_DB_PATH) {
+    return process.env.AI_SKETCH_DB_PATH;
+  }
+  // 默认路径（Web 模式）
+  return path.join(process.cwd(), 'data', 'ai-sketch.db');
+}
+
+const DB_PATH = getDbPath();
 
 let dbInstance: Database | null = null;
 
