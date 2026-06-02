@@ -33,9 +33,14 @@
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
+    "concurrently": "^8.2.2",
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3",
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
     "tailwindcss": "^4",
-    "typescript": "^5.9.3"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "wait-on": "^7.2.0"
   }
 }
