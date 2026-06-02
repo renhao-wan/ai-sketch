@@ -11,8 +11,8 @@ import { useShortcuts } from '@/hooks/useShortcuts';
 import { timeAgo } from '@/lib/utils/time-ago';
 import { Settings, History, FileText, PenTool } from 'lucide-react';
 import * as api from '@/lib/api/client';
-import { runMigrationIfNeeded } from '@/lib/api/migration';
 import Tooltip from '@/components/ui/Tooltip';
+import WindowControls from '@/components/layout/WindowControls';
 import type { Conversation } from '@/lib/types';
 
 export default function HomePage() {
@@ -30,14 +30,9 @@ export default function HomePage() {
   });
 
   useEffect(() => {
-    runMigrationIfNeeded().then(async () => {
-      try {
-        const { conversations } = await api.fetchConversations({ limit: 5 });
-        setRecentItems(conversations);
-      } catch (err) {
-        console.error('Failed to load conversations:', err);
-      }
-    });
+    api.fetchConversations({ limit: 5 })
+      .then(({ conversations }) => setRecentItems(conversations))
+      .catch((err) => console.error('Failed to load conversations:', err));
   }, []);
 
   const handleApplyConversation = (item: Conversation) => {
@@ -47,17 +42,23 @@ export default function HomePage() {
 
   return (
     <div className="h-screen flex flex-col bg-[var(--bg)] noise-overlay">
-      {/* Header */}
-      <header className="h-12 flex items-center justify-between px-5 backdrop-blur-xl bg-[var(--bg-glass)] border-b border-black/[0.06] flex-shrink-0 select-none">
-        <div className="flex items-center gap-2.5">
-          <AppIcon size={26} />
-          <span className="text-[13px] font-semibold tracking-tight text-[var(--fg)]">AI Sketch</span>
+      {/* Header - 可拖拽区域 */}
+      <header
+        className="h-9 flex items-center justify-between px-2 backdrop-blur-xl bg-[var(--bg-glass)] border-b border-black/[0.06] flex-shrink-0 select-none"
+        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+      >
+        <div className="flex items-center gap-2.5 pl-2">
+          <AppIcon size={20} />
+          <span className="text-[12px] font-semibold tracking-tight text-[var(--fg)]">AI Sketch</span>
         </div>
-        <div className="flex items-center gap-1">
+        <div
+          className="flex items-center gap-1"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        >
           <Tooltip content={t('home.enterEditor')} side="bottom">
             <button
               onClick={() => router.push('/editor')}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5 hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors duration-150"
+              className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5 hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors duration-150"
             >
               <PenTool size={13} />
               <span>{t('home.editor')}</span>
@@ -66,7 +67,7 @@ export default function HomePage() {
           <Tooltip content={t('home.history')} side="bottom">
             <button
               onClick={() => setIsHistoryOpen(true)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
             >
               <History size={15} />
             </button>
@@ -74,11 +75,12 @@ export default function HomePage() {
           <Tooltip content={t('home.settings')} side="bottom">
             <button
               onClick={() => router.push('/settings')}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
             >
               <Settings size={15} />
             </button>
           </Tooltip>
+          <WindowControls />
         </div>
       </header>
 

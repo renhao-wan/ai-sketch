@@ -3,7 +3,6 @@ import type { TranslationDict } from './zh';
 export const en: TranslationDict = {
   // Common
   'common.cancel': 'Cancel',
-  'common.confirm': 'Confirm',
   'common.delete': 'Delete',
   'common.edit': 'Edit',
   'common.export': 'Export',
@@ -22,7 +21,6 @@ export const en: TranslationDict = {
   'home.settings': 'Settings',
   'home.enterEditor': 'Enter Editor',
   'home.recent': 'Recent',
-  'home.imageGenerated': 'Image Generated',
 
   // Quick templates
   'home.template.microservice': 'Microservice Architecture',
@@ -40,8 +38,6 @@ export const en: TranslationDict = {
   'prompt.uploadFile': 'Upload File',
   'prompt.uploadImage': 'Upload Image',
   'prompt.dragDrop': 'Drop files or images here',
-  'prompt.imageCount': 'images',
-  'prompt.fileCount': 'files',
 
   // Editor
   'editor.loading': 'Loading editor...',
@@ -53,29 +49,17 @@ export const en: TranslationDict = {
   'editor.rateLimit': 'Too many requests. Please try again later.',
   'editor.serverError': 'Server error. Please try again later.',
   'editor.requestFailed': 'Request failed',
-  'editor.streamParseError': 'Stream parse error: ',
   'editor.networkError': 'Network connection failed. Please check your connection.',
-  'editor.imageUploadGenerated': 'Generated from image',
-  'editor.layoutOptimize': 'Auto Layout',
-  'editor.layoutOptimizing': 'Optimizing layout...',
-  'editor.beautifyChart': 'Beautify Chart',
-  'editor.beautifying': 'Beautifying...',
-  'editor.generateNode': 'Generate Node',
-  'editor.describeNode': 'Describe the node to add',
 
   // AI Copilot Panel
   'copilot.expandPanel': 'Expand Panel',
-  'copilot.aiChat': 'AI Chat',
   'copilot.export': 'Export',
   'copilot.backHome': 'Back to Home',
-  'copilot.newConversation': 'New Conversation',
   'copilot.aiChartAssistant': 'AI Chart Assistant',
   'copilot.describeChart': 'Describe the diagram you want to create',
   'copilot.continueDescribe': 'Continue describing the diagram...',
-  'copilot.characters': 'characters',
   'copilot.uploadFile': 'Upload File',
   'copilot.uploadImage': 'Upload Image',
-  'copilot.generating': 'Generating',
   'copilot.stop': 'Stop',
   'copilot.send': 'Send',
   'copilot.generate': 'Generate',
@@ -87,20 +71,10 @@ export const en: TranslationDict = {
 
   // Bottom Context Panel
   'panel.generatedCode': 'Generated Code',
-  'panel.aiExplanation': 'AI Explanation',
-  'panel.versionCompare': 'Version Diff',
-  'panel.logs': 'Logs',
   'panel.expandPanel': 'Expand Context Panel',
-  'panel.aiExplanationEmpty': 'AI explanation will appear after generating a chart',
-  'panel.versionCompareSoon': 'Version comparison coming soon',
-  'panel.noLogs': 'No logs',
   'panel.codeWillAppear': 'Generated code will appear here',
 
   // Code Editor
-  'codeEditor.generatedCode': 'Generated Code',
-  'codeEditor.clear': 'Clear',
-  'codeEditor.optimizeLayout': 'Optimize Layout',
-  'codeEditor.applyToCanvas': 'Apply to Canvas',
 
   // Config Manager
   'config.title': 'Configuration',
@@ -150,16 +124,12 @@ export const en: TranslationDict = {
   'config.fillAllRequired': 'Please fill in all required fields',
   'config.bannerTitle': 'Many configurations, consider cleanup',
   'config.bannerDescription': 'You have {count} configurations. Consider cleaning up unused ones.',
-  'config.bannerStats': 'Currently showing {total} configurations, {active} active.',
 
   // History
   'history.title': 'History',
-  'history.clearAll': 'Clear All',
   'history.empty': 'No history records',
   'history.confirmDelete': 'Confirm Delete',
   'history.confirmDeleteMsg': 'Are you sure you want to delete this history record?',
-  'history.confirmClear': 'Confirm Clear',
-  'history.confirmClearMsg': 'Are you sure you want to clear all history records? This action cannot be undone.',
   'history.apply': 'Open',
   'history.modelPrefix': 'Model:',
 
@@ -177,8 +147,6 @@ export const en: TranslationDict = {
   'conversation.oldestCreated': 'Oldest created',
   'conversation.loadMore': 'Load more...',
   'conversation.loading': 'Loading...',
-  'conversation.limitReached': 'Conversation limit reached',
-  'conversation.limitReachedMsg': 'You have {limit} conversations, which is the limit. Please delete some old conversations before creating new ones.',
   'conversation.noResults': 'No matching conversations found',
   'conversation.noMore': 'No more',
   'conversation.countTotal': '{count} total records',
@@ -241,24 +209,12 @@ export const en: TranslationDict = {
   'error.refresh': 'Refresh Page',
 
   // Image Upload
-  'imageUpload.uploadText': 'Upload an image for recognition',
-  'imageUpload.formats': 'Supports JPG, PNG, WebP, GIF, max 5MB',
-  'imageUpload.processing': 'Processing...',
-  'imageUpload.generating': 'Generating...',
-  'imageUpload.selectImage': 'Select Image',
-  'imageUpload.dropImage': 'Release to upload image',
-  'imageUpload.preview': 'Preview',
-  'imageUpload.deleteImage': 'Delete Image',
-  'imageUpload.startGenerate': 'Start Generating',
-  'imageUpload.recognizing': 'Recognizing...',
 
   // Diagram Canvas
-  'canvas.unsupportedFormat': 'Unsupported format:',
   'canvas.emptyState': 'Describe a diagram and AI will generate it',
   'canvas.generating': 'AI is generating diagram...',
 
   // Excalidraw Canvas
-  'excalidraw.convertError': 'Element conversion failed',
 
   // Drawio Canvas
   'drawio.loadError': 'Unable to load diagram into Draw.io viewer',
@@ -287,8 +243,6 @@ export const en: TranslationDict = {
 
   // Language switcher
   'lang.label': 'Language',
-  'lang.zh': '中文',
-  'lang.en': 'English',
 
   // Time ago
   'time.justNow': 'just now',
@@ -328,28 +282,14 @@ export const en: TranslationDict = {
   'settings.appearanceDesc': 'Customize the look and feel',
   'settings.language': 'Language',
   'settings.theme': 'Theme',
-  'settings.fontSize': 'Global Font Size',
-  'settings.fontSizeDesc': 'Affects all interface text',
-  'settings.themes.dark': 'Dark',
-  'settings.themes.light': 'Light',
-  'settings.themes.ocean': 'Ocean',
-  'settings.themes.sakura': 'Sakura',
-  'settings.themes.emerald': 'Emerald',
-  'settings.themes.sunset': 'Sunset',
   'settings.llm': 'LLM Configuration',
   'settings.llmDesc': 'Manage AI model provider settings',
-  'settings.conversationsTab': 'Conversations',
   'settings.conversationsTabDesc': 'Manage conversation history',
   'settings.data': 'Data Management',
   'settings.dataDesc': 'Storage statistics',
-  'settings.clearHistory': 'Clear History',
-  'settings.clearHistoryDesc': 'Delete all conversation records',
-  'settings.clearHistoryConfirm': 'Are you sure you want to clear all history? This action cannot be undone.',
   'settings.storageStats': 'Storage Statistics',
   'settings.conversations': 'Conversations',
   'settings.configs': 'Configurations',
-  'settings.clearSuccess': 'Clear successful',
-  'settings.clearFailed': 'Clear failed',
   'settings.dataCleanup': 'Data Cleanup',
   'settings.dataCleanupDesc': 'Clean up or reset app data',
   'settings.resetPreferences': 'Reset Preferences',
@@ -399,40 +339,24 @@ export const en: TranslationDict = {
   'about.dependencies': 'Core Dependencies',
 
   // Keyboard shortcuts
-  'shortcuts.title': 'Keyboard Shortcuts',
-  'shortcuts.helpDescription': 'View and manage all available keyboard shortcuts',
   'shortcuts.search': 'Search shortcuts...',
-  'shortcuts.scope.global': 'Global Shortcuts',
-  'shortcuts.scope.editor': 'Editor Shortcuts',
-  'shortcuts.scope.settings': 'Settings Shortcuts',
   'shortcuts.category.navigation': 'Navigation',
   'shortcuts.category.settings': 'Settings',
   'shortcuts.category.edit': 'Edit',
-  'shortcuts.category.other': 'Other',
-  'shortcuts.showHelp': 'Show Shortcuts Help',
-  'shortcuts.reset': 'Reset to Default',
+  'shortcuts.category.window': 'Window',
   'shortcuts.openSettings': 'Open Settings',
   'shortcuts.goHome': 'Go Home',
   'shortcuts.newConversation': 'New Conversation',
-  'shortcuts.goEditor': 'Go to Editor',
-  'shortcuts.openHelp': 'Shortcuts Help',
   'shortcuts.openAbout': 'About',
   'shortcuts.openData': 'Data Management',
   'shortcuts.openLLM': 'LLM Config',
   'shortcuts.openConversations': 'Conversations',
   'shortcuts.openAppearance': 'Appearance',
-  'shortcuts.editorSend': 'Send Message',
-  'shortcuts.editorExport': 'Export Diagram',
-  'shortcuts.editorUndo': 'Undo',
-  'shortcuts.editorRedo': 'Redo',
-  'shortcuts.editorSave': 'Save',
-  'shortcuts.editorSearch': 'Search',
-  'shortcuts.editorReplace': 'Replace',
-  'shortcuts.editorComment': 'Comment',
-  'shortcuts.editorSelectNext': 'Select Next Match',
-  'shortcuts.editorSelectAll': 'Select All Matches',
-  'shortcuts.editorGotoLine': 'Go to Line',
-  'shortcuts.editorQuickOpen': 'Quick Open',
-  'shortcuts.editorCommandPalette': 'Command Palette',
-  'shortcuts.editorFullscreen': 'Fullscreen',
+  'shortcuts.windowMinimize': 'Minimize Window',
+  'shortcuts.windowMaximize': 'Maximize/Restore Window',
+  'shortcuts.windowClose': 'Close Window',
+  'window.minimize': 'Minimize',
+  'window.maximize': 'Maximize',
+  'window.restore': 'Restore',
+  'window.close': 'Close',
 };

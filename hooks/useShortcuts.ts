@@ -120,19 +120,26 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     descriptionKey: 'shortcuts.selectAll',
     scope: 'global',
   },
-  // 其他
+  // 窗口控制
   {
-    id: 'fullscreen',
-    keys: ['F11'],
-    description: '全屏',
-    descriptionKey: 'shortcuts.fullscreen',
+    id: 'window-minimize',
+    keys: ['Alt', 'F9'],
+    description: '最小化窗口',
+    descriptionKey: 'shortcuts.windowMinimize',
     scope: 'global',
   },
   {
-    id: 'escape',
-    keys: ['Esc'],
-    description: '退出/取消',
-    descriptionKey: 'shortcuts.escape',
+    id: 'window-maximize',
+    keys: ['Alt', 'F10'],
+    description: '最大化/还原窗口',
+    descriptionKey: 'shortcuts.windowMaximize',
+    scope: 'global',
+  },
+  {
+    id: 'window-close',
+    keys: ['Alt', 'F4'],
+    description: '关闭窗口',
+    descriptionKey: 'shortcuts.windowClose',
     scope: 'global',
   },
 ];

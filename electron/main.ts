@@ -43,7 +43,8 @@ function createWindow(): void {
     height: 900,
     minWidth: 800,
     minHeight: 600,
-    frame: true, // 显示系统窗口框架
+    frame: false, // 完全无边框，不显示原生标题栏和按钮
+    title: 'AI Sketch', // 窗口标题
     icon: path.join(__dirname, '..', 'electron', 'resources', 'icon.png'), // 应用图标
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -125,4 +126,25 @@ ipcMain.handle('confirm-delete-data', async () => {
     detail: '应用数据包括配置、对话历史等。删除后无法恢复。',
   });
   return result.response === 0; // 0 = 删除数据
+});
+
+// IPC 处理：窗口控制
+ipcMain.handle('window-minimize', () => {
+  mainWindow?.minimize();
+});
+
+ipcMain.handle('window-maximize', () => {
+  if (mainWindow?.isMaximized()) {
+    mainWindow.unmaximize();
+  } else {
+    mainWindow?.maximize();
+  }
+});
+
+ipcMain.handle('window-close', () => {
+  mainWindow?.close();
+});
+
+ipcMain.handle('window-is-maximized', () => {
+  return mainWindow?.isMaximized() ?? false;
 });

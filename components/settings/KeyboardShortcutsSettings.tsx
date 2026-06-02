@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useLocale, type TranslationKey } from '@/lib/locales';
 import { useShortcuts, formatKeys } from '@/hooks/useShortcuts';
-import { Keyboard, Navigation, Settings, Edit3, MoreHorizontal } from 'lucide-react';
+import { Keyboard, Navigation, Settings, Edit3, AppWindow } from 'lucide-react';
 import type { Shortcut } from '@/lib/types/shortcuts';
 
 interface KeyboardShortcutsSettingsProps {
@@ -31,10 +31,10 @@ const SHORTCUT_CATEGORIES: { id: string; labelKey: TranslationKey; icon: typeof 
     shortcutIds: ['send-message', 'newline', 'undo', 'cut', 'copy', 'paste', 'select-all'],
   },
   {
-    id: 'other',
-    labelKey: 'shortcuts.category.other',
-    icon: MoreHorizontal,
-    shortcutIds: ['fullscreen', 'escape'],
+    id: 'window',
+    labelKey: 'shortcuts.category.window',
+    icon: AppWindow,
+    shortcutIds: ['window-minimize', 'window-maximize', 'window-close'],
   },
 ];
 

@@ -1,7 +1,6 @@
 export const zh = {
   // Common
   'common.cancel': '取消',
-  'common.confirm': '确认',
   'common.delete': '删除',
   'common.edit': '编辑',
   'common.export': '导出',
@@ -20,7 +19,6 @@ export const zh = {
   'home.settings': '设置',
   'home.enterEditor': '进入编辑器',
   'home.recent': '最近',
-  'home.imageGenerated': '图片生成',
 
   // Quick templates
   'home.template.microservice': '微服务架构图',
@@ -38,8 +36,6 @@ export const zh = {
   'prompt.uploadFile': '上传文件',
   'prompt.uploadImage': '上传图片',
   'prompt.dragDrop': '拖放文件或图片到此处',
-  'prompt.imageCount': '张图片',
-  'prompt.fileCount': '个文件',
 
   // Editor
   'editor.loading': '加载编辑器...',
@@ -51,29 +47,17 @@ export const zh = {
   'editor.rateLimit': '请求过于频繁，请稍后再试',
   'editor.serverError': '服务器错误，请稍后重试',
   'editor.requestFailed': '请求失败',
-  'editor.streamParseError': '数据流解析错误：',
   'editor.networkError': '网络连接失败，请检查网络连接',
-  'editor.imageUploadGenerated': '图片上传生成',
-  'editor.layoutOptimize': '自动布局',
-  'editor.layoutOptimizing': '布局优化中...',
-  'editor.beautifyChart': '美化图表',
-  'editor.beautifying': '正在美化...',
-  'editor.generateNode': '生成节点',
-  'editor.describeNode': '请描述要添加的节点',
 
   // AI Copilot Panel
   'copilot.expandPanel': '展开面板',
-  'copilot.aiChat': 'AI 对话',
   'copilot.export': '导出',
   'copilot.backHome': '返回首页',
-  'copilot.newConversation': '新建对话',
   'copilot.aiChartAssistant': 'AI 图表助手',
   'copilot.describeChart': '描述你想要创建的图表',
   'copilot.continueDescribe': '继续描述图表...',
-  'copilot.characters': '字符',
   'copilot.uploadFile': '上传文件',
   'copilot.uploadImage': '上传图片',
-  'copilot.generating': '生成中',
   'copilot.stop': '停止',
   'copilot.send': '发送',
   'copilot.generate': '生成',
@@ -85,20 +69,10 @@ export const zh = {
 
   // Bottom Context Panel
   'panel.generatedCode': '生成代码',
-  'panel.aiExplanation': 'AI 解释',
-  'panel.versionCompare': '版本对比',
-  'panel.logs': '日志',
   'panel.expandPanel': '展开上下文面板',
-  'panel.aiExplanationEmpty': 'AI 解释将在生成图表后显示',
-  'panel.versionCompareSoon': '版本对比功能即将上线',
-  'panel.noLogs': '暂无日志',
   'panel.codeWillAppear': '生成代码后将在此显示',
 
   // Code Editor
-  'codeEditor.generatedCode': '生成代码',
-  'codeEditor.clear': '清除',
-  'codeEditor.optimizeLayout': '优化布局',
-  'codeEditor.applyToCanvas': '应用到画布',
 
   // Config Manager
   'config.title': '配置管理',
@@ -148,16 +122,12 @@ export const zh = {
   'config.fillAllRequired': '请填写所有必填字段',
   'config.bannerTitle': '配置较多，建议清理',
   'config.bannerDescription': '您已有 {count} 个配置，建议清理不常用的配置。',
-  'config.bannerStats': '当前显示 {total} 个配置，其中 {active} 个处于活跃状态。',
 
   // History
   'history.title': '历史记录',
-  'history.clearAll': '清空全部',
   'history.empty': '暂无历史记录',
   'history.confirmDelete': '确认删除',
   'history.confirmDeleteMsg': '确定要删除这条历史记录吗？',
-  'history.confirmClear': '确认清空',
-  'history.confirmClearMsg': '确定要清空所有历史记录吗？此操作不可恢复。',
   'history.apply': '打开',
   'history.modelPrefix': '模型:',
 
@@ -175,8 +145,6 @@ export const zh = {
   'conversation.oldestCreated': '最早创建',
   'conversation.loadMore': '加载更多...',
   'conversation.loading': '加载中...',
-  'conversation.limitReached': '会话数量已达上限',
-  'conversation.limitReachedMsg': '您已有 {limit} 个会话，达到上限。请删除一些旧会话后再创建新会话。',
   'conversation.noResults': '未找到匹配的会话',
   'conversation.noMore': '没有更多了',
   'conversation.countTotal': '共 {count} 条记录',
@@ -239,24 +207,12 @@ export const zh = {
   'error.refresh': '刷新页面',
 
   // Image Upload
-  'imageUpload.uploadText': '上传图片进行识别',
-  'imageUpload.formats': '支持 JPG、PNG、WebP、GIF，最大 5MB',
-  'imageUpload.processing': '处理中...',
-  'imageUpload.generating': '生成中...',
-  'imageUpload.selectImage': '选择图片',
-  'imageUpload.dropImage': '松开鼠标上传图片',
-  'imageUpload.preview': '预览',
-  'imageUpload.deleteImage': '删除图片',
-  'imageUpload.startGenerate': '开始生成',
-  'imageUpload.recognizing': '正在识别...',
 
   // Diagram Canvas
-  'canvas.unsupportedFormat': '不支持的格式:',
   'canvas.emptyState': '描述图表内容，AI 将为你生成',
   'canvas.generating': 'AI 正在生成图表...',
 
   // Excalidraw Canvas
-  'excalidraw.convertError': '元素转换失败',
 
   // Drawio Canvas
   'drawio.loadError': '无法加载图表到 Draw.io 查看器',
@@ -285,8 +241,6 @@ export const zh = {
 
   // Language switcher
   'lang.label': '语言',
-  'lang.zh': '中文',
-  'lang.en': 'English',
 
   // Time ago
   'time.justNow': '刚刚',
@@ -326,28 +280,14 @@ export const zh = {
   'settings.appearanceDesc': '自定义界面外观和语言',
   'settings.language': '语言',
   'settings.theme': '主题',
-  'settings.fontSize': '全局字体大小',
-  'settings.fontSizeDesc': '影响全局界面文字大小',
-  'settings.themes.dark': '深色',
-  'settings.themes.light': '浅色',
-  'settings.themes.ocean': '深海',
-  'settings.themes.sakura': '樱花',
-  'settings.themes.emerald': '翡翠',
-  'settings.themes.sunset': '日落',
   'settings.llm': 'LLM 配置',
   'settings.llmDesc': '管理 AI 模型提供商配置',
-  'settings.conversationsTab': '会话管理',
   'settings.conversationsTabDesc': '管理会话历史记录',
   'settings.data': '数据管理',
   'settings.dataDesc': '存储统计',
-  'settings.clearHistory': '清除会话历史',
-  'settings.clearHistoryDesc': '删除所有会话记录',
-  'settings.clearHistoryConfirm': '确定要清除所有会话历史吗？此操作不可撤销。',
   'settings.storageStats': '存储统计',
   'settings.conversations': '会话数量',
   'settings.configs': '配置数量',
-  'settings.clearSuccess': '清除成功',
-  'settings.clearFailed': '清除失败',
   'settings.dataCleanup': '数据清理',
   'settings.dataCleanupDesc': '清理或重置应用数据',
   'settings.resetPreferences': '重置用户偏好',
@@ -397,42 +337,26 @@ export const zh = {
   'about.dependencies': '核心依赖',
 
   // 快捷键设置
-  'shortcuts.title': '键盘快捷键',
-  'shortcuts.helpDescription': '查看和管理所有可用的键盘快捷键',
   'shortcuts.search': '搜索快捷键...',
-  'shortcuts.scope.global': '全局快捷键',
-  'shortcuts.scope.editor': '编辑器快捷键',
-  'shortcuts.scope.settings': '设置快捷键',
   'shortcuts.category.navigation': '页面导航',
   'shortcuts.category.settings': '设置页面',
   'shortcuts.category.edit': '编辑操作',
-  'shortcuts.category.other': '其他',
-  'shortcuts.showHelp': '显示快捷键帮助',
-  'shortcuts.reset': '重置为默认',
+  'shortcuts.category.window': '窗口控制',
   'shortcuts.openSettings': '打开设置',
   'shortcuts.goHome': '返回首页',
   'shortcuts.newConversation': '新建对话',
-  'shortcuts.goEditor': '进入编辑器',
-  'shortcuts.openHelp': '快捷键帮助',
   'shortcuts.openAbout': '关于应用',
   'shortcuts.openData': '数据管理',
   'shortcuts.openLLM': 'LLM 配置',
   'shortcuts.openConversations': '会话管理',
   'shortcuts.openAppearance': '外观设置',
-  'shortcuts.editorSend': '发送消息',
-  'shortcuts.editorExport': '导出图表',
-  'shortcuts.editorUndo': '撤销',
-  'shortcuts.editorRedo': '重做',
-  'shortcuts.editorSave': '保存',
-  'shortcuts.editorSearch': '搜索',
-  'shortcuts.editorReplace': '替换',
-  'shortcuts.editorComment': '注释',
-  'shortcuts.editorSelectNext': '选择下一个匹配项',
-  'shortcuts.editorSelectAll': '选择所有匹配项',
-  'shortcuts.editorGotoLine': '跳转到行',
-  'shortcuts.editorQuickOpen': '快速打开',
-  'shortcuts.editorCommandPalette': '命令面板',
-  'shortcuts.editorFullscreen': '全屏',
+  'shortcuts.windowMinimize': '最小化窗口',
+  'shortcuts.windowMaximize': '最大化/还原窗口',
+  'shortcuts.windowClose': '关闭窗口',
+  'window.minimize': '最小化',
+  'window.maximize': '最大化',
+  'window.restore': '还原',
+  'window.close': '关闭',
 } as const;
 
 export type TranslationKey = keyof typeof zh;

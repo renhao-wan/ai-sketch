@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppIcon } from '@/components/layout/TopBar';
+import WindowControls from '@/components/layout/WindowControls';
 import AICopilotPanel from '@/components/ai/AICopilotPanel';
 import FloatingAIActions from '@/components/ai/FloatingAIActions';
 import BottomContextPanel from '@/components/layout/BottomContextPanel';
@@ -16,7 +17,6 @@ import { isConfigValid } from '@/lib/api/config-validator';
 import { getStrategy } from '@/lib/strategies/registry';
 import { stripCodeFences } from '@/lib/diagram/json-repair';
 import { consumeInitData } from '@/lib/utils/init-data';
-import { runMigrationIfNeeded } from '@/lib/api/migration';
 import { useLocale } from '@/lib/locales';
 import { useShortcuts } from '@/hooks/useShortcuts';
 import type { LLMConfig, NotificationState, AIActionId, ConversationMessage } from '@/lib/types';
@@ -77,7 +77,7 @@ function EditorContent() {
   }, []);
 
   useEffect(() => {
-    runMigrationIfNeeded().then(() => loadConfig());
+    loadConfig();
   }, [loadConfig]);
 
   // Load conversation from sessionStorage on mount (set by homepage history)
@@ -594,6 +594,11 @@ function EditorContent() {
         <div className="blur-orb blur-orb-indigo" style={{ width: 320, height: 320, top: '-60px', left: '-80px' }} />
         <div className="blur-orb blur-orb-violet" style={{ width: 260, height: 260, bottom: '-40px', right: '10%' }} />
         <div className="blur-orb blur-orb-cyan" style={{ width: 200, height: 200, top: '40%', right: '-40px' }} />
+
+        {/* Window Controls (Top Right) */}
+        <div className="absolute top-0 right-0 z-50" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+          <WindowControls />
+        </div>
 
         {/* AI Copilot Panel (Left) */}
         <AICopilotPanel

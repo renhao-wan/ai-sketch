@@ -25,4 +25,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @returns 应用版本号字符串
    */
   getAppVersion: (): Promise<string> => ipcRenderer.invoke('get-app-version'),
+
+  /**
+   * 窗口控制 API
+   */
+  window: {
+    /** 最小化窗口 */
+    minimize: () => ipcRenderer.invoke('window-minimize'),
+    /** 最大化/还原窗口 */
+    maximize: () => ipcRenderer.invoke('window-maximize'),
+    /** 关闭窗口 */
+    close: () => ipcRenderer.invoke('window-close'),
+    /** 检查窗口是否最大化 */
+    isMaximized: (): Promise<boolean> => ipcRenderer.invoke('window-is-maximized'),
+  },
 });
