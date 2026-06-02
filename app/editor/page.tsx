@@ -595,11 +595,6 @@ function EditorContent() {
         <div className="blur-orb blur-orb-violet" style={{ width: 260, height: 260, bottom: '-40px', right: '10%' }} />
         <div className="blur-orb blur-orb-cyan" style={{ width: 200, height: 200, top: '40%', right: '-40px' }} />
 
-        {/* Window Controls (Top Right) */}
-        <div className="absolute top-0 right-0 z-50" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-          <WindowControls />
-        </div>
-
         {/* AI Copilot Panel (Left) */}
         <AICopilotPanel
           conversationId={conversationId}
@@ -622,6 +617,7 @@ function EditorContent() {
           onClearError={() => setApiError(null)}
           panelWidth={panelWidth}
           onPanelWidthChange={handlePanelWidthChange}
+          headerExtra={<WindowControls />}
         />
 
         {/* Main Canvas Area */}

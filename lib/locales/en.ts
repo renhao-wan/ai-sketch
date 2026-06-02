@@ -277,11 +277,16 @@ export const en: TranslationDict = {
 
   // Settings page
   'settings.title': 'Settings',
-  'settings.back': 'Back to Home',
   'settings.appearance': 'Appearance',
   'settings.appearanceDesc': 'Customize the look and feel',
   'settings.language': 'Language',
   'settings.theme': 'Theme',
+  'settings.themes.light': 'Light',
+  'settings.themes.dark': 'Dark',
+  'settings.themes.ocean': 'Ocean',
+  'settings.themes.sakura': 'Sakura',
+  'settings.themes.emerald': 'Emerald',
+  'settings.themes.sunset': 'Sunset',
   'settings.llm': 'LLM Configuration',
   'settings.llmDesc': 'Manage AI model provider settings',
   'settings.conversationsTabDesc': 'Manage conversation history',

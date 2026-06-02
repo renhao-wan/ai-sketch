@@ -62,6 +62,8 @@ interface AICopilotPanelProps {
   onClearError: () => void;
   panelWidth?: number;
   onPanelWidthChange?: (width: number) => void;
+  /** 右侧额外内容（如窗口控制按钮），渲染在头部按钮组之后 */
+  headerExtra?: React.ReactNode;
 }
 
 export default function AICopilotPanel({
@@ -85,6 +87,7 @@ export default function AICopilotPanel({
   onClearError,
   panelWidth = 360,
   onPanelWidthChange,
+  headerExtra,
 }: AICopilotPanelProps) {
   const router = useRouter();
   const { t } = useLocale();
@@ -222,7 +225,7 @@ export default function AICopilotPanel({
 
   if (isCollapsed) {
     return (
-      <div className="h-full flex flex-col items-center py-4 bg-[var(--bg-glass)] backdrop-blur-2xl border-r border-[var(--accent-violet)]/20 animate-fade-in">
+      <div className="h-full flex flex-col items-center py-4 bg-[var(--bg-glass)] backdrop-blur-2xl border-r border-[var(--accent-violet)]/20">
         <Tooltip content={t('copilot.expandPanel')} side="right">
           <button
             onClick={() => setIsCollapsed(false)}
@@ -238,7 +241,7 @@ export default function AICopilotPanel({
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-[var(--bg-glass)] backdrop-blur-2xl relative z-10 animate-fade-in" style={{ width: panelWidth, minWidth: panelWidth }}>
+    <div className="h-full flex flex-col overflow-hidden bg-[var(--bg-glass)] backdrop-blur-2xl relative z-10" style={{ width: panelWidth, minWidth: panelWidth }}>
       {/* Resize Handle */}
       {onPanelWidthChange && (
         <div
@@ -250,8 +253,8 @@ export default function AICopilotPanel({
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 h-14 border-b border-[var(--surface-warm-hover)] flex-shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <div className="flex items-center justify-between px-6 h-14 border-b border-[var(--border)] flex-shrink-0" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
+        <div className="flex items-center gap-2.5 min-w-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <Tooltip content={t('copilot.backHome')} side="bottom">
             <button
               onClick={() => router.push('/')}
@@ -267,7 +270,7 @@ export default function AICopilotPanel({
             onNew={onNewConversation}
           />
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <Tooltip content={t('copilot.config')} side="bottom">
             <button
               onClick={onOpenConfig}
@@ -282,6 +285,7 @@ export default function AICopilotPanel({
           >
             <ChevronLeft size={16} />
           </button>
+          {headerExtra}
         </div>
       </div>
 

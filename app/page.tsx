@@ -44,11 +44,11 @@ export default function HomePage() {
     <div className="h-screen flex flex-col bg-[var(--bg)] noise-overlay">
       {/* Header - 可拖拽区域 */}
       <header
-        className="h-9 flex items-center justify-between px-2 backdrop-blur-xl bg-[var(--bg-glass)] border-b border-black/[0.06] flex-shrink-0 select-none"
+        className="h-14 flex items-center justify-between px-6 backdrop-blur-xl bg-[var(--bg-glass)] border-b border-[var(--border)] flex-shrink-0 select-none"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
-        <div className="flex items-center gap-2.5 pl-2">
-          <AppIcon size={20} />
+        <div className="flex items-center gap-2.5">
+          <AppIcon size={22} />
           <span className="text-[12px] font-semibold tracking-tight text-[var(--fg)]">AI Sketch</span>
         </div>
         <div
@@ -134,7 +134,7 @@ export default function HomePage() {
                   setInitData({ type: 'text', data: tpl.label, format: 'excalidraw' });
                   router.push('/editor?source=text');
                 }}
-                className="px-4 py-2 text-xs text-[var(--muted)] bg-[var(--bg-glass)] backdrop-blur border border-[var(--border)] rounded-full hover:bg-[var(--card)] hover:text-[var(--fg)] hover:border-[var(--accent-indigo)]/20 transition-all duration-200"
+                className="px-4 py-2 text-xs text-[var(--muted)] bg-[var(--bg-glass)] backdrop-blur border border-[var(--border)] rounded-full hover:bg-[var(--card)] hover:text-[var(--fg)] hover:border-[var(--accent-indigo)]/40 transition-all duration-200"
               >
                 {tpl.label}
               </button>
@@ -149,7 +149,7 @@ export default function HomePage() {
                 <button
                   key={item.id}
                   onClick={() => handleApplyConversation(item)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-[var(--muted)] bg-[var(--bg-glass)]/50 backdrop-blur border border-[var(--border)]/50 rounded-full hover:bg-[var(--bg-glass)] hover:text-[var(--fg)] transition-all duration-200"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-[var(--muted)] bg-[var(--bg-glass)]/50 backdrop-blur border border-[var(--border)]/50 rounded-full hover:bg-[var(--card)] hover:text-[var(--fg)] hover:border-[var(--accent-indigo)]/30 transition-all duration-200"
                 >
                   <FileText size={11} className="text-[var(--accent-indigo)]/50" />
                   <span className="max-w-[120px] truncate">{item.title}</span>

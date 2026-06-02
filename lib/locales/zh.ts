@@ -275,11 +275,16 @@ export const zh = {
 
   // 设置页
   'settings.title': '系统设置',
-  'settings.back': '返回首页',
   'settings.appearance': '外观',
   'settings.appearanceDesc': '自定义界面外观和语言',
   'settings.language': '语言',
   'settings.theme': '主题',
+  'settings.themes.light': '晨光白',
+  'settings.themes.dark': '深空蓝',
+  'settings.themes.ocean': '海洋',
+  'settings.themes.sakura': '樱花',
+  'settings.themes.emerald': '翡翠',
+  'settings.themes.sunset': '日落',
   'settings.llm': 'LLM 配置',
   'settings.llmDesc': '管理 AI 模型提供商配置',
   'settings.conversationsTabDesc': '管理会话历史记录',

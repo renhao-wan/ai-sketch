@@ -12,8 +12,10 @@ import ConversationSettings from '@/components/settings/ConversationSettings';
 import DataSettings from '@/components/settings/DataSettings';
 import { KeyboardShortcutsSettings } from '@/components/settings/KeyboardShortcutsSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
-import { ArrowLeft, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import WindowControls from '@/components/layout/WindowControls';
+import { AppIcon } from '@/components/layout/TopBar';
+import Tooltip from '@/components/ui/Tooltip';
 
 const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'network', 'conversations', 'data', 'shortcuts', 'about'];
 
@@ -74,14 +76,16 @@ export default function SettingsPage() {
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center gap-4">
-          <button
-            onClick={() => router.push('/')}
-            className="flex items-center gap-2 text-sm text-[var(--muted)] hover:text-[var(--fg)] transition-colors duration-200"
-            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          >
-            <ArrowLeft size={16} />
-            <span>{t('settings.back')}</span>
-          </button>
+          <Tooltip content={t('copilot.backHome')} side="bottom">
+            <button
+              onClick={() => router.push('/')}
+              className="hover:opacity-80 transition-opacity duration-200 relative"
+              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-indigo)] to-[var(--accent-violet)] rounded-lg blur-md opacity-20" />
+              <div className="relative"><AppIcon size={22} /></div>
+            </button>
+          </Tooltip>
           <div className="w-px h-6 bg-[var(--border)]" />
           <h1 className="text-lg font-semibold text-[var(--fg)]">{t('settings.title')}</h1>
           <div className="flex-1" />

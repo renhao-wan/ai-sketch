@@ -29,7 +29,7 @@ export default function FloatingAIActions({ onAction, loadingAction, disabled }:
   const { t } = useLocale();
 
   return (
-    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-30 animate-fade-in" style={{ animationDelay: '200ms' }}>
+    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-30">
       <div className="flex flex-col gap-2">
         {ACTIONS.map((action) => {
           const isLoading = loadingAction === action.id;
