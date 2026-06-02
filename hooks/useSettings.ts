@@ -41,10 +41,18 @@ function isValidLocale(v: unknown): v is 'zh' | 'en' {
 }
 
 export function useSettings() {
-  const [settings, setSettings] = useState<Settings>(() => ({
-    locale: getStoredValue(STORAGE_KEYS.locale, DEFAULT_SETTINGS.locale, isValidLocale),
-    theme: getStoredValue(STORAGE_KEYS.theme, DEFAULT_SETTINGS.theme, isValidTheme),
-  }));
+  // 初始值统一使用默认值（SSR 安全），mount 后从 localStorage 读取真实值
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+
+  // 从 localStorage 读取已保存的设置（仅客户端）
+  useEffect(() => {
+    const locale = getStoredValue(STORAGE_KEYS.locale, DEFAULT_SETTINGS.locale, isValidLocale);
+    const theme = getStoredValue(STORAGE_KEYS.theme, DEFAULT_SETTINGS.theme, isValidTheme);
+    setSettings(prev => {
+      if (prev.locale === locale && prev.theme === theme) return prev;
+      return { locale, theme };
+    });
+  }, []);
 
   // Apply theme to document
   useEffect(() => {

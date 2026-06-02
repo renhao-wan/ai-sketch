@@ -296,8 +296,16 @@ export default function ConversationSettings() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* 固定头部：操作栏 + 搜索 */}
+      {/* 固定头部：Banner + 操作栏 + 搜索 */}
       <div className="flex-shrink-0 space-y-3 mb-4">
+        {/* 数量提示 Banner */}
+        <CountBanner
+          show={showBanner}
+          title={t('conversation.bannerTitle')}
+          description={t('conversation.bannerDescription').replace('{count}', String(totalCount))}
+          onDismiss={handleDismissBanner}
+        />
+
         {/* 操作栏 */}
         <div className="flex flex-wrap gap-2">
           <button
@@ -449,14 +457,6 @@ export default function ConversationSettings() {
             className="!py-2 !px-3 !text-sm !rounded-xl"
           />
         </div>
-
-        {/* 数量提示 Banner */}
-        <CountBanner
-          show={showBanner}
-          title={t('conversation.bannerTitle')}
-          description={t('conversation.bannerDescription').replace('{count}', String(totalCount))}
-          onDismiss={handleDismissBanner}
-        />
       </div>
 
       {/* 可滚动的会话列表 */}

@@ -20,6 +20,9 @@ interface UseCountBannerResult {
  * 通用数量提示 Hook
  * 当数量达到阈值时显示可关闭的提示 Banner
  *
+ * 初始值统一为 false（SSR 安全），mount 后通过 useEffect 读取 sessionStorage 决定是否显示。
+ * 配合 Tab 始终挂载（display: none）模式，useEffect 在同一帧执行，不会产生布局闪烁。
+ *
  * @example
  * ```tsx
  * const { showBanner, handleDismissBanner } = useCountBanner({
@@ -37,10 +40,10 @@ export function useCountBanner({ count, threshold, storageKey }: UseCountBannerO
       const dismissed = sessionStorage.getItem(storageKey);
       if (!dismissed) {
         setShowBanner(true);
+        return;
       }
-    } else {
-      setShowBanner(false);
     }
+    setShowBanner(false);
   }, [count, threshold, storageKey]);
 
   const handleDismissBanner = () => {

@@ -54,24 +54,16 @@ export default function SettingsPage() {
     }
   }, []);
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'appearance':
-        return <AppearanceSettings />;
-      case 'llm':
-        return <LLMSettings />;
-      case 'network':
-        return <NetworkSettings />;
-      case 'conversations':
-        return <ConversationSettings />;
-      case 'data':
-        return <DataSettings />;
-      case 'shortcuts':
-        return <KeyboardShortcutsSettings searchQuery={shortcutsSearchQuery} />;
-      case 'about':
-        return <AboutSettings />;
-    }
-  };
+  /** Tab → 组件映射，所有 Tab 同时挂载，用 display 控制显隐避免切换时卸载/重挂导致闪烁 */
+  const tabs: { key: SettingsTab; component: React.ReactNode }[] = [
+    { key: 'appearance', component: <AppearanceSettings /> },
+    { key: 'llm', component: <LLMSettings /> },
+    { key: 'network', component: <NetworkSettings /> },
+    { key: 'conversations', component: <ConversationSettings /> },
+    { key: 'data', component: <DataSettings /> },
+    { key: 'shortcuts', component: <KeyboardShortcutsSettings searchQuery={shortcutsSearchQuery} /> },
+    { key: 'about', component: <AboutSettings /> },
+  ];
 
   return (
     <div className="h-screen flex flex-col bg-[var(--bg)]">
@@ -124,7 +116,11 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto pb-8 scrollbar-hide">
-                {renderContent()}
+                {tabs.map(tab => (
+                  <div key={tab.key} className="h-full" style={{ display: activeTab === tab.key ? undefined : 'none' }}>
+                    {tab.component}
+                  </div>
+                ))}
               </div>
             </main>
           </div>

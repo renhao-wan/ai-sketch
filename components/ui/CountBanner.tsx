@@ -13,7 +13,7 @@ interface CountBannerProps {
 
 /**
  * 通用数量提示 Banner 组件
- * 显示毛玻璃风格的警告提示，支持关闭
+ * 同步初始化 + 条件渲染，无过渡动画，避免布局闪烁
  *
  * @example
  * ```tsx
