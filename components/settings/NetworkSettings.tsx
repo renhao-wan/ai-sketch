@@ -36,7 +36,25 @@ export function NetworkSettings() {
     })();
   }, []);
 
-  /** 保存代理配置 */
+  /** 切换代理开关时自动保存到数据库 */
+  const handleToggle = async () => {
+    const next = !proxyEnabled;
+    setProxyEnabled(next);
+    try {
+      const res = await fetch('/api/configs/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'set-proxy', proxyUrl, proxyEnabled: next }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      console.error('Failed to toggle proxy:', err);
+      // 回滚本地状态
+      setProxyEnabled(!next);
+    }
+  };
+
+  /** 保存代理地址 */
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -80,7 +98,7 @@ export function NetworkSettings() {
             </div>
           </div>
           <button
-            onClick={() => setProxyEnabled(!proxyEnabled)}
+            onClick={handleToggle}
             className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
               proxyEnabled ? 'bg-[var(--accent-indigo)]' : 'bg-[var(--muted)]/30'
             }`}
