@@ -20,8 +20,9 @@
 .claude
 CLAUDE.md
 
-# production
-/build
+# production (ignore build output, but keep electron-builder resources)
+/build/*
+!/build/entitlements.mac.plist
 
 # misc
 .DS_Store

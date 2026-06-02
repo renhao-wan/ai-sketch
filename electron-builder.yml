@@ -1,0 +1,78 @@
+appId: com.ai-sketch.app
+productName: AI Sketch
+copyright: Copyright © 2024 AI Sketch
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - "**/*"
+  - "!**/*.ts"
+  - "!**/*.tsx"
+  - "!**/*.map"
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
+  - "!**/node_modules/.cache/**"
+  - "!.next/**"
+  - "app/**"
+  - "lib/**"
+  - "electron/**"
+  - "package.json"
+
+extraResources:
+  - from: "data"
+    to: "data"
+    filter: ["**/*"]
+
+# Windows 配置
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: AI Sketch
+  # 卸载时询问是否删除数据
+  include: build/uninstaller.nsh
+
+# macOS 配置
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  icon: build/icon.icns
+  category: public.app-category.developer-tools
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+# Linux 配置
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  icon: build/icon.png
+  category: Development
+  desktop:
+    Name: AI Sketch
+    Comment: AI 驱动的图表创作平台
+    Terminal: false
+    Type: Application
