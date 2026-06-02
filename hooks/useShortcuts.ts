@@ -30,7 +30,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
   // 设置页面
   {
     id: 'open-settings',
-    keys: ['Ctrl', ','],
+    keys: ['Alt', 'S'],
     description: '打开设置',
     descriptionKey: 'shortcuts.openSettings',
     scope: 'global',
