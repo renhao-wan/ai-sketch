@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import { AppIcon } from '@/components/layout/TopBar';
 import AICopilotPanel from '@/components/ai/AICopilotPanel';
 import FloatingAIActions from '@/components/ai/FloatingAIActions';
@@ -17,6 +18,7 @@ import { stripCodeFences } from '@/lib/diagram/json-repair';
 import { consumeInitData } from '@/lib/init-data';
 import { runMigrationIfNeeded } from '@/lib/migration';
 import { useLocale } from '@/locales';
+import { useShortcuts } from '@/hooks/useShortcuts';
 import type { LLMConfig, NotificationState, AIActionId, ConversationMessage } from '@/types';
 import type { DiagramFormat } from '@/types/diagram-strategy';
 
@@ -24,6 +26,7 @@ import { generateId, parseStoredImages } from '@/lib/utils';
 import { consumeSSEStream, parseAPIError } from '@/lib/sse-consumer';
 
 function EditorContent() {
+  const router = useRouter();
   const { t } = useLocale();
   const [config, setConfig] = useState<LLMConfig | null>(null);
   const [isConfigManagerOpen, setIsConfigManagerOpen] = useState(false);
@@ -340,6 +343,13 @@ function EditorContent() {
     setCurrentChartType('auto');
     streamRendererRef.current?.reset();
   }, []);
+
+  // 注册快捷键
+  useShortcuts({
+    onGoHome: () => router.push('/'),
+    onNewConversation: handleNewConversation,
+    onOpenSettings: (tab) => router.push(tab ? `/settings?tab=${tab}` : '/settings'),
+  });
 
   const detectCodeFormat = (code: string): DiagramFormat => {
     const trimmed = code.trim();

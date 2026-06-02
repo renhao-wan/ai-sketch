@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, type TranslationKey } from '@/locales';
+import { useShortcuts } from '@/hooks/useShortcuts';
 import { SettingsSidebar, SettingsTab } from '@/components/settings/SettingsSidebar';
 import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
 import { LLMSettings } from '@/components/settings/LLMSettings';
@@ -28,6 +29,17 @@ export default function SettingsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
   const [shortcutsSearchQuery, setShortcutsSearchQuery] = useState('');
+
+  // 注册快捷键
+  useShortcuts({
+    onGoHome: () => router.push('/'),
+    onNewConversation: () => router.push('/editor'),
+    onOpenSettings: (tab) => {
+      if (tab) {
+        setActiveTab(tab as SettingsTab);
+      }
+    },
+  });
 
   // Read tab from query parameter on mount
   useEffect(() => {

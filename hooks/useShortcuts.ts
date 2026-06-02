@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Shortcut } from '@/types/shortcuts';
 
 /** 默认快捷键定义 */
@@ -142,8 +142,98 @@ export function formatKeys(keys: string[]): string {
   return keys.join(' + ');
 }
 
-export function useShortcuts() {
+/** 检查按键组合是否匹配 */
+function matchKeys(event: KeyboardEvent, keys: string[]): boolean {
+  for (const key of keys) {
+    const lowerKey = key.toLowerCase();
+    if (lowerKey === 'ctrl' || lowerKey === 'meta') {
+      if (!event.ctrlKey && !event.metaKey) return false;
+    } else if (lowerKey === 'shift') {
+      if (!event.shiftKey) return false;
+    } else if (lowerKey === 'alt') {
+      if (!event.altKey) return false;
+    } else {
+      if (event.key.toLowerCase() !== lowerKey) return false;
+    }
+  }
+  return true;
+}
+
+/** 快捷键动作回调类型 */
+interface ShortcutActions {
+  onGoHome?: () => void;
+  onNewConversation?: () => void;
+  onOpenHistory?: () => void;
+  onOpenSettings?: (tab?: string) => void;
+}
+
+export function useShortcuts(actions?: ShortcutActions) {
   const [searchQuery, setSearchQuery] = useState('');
+
+  // 注册全局快捷键
+  useEffect(() => {
+    if (!actions) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // 忽略在输入框中的快捷键（除了 Alt 组合键）
+      const target = event.target as HTMLElement;
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
+      // Alt 组合键在任何地方都生效
+      if (event.altKey) {
+        // 页面导航
+        if (matchKeys(event, ['Alt', 'H'])) {
+          event.preventDefault();
+          actions.onGoHome?.();
+          return;
+        }
+        if (matchKeys(event, ['Alt', 'N'])) {
+          event.preventDefault();
+          actions.onNewConversation?.();
+          return;
+        }
+        if (matchKeys(event, ['Alt', 'I'])) {
+          event.preventDefault();
+          actions.onOpenHistory?.();
+          return;
+        }
+        // 设置页面
+        if (matchKeys(event, ['Alt', 'S'])) {
+          event.preventDefault();
+          actions.onOpenSettings?.();
+          return;
+        }
+        if (matchKeys(event, ['Alt', 'O'])) {
+          event.preventDefault();
+          actions.onOpenSettings?.('appearance');
+          return;
+        }
+        if (matchKeys(event, ['Alt', 'M'])) {
+          event.preventDefault();
+          actions.onOpenSettings?.('llm');
+          return;
+        }
+        if (matchKeys(event, ['Alt', 'C'])) {
+          event.preventDefault();
+          actions.onOpenSettings?.('conversations');
+          return;
+        }
+        if (matchKeys(event, ['Alt', 'D'])) {
+          event.preventDefault();
+          actions.onOpenSettings?.('data');
+          return;
+        }
+        if (matchKeys(event, ['Alt', 'A'])) {
+          event.preventDefault();
+          actions.onOpenSettings?.('about');
+          return;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [actions]);
 
   // 搜索快捷键
   const searchShortcuts = useCallback((query: string): Shortcut[] => {

@@ -7,6 +7,7 @@ import { setInitData } from '@/lib/init-data';
 import AIPromptBox from '@/components/ai/AIPromptBox';
 import HistoryModal from '@/components/dialogs/HistoryModal';
 import { useLocale } from '@/locales';
+import { useShortcuts } from '@/hooks/useShortcuts';
 import { timeAgo } from '@/lib/time-ago';
 import { Settings, History, FileText, PenTool } from 'lucide-react';
 import * as api from '@/lib/api-client';
@@ -19,6 +20,14 @@ export default function HomePage() {
   const { t } = useLocale();
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [recentItems, setRecentItems] = useState<Conversation[]>([]);
+
+  // 注册快捷键
+  useShortcuts({
+    onGoHome: () => router.push('/'),
+    onNewConversation: () => router.push('/editor'),
+    onOpenHistory: () => setIsHistoryOpen(true),
+    onOpenSettings: (tab) => router.push(tab ? `/settings?tab=${tab}` : '/settings'),
+  });
 
   useEffect(() => {
     runMigrationIfNeeded().then(async () => {
