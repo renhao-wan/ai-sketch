@@ -6,6 +6,13 @@ import type { Shortcut } from '@/types/shortcuts';
 /** 默认快捷键定义 */
 const DEFAULT_SHORTCUTS: Shortcut[] = [
   {
+    id: 'escape',
+    keys: ['Esc'],
+    description: '退出/取消',
+    descriptionKey: 'shortcuts.escape',
+    scope: 'global',
+  },
+  {
     id: 'open-settings',
     keys: ['Ctrl', ','],
     description: '打开设置',
@@ -59,6 +66,13 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     keys: ['Ctrl', 'Shift', 'O'],
     description: '外观设置',
     descriptionKey: 'shortcuts.openAppearance',
+    scope: 'global',
+  },
+  {
+    id: 'open-history',
+    keys: ['Ctrl', 'Shift', 'I'],
+    description: '历史记录',
+    descriptionKey: 'shortcuts.openHistory',
     scope: 'global',
   },
   {
