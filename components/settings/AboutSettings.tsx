@@ -10,14 +10,14 @@ const APP_INFO = {
   version: '0.1.0',
   description: 'AI 驱动的图表生成 Web 应用，支持 Excalidraw JSON、Mermaid、Draw.io XML 三种格式。',
   author: {
-    name: 'AI Sketch Team',
-    email: 'team@ai-sketch.com',
+    name: 'wan',
+    email: '2653990378@qq.com',
   },
   repository: {
     type: 'git',
-    url: 'https://github.com/ai-sketch/ai-sketch',
+    url: 'https://github.com/renhao-wan/ai-sketch',
   },
-  license: 'MIT',
+  license: 'Apache-2.0',
   dependencies: [
     { name: 'Next.js', version: '16.0.1', description: 'React 框架', license: 'MIT' },
     { name: 'React', version: '19.2.0', description: 'UI 库', license: 'MIT' },
