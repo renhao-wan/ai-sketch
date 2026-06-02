@@ -1,6 +1,7 @@
 {
   "name": "smart-excalidraw-next",
   "version": "0.1.0",
+  "license": "Apache-2.0",
   "private": true,
   "main": "dist-electron/main.js",
   "scripts": {
