@@ -46,3 +46,6 @@ data/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# electron build output
+dist-electron/
