@@ -378,7 +378,7 @@ export const en: TranslationDict = {
   'about.developer': 'Developer',
   'about.repository': 'Repository',
   'about.license': 'License',
-  'about.licenseDescription': 'This project is open-sourced under the MIT License. You are free to use, modify, and distribute it.',
+  'about.licenseDescription': 'This project is open-sourced under the Apache License 2.0. You are free to use, modify, and distribute it.',
   'about.privacy': 'Privacy & Terms',
   'about.dataCollection': 'Data Collection',
   'about.dataCollectionDesc': 'This app does not collect any personal user information. All data (including session records and configurations) is stored in your browser\'s local SQLite database and is never uploaded to any server.',

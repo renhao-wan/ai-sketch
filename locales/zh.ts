@@ -376,7 +376,7 @@ export const zh = {
   'about.developer': '开发者信息',
   'about.repository': '开源仓库',
   'about.license': '许可证',
-  'about.licenseDescription': '本项目基于 MIT 许可证开源，您可以自由使用、修改和分发。',
+  'about.licenseDescription': '本项目基于 Apache License 2.0 开源，您可以自由使用、修改和分发。',
   'about.privacy': '隐私与条款',
   'about.dataCollection': '数据收集',
   'about.dataCollectionDesc': '本应用不收集任何用户个人信息。所有数据（包括会话记录和配置）均存储在您的浏览器本地 SQLite 数据库中，不会上传到任何服务器。',

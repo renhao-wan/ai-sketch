@@ -10,7 +10,7 @@ const APP_INFO = {
   version: '0.1.0',
   description: 'AI 驱动的图表生成 Web 应用，支持 Excalidraw JSON、Mermaid、Draw.io XML 三种格式。',
   author: {
-    name: 'wan',
+    name: 'Renhao Wan',
     email: '2653990378@qq.com',
   },
   repository: {
