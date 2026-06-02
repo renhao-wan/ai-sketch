@@ -1,27 +1,107 @@
 /**
- * Next.js 服务器管理模块（占位符）
+ * Next.js 服务器管理模块
  *
- * 此模块负责启动和停止 Next.js 开发服务器。
- * 完整实现将在 Task 3 中完成。
+ * 此模块负责启动和停止 Next.js 服务器，作为 Electron 主进程与 Next.js 应用之间的桥梁。
+ * 核心职责：
+ * 1. 通过环境变量将数据库路径传递给 Next.js API 路由
+ * 2. 使用 Next.js 编程式 API 启动服务器
+ * 3. 返回服务器端口号供主进程创建 BrowserWindow 使用
  */
+
+import { createServer, type Server } from 'http';
+import { parse } from 'url';
+import next from 'next';
+import path from 'path';
+
+/** Next.js HTTP 服务器实例引用，用于停止时关闭 */
+let server: Server | null = null;
+
+/**
+ * 通过环境变量设置数据库路径
+ *
+ * Next.js API 路由通过 `process.env.AI_SKETCH_DB_PATH` 读取此路径，
+ * 从而使用 Electron 指定的应用数据目录而非项目根目录。
+ *
+ * @param dbPath - SQLite 数据库文件的绝对路径
+ */
+function setupDatabasePath(dbPath: string): void {
+  process.env.AI_SKETCH_DB_PATH = dbPath;
+}
 
 /**
  * 启动 Next.js 服务器
- * @param dbPath - SQLite 数据库文件路径
- * @returns 服务器监听的端口号
+ *
+ * 执行流程：
+ * 1. 设置数据库路径环境变量
+ * 2. 创建 Next.js 应用实例（开发/生产模式自动判断）
+ * 3. 调用 app.prepare() 完成编译初始化
+ * 4. 创建 HTTP 服务器并委托请求给 Next.js 处理
+ * 5. 监听随机端口并返回端口号
+ *
+ * @param dbPath - SQLite 数据库文件的绝对路径
+ * @returns 服务器实际监听的端口号
  */
 export async function startServer(dbPath: string): Promise<number> {
-  // TODO: Task 3 - 实现 Next.js 服务器启动逻辑
-  console.log(`[Server] 占位符 - 数据库路径: ${dbPath}`);
+  setupDatabasePath(dbPath);
 
-  // 临时返回一个默认端口
-  return 3000;
+  const dev = process.env.NODE_ENV !== 'production';
+  const hostname = 'localhost';
+  const port = 0; // 使用 0 让操作系统分配随机可用端口
+
+  // 创建 Next.js 应用实例
+  // dir 指向项目根目录（electron 的上级目录）
+  const app = next({
+    dev,
+    hostname,
+    port,
+    dir: path.join(__dirname, '..'),
+  });
+
+  const handle = app.getRequestHandler();
+
+  // 完成 Next.js 初始化（开发模式下会触发编译）
+  await app.prepare();
+
+  return new Promise<number>((resolve, reject) => {
+    server = createServer(async (req, res) => {
+      try {
+        const parsedUrl = parse(req.url!, true);
+        await handle(req, res, parsedUrl);
+      } catch (err) {
+        console.error('[Server] 请求处理错误:', err);
+        res.statusCode = 500;
+        res.end('Internal Server Error');
+      }
+    });
+
+    server.listen(port, hostname, () => {
+      const address = server!.address();
+      if (address && typeof address === 'object') {
+        const assignedPort = address.port;
+        console.log(`[Server] Next.js 服务器已启动，端口: ${assignedPort}`);
+        resolve(assignedPort);
+      } else {
+        reject(new Error('无法获取服务器端口'));
+      }
+    });
+
+    server.on('error', (err) => {
+      console.error('[Server] 服务器错误:', err);
+      reject(err);
+    });
+  });
 }
 
 /**
  * 停止 Next.js 服务器
+ *
+ * 关闭 HTTP 服务器并清理引用。在应用退出时调用。
  */
 export function stopServer(): void {
-  // TODO: Task 3 - 实现服务器停止逻辑
-  console.log('[Server] 占位符 - 服务器已停止');
+  if (server) {
+    console.log('[Server] 正在停止服务器...');
+    server.close();
+    server = null;
+    console.log('[Server] 服务器已停止');
+  }
 }
