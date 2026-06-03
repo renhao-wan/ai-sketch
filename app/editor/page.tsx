@@ -306,6 +306,7 @@ function EditorContent() {
       handleSendMessage(data as { text?: string; images?: unknown[] }, 'auto', 'image');
     }
     setCurrentInput('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t 来自 useLocale，是稳定的引用
   }, [config, handleSendMessage]);
 
   // Mermaid 和 Draw.io 不在流式期间渲染，等流式完成后再渲染（由 tryParseAndApply 处理）
