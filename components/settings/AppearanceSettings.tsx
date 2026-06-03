@@ -118,17 +118,15 @@ export function AppearanceSettings() {
           </div>
           <button
             onClick={() => updateSetting('glowEnabled', !settings.glowEnabled)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+            className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
               settings.glowEnabled
                 ? 'bg-[var(--accent-indigo)]'
-                : 'bg-[var(--border)]'
+                : 'bg-[var(--muted)]/30'
             }`}
           >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                settings.glowEnabled ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
+            <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+              settings.glowEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'
+            }`} />
           </button>
         </div>
       </section>
