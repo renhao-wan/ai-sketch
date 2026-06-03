@@ -110,13 +110,16 @@ export function AppearanceSettings() {
         <div className="flex items-center justify-between py-3">
           <div>
             <p className="text-sm font-medium text-[var(--fg)]">
-              {t('settings.glowEffect') || '光晕背景效果'}
+              {t('settings.glowEffect')}
             </p>
             <p className="text-xs text-[var(--muted)] mt-0.5">
-              {t('settings.glowEffectDesc') || '页面背景的动态光晕装饰'}
+              {t('settings.glowEffectDesc')}
             </p>
           </div>
           <button
+            role="switch"
+            aria-checked={settings.glowEnabled}
+            aria-label={t('settings.glowEffect')}
             onClick={() => updateSetting('glowEnabled', !settings.glowEnabled)}
             className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
               settings.glowEnabled

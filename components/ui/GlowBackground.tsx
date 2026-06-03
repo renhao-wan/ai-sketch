@@ -17,22 +17,12 @@ const particles = [
   { size: 12, bottom: '20%', left: '25%', colorClass: 'bg-[var(--glow-1)]', delay: 1.5 },
 ];
 
-// 使用独立的 float 动画，不包含 opacity 变化
-const floatKeyframes = `
-@keyframes glow-float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-`;
-
 export default function GlowBackground() {
   const { settings } = useSettings();
 
   if (!settings.glowEnabled) return null;
 
   return (
-    <>
-      <style>{floatKeyframes}</style>
       <div
         className="fixed inset-0 pointer-events-none overflow-hidden z-0"
         aria-hidden="true"
@@ -55,7 +45,7 @@ export default function GlowBackground() {
         {particles.map((p, i) => (
           <div
             key={`particle-${i}`}
-            className={`absolute rounded-full ${p.colorClass}`}
+            className={`absolute rounded-full animate-float-particle ${p.colorClass}`}
             style={{
               width: p.size,
               height: p.size,
@@ -64,11 +54,10 @@ export default function GlowBackground() {
               right: p.right,
               bottom: p.bottom,
               opacity: 0.15,
-              animation: `glow-float 6s ease-in-out ${p.delay}s infinite`,
+              animationDelay: `${p.delay}s`,
             }}
           />
         ))}
       </div>
-    </>
   );
 }
