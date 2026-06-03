@@ -64,7 +64,7 @@ export function AppearanceSettings() {
             >
               {/* Theme preview with gradient effect */}
               <div
-                className="p-3 space-y-2 relative"
+                className="p-4 pb-5 space-y-3 relative"
                 style={{ backgroundColor: bg }}
               >
                 {/* Subtle gradient overlay for depth */}
