@@ -371,4 +371,4 @@ if ((element.type === 'arrow' || element.type === 'line') && optimized.width ===
 ```
 
 ## 实现位置
-完整实现见：`lib/optimizeArrows.js`
+完整实现见：`lib/diagram/optimize-arrows.ts`

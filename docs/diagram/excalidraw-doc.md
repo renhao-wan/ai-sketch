@@ -1,4 +1,6 @@
-# Creating Elements programmatically
+# Excalidraw 元素编程创建指南
+
+> **来源**：本文档内容摘录自 [Excalidraw 官方文档](https://docs.excalidraw.com/docs/@excalidraw/excalidraw/api/excalidraw-element-skeleton)，仅供项目内部参考。
 
 > We support a simplified API to make it easier to generate Excalidraw elements programmatically. This ......
 
