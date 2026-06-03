@@ -127,7 +127,7 @@ export default function SettingsPage() {
                         placeholder={t('shortcuts.search')}
                         value={shortcutsSearchQuery}
                         onChange={(e) => setShortcutsSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)] text-sm"
+                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)] hover:border-[var(--accent-indigo)]/20 text-sm transition-all duration-200"
                       />
                     </div>
                   )}

@@ -313,7 +313,7 @@ export default function ConversationSettings() {
             className={`flex items-center gap-1.5 px-4 py-2 text-sm rounded-xl transition-all duration-200 ${
               showBatchPanel
                 ? 'text-[var(--btn-primary-text)] bg-[var(--btn-primary)]'
-                : 'text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--surface-warm-hover)]'
+                : 'text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--border)]'
             }`}
           >
             {showBatchPanel ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -344,7 +344,7 @@ export default function ConversationSettings() {
                   className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
                     isSelectMode
                       ? 'bg-[var(--accent-indigo)] text-white'
-                      : 'text-[var(--muted)] bg-[var(--surface-warm)] hover:bg-[var(--surface-warm)]'
+                      : 'text-[var(--muted)] bg-[var(--surface-warm)] hover:bg-[var(--border)]'
                   }`}
                 >
                   <ListChecks size={14} />
@@ -353,7 +353,7 @@ export default function ConversationSettings() {
                 {isSelectMode && (
                   <button
                     onClick={handleSelectAll}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[var(--muted)] bg-[var(--surface-warm)] hover:bg-[var(--surface-warm)] rounded-xl transition-colors"
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[var(--muted)] bg-[var(--surface-warm)] hover:bg-[var(--border)] rounded-xl transition-colors"
                   >
                     {selectedIds.size === items.length ? (
                       <>
@@ -438,7 +438,7 @@ export default function ConversationSettings() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('conversation.search')}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 hover:border-[var(--accent-indigo)]/20 transition-all duration-200"
             />
           </div>
           <Dropdown

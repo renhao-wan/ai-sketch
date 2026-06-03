@@ -105,7 +105,7 @@ export default function Dropdown({
     'w-full px-4 py-2.5 text-sm rounded-xl text-left',
     'bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)]',
     'text-[var(--fg)] cursor-pointer',
-    'hover:bg-[var(--surface-warm-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30',
+    'hover:bg-[var(--border)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30',
     'transition-all duration-200 flex items-center justify-between',
     disabled ? 'opacity-50 cursor-not-allowed' : '',
     className ?? '',

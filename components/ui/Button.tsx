@@ -22,7 +22,7 @@ export default function Button({
 
   const variants: Record<string, string> = {
     primary: 'bg-[var(--btn-primary)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover)] rounded-xl',
-    secondary: 'bg-[var(--surface-warm-hover)] text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl',
+    secondary: 'bg-[var(--surface-warm-hover)] text-[var(--fg)] hover:bg-[var(--border)] border border-[var(--surface-warm-hover)] rounded-xl',
     danger: 'bg-red-600 text-white hover:bg-red-700 rounded-xl',
     ghost: 'bg-transparent text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-xl',
     glass: 'bg-[var(--bg-glass)] backdrop-blur-xl border border-[var(--border)] text-[var(--fg)] hover:bg-[var(--card)] rounded-xl',

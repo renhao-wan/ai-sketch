@@ -103,7 +103,7 @@ export default function ConfigSelector({ isOpen, onClose, onConfigSelect }: Conf
                   className={`w-full text-left p-3 rounded-xl border transition-all duration-200 ${
                     config.id === activeConfigId
                       ? 'border-[var(--accent-indigo)]/30 bg-[var(--accent-indigo)]/5'
-                      : 'border-transparent bg-[var(--surface-warm-hover)] hover:bg-[var(--surface-warm-hover)]'
+                      : 'border-transparent bg-[var(--surface-warm-hover)] hover:bg-[var(--border)]'
                   }`}
                 >
                   <div className="flex items-center justify-between">

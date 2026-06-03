@@ -152,7 +152,7 @@ export function AboutSettings() {
           {APP_INFO.dependencies.map(dep => (
             <div
               key={dep.name}
-              className="p-4 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)] hover:border-[var(--accent-indigo)]/30 hover:shadow-sm transition-all duration-200"
+              className="p-4 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]"
             >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-[var(--accent-indigo)]/10 flex items-center justify-center">

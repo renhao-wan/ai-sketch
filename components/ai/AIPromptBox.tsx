@@ -161,7 +161,7 @@ export default function AIPromptBox() {
             onKeyDown={handleKeyDown}
             placeholder={hasAttachment ? t('prompt.placeholderAttachment') : t('prompt.placeholder')}
             rows={1}
-            className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-[var(--fg)] placeholder:text-[var(--muted)]/60 focus:outline-none"
+            className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-[var(--fg)] placeholder:text-[var(--muted)]/60 focus:outline-none transition-all duration-200"
             style={{ minHeight: '48px' }}
           />
 

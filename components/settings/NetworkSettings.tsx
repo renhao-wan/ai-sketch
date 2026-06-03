@@ -99,7 +99,7 @@ export function NetworkSettings() {
           </div>
           <button
             onClick={handleToggle}
-            className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+            className={`relative w-11 h-6 rounded-full transition-all duration-200 hover:brightness-110 hover:ring-2 hover:ring-[var(--accent-indigo)]/20 ${
               proxyEnabled ? 'bg-[var(--accent-indigo)]' : 'bg-[var(--muted)]/30'
             }`}
           >
@@ -119,7 +119,7 @@ export function NetworkSettings() {
           onChange={(e) => setProxyUrl(e.target.value)}
           placeholder="http://127.0.0.1:7890"
           disabled={!proxyEnabled}
-          className="w-full px-4 py-2.5 text-sm bg-[var(--surface-warm)] border border-[var(--border)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/30 focus:border-[var(--accent-indigo)]/40 transition-all duration-200"
+          className="w-full px-4 py-2.5 text-sm bg-[var(--surface-warm)] border border-[var(--border)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/30 focus:border-[var(--accent-indigo)]/40 hover:border-[var(--accent-indigo)]/20 transition-all duration-200"
         />
         <p className="mt-2 text-xs text-[var(--muted)]">{t('proxy.urlHint')}</p>
       </section>

@@ -238,13 +238,13 @@ export function LLMSettings() {
           </button>
           <button
             onClick={handleExport}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--surface-warm-hover)] rounded-xl transition-all duration-200"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--border)] rounded-xl transition-all duration-200"
           >
             <Download size={14} /><span>{t('common.export')}</span>
           </button>
           <button
             onClick={handleImport}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--surface-warm-hover)] rounded-xl transition-all duration-200"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--border)] rounded-xl transition-all duration-200"
           >
             <Upload size={14} /><span>{t('common.import')}</span>
           </button>
@@ -277,7 +277,7 @@ export function LLMSettings() {
                 className={`group p-4 rounded-2xl border transition-all duration-200 ${
                   config.id === activeConfigId
                     ? 'border-[var(--accent-indigo)]/30 bg-[var(--accent-indigo)]/5'
-                    : 'border-transparent bg-[var(--surface-warm-hover)] hover:bg-[var(--surface-warm-hover)]'
+                    : 'border-transparent bg-[var(--surface-warm-hover)] hover:bg-[var(--border)]'
                 }`}
               >
                 <div className="flex items-start justify-between">
@@ -436,7 +436,7 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
     onSave(formData);
   };
 
-  const inputClass = "w-full px-4 py-2.5 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200";
+  const inputClass = "w-full px-4 py-2.5 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 hover:border-[var(--accent-indigo)]/20 transition-all duration-200";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
