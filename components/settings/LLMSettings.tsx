@@ -378,7 +378,7 @@ export function LLMSettings() {
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
         onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
-        onConfirm={confirmDialog.onConfirm}
+        onConfirm={confirmDialog.onConfirm ?? (() => {})}
         title={confirmDialog.title}
         message={confirmDialog.message}
       />
