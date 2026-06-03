@@ -1,5 +1,18 @@
 # AI Sketch
 
+<div align="center">
+
+![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![License](https://img.shields.io/badge/license-Apache--2.0-green)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)
+![Electron](https://img.shields.io/badge/Electron-28-47848f?logo=electron&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind--CSS-4-06b6d4?logo=tailwindcss&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite(sql.js)-WASM-003B57?logo=sqlite&logoColor=white)
+
+</div>
+
 > AI 驱动的图表生成平台 — 用自然语言描述，AI 帮你画图
 
 AI Sketch 是一个基于 LLM 的图表生成 Web 应用，支持通过自然语言描述生成可渲染的图表代码。支持 Excalidraw、Mermaid、Draw.io 三种图表格式，提供实时流式生成、多轮对话、代码编辑等功能。
