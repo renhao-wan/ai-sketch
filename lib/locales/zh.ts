@@ -275,7 +275,7 @@ export const zh = {
 
   // 设置页
   'settings.title': '系统设置',
-  'settings.appearance': '外观',
+  'settings.appearance': '外观设置',
   'settings.appearanceDesc': '自定义界面外观和语言',
   'settings.language': '语言',
   'settings.theme': '主题',
@@ -345,6 +345,7 @@ export const zh = {
   'shortcuts.search': '搜索快捷键...',
   'shortcuts.category.navigation': '页面导航',
   'shortcuts.category.settings': '设置页面',
+  'shortcuts.category.network': '网络设置',
   'shortcuts.category.edit': '编辑操作',
   'shortcuts.category.window': '窗口控制',
   'shortcuts.openSettings': '打开设置',
@@ -353,6 +354,7 @@ export const zh = {
   'shortcuts.openAbout': '关于应用',
   'shortcuts.openData': '数据管理',
   'shortcuts.openLLM': 'LLM 配置',
+  'shortcuts.openNetwork': '网络设置',
   'shortcuts.openConversations': '会话管理',
   'shortcuts.openAppearance': '外观设置',
   'shortcuts.windowMinimize': '最小化窗口',

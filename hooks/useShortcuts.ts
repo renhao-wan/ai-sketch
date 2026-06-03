@@ -50,6 +50,13 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     scope: 'global',
   },
   {
+    id: 'open-network',
+    keys: ['Alt', 'K'],
+    description: '网络设置',
+    descriptionKey: 'shortcuts.openNetwork',
+    scope: 'global',
+  },
+  {
     id: 'open-conversations',
     keys: ['Alt', 'C'],
     description: '会话管理',
@@ -218,6 +225,11 @@ export function useShortcuts(actions?: ShortcutActions) {
         if (matchKeys(event, ['Alt', 'M'])) {
           event.preventDefault();
           actions.onOpenSettings?.('llm');
+          return;
+        }
+        if (matchKeys(event, ['Alt', 'K'])) {
+          event.preventDefault();
+          actions.onOpenSettings?.('network');
           return;
         }
         if (matchKeys(event, ['Alt', 'C'])) {
