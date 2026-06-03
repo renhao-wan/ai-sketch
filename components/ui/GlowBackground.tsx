@@ -10,28 +10,17 @@ interface GlowOrb {
   bottom?: string;
   colorClass: string;
   delay?: number;
-  opacity?: number;
-}
-
-interface GlowParticle {
-  size: number;
-  top?: string;
-  left?: string;
-  right?: string;
-  bottom?: string;
-  colorClass: string;
-  delay?: number;
 }
 
 const orbs: GlowOrb[] = [
-  { size: 600, top: '10%', left: '10%', colorClass: 'blur-orb-glow-1', opacity: 0 },
-  { size: 500, top: '40%', right: '5%', colorClass: 'blur-orb-glow-2', delay: 2, opacity: 0 },
-  { size: 400, bottom: '10%', left: '30%', colorClass: 'blur-orb-glow-3', delay: 4, opacity: 0 },
-  { size: 350, top: '60%', left: '5%', colorClass: 'blur-orb-glow-4', opacity: 0 },
+  { size: 600, top: '10%', left: '10%', colorClass: 'blur-orb-glow-1' },
+  { size: 500, top: '40%', right: '5%', colorClass: 'blur-orb-glow-2', delay: 2 },
+  { size: 400, bottom: '10%', left: '30%', colorClass: 'blur-orb-glow-3', delay: 4 },
+  { size: 350, top: '60%', left: '5%', colorClass: 'blur-orb-glow-4' },
 ];
 
-const particles: GlowParticle[] = [
-  { size: 12, top: '15%', left: '8%', colorClass: 'bg-[var(--glow-1)]' },
+const particles = [
+  { size: 12, top: '15%', left: '8%', colorClass: 'bg-[var(--glow-1)]', delay: 0 },
   { size: 8, top: '25%', right: '12%', colorClass: 'bg-[var(--glow-2)]', delay: 1 },
   { size: 16, top: '50%', left: '15%', colorClass: 'bg-[var(--glow-3)]', delay: 2 },
   { size: 8, top: '70%', right: '20%', colorClass: 'bg-[var(--glow-4)]', delay: 3 },
@@ -52,7 +41,7 @@ export default function GlowBackground() {
       {orbs.map((orb, i) => (
         <div
           key={`orb-${i}`}
-          className={`blur-orb-fixed ${orb.colorClass} animate-pulse-soft`}
+          className={`blur-orb-fixed ${orb.colorClass}`}
           style={{
             width: orb.size,
             height: orb.size,
@@ -60,8 +49,7 @@ export default function GlowBackground() {
             left: orb.left,
             right: orb.right,
             bottom: orb.bottom,
-            animationDelay: orb.delay ? `${orb.delay}s` : undefined,
-            opacity: orb.opacity,
+            animation: `pulse-soft 4s ease-in-out ${orb.delay ?? 0}s infinite`,
           }}
         />
       ))}
@@ -70,7 +58,7 @@ export default function GlowBackground() {
       {particles.map((p, i) => (
         <div
           key={`particle-${i}`}
-          className={`absolute rounded-full ${p.colorClass} animate-float-particle`}
+          className={`absolute rounded-full ${p.colorClass}`}
           style={{
             width: p.size,
             height: p.size,
@@ -78,8 +66,8 @@ export default function GlowBackground() {
             left: p.left,
             right: p.right,
             bottom: p.bottom,
-            animationDelay: p.delay ? `${p.delay}s` : undefined,
-            opacity: 0,
+            opacity: 0.15,
+            animation: `float-particle 6s ease-in-out ${p.delay}s infinite`,
           }}
         />
       ))}
