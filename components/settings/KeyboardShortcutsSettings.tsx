@@ -42,15 +42,17 @@ export function KeyboardShortcutsSettings({ searchQuery = '' }: KeyboardShortcut
   const { t } = useLocale();
   const { shortcuts, filteredShortcuts } = useShortcuts();
 
-  // 按分类分组
+  // 按分类分组，顺序由 shortcutIds 控制
   const categorizedShortcuts = useMemo(() => {
     const filteredIds = new Set(filteredShortcuts.map(s => s.id));
+    const shortcutMap = new Map(shortcuts.map(s => [s.id, s]));
 
     return SHORTCUT_CATEGORIES.map(category => ({
       ...category,
-      shortcuts: shortcuts.filter(s =>
-        category.shortcutIds.includes(s.id) && filteredIds.has(s.id)
-      ),
+      shortcuts: category.shortcutIds
+        .filter(id => filteredIds.has(id))
+        .map(id => shortcutMap.get(id)!)
+        .filter(Boolean),
     })).filter(category => category.shortcuts.length > 0);
   }, [shortcuts, filteredShortcuts]);
 
