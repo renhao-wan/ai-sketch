@@ -460,22 +460,22 @@ html, body {
 /* 光晕颜色变体 */
 .blur-orb-glow-1 {
   background: var(--glow-1);
-  opacity: 0.04;
+  opacity: 0;
 }
 
 .blur-orb-glow-2 {
   background: var(--glow-2);
-  opacity: 0.035;
+  opacity: 0;
 }
 
 .blur-orb-glow-3 {
   background: var(--glow-3);
-  opacity: 0.03;
+  opacity: 0;
 }
 
 .blur-orb-glow-4 {
   background: var(--glow-4);
-  opacity: 0.025;
+  opacity: 0;
 }
 
 /* ============================================
