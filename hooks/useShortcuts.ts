@@ -50,13 +50,6 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     scope: 'global',
   },
   {
-    id: 'open-network',
-    keys: ['Alt', 'K'],
-    description: '网络设置',
-    descriptionKey: 'shortcuts.openNetwork',
-    scope: 'global',
-  },
-  {
     id: 'open-conversations',
     keys: ['Alt', 'C'],
     description: '会话管理',
@@ -68,6 +61,13 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     keys: ['Alt', 'D'],
     description: '数据管理',
     descriptionKey: 'shortcuts.openData',
+    scope: 'global',
+  },
+  {
+    id: 'open-network',
+    keys: ['Alt', 'K'],
+    description: '网络设置',
+    descriptionKey: 'shortcuts.openNetwork',
     scope: 'global',
   },
   {
