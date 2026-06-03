@@ -66,7 +66,7 @@ export default function GlowBackground() {
             left: p.left,
             right: p.right,
             bottom: p.bottom,
-            opacity: 0.15,
+            opacity: 0,
             animation: `float-particle 6s ease-in-out ${p.delay}s infinite`,
           }}
         />
