@@ -10,6 +10,7 @@ interface GlowOrb {
   bottom?: string;
   colorClass: string;
   delay?: number;
+  opacity?: number;
 }
 
 interface GlowParticle {
@@ -23,10 +24,10 @@ interface GlowParticle {
 }
 
 const orbs: GlowOrb[] = [
-  { size: 600, top: '10%', left: '10%', colorClass: 'blur-orb-glow-1' },
-  { size: 500, top: '40%', right: '5%', colorClass: 'blur-orb-glow-2', delay: 2 },
-  { size: 400, bottom: '10%', left: '30%', colorClass: 'blur-orb-glow-3', delay: 4 },
-  { size: 350, top: '60%', left: '5%', colorClass: 'blur-orb-glow-4' },
+  { size: 600, top: '10%', left: '10%', colorClass: 'blur-orb-glow-1', opacity: 0.04 },
+  { size: 500, top: '40%', right: '5%', colorClass: 'blur-orb-glow-2', delay: 2, opacity: 0.035 },
+  { size: 400, bottom: '10%', left: '30%', colorClass: 'blur-orb-glow-3', delay: 4, opacity: 0.03 },
+  { size: 350, top: '60%', left: '5%', colorClass: 'blur-orb-glow-4', opacity: 0.025 },
 ];
 
 const particles: GlowParticle[] = [
@@ -60,6 +61,7 @@ export default function GlowBackground() {
             right: orb.right,
             bottom: orb.bottom,
             animationDelay: orb.delay ? `${orb.delay}s` : undefined,
+            opacity: orb.opacity,
           }}
         />
       ))}
@@ -68,7 +70,7 @@ export default function GlowBackground() {
       {particles.map((p, i) => (
         <div
           key={`particle-${i}`}
-          className={`absolute rounded-full ${p.colorClass} animate-float-particle opacity-40`}
+          className={`absolute rounded-full ${p.colorClass} animate-float-particle`}
           style={{
             width: p.size,
             height: p.size,
@@ -77,6 +79,7 @@ export default function GlowBackground() {
             right: p.right,
             bottom: p.bottom,
             animationDelay: p.delay ? `${p.delay}s` : undefined,
+            opacity: 0.15,
           }}
         />
       ))}
