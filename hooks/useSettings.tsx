@@ -13,7 +13,7 @@ export interface Settings {
 const DEFAULT_SETTINGS: Settings = {
   locale: 'zh',
   theme: 'light',
-  glowEnabled: true,
+  glowEnabled: false,
 };
 
 const STORAGE_KEYS = {
