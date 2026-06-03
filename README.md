@@ -5,16 +5,13 @@
 ![Version](https://img.shields.io/badge/version-0.1.0-blue)
 ![License](https://img.shields.io/badge/license-Apache--2.0-green)
 ![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
-
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)  
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron-28-47848f?logo=electron&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind--CSS-4-06b6d4?logo=tailwindcss&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite(sql.js)-WASM-003B57?logo=sqlite&logoColor=white)
-![Excalidraw](https://img.shields.io/badge/Excalidraw-0.18-7B68EE?logo=excalidraw&logoColor=white)
-![Mermaid](https://img.shields.io/badge/Mermaid-11-FF6B6B?logo=mermaid&logoColor=white)
 
 </div>
 
