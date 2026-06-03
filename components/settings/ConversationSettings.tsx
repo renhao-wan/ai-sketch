@@ -493,10 +493,10 @@ export default function ConversationSettings() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="px-2 py-0.5 text-[11px] font-medium bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] rounded-lg">
+                      <span className="px-2 py-0.5 text-[11px] font-medium bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] rounded-lg flex-shrink-0">
                         {item.format}
                       </span>
-                      <span className="text-[11px] text-[var(--muted)]">
+                      <span className="text-[11px] text-[var(--muted)] flex-shrink-0">
                         {new Date(item.updatedAt).toLocaleString()}
                       </span>
                     </div>
@@ -516,22 +516,22 @@ export default function ConversationSettings() {
                         />
                         <button
                           onClick={(e) => { e.stopPropagation(); handleSaveRename(); }}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 transition-colors flex-shrink-0"
                         >
                           <Check size={14} />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleCancelRename(); }}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-warm-hover)] transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-warm-hover)] transition-colors flex-shrink-0"
                         >
                           <X size={14} />
                         </button>
                       </div>
                     ) : (
-                      <p className="text-sm text-[var(--fg)] mb-1">{item.title}</p>
+                      <p className="text-sm text-[var(--fg)] mb-1 truncate">{item.title}</p>
                     )}
                     {item.configName && (
-                      <p className="text-[11px] text-[var(--muted)]">
+                      <p className="text-[11px] text-[var(--muted)] truncate">
                         {t('history.modelPrefix')} {item.configName} - {item.configModel}
                       </p>
                     )}

@@ -158,15 +158,15 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className="px-2 py-0.5 text-[11px] font-medium bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] rounded-lg">
+                        <span className="px-2 py-0.5 text-[11px] font-medium bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] rounded-lg flex-shrink-0">
                           {item.format}
                         </span>
-                        <span className="text-[11px] text-[var(--muted)]">
+                        <span className="text-[11px] text-[var(--muted)] flex-shrink-0">
                           {new Date(item.updatedAt).toLocaleString()}
                         </span>
                       </div>
-                      <p className="text-sm text-[var(--fg)] mb-1">{item.title}</p>
-                      {item.configName && <p className="text-[11px] text-[var(--muted)]">{t('history.modelPrefix')} {item.configName} - {item.configModel}</p>}
+                      <p className="text-sm text-[var(--fg)] mb-1 truncate">{item.title}</p>
+                      {item.configName && <p className="text-[11px] text-[var(--muted)] truncate">{t('history.modelPrefix')} {item.configName} - {item.configModel}</p>}
                     </div>
                     <div className="flex items-center gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <button onClick={(e) => { e.stopPropagation(); handleApply(item); }} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors">

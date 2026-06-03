@@ -72,14 +72,14 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
   const current = conversations.find(c => c.id === currentId);
 
   return (
-    <div className="relative">
+    <div className="relative w-[160px] flex-shrink-0">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg transition-all duration-200"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg transition-all duration-200 w-full"
       >
-        <MessageSquare size={13} />
-        <span className="max-w-[120px] truncate">{current?.title || t('conversation.list')}</span>
-        <ChevronDown size={12} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <MessageSquare size={13} className="flex-shrink-0" />
+        <span className="flex-1 min-w-0 truncate text-left">{current?.title || t('conversation.list')}</span>
+        <ChevronDown size={12} className={`flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (

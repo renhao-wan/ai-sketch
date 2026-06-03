@@ -281,24 +281,24 @@ export function LLMSettings() {
                 }`}
               >
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <h3 className="text-sm font-semibold text-[var(--fg)]">{config.name}</h3>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1.5 min-w-0">
+                      <h3 className="text-sm font-semibold text-[var(--fg)] truncate">{config.name}</h3>
                       {config.id === activeConfigId && (
-                        <span className="px-2 py-0.5 text-[11px] font-medium bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] rounded-lg">
+                        <span className="px-2 py-0.5 text-[11px] font-medium bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] rounded-lg flex-shrink-0">
                           {t('config.active')}
                         </span>
                       )}
-                      <span className="px-2 py-0.5 text-[11px] bg-[var(--surface-warm-hover)] text-[var(--muted)] rounded-lg">
+                      <span className="px-2 py-0.5 text-[11px] bg-[var(--surface-warm-hover)] text-[var(--muted)] rounded-lg flex-shrink-0">
                         {config.type}
                       </span>
                     </div>
                     {config.description && (
-                      <p className="text-xs text-[var(--muted)] mb-1.5">{config.description}</p>
+                      <p className="text-xs text-[var(--muted)] mb-1.5 truncate">{config.description}</p>
                     )}
                     <div className="text-[11px] text-[var(--muted)]/70 space-y-0.5">
-                      <div>URL: {config.baseUrl}</div>
-                      <div>{t('config.modelPrefix')} {config.model}</div>
+                      <div className="truncate">URL: {config.baseUrl}</div>
+                      <div className="truncate">{t('config.modelPrefix')} {config.model}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -354,6 +354,34 @@ export function LLMSettings() {
           )}
         </div>
       </ScrollToTop>
+
+      {/* 配置编辑器弹窗 */}
+      {editingConfig && (
+        <ConfigEditor
+          config={editingConfig}
+          isCreating={isCreating}
+          onSave={handleSaveConfig}
+          onCancel={() => { setEditingConfig(null); setIsCreating(false); }}
+        />
+      )}
+
+      {/* 通知 */}
+      <Notification
+        isOpen={notification.isOpen}
+        onClose={() => setNotification(prev => ({ ...prev, isOpen: false }))}
+        title={notification.title}
+        message={notification.message}
+        type={notification.type}
+      />
+
+      {/* 删除确认对话框 */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+      />
     </div>
   );
 }
