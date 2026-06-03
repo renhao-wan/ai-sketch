@@ -79,7 +79,7 @@ export default function GlowBackground() {
             right: p.right,
             bottom: p.bottom,
             animationDelay: p.delay ? `${p.delay}s` : undefined,
-            opacity: 0.15,
+            opacity: 0,
           }}
         />
       ))}
