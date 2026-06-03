@@ -7,16 +7,19 @@ export type Theme = 'dark' | 'light' | 'ocean' | 'sakura' | 'emerald' | 'sunset'
 export interface Settings {
   locale: 'zh' | 'en';
   theme: Theme;
+  glowEnabled: boolean;
 }
 
 const DEFAULT_SETTINGS: Settings = {
   locale: 'zh',
   theme: 'light',
+  glowEnabled: true,
 };
 
 const STORAGE_KEYS = {
   locale: 'ai-sketch-locale',
   theme: 'ai-sketch-theme',
+  glowEnabled: 'ai-sketch-glow-enabled',
 } as const;
 
 function getStoredValue<T>(key: string, defaultValue: T, validator?: (v: unknown) => v is T): T {
@@ -40,6 +43,10 @@ function isValidLocale(v: unknown): v is 'zh' | 'en' {
   return v === 'zh' || v === 'en';
 }
 
+function isValidGlowEnabled(v: unknown): v is boolean {
+  return typeof v === 'boolean';
+}
+
 export function useSettings() {
   // 初始值统一使用默认值（SSR 安全），mount 后从 localStorage 读取真实值
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
@@ -48,10 +55,11 @@ export function useSettings() {
   useEffect(() => {
     const locale = getStoredValue(STORAGE_KEYS.locale, DEFAULT_SETTINGS.locale, isValidLocale);
     const theme = getStoredValue(STORAGE_KEYS.theme, DEFAULT_SETTINGS.theme, isValidTheme);
+    const glowEnabled = getStoredValue(STORAGE_KEYS.glowEnabled, DEFAULT_SETTINGS.glowEnabled, isValidGlowEnabled);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 从 localStorage 同步初始设置，仅执行一次
     setSettings(prev => {
-      if (prev.locale === locale && prev.theme === theme) return prev;
-      return { locale, theme };
+      if (prev.locale === locale && prev.theme === theme && prev.glowEnabled === glowEnabled) return prev;
+      return { locale, theme, glowEnabled };
     });
   }, []);
 
