@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext, createContext } from 'react';
 
 export type Theme = 'dark' | 'light' | 'ocean' | 'sakura' | 'emerald' | 'sunset';
 
@@ -47,8 +47,14 @@ function isValidGlowEnabled(v: unknown): v is boolean {
   return typeof v === 'boolean';
 }
 
-export function useSettings() {
-  // 初始值统一使用默认值（SSR 安全），mount 后从 localStorage 读取真实值
+interface SettingsContextValue {
+  settings: Settings;
+  updateSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
+}
+
+const SettingsContext = createContext<SettingsContextValue | null>(null);
+
+export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
 
   // 从 localStorage 读取已保存的设置（仅客户端）
@@ -76,5 +82,17 @@ export function useSettings() {
     });
   }, []);
 
-  return { settings, updateSetting };
+  return (
+    <SettingsContext.Provider value={{ settings, updateSetting }}>
+      {children}
+    </SettingsContext.Provider>
+  );
+}
+
+export function useSettings() {
+  const context = useContext(SettingsContext);
+  if (!context) {
+    throw new Error('useSettings must be used within a SettingsProvider');
+  }
+  return context;
 }
