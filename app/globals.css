@@ -48,6 +48,12 @@
   --scrollbar-thumb: rgba(0, 0, 0, 0.15);
   --scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
   --scrollbar-thumb-subtle: rgba(0, 0, 0, 0.06);
+
+  /* 光晕颜色 - 与背景色形成对比 */
+  --glow-1: #c4b5fd; /* 紫色系 */
+  --glow-2: #93c5fd; /* 蓝色系 */
+  --glow-3: #f9a8d4; /* 粉色系 */
+  --glow-4: #a5b4fc; /* 靛蓝系 */
 }
 
 /* ========== 主题系统 ========== */
@@ -75,6 +81,12 @@
   --scrollbar-thumb: rgba(99, 102, 241, 0.2);
   --scrollbar-thumb-hover: rgba(99, 102, 241, 0.35);
   --scrollbar-thumb-subtle: rgba(99, 102, 241, 0.08);
+
+  /* 光晕颜色 */
+  --glow-1: #fcd34d; /* 琥珀色 */
+  --glow-2: #fda4af; /* 玫瑰色 */
+  --glow-3: #6ee7b7; /* 翠绿色 */
+  --glow-4: #7dd3fc; /* 天蓝色 */
 }
 
 /* 海洋 - 浅蓝清新风格 */
@@ -100,6 +112,12 @@
   --scrollbar-thumb: rgba(14, 165, 233, 0.2);
   --scrollbar-thumb-hover: rgba(14, 165, 233, 0.35);
   --scrollbar-thumb-subtle: rgba(14, 165, 233, 0.08);
+
+  /* 光晕颜色 */
+  --glow-1: #fcd34d; /* 琥珀色 */
+  --glow-2: #f9a8d4; /* 粉色 */
+  --glow-3: #c4b5fd; /* 紫色 */
+  --glow-4: #a7f3d0; /* 翠绿色 */
 }
 
 /* 樱花 - 浅粉温柔风格 */
@@ -125,6 +143,12 @@
   --scrollbar-thumb: rgba(236, 72, 153, 0.2);
   --scrollbar-thumb-hover: rgba(236, 72, 153, 0.35);
   --scrollbar-thumb-subtle: rgba(236, 72, 153, 0.08);
+
+  /* 光晕颜色 */
+  --glow-1: #a5b4fc; /* 靛蓝色 */
+  --glow-2: #7dd3fc; /* 天蓝色 */
+  --glow-3: #fcd34d; /* 琥珀色 */
+  --glow-4: #6ee7b7; /* 翠绿色 */
 }
 
 /* 翡翠 - 浅绿清新风格 */
@@ -150,6 +174,12 @@
   --scrollbar-thumb: rgba(16, 185, 129, 0.2);
   --scrollbar-thumb-hover: rgba(16, 185, 129, 0.35);
   --scrollbar-thumb-subtle: rgba(16, 185, 129, 0.08);
+
+  /* 光晕颜色 */
+  --glow-1: #fda4af; /* 玫瑰色 */
+  --glow-2: #c4b5fd; /* 紫色 */
+  --glow-3: #fcd34d; /* 琥珀色 */
+  --glow-4: #7dd3fc; /* 天蓝色 */
 }
 
 /* 日落 - 浅橙温暖风格 */
@@ -175,6 +205,12 @@
   --scrollbar-thumb: rgba(249, 115, 22, 0.2);
   --scrollbar-thumb-hover: rgba(249, 115, 22, 0.35);
   --scrollbar-thumb-subtle: rgba(249, 115, 22, 0.08);
+
+  /* 光晕颜色 */
+  --glow-1: #a5b4fc; /* 靛蓝色 */
+  --glow-2: #6ee7b7; /* 翠绿色 */
+  --glow-3: #f9a8d4; /* 粉色 */
+  --glow-4: #7dd3fc; /* 天蓝色 */
 }
 
 /* ============================================
@@ -378,6 +414,16 @@ html, body {
   100% { background-position: 0% 50%; }
 }
 
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes float-particle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
 
 /* ============================================
    Animation Utilities
@@ -422,6 +468,14 @@ html, body {
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
+.animate-pulse-soft {
+  animation: pulse-soft 4s ease-in-out infinite;
+}
+
+.animate-float-particle {
+  animation: float-particle 6s ease-in-out infinite;
+}
+
 
 /* ============================================
    Blur Orb Background Decorations
@@ -448,6 +502,36 @@ html, body {
 .blur-orb-cyan {
   background: var(--accent-cyan);
   opacity: 0.04;
+}
+
+/* fixed 定位模式 - 全局背景光晕 */
+.blur-orb-fixed {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 光晕颜色变体 */
+.blur-orb-glow-1 {
+  background: var(--glow-1);
+  opacity: 0.15;
+}
+
+.blur-orb-glow-2 {
+  background: var(--glow-2);
+  opacity: 0.12;
+}
+
+.blur-orb-glow-3 {
+  background: var(--glow-3);
+  opacity: 0.10;
+}
+
+.blur-orb-glow-4 {
+  background: var(--glow-4);
+  opacity: 0.08;
 }
 
 /* ============================================
