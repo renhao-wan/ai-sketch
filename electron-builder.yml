@@ -33,11 +33,11 @@ win:
     - target: nsis
       arch: [x64]
   icon: electron/resources/icon.ico
+  requestedExecutionLevel: asInvoker
 
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-  requestedExecutionLevel: asInvoker
   installerIcon: electron/resources/icon.ico
   uninstallerIcon: electron/resources/icon.ico
   installerHeaderIcon: electron/resources/icon.ico
