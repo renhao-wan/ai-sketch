@@ -223,9 +223,9 @@
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(14, 165, 233, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(124, 58, 237, 0.04) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 80%, rgba(6, 182, 212, 0.04) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 50%, rgba(14, 165, 233, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(124, 58, 237, 0.02) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(6, 182, 212, 0.02) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -236,9 +236,9 @@
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse at 30% 20%, rgba(236, 72, 153, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 60%, rgba(124, 58, 237, 0.04) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 90%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
+    radial-gradient(ellipse at 30% 20%, rgba(236, 72, 153, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgba(124, 58, 237, 0.02) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 90%, rgba(139, 92, 246, 0.02) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -249,9 +249,9 @@
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse at 40% 30%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 60% 70%, rgba(124, 58, 237, 0.04) 0%, transparent 50%),
-    radial-gradient(ellipse at 20% 80%, rgba(6, 182, 212, 0.04) 0%, transparent 50%);
+    radial-gradient(ellipse at 40% 30%, rgba(16, 185, 129, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 70%, rgba(124, 58, 237, 0.02) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 80%, rgba(6, 182, 212, 0.02) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -262,9 +262,9 @@
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse at 50% 20%, rgba(249, 115, 22, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 20% 60%, rgba(124, 58, 237, 0.04) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
+    radial-gradient(ellipse at 50% 20%, rgba(249, 115, 22, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 60%, rgba(124, 58, 237, 0.02) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.02) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
