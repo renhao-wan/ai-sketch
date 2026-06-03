@@ -84,7 +84,7 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="fixed inset-0 z-40 cursor-pointer" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full left-0 mt-1 z-50 w-72 bg-[var(--surface-warm)] backdrop-blur-xl rounded-2xl border border-[var(--border)] shadow-[0_10px_40px_rgba(28,25,23,0.10)] overflow-hidden animate-slide-up">
             {/* New chat button */}
             <button
