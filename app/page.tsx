@@ -90,10 +90,7 @@ export default function HomePage() {
           {/* Top: Icon + Title */}
           <div className="text-center mb-10">
             <div className="flex justify-center mb-5">
-              <div className="relative">
-                <AppIcon size={52} />
-                <div className="absolute inset-0 rounded-[14px] bg-gradient-to-br from-[var(--accent-indigo)] to-[var(--accent-violet)] opacity-10 blur-xl scale-150" />
-              </div>
+              <AppIcon size={52} />
             </div>
             <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-[var(--fg)] leading-[1.1] mb-3">
               {t('home.hero.line1')}
