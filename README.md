@@ -4,12 +4,17 @@
 
 ![Version](https://img.shields.io/badge/version-0.1.0-blue)
 ![License](https://img.shields.io/badge/license-Apache--2.0-green)
+![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
+
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron-28-47848f?logo=electron&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind--CSS-4-06b6d4?logo=tailwindcss&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite(sql.js)-WASM-003B57?logo=sqlite&logoColor=white)
+![Excalidraw](https://img.shields.io/badge/Excalidraw-0.18-7B68EE?logo=excalidraw&logoColor=white)
+![Mermaid](https://img.shields.io/badge/Mermaid-11-FF6B6B?logo=mermaid&logoColor=white)
 
 </div>
 
@@ -168,13 +173,25 @@ pnpm start            # 启动生产服务器
 
 ## 📚 文档
 
-- [架构概览](docs/architecture/overview.md) — 整体架构设计
+### 架构文档
+- [架构概览](docs/architecture/overview.md) — 整体架构设计、核心模块、数据流
 - [图表格式策略模式](docs/architecture/diagram-strategy.md) — DiagramStrategy 接口详解
 - [输入类型策略模式](docs/architecture/input-strategy.md) — InputStrategy 接口详解
-- [API 接口文档](docs/api/endpoints.md) — 后端 API 接口说明
-- [开发扩展指南](docs/guides/extend-diagram.md) — 如何添加新图表格式
-- [部署指南](docs/guides/deployment.md) — Web 端和桌面端部署
-- [Electron 打包指南](docs/electron/packaging.md) — 桌面应用打包说明
+
+### API 文档
+- [API 接口文档](docs/api/endpoints.md) — 后端 API 接口详细说明
+
+### 开发指南
+- [开发扩展指南](docs/guides/extend-diagram.md) — 如何添加新图表格式、新输入类型
+- [部署指南](docs/guides/deployment.md) — Web 端和 Electron 端部署说明
+
+### 图表文档
+- [箭头计算规则](docs/diagram/arrow-compute-rule.md) — Excalidraw 箭头对齐算法
+- [Excalidraw API 参考](docs/diagram/excalidraw-doc.md) — 元素编程创建指南
+
+### Electron 文档
+- [Electron 开发指南](docs/electron/electron.md) — 桌面应用开发说明
+- [Electron 测试报告](docs/electron/electron-test-report.md) — 测试结果和问题修复
 
 ## 🎨 主题系统
 

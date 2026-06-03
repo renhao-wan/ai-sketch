@@ -525,3 +525,10 @@ convertToExcalidrawElements([
 
 
 ```
+
+---
+
+## 相关文档
+
+- [图表格式策略模式](../architecture/diagram-strategy.md) — DiagramStrategy 接口详解
+- [箭头计算规则](./arrow-compute-rule.md) — Excalidraw 箭头对齐算法

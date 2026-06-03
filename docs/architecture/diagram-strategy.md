@@ -356,3 +356,13 @@ export type DiagramFormat = 'excalidraw' | 'mermaid' | 'drawio' | 'newformat';
 - `lib/diagram/optimize-arrows.ts` — 箭头优化算法
 - `lib/diagram/json-repair.ts` — JSON 修复工具
 - `lib/diagram/constants.ts` — 图表类型常量
+
+---
+
+## 相关文档
+
+- [架构概览](./overview.md) — 整体架构设计
+- [输入类型策略模式](./input-strategy.md) — InputStrategy 接口详解
+- [箭头计算规则](../diagram/arrow-compute-rule.md) — Excalidraw 箭头对齐算法
+- [API 接口文档](../api/endpoints.md) — 后端 API 接口说明
+- [开发扩展指南](../guides/extend-diagram.md) — 如何添加新图表格式

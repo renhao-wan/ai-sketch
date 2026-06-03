@@ -372,3 +372,10 @@ if ((element.type === 'arrow' || element.type === 'line') && optimized.width ===
 
 ## 实现位置
 完整实现见：`lib/diagram/optimize-arrows.ts`
+
+---
+
+## 相关文档
+
+- [图表格式策略模式](../architecture/diagram-strategy.md) — DiagramStrategy 接口详解
+- [Excalidraw API 参考](./excalidraw-doc.md) — Excalidraw 元素创建指南

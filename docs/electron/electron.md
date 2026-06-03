@@ -61,3 +61,11 @@ npx electron-builder --linux --x64
 1. 确保所有依赖已安装：`pnpm install`
 2. 检查 Node.js 版本（需要 18+）
 3. 查看详细错误信息
+
+---
+
+## 相关文档
+
+- [架构概览](../architecture/overview.md) — 整体架构设计
+- [部署指南](../guides/deployment.md) — Web 端和桌面端部署
+- [Electron 测试报告](./electron-test-report.md) — 测试结果和问题修复

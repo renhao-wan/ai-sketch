@@ -218,3 +218,13 @@ app/editor/page.tsx（编辑器）
 - **nodeIntegration**：禁用 Node.js 集成
 - **API Key 保护**：密钥存储在 SQLite，不暴露给客户端
 - **输入验证**：服务端验证所有用户输入
+
+---
+
+## 相关文档
+
+- [图表格式策略模式](./diagram-strategy.md) — DiagramStrategy 接口详解
+- [输入类型策略模式](./input-strategy.md) — InputStrategy 接口详解
+- [API 接口文档](../api/endpoints.md) — 后端 API 接口说明
+- [开发扩展指南](../guides/extend-diagram.md) — 如何添加新图表格式
+- [部署指南](../guides/deployment.md) — Web 端和桌面端部署

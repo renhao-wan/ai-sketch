@@ -519,6 +519,7 @@ log.error('发生错误:', error);
 
 ## 相关文档
 
-- [架构概览](../architecture/overview.md)
-- [Electron 打包指南](../electron/packaging.md)
-- [API 接口文档](../api/endpoints.md)
+- [架构概览](../architecture/overview.md) — 整体架构设计
+- [API 接口文档](../api/endpoints.md) — 后端 API 接口说明
+- [开发扩展指南](./extend-diagram.md) — 如何添加新功能
+- [Electron 开发指南](../electron/electron.md) — 桌面应用开发

@@ -619,3 +619,13 @@ const { configs, activeConfigId } = await api.getConfigs();
 |------|------|------|
 | key | TEXT | 主键 |
 | value | TEXT | 值 |
+
+---
+
+## 相关文档
+
+- [架构概览](../architecture/overview.md) — 整体架构设计
+- [图表格式策略模式](../architecture/diagram-strategy.md) — DiagramStrategy 接口详解
+- [输入类型策略模式](../architecture/input-strategy.md) — InputStrategy 接口详解
+- [开发扩展指南](../guides/extend-diagram.md) — 如何添加新 API 接口
+- [部署指南](../guides/deployment.md) — Web 端和桌面端部署
