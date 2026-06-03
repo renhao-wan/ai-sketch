@@ -52,6 +52,7 @@ export async function startServer(dbPath: string): Promise<number> {
 
   // 创建 Next.js 应用实例
   // dir 指向项目根目录（electron 的上级目录）
+  console.time('[Server] Next.js prepare');
   const app = next({
     dev,
     hostname,
@@ -63,6 +64,7 @@ export async function startServer(dbPath: string): Promise<number> {
 
   // 完成 Next.js 初始化（开发模式下会触发编译）
   await app.prepare();
+  console.timeEnd('[Server] Next.js prepare');
 
   return new Promise<number>((resolve, reject) => {
     server = createServer(async (req, res) => {

@@ -29,6 +29,7 @@ function EditorContent() {
   const router = useRouter();
   const { t } = useLocale();
   const [config, setConfig] = useState<LLMConfig | null>(null);
+  const [configLoaded, setConfigLoaded] = useState(false);
   const [isConfigManagerOpen, setIsConfigManagerOpen] = useState(false);
   const [generatedCode, setGeneratedCode] = useState('');
   const [format, setFormat] = useState<DiagramFormat>('excalidraw');
@@ -81,6 +82,8 @@ function EditorContent() {
       }
     } catch (err) {
       console.error('Failed to load config:', err);
+    } finally {
+      setConfigLoaded(true);
     }
   }, []);
 
@@ -205,6 +208,10 @@ function EditorContent() {
     };
     setMessages(prev => [...prev, optimisticUserMsg, optimisticAssistantMsg]);
 
+    let firstContentTime: number | null = null;
+    const sendTime = performance.now();
+    console.log('[Editor] Sending message...');
+
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
@@ -212,6 +219,8 @@ function EditorContent() {
         body: JSON.stringify({ configId: config!.id, userInput: userMessage, chartType, format, conversationId, sourceType }),
         signal: controller.signal,
       });
+
+      console.log(`[Editor] Response received in ${Math.round(performance.now() - sendTime)}ms`);
 
       if (!response.ok) {
         let errorMessage = t('editor.generateFailed');
@@ -245,6 +254,10 @@ function EditorContent() {
             ));
           },
           onContent: (stripped) => {
+            if (!firstContentTime) {
+              firstContentTime = performance.now();
+              console.log(`[Editor] First content received in ${Math.round(firstContentTime - sendTime)}ms`);
+            }
             setGeneratedCode(stripped);
             streamRendererRef.current?.feed(stripped);
             setMessages(prev => prev.map(m =>
@@ -253,6 +266,8 @@ function EditorContent() {
           },
         },
       );
+
+      console.log(`[Editor] Stream completed in ${Math.round(performance.now() - sendTime)}ms, total chars: ${accumulatedCode.length}`);
 
       // Full postProcess + optimize + validate after stream completes
       const currentStrategy = getStrategy(formatRef.current);
@@ -283,6 +298,7 @@ function EditorContent() {
   // Send pending init data once config is loaded
   useEffect(() => {
     if (!pendingInitRef.current) return;
+    if (!configLoaded) return; // 等待配置加载完成后再判断
 
     // Config loaded but invalid — show reminder and open config selector
     if (!isConfigValid(config)) {
@@ -307,7 +323,7 @@ function EditorContent() {
     }
     setCurrentInput('');
     // eslint-disable-next-line react-hooks/exhaustive-deps -- t 来自 useLocale，是稳定的引用
-  }, [config, handleSendMessage]);
+  }, [config, configLoaded, handleSendMessage]);
 
   // Mermaid 和 Draw.io 不在流式期间渲染，等流式完成后再渲染（由 tryParseAndApply 处理）
   // 侧边栏 AI 输出仍然流式显示

@@ -21,8 +21,10 @@ async function getProxyAgent(): Promise<ProxyAgent | undefined> {
   lastCheck = now;
 
   try {
+    console.time('[LLM Client] Load Proxy Config');
     const { configManager } = await import('@/lib/db/config-manager');
     const { proxyUrl, proxyEnabled } = await configManager.getProxy();
+    console.timeEnd('[LLM Client] Load Proxy Config');
 
     if (proxyEnabled && proxyUrl) {
       if (proxyUrl !== cachedProxyUrl) {
@@ -165,7 +167,9 @@ async function fetchWithRetry(
       throw new DOMException('The operation was aborted.', 'AbortError');
     }
 
+    console.time(`[LLM Client] API Request (attempt ${attempt + 1})`);
     const response = await proxyFetch(url, options);
+    console.timeEnd(`[LLM Client] API Request (attempt ${attempt + 1})`);
 
     if (response.status !== 429) {
       return response;
@@ -209,6 +213,8 @@ export async function callLLM(
   signal?: AbortSignal,
 ): Promise<string> {
   const { type, baseUrl, apiKey, model } = config;
+
+  console.log(`[LLM Client] Calling ${type} API, model: ${model}, baseUrl: ${baseUrl}`);
 
   if (type === 'openai') {
     return callOpenAI(baseUrl, apiKey, model, messages, onChunk, signal);

@@ -21,7 +21,13 @@ import type { DiagramFormat } from '@/lib/types/diagram-strategy';
  *   data: [DONE]
  */
 export async function POST(request: Request) {
+  const perfMark = (label: string) => console.time(`[Generate] ${label}`);
+  const perfEnd = (label: string) => console.timeEnd(`[Generate] ${label}`);
+
   try {
+    perfMark('Total');
+
+    perfMark('Parse Request');
     const { configId, config: configBody, userInput, chartType, format, conversationId, sourceType: frontendSourceType, regenerate } = await request.json() as {
       configId?: string;
       config?: LLMConfig;
@@ -32,9 +38,11 @@ export async function POST(request: Request) {
       sourceType?: string;
       regenerate?: boolean;
     };
+    perfEnd('Parse Request');
 
     let config: LLMConfig | undefined;
 
+    perfMark('Load Config');
     if (configId) {
       config = await configManager.getConfig(configId);
       if (!config) {
@@ -46,6 +54,7 @@ export async function POST(request: Request) {
     } else if (configBody) {
       config = configBody;
     }
+    perfEnd('Load Config');
 
     if (!config || !userInput) {
       return NextResponse.json(
@@ -60,6 +69,7 @@ export async function POST(request: Request) {
     // ── Conversation management ──
     let activeConversationId = conversationId || null;
 
+    perfMark('Conversation Management');
     // Create conversation if none exists
     if (!activeConversationId) {
       const userInputText = typeof userInput === 'string' ? userInput : (userInput.text || '');
@@ -105,6 +115,7 @@ export async function POST(request: Request) {
     }
 
     // ── Build LLM messages with context ──
+    perfMark('Build Context');
     const contextMessages = await conversationManager.buildContextMessages(activeConversationId);
 
     // Build the new user message for LLM
@@ -136,10 +147,14 @@ export async function POST(request: Request) {
       { role: 'system', content: strategy.getSystemPrompt() },
       ...contextMessages,
     ];
+    perfEnd('Build Context');
+
+    console.log(`[Generate] Messages count: ${fullMessages.length}, System prompt length: ${strategy.getSystemPrompt().length}`);
 
     // ── SSE stream ──
     const encoder = new TextEncoder();
     let accumulatedCode = '';
+    let isFirstChunk = true;
 
     // Combine request signal with a 5-minute timeout
     const timeoutMs = 5 * 60 * 1000;
@@ -149,6 +164,8 @@ export async function POST(request: Request) {
     request.signal?.addEventListener('abort', () => combinedController.abort());
     timeoutController.signal.addEventListener('abort', () => combinedController.abort());
 
+    perfEnd('Conversation Management');
+
     const stream = new ReadableStream({
       async start(controller) {
         try {
@@ -156,12 +173,22 @@ export async function POST(request: Request) {
           const metaEvent = `data: ${JSON.stringify({ type: 'meta', conversationId: activeConversationId })}\n\n`;
           controller.enqueue(encoder.encode(metaEvent));
 
+          perfMark('LLM Call (First Token)');
           await callLLM(config!, fullMessages, (chunk) => {
+            if (isFirstChunk) {
+              perfEnd('LLM Call (First Token)');
+              perfMark('LLM Streaming');
+              isFirstChunk = false;
+            }
             accumulatedCode += chunk;
             const data = `data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`;
             controller.enqueue(encoder.encode(data));
           }, combinedController.signal);
 
+          if (!isFirstChunk) {
+            perfEnd('LLM Streaming');
+          }
+          perfMark('Post Process');
           // Save assistant message after stream completes
           const processedCode = strategy.postProcess(accumulatedCode);
           const optimizedCode = strategy.optimize(processedCode);
@@ -172,6 +199,9 @@ export async function POST(request: Request) {
             sourceType: 'text',
           });
           await conversationManager.updateCurrentCode(activeConversationId!, optimizedCode);
+          perfEnd('Post Process');
+
+          perfEnd('Total');
 
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
