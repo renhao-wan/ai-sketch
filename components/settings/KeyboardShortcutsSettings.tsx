@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useLocale, type TranslationKey } from '@/lib/locales';
 import { useShortcuts, formatKeys } from '@/hooks/useShortcuts';
-import { Keyboard, Navigation, Settings, Edit3, AppWindow, Globe } from 'lucide-react';
+import { Keyboard, Navigation, Settings, Edit3, AppWindow } from 'lucide-react';
 import type { Shortcut } from '@/lib/types/shortcuts';
 
 interface KeyboardShortcutsSettingsProps {
@@ -22,13 +22,7 @@ const SHORTCUT_CATEGORIES: { id: string; labelKey: TranslationKey; icon: typeof 
     id: 'settings',
     labelKey: 'shortcuts.category.settings',
     icon: Settings,
-    shortcutIds: ['open-settings', 'open-appearance', 'open-llm', 'open-network', 'open-conversations', 'open-data', 'open-about'],
-  },
-  {
-    id: 'network',
-    labelKey: 'shortcuts.category.network',
-    icon: Globe,
-    shortcutIds: ['open-network'],
+    shortcutIds: ['open-settings', 'open-appearance', 'open-llm', 'open-conversations', 'open-data', 'open-network', 'open-about'],
   },
   {
     id: 'edit',

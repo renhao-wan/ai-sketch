@@ -347,7 +347,6 @@ export const en: TranslationDict = {
   'shortcuts.search': 'Search shortcuts...',
   'shortcuts.category.navigation': 'Navigation',
   'shortcuts.category.settings': 'Settings',
-  'shortcuts.category.network': 'Network',
   'shortcuts.category.edit': 'Edit',
   'shortcuts.category.window': 'Window',
   'shortcuts.openSettings': 'Open Settings',

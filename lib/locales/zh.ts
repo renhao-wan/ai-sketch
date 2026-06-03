@@ -345,7 +345,6 @@ export const zh = {
   'shortcuts.search': '搜索快捷键...',
   'shortcuts.category.navigation': '页面导航',
   'shortcuts.category.settings': '设置页面',
-  'shortcuts.category.network': '网络设置',
   'shortcuts.category.edit': '编辑操作',
   'shortcuts.category.window': '窗口控制',
   'shortcuts.openSettings': '打开设置',
