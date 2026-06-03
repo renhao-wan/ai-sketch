@@ -274,7 +274,14 @@ function EditorContent() {
 
   // Send pending init data once config is loaded
   useEffect(() => {
-    if (!config || !pendingInitRef.current) return;
+    if (!pendingInitRef.current) return;
+
+    // Config loaded but invalid — show reminder and open config selector
+    if (!isConfigValid(config)) {
+      setNotification({ isOpen: true, title: t('editor.configReminder'), message: t('editor.pleaseConfigLLM'), type: 'warning' });
+      setIsConfigManagerOpen(true);
+      return;
+    }
 
     const init = pendingInitRef.current;
     pendingInitRef.current = null;
