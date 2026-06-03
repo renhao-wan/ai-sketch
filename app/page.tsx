@@ -58,7 +58,7 @@ export default function HomePage() {
           <Tooltip content={t('home.enterEditor')} side="bottom">
             <button
               onClick={() => router.push('/editor')}
-              className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5 hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors duration-150 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5 hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors duration-150"
             >
               <PenTool size={13} />
               <span>{t('home.editor')}</span>
@@ -67,7 +67,7 @@ export default function HomePage() {
           <Tooltip content={t('home.history')} side="bottom">
             <button
               onClick={() => setIsHistoryOpen(true)}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150 cursor-pointer"
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
             >
               <History size={15} />
             </button>
@@ -75,7 +75,7 @@ export default function HomePage() {
           <Tooltip content={t('home.settings')} side="bottom">
             <button
               onClick={() => router.push('/settings')}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150 cursor-pointer"
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
             >
               <Settings size={15} />
             </button>
@@ -124,7 +124,7 @@ export default function HomePage() {
                   setInitData({ type: 'text', data: tpl.label, format: 'excalidraw' });
                   router.push('/editor?source=text');
                 }}
-                className="px-4 py-2 text-xs text-[var(--muted)] bg-[var(--bg-glass)] backdrop-blur border border-[var(--border)] rounded-full hover:bg-[var(--card)] hover:text-[var(--fg)] hover:border-[var(--accent-indigo)]/40 transition-all duration-200 cursor-pointer"
+                className="px-4 py-2 text-xs text-[var(--muted)] bg-[var(--bg-glass)] backdrop-blur border border-[var(--border)] rounded-full hover:bg-[var(--card)] hover:text-[var(--fg)] hover:border-[var(--accent-indigo)]/40 transition-all duration-200"
               >
                 {tpl.label}
               </button>
@@ -140,7 +140,7 @@ export default function HomePage() {
                   <button
                     key={item.id}
                     onClick={() => handleApplyConversation(item)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-[var(--muted)] bg-[var(--bg-glass)]/50 backdrop-blur border border-[var(--border)]/50 rounded-full hover:bg-[var(--card)] hover:text-[var(--fg)] hover:border-[var(--accent-indigo)]/30 transition-all duration-200 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-[var(--muted)] bg-[var(--bg-glass)]/50 backdrop-blur border border-[var(--border)]/50 rounded-full hover:bg-[var(--card)] hover:text-[var(--fg)] hover:border-[var(--accent-indigo)]/30 transition-all duration-200"
                   >
                     <FileText size={11} className="text-[var(--accent-indigo)]/50" />
                     <span className="max-w-[120px] truncate">{item.title}</span>

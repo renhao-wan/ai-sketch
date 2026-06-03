@@ -94,7 +94,7 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm cursor-pointer" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-[var(--bg-glass)] backdrop-blur-2xl rounded-3xl border border-[var(--border)] shadow-[var(--shadow-floating)] w-full max-w-2xl max-h-[70vh] overflow-hidden flex flex-col animate-slide-up">
         {/* Header */}
         <div className="flex items-center justify-between px-7 pt-6 pb-4 flex-shrink-0">
