@@ -86,13 +86,6 @@ export default function HomePage() {
 
       {/* Main */}
       <main className="flex-1 flex items-center justify-center relative overflow-hidden">
-        {/* Background orbs */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          <div className="blur-orb blur-orb-indigo" style={{ width: '600px', height: '600px', top: '-5%', left: '-8%' }} />
-          <div className="blur-orb blur-orb-violet" style={{ width: '500px', height: '500px', top: '25%', right: '-6%', animationDelay: '-7s' }} />
-          <div className="blur-orb blur-orb-cyan" style={{ width: '400px', height: '400px', bottom: '0%', left: '30%', animationDelay: '-13s' }} />
-        </div>
-
         <div className="relative z-10 w-full max-w-4xl px-6">
           {/* Top: Icon + Title */}
           <div className="text-center mb-10">
