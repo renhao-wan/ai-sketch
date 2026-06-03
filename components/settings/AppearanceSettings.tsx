@@ -103,6 +103,35 @@ export function AppearanceSettings() {
           ))}
         </div>
       </section>
+
+      {/* 光晕背景效果 */}
+      <section>
+        <h3 className="text-lg font-semibold text-[var(--fg)] mb-1">{t('settings.effects')}</h3>
+        <div className="flex items-center justify-between py-3">
+          <div>
+            <p className="text-sm font-medium text-[var(--fg)]">
+              {t('settings.glowEffect') || '光晕背景效果'}
+            </p>
+            <p className="text-xs text-[var(--muted)] mt-0.5">
+              {t('settings.glowEffectDesc') || '页面背景的动态光晕装饰'}
+            </p>
+          </div>
+          <button
+            onClick={() => updateSetting('glowEnabled', !settings.glowEnabled)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+              settings.glowEnabled
+                ? 'bg-[var(--accent-indigo)]'
+                : 'bg-[var(--border)]'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                settings.glowEnabled ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
