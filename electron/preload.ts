@@ -38,5 +38,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     close: () => ipcRenderer.invoke('window-close'),
     /** 检查窗口是否最大化 */
     isMaximized: (): Promise<boolean> => ipcRenderer.invoke('window-is-maximized'),
+    /** 监听窗口最大化状态变化 */
+    onMaximizeChange: (callback: (isMaximized: boolean) => void) => {
+      ipcRenderer.on('window-maximize-changed', (_event, value) => callback(value));
+    },
   },
 });

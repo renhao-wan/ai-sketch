@@ -40,8 +40,8 @@ const isDev = process.env.ELECTRON_DEV === 'true';
  */
 function createWindow(): void {
   mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
+    width: 1200,
+    height: 800,
     minWidth: 800,
     minHeight: 600,
     frame: false, // 完全无边框，不显示原生标题栏和按钮
@@ -63,9 +63,18 @@ function createWindow(): void {
     mainWindow.loadURL(`http://localhost:${port}`);
   }
 
-  // 页面加载完成后再显示窗口，避免白屏闪烁
+  // 页面加载完成后再显示窗口并最大化
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
+    mainWindow?.maximize();
+  });
+
+  // 窗口最大化/还原时主动通知渲染进程（更新图标）
+  mainWindow.on('maximize', () => {
+    mainWindow?.webContents.send('window-maximize-changed', true);
+  });
+  mainWindow.on('unmaximize', () => {
+    mainWindow?.webContents.send('window-maximize-changed', false);
   });
 
   // 窗口关闭时清理引用
@@ -142,17 +151,18 @@ ipcMain.handle('window-minimize', () => {
 });
 
 ipcMain.handle('window-maximize', () => {
-  if (mainWindow?.isMaximized()) {
+  if (!mainWindow) return;
+  if (mainWindow.isMaximized()) {
     mainWindow.unmaximize();
   } else {
-    mainWindow?.maximize();
+    mainWindow.maximize();
   }
-});
-
-ipcMain.handle('window-close', () => {
-  mainWindow?.close();
 });
 
 ipcMain.handle('window-is-maximized', () => {
   return mainWindow?.isMaximized() ?? false;
+});
+
+ipcMain.handle('window-close', () => {
+  mainWindow?.close();
 });

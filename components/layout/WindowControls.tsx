@@ -33,41 +33,24 @@ export default function WindowControls() {
   /* eslint-disable react-hooks/set-state-in-effect -- 从外部系统（Electron）同步状态，仅执行一次 */
   useEffect(() => {
     // 检查是否在 Electron 环境中
-    setIsElectron(typeof window !== 'undefined' && !!window.electronAPI);
+    const electronAPI = typeof window !== 'undefined' ? window.electronAPI : undefined;
+    if (!electronAPI?.window) return;
+    setIsElectron(true);
 
-    // 监听窗口最大化状态变化
-    const checkMaximized = async () => {
-      if (window.electronAPI?.window) {
-        const maximized = await window.electronAPI.window.isMaximized();
-        setIsMaximized(maximized);
-      }
-    };
+    // 初始检测最大化状态
+    electronAPI.window.isMaximized().then(setIsMaximized);
 
-    checkMaximized();
-
-    // 定期检查最大化状态（简单实现）
-    const interval = setInterval(checkMaximized, 500);
+    // 监听主进程推送的最大化状态变化（事件驱动，无延迟）
+    electronAPI.window.onMaximizeChange(setIsMaximized);
 
     // 注册快捷键
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Alt+F9 - 最小化
-      if (e.altKey && e.key === 'F9') {
-        e.preventDefault();
-        handleMinimize();
-      }
-      // Alt+F10 - 最大化/还原
-      if (e.altKey && e.key === 'F10') {
-        e.preventDefault();
-        handleMaximize();
-      }
+      if (e.altKey && e.key === 'F9') { e.preventDefault(); handleMinimize(); }
+      if (e.altKey && e.key === 'F10') { e.preventDefault(); handleMaximize(); }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 

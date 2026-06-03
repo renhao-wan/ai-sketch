@@ -95,7 +95,7 @@ export default function HomePage() {
 
         <div className="relative z-10 w-full max-w-4xl px-6">
           {/* Top: Icon + Title */}
-          <div className="text-center mb-10 stagger-children">
+          <div className="text-center mb-10">
             <div className="flex justify-center mb-5">
               <div className="relative">
                 <AppIcon size={52} />
@@ -141,23 +141,25 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* Recent Items */}
-          {recentItems.length > 0 && (
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <span className="text-[11px] text-[var(--muted)]/50 mr-1">{t('home.recent')}</span>
-              {recentItems.slice(0, 3).map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleApplyConversation(item)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-[var(--muted)] bg-[var(--bg-glass)]/50 backdrop-blur border border-[var(--border)]/50 rounded-full hover:bg-[var(--card)] hover:text-[var(--fg)] hover:border-[var(--accent-indigo)]/30 transition-all duration-200"
-                >
-                  <FileText size={11} className="text-[var(--accent-indigo)]/50" />
-                  <span className="max-w-[120px] truncate">{item.title}</span>
-                  <span className="text-[var(--muted)]/40">{timeAgo(item.updatedAt, t)}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Recent Items — 固定高度容器，避免数据加载后布局跳动 */}
+          <div className="h-9 flex flex-wrap items-center justify-center gap-2">
+            {recentItems.length > 0 && (
+              <>
+                <span className="text-[11px] text-[var(--muted)]/50 mr-1">{t('home.recent')}</span>
+                {recentItems.slice(0, 3).map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleApplyConversation(item)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-[var(--muted)] bg-[var(--bg-glass)]/50 backdrop-blur border border-[var(--border)]/50 rounded-full hover:bg-[var(--card)] hover:text-[var(--fg)] hover:border-[var(--accent-indigo)]/30 transition-all duration-200"
+                  >
+                    <FileText size={11} className="text-[var(--accent-indigo)]/50" />
+                    <span className="max-w-[120px] truncate">{item.title}</span>
+                    <span className="text-[var(--muted)]/40">{timeAgo(item.updatedAt, t)}</span>
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
         </div>
       </main>
 

@@ -76,21 +76,25 @@ export default function SettingsPage() {
         className="flex-shrink-0 backdrop-blur-xl bg-[var(--bg-glass)] border-b border-[var(--border)]"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center gap-4">
-          <Tooltip content={t('copilot.backHome')} side="bottom">
-            <button
-              onClick={() => router.push('/')}
-              className="hover:opacity-80 transition-opacity duration-200 relative"
-              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-indigo)] to-[var(--accent-violet)] rounded-lg blur-md opacity-20" />
-              <div className="relative"><AppIcon size={22} /></div>
-            </button>
-          </Tooltip>
-          <div className="w-px h-6 bg-[var(--border)]" />
-          <h1 className="text-lg font-semibold text-[var(--fg)]">{t('settings.title')}</h1>
-          <div className="flex-1" />
-          <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        <div className="px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Tooltip content={t('copilot.backHome')} side="bottom">
+              <button
+                onClick={() => router.push('/')}
+                className="hover:opacity-80 transition-opacity duration-200 relative"
+                style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-indigo)] to-[var(--accent-violet)] rounded-lg blur-md opacity-20" />
+                <div className="relative"><AppIcon size={22} /></div>
+              </button>
+            </Tooltip>
+            <div className="w-px h-6 bg-[var(--border)]" />
+            <span className="text-[13px] font-semibold tracking-tight text-[var(--fg)]">{t('settings.title')}</span>
+          </div>
+          <div
+            className="flex items-center gap-1"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          >
             <WindowControls />
           </div>
         </div>

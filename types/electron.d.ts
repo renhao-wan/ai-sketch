@@ -9,6 +9,7 @@ interface ElectronWindowAPI {
   maximize: () => Promise<void>;
   close: () => Promise<void>;
   isMaximized: () => Promise<boolean>;
+  onMaximizeChange: (callback: (isMaximized: boolean) => void) => void;
 }
 
 interface ElectronAPI {
