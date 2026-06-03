@@ -179,6 +179,7 @@ pnpm start            # 启动生产服务器
 - [API 接口文档](docs/api/endpoints.md) — 后端 API 接口详细说明
 
 ### 开发指南
+- [LLM 配置指南](docs/guides/llm-config.md) — 如何配置 OpenAI、Anthropic、本地模型
 - [开发扩展指南](docs/guides/extend-diagram.md) — 如何添加新图表格式、新输入类型
 - [部署指南](docs/guides/deployment.md) — Web 端和 Electron 端部署说明
 
