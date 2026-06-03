@@ -59,10 +59,18 @@ function EditorContent() {
 
   // Panel width (not persisted — resets on refresh/navigate)
   const [panelWidth, setPanelWidth] = useState(360);
+  const [isElectron, setIsElectron] = useState(false);
+
+  // 检测是否在 Electron 环境中
+  useEffect(() => {
+    setIsElectron(!!window.electronAPI?.window);
+  }, []);
 
   const handlePanelWidthChange = useCallback((w: number) => {
-    setPanelWidth(Math.min(Math.max(w, 280), 600));
-  }, []);
+    // Electron 环境需要更大最小宽度以容纳窗口控制按钮
+    const minWidth = isElectron ? 320 : 280;
+    setPanelWidth(Math.min(Math.max(w, minWidth), 600));
+  }, [isElectron]);
 
   const loadConfig = useCallback(async () => {
     try {

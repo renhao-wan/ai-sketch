@@ -72,7 +72,7 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
   const current = conversations.find(c => c.id === currentId);
 
   return (
-    <div className="relative w-[160px] flex-shrink-0">
+    <div className="relative flex-1 min-w-[60px] max-w-[160px]">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-lg transition-all duration-200 w-full"

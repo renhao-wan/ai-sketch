@@ -270,7 +270,7 @@ export default function AICopilotPanel({
             onNew={onNewConversation}
           />
         </div>
-        <div className="flex items-center gap-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        <div className="flex items-center gap-1 flex-shrink-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <Tooltip content={t('copilot.config')} side="bottom">
             <button
               onClick={onOpenConfig}
