@@ -188,9 +188,11 @@ class ConfigManager {
     const existing = await this.getConfig(id);
     if (!existing) throw new Error('配置不存在');
 
+    // 在事务外查询活跃配置 ID，避免 BEGIN 后 await（为未来异步数据库驱动兼容）
+    const activeId = await this.getActiveConfigId();
+
     db.run('BEGIN');
     try {
-      const activeId = await this.getActiveConfigId();
       if (activeId === id) {
         db.run("DELETE FROM meta WHERE key = 'active_config_id'");
         // 用 SQL 查询替代全量加载

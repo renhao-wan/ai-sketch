@@ -5,17 +5,12 @@
 import type { LLMConfig, LLMMessage, ModelInfo, TestConnectionResult } from '@/lib/types';
 import { ProxyAgent, fetch as undiciFetch } from 'undici';
 
-// ── SSRF protection ──
-
-/** 禁止的内网地址前缀 */
-const BLOCKED_HOSTNAMES = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1', '0:0:0:0:0:0:0:1']);
-const BLOCKED_PREFIXES = ['10.', '192.168.', '172.16.', '172.17.', '172.18.', '172.19.',
-  '172.20.', '172.21.', '172.22.', '172.23.', '172.24.', '172.25.', '172.26.', '172.27.',
-  '172.28.', '172.29.', '172.30.', '172.31.', '169.254.'];
+// ── URL validation ──
 
 /**
- * 校验 baseUrl 是否安全（防止 SSRF）
- * 禁止指向内网地址的请求
+ * 校验 baseUrl 格式是否合法
+ * 本应用为桌面端（Electron），用户显式配置 LLM 地址，SSRF 风险极低。
+ * 此处仅校验 URL 格式和协议，不拦截内网地址（用户可能使用 Ollama 等本地服务）。
  */
 function validateBaseUrl(url: string): void {
   let parsed: URL;
@@ -24,9 +19,8 @@ function validateBaseUrl(url: string): void {
   } catch {
     throw new Error(`无效的 URL: ${url}`);
   }
-  const hostname = parsed.hostname;
-  if (BLOCKED_HOSTNAMES.has(hostname) || BLOCKED_PREFIXES.some(p => hostname.startsWith(p))) {
-    throw new Error('不允许使用内网地址作为 API 地址');
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error('API 地址必须使用 http 或 https 协议');
   }
 }
 
