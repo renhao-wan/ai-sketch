@@ -100,27 +100,33 @@ export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadRetu
     setAttachStatus('processing');
     setAttachError('');
 
-    // 为图片策略设置图表格式
-    if (options?.diagramFormat) {
-      imageStrategy.setDiagramFormat(options.diagramFormat);
-    }
-
-    const result = await orchestrator.handleFiles(merged, prompt || '', 'auto');
-    if (result.success) {
-      let finalPayload = result.payload;
-      // 图片无描述时，补充默认 prompt（orchestrator 的 merge 不调用 strategy.buildMessage）
-      if (finalPayload.type === 'image' && finalPayload.content && !finalPayload.content.text) {
-        const fmt = options?.diagramFormat || 'excalidraw';
-        finalPayload = {
-          ...finalPayload,
-          content: { ...finalPayload.content, text: getStrategy(fmt).generateImagePrompt('auto') },
-        };
+    try {
+      // 为图片策略设置图表格式
+      if (options?.diagramFormat) {
+        imageStrategy.setDiagramFormat(options.diagramFormat);
       }
-      setAttachments(merged);
-      setPayload(finalPayload);
-      setAttachStatus('success');
-    } else {
-      setAttachError(result.errors.map(e => `${e.fileName}: ${e.error}`).join('; '));
+
+      const result = await orchestrator.handleFiles(merged, prompt || '', 'auto');
+      if (result.success) {
+        let finalPayload = result.payload;
+        // 图片无描述时，补充默认 prompt（orchestrator 的 merge 不调用 strategy.buildMessage）
+        if (finalPayload.type === 'image' && finalPayload.content && !finalPayload.content.text) {
+          const fmt = options?.diagramFormat || 'excalidraw';
+          finalPayload = {
+            ...finalPayload,
+            content: { ...finalPayload.content, text: getStrategy(fmt).generateImagePrompt('auto') },
+          };
+        }
+        setAttachments(merged);
+        setPayload(finalPayload);
+        setAttachStatus('success');
+      } else {
+        setAttachError(result.errors.map(e => `${e.fileName}: ${e.error}`).join('; '));
+        setAttachStatus('error');
+      }
+    } catch (e) {
+      console.error('[useFileUpload] 文件处理失败:', e);
+      setAttachError((e as Error).message || '文件处理失败');
       setAttachStatus('error');
     }
   }, [options?.diagramFormat, maxItems]);
@@ -146,17 +152,23 @@ export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadRetu
     setAttachStatus('processing');
     setAttachError('');
 
-    if (options?.diagramFormat) {
-      imageStrategy.setDiagramFormat(options.diagramFormat);
-    }
+    try {
+      if (options?.diagramFormat) {
+        imageStrategy.setDiagramFormat(options.diagramFormat);
+      }
 
-    const result = await orchestrator.handleFiles(remaining, '', 'auto');
-    if (result.success) {
-      setAttachments(remaining);
-      setPayload(result.payload);
-      setAttachStatus('success');
-    } else {
-      setAttachError(result.errors.map(e => `${e.fileName}: ${e.error}`).join('; '));
+      const result = await orchestrator.handleFiles(remaining, '', 'auto');
+      if (result.success) {
+        setAttachments(remaining);
+        setPayload(result.payload);
+        setAttachStatus('success');
+      } else {
+        setAttachError(result.errors.map(e => `${e.fileName}: ${e.error}`).join('; '));
+        setAttachStatus('error');
+      }
+    } catch (e) {
+      console.error('[useFileUpload] 移除附件后重新处理失败:', e);
+      setAttachError((e as Error).message || '处理失败');
       setAttachStatus('error');
     }
   }, [options?.diagramFormat]);

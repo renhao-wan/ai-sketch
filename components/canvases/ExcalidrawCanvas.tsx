@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import '@excalidraw/excalidraw/index.css';
 import type { ExcalidrawElement } from '@/lib/types';
+import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { extractCompleteElements } from '@/lib/diagram/json-repair';
 import { getExcalidrawBackgroundColor } from '@/lib/utils/theme-utils';
 
@@ -12,7 +13,15 @@ const Excalidraw = dynamic(
   { ssr: false },
 );
 
-type ConvertFn = (elements: any[], opts?: { regenerateIds: boolean }) => any[];
+/**
+ * Excalidraw 内部元素类型（比本地 ExcalidrawElement 更完整）
+ * 用于 convertToExcalidrawElements 的返回值和 updateScene 的参数
+ */
+ 
+type ExcalidrawSceneElement = Record<string, any>;
+
+/** convertToExcalidrawElements 的函数签名 */
+type ConvertFn = (elements: ExcalidrawElement[], opts?: { regenerateIds: boolean }) => ExcalidrawSceneElement[];
 
 let _convertFn: ConvertFn | null = null;
 let _convertFnPromise: Promise<ConvertFn> | null = null;
@@ -124,7 +133,7 @@ interface Props {
 }
 
 export default function ExcalidrawCanvas({ elements, isStreaming, streamRendererRef }: Props) {
-  const apiRef = useRef<any>(null);
+  const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const [convertFn, setConvertFn] = useState<ConvertFn | null>(null);
 
   // 计算 elements 内容哈希，用于检测变化
@@ -137,7 +146,7 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
   const allRawRef = useRef<unknown[]>([]);
   const idMapRef = useRef(new Map<string, Record<string, unknown>>());
   const convertedIdsRef = useRef(new Set<string>());
-  const sceneRef = useRef<any[]>([]);
+  const sceneRef = useRef<ExcalidrawSceneElement[]>([]);
 
   /** 重置流式渲染状态 */
   const resetStreamRefs = useCallback(() => {
@@ -154,7 +163,7 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
       .catch(console.error);
   }, []);
 
-  const handleAPI = useCallback((api: any) => { apiRef.current = api; }, []);
+  const handleAPI = useCallback((api: ExcalidrawImperativeAPI) => { apiRef.current = api; }, []);
 
   const initialData = useMemo(() => ({
     elements: [],
@@ -189,11 +198,11 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
           allRawRef.current.push(el);
           idMapRef.current.set(id, rec);
 
-          let prepared: unknown = el;
+          let prepared: ExcalidrawElement = el as ExcalidrawElement;
           if (ARROW_TYPES.has(t)) {
             const result = positionArrow(rec, idMapRef.current);
             if (!result) continue; // 目标不全，跳过
-            prepared = result;
+            prepared = result as unknown as ExcalidrawElement;
           }
 
           try {
@@ -203,8 +212,10 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
           } catch { /* skip */ }
 
           if (sceneRef.current.length > 0) {
-            apiRef.current.updateScene({ elements: [...sceneRef.current] });
-            apiRef.current.scrollToContent(sceneRef.current, { fitToContent: true, animate: false, padding: 20 });
+             
+            apiRef.current.updateScene({ elements: [...sceneRef.current] as any });
+             
+            apiRef.current.scrollToContent(sceneRef.current as any, { fitToContent: true, animate: false });
           }
         }
       },
@@ -225,11 +236,11 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
       return;
     }
 
-    const valid = (elements as Record<string, unknown>[])
-      .filter(e => e.type && VALID.has(e.type as string));
+    const valid = (elements as ExcalidrawElement[])
+      .filter(e => e.type && VALID.has(e.type));
     if (!valid.length) return;
 
-    let converted: any[];
+    let converted: ExcalidrawSceneElement[];
     try {
       converted = convertFn(valid, { regenerateIds: true });
     } catch {
@@ -246,8 +257,10 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
       // 使用 requestAnimationFrame 确保清空操作完成后再设置新元素
       requestAnimationFrame(() => {
         if (apiRef.current) {
-          apiRef.current.updateScene({ elements: converted });
-          apiRef.current.scrollToContent(converted, { fitToContent: true, animate: false, padding: 20 });
+           
+          apiRef.current.updateScene({ elements: converted as any });
+           
+          apiRef.current.scrollToContent(converted as any, { fitToContent: true, animate: false });
         }
       });
     }

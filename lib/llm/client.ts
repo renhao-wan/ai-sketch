@@ -96,6 +96,8 @@ async function getProxyAgent(): Promise<ProxyAgent | undefined> {
 /**
  * 代理感知的 fetch 封装
  * 有代理时用 undici.fetch + ProxyAgent，无代理时用全局 fetch
+ * 注意: undici.fetch 的 dispatcher 参数未被标准 RequestInit 类型覆盖，
+ * 因此需要类型断言；返回值类型与全局 fetch 兼容但签名不同，需双重断言。
  */
 async function proxyFetch(url: string, options?: RequestInit): Promise<Response> {
   const agent = await getProxyAgent();

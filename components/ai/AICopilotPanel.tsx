@@ -107,6 +107,9 @@ export default function AICopilotPanel({
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   // 为图片附件创建 blob URL，并在 cleanup 中释放
+  // NOTE: URL.createObjectURL 是副作用，理论上不应在 useMemo 中调用。
+  // 但 useEffect + useState 会导致额外渲染周期，此处选择 useMemo 以保持同步初始化。
+  // StrictMode 下可能创建重复 URL，但 cleanup 仍能正确释放；生产构建无此问题。
   const imageBlobUrls = useMemo(() => {
     const urls = new Map<File, string>();
     for (const file of attachments) {
