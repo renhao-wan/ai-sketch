@@ -22,12 +22,16 @@ function loadConvertFn(): Promise<ConvertFn> {
     _convertFnPromise = import('@excalidraw/excalidraw').then(mod => {
       _convertFn = mod.convertToExcalidrawElements as ConvertFn;
       return _convertFn;
+    }).catch(e => {
+      // 加载失败时重置 Promise，允许重试
+      _convertFnPromise = null;
+      throw e;
     });
   }
   return _convertFnPromise;
 }
 
-loadConvertFn();
+loadConvertFn().catch(() => { /* 预加载失败，组件内会重试 */ });
 
 const VALID = new Set(['rectangle','ellipse','diamond','text','arrow','line','freedraw','image','frame','webembed','magicframe']);
 const ARROW_TYPES = new Set(['arrow', 'line']);
@@ -135,8 +139,19 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
   const convertedIdsRef = useRef(new Set<string>());
   const sceneRef = useRef<any[]>([]);
 
+  /** 重置流式渲染状态 */
+  const resetStreamRefs = useCallback(() => {
+    consumedRef.current = 0;
+    allRawRef.current = [];
+    idMapRef.current = new Map();
+    convertedIdsRef.current = new Set();
+    sceneRef.current = [];
+  }, []);
+
   useEffect(() => {
-    loadConvertFn().then(fn => { if (typeof fn === 'function') setConvertFn(() => fn); });
+    loadConvertFn()
+      .then(fn => { if (typeof fn === 'function') setConvertFn(() => fn); })
+      .catch(console.error);
   }, []);
 
   const handleAPI = useCallback((api: any) => { apiRef.current = api; }, []);
@@ -148,13 +163,9 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
 
   useEffect(() => {
     if (isStreaming) {
-      consumedRef.current = 0;
-      allRawRef.current = [];
-      idMapRef.current = new Map();
-      convertedIdsRef.current = new Set();
-      sceneRef.current = [];
+      resetStreamRefs();
     }
-  }, [isStreaming]);
+  }, [isStreaming, resetStreamRefs]);
 
   // Streaming feed — 逐个元素更新
   useEffect(() => {
@@ -198,14 +209,10 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
         }
       },
       reset: () => {
-        consumedRef.current = 0;
-        allRawRef.current = [];
-        idMapRef.current = new Map();
-        convertedIdsRef.current = new Set();
-        sceneRef.current = [];
+        resetStreamRefs();
       },
     };
-  }, [convertFn, streamRendererRef]);
+  }, [convertFn, streamRendererRef, resetStreamRefs]);
 
   // Final render after stream ends
   useEffect(() => {
@@ -214,11 +221,7 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
     // 空元素时清空画布
     if (!elements?.length) {
       apiRef.current.updateScene({ elements: [] });
-      consumedRef.current = 0;
-      allRawRef.current = [];
-      idMapRef.current = new Map();
-      convertedIdsRef.current = new Set();
-      sceneRef.current = [];
+      resetStreamRefs();
       return;
     }
 
@@ -249,13 +252,9 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
       });
     }
 
-    consumedRef.current = 0;
-    allRawRef.current = [];
-    idMapRef.current = new Map();
-    convertedIdsRef.current = new Set();
-    sceneRef.current = [];
+    resetStreamRefs();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elementsHash, isStreaming, convertFn]);
+  }, [elementsHash, isStreaming, convertFn, resetStreamRefs]);
 
   return (
     <div className="w-full h-full canvas-grid-bg">

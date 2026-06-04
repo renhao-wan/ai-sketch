@@ -152,6 +152,7 @@ class ConversationManager {
     configModel: string;
   }>): Promise<Conversation | null> {
     const db = await getDb();
+    // 检查是否存在并获取完整行数据
     const existing = db.exec('SELECT * FROM conversations WHERE id = ?', [id]);
     if (existing.length === 0 || existing[0].values.length === 0) return null;
 
@@ -170,16 +171,33 @@ class ConversationManager {
     db.run(`UPDATE conversations SET ${sets.join(', ')} WHERE id = ?`, params);
     saveToDisk();
 
-    const result = db.exec('SELECT * FROM conversations WHERE id = ?', [id]);
-    if (result.length === 0 || result[0].values.length === 0) return null;
-    const row = result[0].values[0];
-    return parseConversationRow(row);
+    // 直接构造返回对象，无需再次 SELECT
+    const row = existing[0].values[0];
+    return {
+      id,
+      title: data.title ?? (row[1] as string),
+      chartType: data.chartType ?? (row[2] as string),
+      format: (data.format ?? (row[3] as string) ?? 'excalidraw') as DiagramFormat,
+      configName: data.configName ?? (row[4] as string | null) ?? undefined,
+      configModel: data.configModel ?? (row[5] as string | null) ?? undefined,
+      currentCode: data.currentCode ?? (row[6] as string),
+      messageCount: row[7] as number,
+      createdAt: row[8] as number,
+      updatedAt: now,
+    };
   }
 
   async delete(id: string): Promise<void> {
     const db = await getDb();
-    db.run('DELETE FROM messages WHERE conversation_id = ?', [id]);
-    db.run('DELETE FROM conversations WHERE id = ?', [id]);
+    db.run('BEGIN');
+    try {
+      db.run('DELETE FROM messages WHERE conversation_id = ?', [id]);
+      db.run('DELETE FROM conversations WHERE id = ?', [id]);
+      db.run('COMMIT');
+    } catch (e) {
+      db.run('ROLLBACK');
+      throw e;
+    }
     saveToDisk();
   }
 
@@ -187,15 +205,29 @@ class ConversationManager {
     if (ids.length === 0) return;
     const db = await getDb();
     const placeholders = ids.map(() => '?').join(',');
-    db.run(`DELETE FROM messages WHERE conversation_id IN (${placeholders})`, ids);
-    db.run(`DELETE FROM conversations WHERE id IN (${placeholders})`, ids);
+    db.run('BEGIN');
+    try {
+      db.run(`DELETE FROM messages WHERE conversation_id IN (${placeholders})`, ids);
+      db.run(`DELETE FROM conversations WHERE id IN (${placeholders})`, ids);
+      db.run('COMMIT');
+    } catch (e) {
+      db.run('ROLLBACK');
+      throw e;
+    }
     saveToDisk();
   }
 
   async clearAll(): Promise<void> {
     const db = await getDb();
-    db.run('DELETE FROM messages');
-    db.run('DELETE FROM conversations');
+    db.run('BEGIN');
+    try {
+      db.run('DELETE FROM messages');
+      db.run('DELETE FROM conversations');
+      db.run('COMMIT');
+    } catch (e) {
+      db.run('ROLLBACK');
+      throw e;
+    }
     saveToDisk();
   }
 
@@ -211,16 +243,23 @@ class ConversationManager {
     const id = this.generateId();
     const now = Date.now();
 
-    db.run(
-      `INSERT INTO messages (id, conversation_id, role, content, image_data, image_mime_type, source_type, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, data.conversationId, data.role, data.content, data.imageData || null, data.imageMimeType || null, data.sourceType || 'text', now],
-    );
+    db.run('BEGIN');
+    try {
+      db.run(
+        `INSERT INTO messages (id, conversation_id, role, content, image_data, image_mime_type, source_type, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, data.conversationId, data.role, data.content, data.imageData || null, data.imageMimeType || null, data.sourceType || 'text', now],
+      );
 
-    db.run(
-      'UPDATE conversations SET message_count = message_count + 1, updated_at = ? WHERE id = ?',
-      [now, data.conversationId],
-    );
+      db.run(
+        'UPDATE conversations SET message_count = message_count + 1, updated_at = ? WHERE id = ?',
+        [now, data.conversationId],
+      );
+      db.run('COMMIT');
+    } catch (e) {
+      db.run('ROLLBACK');
+      throw e;
+    }
     saveToDisk();
 
     return {
@@ -264,19 +303,66 @@ class ConversationManager {
   }
 
   async buildContextMessages(conversationId: string, maxMessages: number = MAX_CONTEXT_MESSAGES): Promise<LLMMessage[]> {
-    const messages = await this.getMessages(conversationId);
+    const db = await getDb();
 
-    if (messages.length <= maxMessages) {
+    // 先查总数，避免全量加载
+    const countResult = db.exec('SELECT COUNT(*) FROM messages WHERE conversation_id = ?', [conversationId]);
+    const totalCount = countResult.length > 0 ? (countResult[0].values[0][0] as number) : 0;
+
+    if (totalCount <= maxMessages) {
+      // 消息数未超限，全量返回
+      const messages = await this.getMessages(conversationId);
       return messages.map(toLLMMessage);
     }
 
-    const firstUserIdx = messages.findIndex(m => m.role === 'user');
-    const firstMessage = firstUserIdx >= 0 ? messages[firstUserIdx] : messages[0];
-    const recentMessages = messages.slice(-(maxMessages - 1));
+    // 获取第一条 user 消息
+    const firstUserResult = db.exec(
+      'SELECT * FROM messages WHERE conversation_id = ? AND role = ? ORDER BY created_at ASC LIMIT 1',
+      [conversationId, 'user'],
+    );
+    const allFirstResult = db.exec(
+      'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 1',
+      [conversationId],
+    );
+    const firstRow = firstUserResult.length > 0 && firstUserResult[0].values.length > 0
+      ? firstUserResult[0].values[0]
+      : allFirstResult[0]?.values[0];
+
+    if (!firstRow) return [];
+
+    const firstMessage = rowToMessage({
+      id: firstRow[0] as string,
+      conversation_id: firstRow[1] as string,
+      role: firstRow[2] as string,
+      content: firstRow[3] as string,
+      image_data: firstRow[4] as string | null,
+      image_mime_type: firstRow[5] as string | null,
+      source_type: firstRow[6] as string | null,
+      created_at: firstRow[7] as number,
+    });
+
+    // 获取最近 N-1 条消息（倒序查询后反转）
+    const recentResult = db.exec(
+      'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT ?',
+      [conversationId, maxMessages - 1],
+    );
+    const recentRows = recentResult.length > 0 ? [...recentResult[0].values].reverse() : [];
+    const recentMessages = recentRows.map((row: unknown[]) =>
+      rowToMessage({
+        id: row[0] as string,
+        conversation_id: row[1] as string,
+        role: row[2] as string,
+        content: row[3] as string,
+        image_data: row[4] as string | null,
+        image_mime_type: row[5] as string | null,
+        source_type: row[6] as string | null,
+        created_at: row[7] as number,
+      }),
+    );
 
     const contextMessages: ConversationMessage[] = [firstMessage];
 
-    if (firstMessage.id !== recentMessages[0].id) {
+    if (recentMessages.length > 0 && firstMessage.id !== recentMessages[0].id) {
       contextMessages.push({
         id: 'truncation-notice',
         conversationId,
@@ -304,11 +390,19 @@ class ConversationManager {
     );
     if (result.length === 0 || result[0].values.length === 0) return;
     const msgId = result[0].values[0][0] as string;
-    db.run('DELETE FROM messages WHERE id = ?', [msgId]);
-    db.run(
-      'UPDATE conversations SET message_count = MAX(message_count - 1, 0), updated_at = ? WHERE id = ?',
-      [Date.now(), conversationId],
-    );
+
+    db.run('BEGIN');
+    try {
+      db.run('DELETE FROM messages WHERE id = ?', [msgId]);
+      db.run(
+        'UPDATE conversations SET message_count = MAX(message_count - 1, 0), updated_at = ? WHERE id = ?',
+        [Date.now(), conversationId],
+      );
+      db.run('COMMIT');
+    } catch (e) {
+      db.run('ROLLBACK');
+      throw e;
+    }
     saveToDisk();
   }
 

@@ -5,6 +5,31 @@
 import type { LLMConfig, LLMMessage, ModelInfo, TestConnectionResult } from '@/lib/types';
 import { ProxyAgent, fetch as undiciFetch } from 'undici';
 
+// ── SSRF protection ──
+
+/** 禁止的内网地址前缀 */
+const BLOCKED_HOSTNAMES = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1', '0:0:0:0:0:0:0:1']);
+const BLOCKED_PREFIXES = ['10.', '192.168.', '172.16.', '172.17.', '172.18.', '172.19.',
+  '172.20.', '172.21.', '172.22.', '172.23.', '172.24.', '172.25.', '172.26.', '172.27.',
+  '172.28.', '172.29.', '172.30.', '172.31.', '169.254.'];
+
+/**
+ * 校验 baseUrl 是否安全（防止 SSRF）
+ * 禁止指向内网地址的请求
+ */
+function validateBaseUrl(url: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`无效的 URL: ${url}`);
+  }
+  const hostname = parsed.hostname;
+  if (BLOCKED_HOSTNAMES.has(hostname) || BLOCKED_PREFIXES.some(p => hostname.startsWith(p))) {
+    throw new Error('不允许使用内网地址作为 API 地址');
+  }
+}
+
 // ── Proxy support ──
 // 优先从 DB 读取代理配置（用户在设置中配置），回退到环境变量
 let cachedAgent: ProxyAgent | undefined;
@@ -15,7 +40,7 @@ const CACHE_TTL = 5000; // 5 秒缓存
 /** 获取代理 Agent（带缓存，动态读取 DB 配置） */
 async function getProxyAgent(): Promise<ProxyAgent | undefined> {
   const now = Date.now();
-  if (now - lastCheck < CACHE_TTL && cachedProxyUrl !== undefined) {
+  if (now - lastCheck < CACHE_TTL && cachedProxyUrl !== undefined && cachedProxyUrl !== null) {
     return cachedAgent;
   }
   lastCheck = now;
@@ -28,6 +53,10 @@ async function getProxyAgent(): Promise<ProxyAgent | undefined> {
 
     if (proxyEnabled && proxyUrl) {
       if (proxyUrl !== cachedProxyUrl) {
+        // 关闭旧的代理实例，避免连接泄漏
+        if (cachedAgent) {
+          try { await cachedAgent.close(); } catch { /* ignore */ }
+        }
         cachedProxyUrl = proxyUrl;
         cachedAgent = new ProxyAgent(proxyUrl);
       }
@@ -42,14 +71,23 @@ async function getProxyAgent(): Promise<ProxyAgent | undefined> {
     || process.env.HTTP_PROXY || process.env.http_proxy;
   if (envProxy) {
     if (envProxy !== cachedProxyUrl) {
+      // 关闭旧的代理实例，避免连接泄漏
+      if (cachedAgent) {
+        try { await cachedAgent.close(); } catch { /* ignore */ }
+      }
       cachedProxyUrl = envProxy;
       cachedAgent = new ProxyAgent(envProxy);
     }
     return cachedAgent;
   }
 
-  cachedProxyUrl = null;
-  cachedAgent = undefined;
+  // 无代理时，清除旧的 agent
+  if (cachedAgent) {
+    try { await cachedAgent.close(); } catch { /* ignore */ }
+    cachedAgent = undefined;
+    cachedProxyUrl = null;
+  }
+
   return undefined;
 }
 
@@ -236,6 +274,7 @@ async function callOpenAI(
   onChunk?: (chunk: string) => void,
   signal?: AbortSignal,
 ): Promise<string> {
+  validateBaseUrl(baseUrl);
   const url = `${baseUrl}/chat/completions`;
 
   const processedMessages = messages.map(processMessageForOpenAI);
@@ -296,6 +335,7 @@ async function callAnthropic(
   onChunk?: (chunk: string) => void,
   signal?: AbortSignal,
 ): Promise<string> {
+  validateBaseUrl(baseUrl);
   const url = `${baseUrl}/messages`;
 
   const systemMessage = messages.find(m => m.role === 'system');
@@ -440,10 +480,27 @@ export async function testConnection(config: LLMConfig): Promise<TestConnectionR
   }
 }
 
+/** 解析模型列表响应（OpenAI 和 Anthropic 格式统一处理） */
+function parseModelsResponse(data: unknown): ModelInfo[] {
+  const obj = data as Record<string, unknown> | null;
+  const raw = Array.isArray(obj?.data) ? obj.data
+    : Array.isArray(obj?.models) ? obj.models
+    : Array.isArray(data) ? data
+    : [];
+  return raw
+    .map((model: Record<string, unknown> | string) => ({
+      id: typeof model === 'string' ? model : (model.id || model.name || model.model || model.slug) as string,
+      name: typeof model === 'string' ? model : (model.name || model.id || model.model || model.slug) as string,
+    }))
+    .filter((m: ModelInfo) => m.id);
+}
+
 /**
  * Fetch available models from provider
  */
 export async function fetchModels(type: string, baseUrl: string, apiKey: string): Promise<ModelInfo[]> {
+  validateBaseUrl(baseUrl);
+
   if (type === 'openai') {
     const url = `${baseUrl}/models`;
     const response = await proxyFetch(url, {
@@ -456,13 +513,7 @@ export async function fetchModels(type: string, baseUrl: string, apiKey: string)
       throw new Error(`Failed to fetch models: ${response.status}`);
     }
 
-    const data = await response.json();
-    return (Array.isArray(data?.data) ? data.data : Array.isArray(data?.models) ? data.models : Array.isArray(data) ? data : [])
-      .map((model: Record<string, unknown> | string) => ({
-        id: typeof model === 'string' ? model : (model.id || model.name || model.model || model.slug) as string,
-        name: typeof model === 'string' ? model : (model.name || model.id || model.model || model.slug) as string,
-      }))
-      .filter((m: ModelInfo) => m.id);
+    return parseModelsResponse(await response.json());
   } else if (type === 'anthropic') {
     const url = `${baseUrl}/models`;
     const response = await proxyFetch(url, {
@@ -476,13 +527,7 @@ export async function fetchModels(type: string, baseUrl: string, apiKey: string)
       throw new Error(`Failed to fetch models: ${response.status}`);
     }
 
-    const data = await response.json();
-    return (Array.isArray(data?.data) ? data.data : Array.isArray(data?.models) ? data.models : Array.isArray(data) ? data : [])
-      .map((model: Record<string, unknown> | string) => ({
-        id: typeof model === 'string' ? model : (model.id || model.name || model.model || model.slug) as string,
-        name: typeof model === 'string' ? model : (model.name || model.id || model.model || model.slug) as string,
-      }))
-      .filter((m: ModelInfo) => m.id);
+    return parseModelsResponse(await response.json());
   } else {
     throw new Error(`Unsupported provider type: ${type}`);
   }

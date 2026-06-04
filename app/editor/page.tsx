@@ -15,15 +15,15 @@ import type { StreamRendererRef } from '@/components/canvases/ExcalidrawCanvas';
 import * as api from '@/lib/api/client';
 import { isConfigValid } from '@/lib/api/config-validator';
 import { getStrategy } from '@/lib/strategies/registry';
-import { stripCodeFences } from '@/lib/diagram/json-repair';
 import { consumeInitData } from '@/lib/utils/init-data';
 import { useLocale } from '@/lib/locales';
 import { useShortcuts } from '@/hooks/useShortcuts';
-import type { LLMConfig, NotificationState, AIActionId, ConversationMessage } from '@/lib/types';
+import { useNotification } from '@/hooks/useNotification';
+import type { LLMConfig, AIActionId, ConversationMessage } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 import { generateId, parseStoredImages } from '@/lib/utils';
-import { consumeSSEStream, parseAPIError } from '@/lib/api/sse-consumer';
+import { consumeSSEStream } from '@/lib/api/sse-consumer';
 
 function EditorContent() {
   const router = useRouter();
@@ -42,12 +42,7 @@ function EditorContent() {
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [currentInput, setCurrentInput] = useState('');
   const [currentChartType, setCurrentChartType] = useState('auto');
-  const [notification, setNotification] = useState<NotificationState>({
-    isOpen: false,
-    title: '',
-    message: '',
-    type: 'info',
-  });
+  const { notification, showNotification, closeNotification } = useNotification();
   const [aiActionLoading, setAiActionLoading] = useState<AIActionId | null>(null);
   const [aiExplanation, setAiExplanation] = useState('');
   const [bottomPanelTab, setBottomPanelTab] = useState('code');
@@ -169,7 +164,7 @@ function EditorContent() {
     if (isGenerating) return;
 
     if (!isConfigValid(config)) {
-      setNotification({ isOpen: true, title: t('editor.configReminder'), message: t('editor.pleaseConfigLLM'), type: 'warning' });
+      showNotification(t('editor.configReminder'), t('editor.pleaseConfigLLM'), 'warning');
       setIsConfigManagerOpen(true);
       return;
     }
@@ -302,7 +297,7 @@ function EditorContent() {
 
     // Config loaded but invalid — show reminder and open config selector
     if (!isConfigValid(config)) {
-      setNotification({ isOpen: true, title: t('editor.configReminder'), message: t('editor.pleaseConfigLLM'), type: 'warning' });
+      showNotification(t('editor.configReminder'), t('editor.pleaseConfigLLM'), 'warning');
       setIsConfigManagerOpen(true);
       return;
     }
@@ -416,7 +411,7 @@ function EditorContent() {
   const handleRegenerate = useCallback(async () => {
     if (isGenerating || messages.length === 0) return;
     if (!isConfigValid(config)) {
-      setNotification({ isOpen: true, title: t('editor.configReminder'), message: t('editor.pleaseConfigLLM'), type: 'warning' });
+      showNotification(t('editor.configReminder'), t('editor.pleaseConfigLLM'), 'warning');
       setIsConfigManagerOpen(true);
       return;
     }
@@ -534,10 +529,12 @@ function EditorContent() {
 
   const handleAIAction = async (actionId: AIActionId) => {
     if (!generatedCode) {
-      setNotification({ isOpen: true, title: t('aiAction.noCode'), message: '', type: 'warning' });
+      showNotification(t('aiAction.noCode'), '', 'warning');
       return;
     }
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     setAiActionLoading(actionId);
 
     try {
@@ -550,6 +547,7 @@ function EditorContent() {
           action: actionId,
           configId: config?.id,
         }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -557,38 +555,47 @@ function EditorContent() {
         throw new Error(error.error || 'AI action failed');
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response stream');
+      if (!response.body) throw new Error('No response stream');
 
+      // 使用统一的 consumeSSEStream 替代手动 SSE 解析
       let accumulated = '';
       let finalResult = '';
-      const decoder = new TextDecoder();
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      const reader = response.body.getReader();
+      try {
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n');
+        while (true) {
+          if (controller.signal.aborted) break;
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6);
-          if (data === '[DONE]') continue;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
 
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.type === 'content') {
-              accumulated += parsed.content;
-            } else if (parsed.type === 'result') {
-              finalResult = parsed.content;
-            } else if (parsed.type === 'error') {
-              throw new Error(parsed.error);
+          for (const line of lines) {
+            if (line.trim() === '' || line.trim() === 'data: [DONE]') continue;
+            if (!line.startsWith('data: ')) continue;
+
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              if (parsed.type === 'content') {
+                accumulated += parsed.content;
+              } else if (parsed.type === 'result') {
+                finalResult = parsed.content;
+              } else if (parsed.type === 'error') {
+                throw new Error(parsed.error);
+              }
+            } catch (e) {
+              if (e instanceof SyntaxError) continue; // Skip invalid JSON
+              throw e;
             }
-          } catch (e) {
-            // Skip invalid JSON
           }
         }
+      } finally {
+        reader.releaseLock();
       }
 
       if (actionId === 'explain') {
@@ -600,15 +607,12 @@ function EditorContent() {
         tryParseAndApply(codeToApply);
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
       console.error('AI action error:', error);
-      setNotification({
-        isOpen: true,
-        title: t('aiAction.loading'),
-        message: (error as Error).message,
-        type: 'error',
-      });
+      showNotification(t('aiAction.loading'), (error as Error).message, 'error');
     } finally {
       setAiActionLoading(null);
+      abortControllerRef.current = null;
     }
   };
 
@@ -694,7 +698,7 @@ function EditorContent() {
 
       {/* Modals */}
       <ConfigSelector isOpen={isConfigManagerOpen} onClose={() => setIsConfigManagerOpen(false)} onConfigSelect={handleConfigSelect} />
-      <Notification isOpen={notification.isOpen} onClose={() => setNotification({ ...notification, isOpen: false })} title={notification.title} message={notification.message} type={notification.type} />
+      <Notification isOpen={notification.isOpen} onClose={closeNotification} title={notification.title} message={notification.message} type={notification.type} />
     </>
   );
 }

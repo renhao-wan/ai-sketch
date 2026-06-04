@@ -38,10 +38,10 @@ export default function WindowControls() {
     setIsElectron(true);
 
     // 初始检测最大化状态
-    electronAPI.window.isMaximized().then(setIsMaximized);
+    electronAPI.window.isMaximized().then(setIsMaximized).catch(console.error);
 
     // 监听主进程推送的最大化状态变化（事件驱动，无延迟）
-    electronAPI.window.onMaximizeChange(setIsMaximized);
+    const cleanupMaximize: unknown = electronAPI.window.onMaximizeChange(setIsMaximized);
 
     // 注册快捷键
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -50,7 +50,10 @@ export default function WindowControls() {
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (typeof cleanupMaximize === 'function') cleanupMaximize();
+    };
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 

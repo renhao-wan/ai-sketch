@@ -31,45 +31,48 @@ export async function consumeSSEStream(
   let accumulatedCode = '';
   let buffer = '';
 
-  while (true) {
-    if (signal.aborted) {
-      reader.releaseLock();
-      break;
-    }
+  try {
+    while (true) {
+      if (signal.aborted) {
+        break;
+      }
 
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
-    for (const line of lines) {
-      if (line.trim() === '' || line.trim() === 'data: [DONE]') continue;
-      if (!line.startsWith('data: ')) continue;
+      for (const line of lines) {
+        if (line.trim() === '' || line.trim() === 'data: [DONE]') continue;
+        if (!line.startsWith('data: ')) continue;
 
-      try {
-        const data = JSON.parse(line.slice(6));
+        try {
+          const data = JSON.parse(line.slice(6));
 
-        if (data.type === 'meta' && data.conversationId) {
-          callbacks.onMeta?.(data.conversationId);
-        } else if (data.type === 'content' && data.content) {
-          accumulatedCode += data.content;
-          callbacks.onContent(accumulatedCode, data.content);
-        } else if (data.type === 'error') {
-          throw new Error(data.error);
-        } else if (data.content) {
-          // Backward compatibility: old format without type field
-          accumulatedCode += data.content;
-          callbacks.onContent(accumulatedCode, data.content);
-        }
-      } catch (e) {
-        if (e instanceof SyntaxError) {
-          console.warn('[SSE] JSON parse error:', e.message, 'Raw:', line);
-        } else {
-          throw e;
+          if (data.type === 'meta' && data.conversationId) {
+            callbacks.onMeta?.(data.conversationId);
+          } else if (data.type === 'content' && data.content) {
+            accumulatedCode += data.content;
+            callbacks.onContent(accumulatedCode, data.content);
+          } else if (data.type === 'error') {
+            throw new Error(data.error);
+          } else if (data.content) {
+            // Backward compatibility: old format without type field
+            accumulatedCode += data.content;
+            callbacks.onContent(accumulatedCode, data.content);
+          }
+        } catch (e) {
+          if (e instanceof SyntaxError) {
+            console.warn('[SSE] JSON parse error:', e.message, 'Raw:', line);
+          } else {
+            throw e;
+          }
         }
       }
     }
+  } finally {
+    reader.releaseLock();
   }
 
   return { accumulatedCode };

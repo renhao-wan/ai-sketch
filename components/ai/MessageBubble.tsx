@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { User, Bot, RefreshCw, Copy, Download, Check, Play } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
 import { parseStoredImages } from '@/lib/utils';
@@ -16,7 +16,7 @@ interface MessageBubbleProps {
   onShowDiagram?: () => void;
 }
 
-export default function MessageBubble({ message, isStreaming, onRegenerate, onCopy, onExport, onShowDiagram }: MessageBubbleProps) {
+const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, onRegenerate, onCopy, onExport, onShowDiagram }: MessageBubbleProps) {
   const { t } = useLocale();
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
@@ -129,4 +129,6 @@ export default function MessageBubble({ message, isStreaming, onRegenerate, onCo
       </div>
     </div>
   );
-}
+});
+
+export default MessageBubble;

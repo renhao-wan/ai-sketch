@@ -161,8 +161,9 @@ export async function POST(request: Request) {
     const timeoutController = new AbortController();
     const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
     const combinedController = new AbortController();
-    request.signal?.addEventListener('abort', () => combinedController.abort());
-    timeoutController.signal.addEventListener('abort', () => combinedController.abort());
+    const onAbort = () => combinedController.abort();
+    request.signal?.addEventListener('abort', onAbort, { once: true });
+    timeoutController.signal.addEventListener('abort', onAbort, { once: true });
 
     perfEnd('Conversation Management');
 
@@ -209,7 +210,9 @@ export async function POST(request: Request) {
           console.error('Error in stream:', error);
 
           const isAbort = error instanceof DOMException && error.name === 'AbortError';
-          const errorMessage = isAbort ? 'Generation cancelled' : (error as Error).message;
+          const errorMessage = isAbort
+            ? 'Generation cancelled'
+            : (process.env.NODE_ENV === 'development' ? (error as Error).message : '生成失败，请稍后重试');
 
           const errorData = `data: ${JSON.stringify({ type: 'error', error: errorMessage })}\n\n`;
           controller.enqueue(encoder.encode(errorData));
@@ -243,7 +246,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error generating code:', error);
     return NextResponse.json(
-      { error: (error as Error).message || 'Failed to generate code' },
+      { error: process.env.NODE_ENV === 'development' ? (error as Error).message : '生成失败，请稍后重试' },
       { status: 500 },
     );
   }

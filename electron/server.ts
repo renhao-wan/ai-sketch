@@ -97,11 +97,26 @@ export async function startServer(dbPath: string): Promise<number> {
 /**
  * 停止 Next.js 服务器
  *
- * 关闭 HTTP 服务器并清理引用。在应用退出时调用。
+ * 关闭 HTTP 服务器并等待活跃连接关闭。在应用退出时调用。
+ * @returns Promise，在服务器完全关闭后 resolve
  */
-export function stopServer(): void {
-  if (server) {
-    server.close();
+export function stopServer(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    if (!server) {
+      resolve();
+      return;
+    }
+    const srv = server;
     server = null;
-  }
+    let resolved = false;
+    const safeResolve = () => {
+      if (!resolved) {
+        resolved = true;
+        resolve();
+      }
+    };
+    srv.close(safeResolve);
+    // 如果 3 秒内没有关闭完成，强制 resolve（避免阻塞退出）
+    setTimeout(safeResolve, 3000);
+  });
 }

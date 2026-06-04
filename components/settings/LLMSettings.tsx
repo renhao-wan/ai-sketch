@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import * as api from '@/lib/api/client';
 import Notification from '@/components/ui/Notification';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
@@ -200,14 +200,14 @@ export function LLMSettings() {
   };
 
   /** 根据搜索关键词过滤配置，并将活跃配置置顶 */
-  const filteredConfigs = (searchQuery
+  const filteredConfigs = useMemo(() => (searchQuery
     ? configs.filter(c =>
         c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (c.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.type.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : configs
-  ).sort((a, b) => (a.id === activeConfigId ? -1 : b.id === activeConfigId ? 1 : 0));
+  ).sort((a, b) => (a.id === activeConfigId ? -1 : b.id === activeConfigId ? 1 : 0)), [configs, searchQuery, activeConfigId]);
 
   return (
     <div className="h-full flex flex-col">
@@ -414,8 +414,12 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
     setLoading(true);
     setError('');
     try {
-      const params = new URLSearchParams({ type: formData.type, baseUrl: formData.baseUrl, apiKey: formData.apiKey });
-      const response = await fetch(`/api/models?${params}`);
+      // 使用 POST 请求避免 API Key 出现在 URL 中
+      const response = await fetch('/api/models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: formData.type, baseUrl: formData.baseUrl, apiKey: formData.apiKey }),
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || t('config.loadModelFailed'));
       setModels(data.models);

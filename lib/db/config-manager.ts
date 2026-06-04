@@ -121,26 +121,35 @@ class ConfigManager {
       updatedAt: now,
     };
 
-    db.run(
-      `INSERT INTO llm_configs (id, name, type, base_url, api_key, model, description, is_active, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        newConfig.id!,
-        newConfig.name,
-        newConfig.type,
-        newConfig.baseUrl,
-        newConfig.apiKey,
-        newConfig.model,
-        newConfig.description || '',
-        0,
-        newConfig.createdAt!,
-        newConfig.updatedAt!,
-      ],
-    );
+    db.run('BEGIN');
+    try {
+      db.run(
+        `INSERT INTO llm_configs (id, name, type, base_url, api_key, model, description, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          newConfig.id!,
+          newConfig.name,
+          newConfig.type,
+          newConfig.baseUrl,
+          newConfig.apiKey,
+          newConfig.model,
+          newConfig.description || '',
+          0,
+          newConfig.createdAt!,
+          newConfig.updatedAt!,
+        ],
+      );
 
-    const allConfigs = await this.getAllConfigs();
-    if (allConfigs.length === 1) {
-      await this.setActiveConfig(id);
+      // 用 COUNT(*) 替代全量 SELECT 判断是否是第一条配置
+      const countResult = db.exec('SELECT COUNT(*) FROM llm_configs');
+      const count = countResult.length > 0 ? (countResult[0].values[0][0] as number) : 0;
+      if (count === 1) {
+        db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('active_config_id', ?)", [id]);
+      }
+      db.run('COMMIT');
+    } catch (e) {
+      db.run('ROLLBACK');
+      throw e;
     }
 
     saveToDisk();
@@ -179,17 +188,24 @@ class ConfigManager {
     const existing = await this.getConfig(id);
     if (!existing) throw new Error('配置不存在');
 
-    const activeId = await this.getActiveConfigId();
-    if (activeId === id) {
-      db.run("DELETE FROM meta WHERE key = 'active_config_id'");
-      const remaining = await this.getAllConfigs();
-      const filtered = remaining.filter((c) => c.id !== id);
-      if (filtered.length > 0) {
-        db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('active_config_id', ?)", [filtered[0].id!]);
+    db.run('BEGIN');
+    try {
+      const activeId = await this.getActiveConfigId();
+      if (activeId === id) {
+        db.run("DELETE FROM meta WHERE key = 'active_config_id'");
+        // 用 SQL 查询替代全量加载
+        const remaining = db.exec('SELECT id FROM llm_configs WHERE id != ? ORDER BY created_at DESC LIMIT 1', [id]);
+        if (remaining.length > 0 && remaining[0].values.length > 0) {
+          db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('active_config_id', ?)", [remaining[0].values[0][0] as string]);
+        }
       }
-    }
 
-    db.run('DELETE FROM llm_configs WHERE id = ?', [id]);
+      db.run('DELETE FROM llm_configs WHERE id = ?', [id]);
+      db.run('COMMIT');
+    } catch (e) {
+      db.run('ROLLBACK');
+      throw e;
+    }
     saveToDisk();
   }
 

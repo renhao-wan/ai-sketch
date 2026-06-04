@@ -110,8 +110,8 @@ app.whenReady().then(async () => {
 });
 
 // 所有窗口关闭时退出应用（Windows/Linux）
-app.on('window-all-closed', () => {
-  stopServer();
+app.on('window-all-closed', async () => {
+  await stopServer();
   app.quit();
 });
 

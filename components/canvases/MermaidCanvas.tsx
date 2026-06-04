@@ -32,7 +32,7 @@ async function initMermaid() {
     mermaid.initialize({
       startOnLoad: false,
       theme: 'neutral',
-      securityLevel: 'loose',
+      securityLevel: 'strict',
       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
       themeVariables: getMermaidThemeVariables(),
       flowchart: {
@@ -67,6 +67,7 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const renderIdRef = useRef(0);
+  const rafIdRef = useRef(0);
   const isStreamingRef = useRef(isStreaming);
 
   // Keep isStreamingRef in sync
@@ -107,7 +108,8 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
           bindFunctions(containerRef.current);
         }
         // 自动适应视图（75% 容器大小）
-        requestAnimationFrame(() => {
+        if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = requestAnimationFrame(() => {
           if (!containerRef.current || !wrapperRef.current) return;
           const svgEl = containerRef.current.querySelector('svg');
           if (!svgEl) return;
@@ -156,10 +158,13 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
       if (error && currentRenderId === renderIdRef.current) {
         setError(error);
       }
-    });
+    }).catch(console.error);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- currentRenderId 已在 effect 内捕获，用于清理；renderDiagram 不需要作为依赖
-    return () => { renderIdRef.current++; };
+    return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- 故意在 cleanup 中递增 ref 以使进行中的渲染失效
+      renderIdRef.current++;
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- renderDiagram 是 useCallback 包裹的函数，不需要作为依赖
   }, [code, t]);
 

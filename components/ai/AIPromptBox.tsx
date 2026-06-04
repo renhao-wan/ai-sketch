@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, type ChangeEvent, type DragEvent, type KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, useMemo, type ChangeEvent, type DragEvent, type KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Paperclip,
@@ -35,6 +35,23 @@ export default function AIPromptBox() {
   const { attachments, payload, attachStatus, attachError, notification, closeNotification, handleFiles: handleFilesRaw, clearAttachments, removeAttachment, getSourceType, setAttachError, setAttachStatus } = useFileUpload({
     diagramFormat: activeFormat as DiagramFormat,
   });
+
+  // 为图片附件创建 blob URL，并在 cleanup 中释放
+  const imageBlobUrls = useMemo(() => {
+    const urls = new Map<File, string>();
+    for (const file of attachments) {
+      if (file.type.startsWith('image/')) {
+        urls.set(file, URL.createObjectURL(file));
+      }
+    }
+    return urls;
+  }, [attachments]);
+
+  useEffect(() => {
+    return () => {
+      imageBlobUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [imageBlobUrls]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -113,7 +130,7 @@ export default function AIPromptBox() {
               <div key={`${file.name}-${i}`} className="relative flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] group">
                 {isImage ? (
                   // eslint-disable-next-line @next/next/no-img-element -- blob URL 不支持 next/image
-                  <img src={URL.createObjectURL(file)} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                  <img src={imageBlobUrls.get(file)} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
                 ) : (
                   <div className="w-8 h-8 rounded bg-[var(--surface-warm)] flex items-center justify-center flex-shrink-0">
                     <Paperclip size={13} className="text-[var(--muted)]" />
