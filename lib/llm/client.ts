@@ -35,15 +35,17 @@ function validateBaseUrl(url: string): void {
 let cachedAgent: ProxyAgent | undefined;
 let cachedProxyUrl: string | null = null;
 let lastCheck = 0;
+let hasChecked = false; // 标记是否已查询过代理配置（含"无代理"状态）
 const CACHE_TTL = 5000; // 5 秒缓存
 
 /** 获取代理 Agent（带缓存，动态读取 DB 配置） */
 async function getProxyAgent(): Promise<ProxyAgent | undefined> {
   const now = Date.now();
-  if (now - lastCheck < CACHE_TTL && cachedProxyUrl !== undefined && cachedProxyUrl !== null) {
+  if (now - lastCheck < CACHE_TTL && hasChecked) {
     return cachedAgent;
   }
   lastCheck = now;
+  hasChecked = true;
 
   try {
     console.time('[LLM Client] Load Proxy Config');

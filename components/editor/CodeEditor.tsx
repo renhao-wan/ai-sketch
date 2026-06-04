@@ -9,6 +9,9 @@ function ensureMonacoLoaded(): Promise<void> {
   if (!monacoLoadPromise) {
     monacoLoadPromise = import('monaco-editor').then((monaco) => {
       loader.config({ monaco: monaco.default || monaco });
+    }).catch((e) => {
+      console.error('[CodeEditor] Monaco 加载失败:', e);
+      monacoLoadPromise = null; // 允许重试
     });
   }
   return monacoLoadPromise;
