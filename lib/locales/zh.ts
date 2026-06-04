@@ -66,6 +66,7 @@ export const zh = {
   'copilot.regenerate': '重新生成',
   'copilot.copy': '复制',
   'copilot.showDiagram': '展示图表',
+  'copilot.scrollToBottom': '回到底部',
 
   // Bottom Context Panel
   'panel.generatedCode': '生成代码',

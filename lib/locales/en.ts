@@ -68,6 +68,7 @@ export const en: TranslationDict = {
   'copilot.regenerate': 'Regenerate',
   'copilot.copy': 'Copy',
   'copilot.showDiagram': 'Show Diagram',
+  'copilot.scrollToBottom': 'Scroll to Bottom',
 
   // Bottom Context Panel
   'panel.generatedCode': 'Generated Code',

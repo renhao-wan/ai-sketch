@@ -8,6 +8,7 @@ import {
   Image,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Sparkles,
   Wand2,
   Loader2,
@@ -129,6 +130,33 @@ export default function AICopilotPanel({
   // Auto-scroll to bottom when messages change
   const prevCountRef = useRef(0);
   const prevConvRef = useRef(conversationId);
+  const prevCollapsedRef = useRef(isCollapsed);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+
+  // 滑底判断辅助函数：是否在底部附近（阈值为容器高度的 20%）
+  const isNearBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    const threshold = container.clientHeight * 0.2;
+    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+  }, []);
+
+  // 监听滚动事件，控制"回到底部"按钮显示
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+    setShowScrollToBottom(!atBottom && messages.length > 0);
+  }, [messages.length]);
+
+  // 执行滑底
+  const scrollToBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+  }, []);
+
+  // 消息变化 / 对话切换时的自动滑底
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -140,20 +168,38 @@ export default function AICopilotPanel({
     prevCountRef.current = messages.length;
 
     if (convChanged || isNewMessage) {
-      // Conversation switch or new message: always scroll to bottom
+      // 对话切换或新消息：无条件滑底
       requestAnimationFrame(() => {
         container.scrollTop = container.scrollHeight;
       });
     } else {
-      // Streaming content update: only scroll if near bottom
-      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
-      if (isNearBottom) {
+      // 流式内容更新：仅在底部附近时滑底（阈值为容器高度的 20%）
+      if (isNearBottom()) {
         requestAnimationFrame(() => {
           container.scrollTop = container.scrollHeight;
         });
       }
     }
-  }, [messages, conversationId]);
+  }, [messages, conversationId, isNearBottom]);
+
+  // 折叠/展开时的滑底处理
+  useEffect(() => {
+    const wasCollapsed = prevCollapsedRef.current;
+    prevCollapsedRef.current = isCollapsed;
+
+    // 从折叠状态展开时，强制滑到底部
+    if (wasCollapsed && !isCollapsed && messages.length > 0) {
+      const container = messagesContainerRef.current;
+      if (!container) return;
+
+      // 使用双层 rAF 确保 DOM 布局稳定后再滑底
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          container.scrollTop = container.scrollHeight;
+        });
+      });
+    }
+  }, [isCollapsed, messages.length]);
 
   // 从 props 同步到 state（合理用例，避免级联渲染）
   useEffect(() => {
@@ -323,7 +369,7 @@ export default function AICopilotPanel({
 
       {/* Message List or Empty State */}
       {hasMessages ? (
-        <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 scrollbar-subtle bg-[var(--surface-warm)]/30">
+        <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 scrollbar-subtle bg-[var(--surface-warm)]/30">
           {messages.map((msg, idx) => {
             const isLastAssistant = msg.role === 'assistant' && idx === messages.length - 1;
             const isAssistant = msg.role === 'assistant';
@@ -341,6 +387,17 @@ export default function AICopilotPanel({
             );
           })}
           <div ref={messagesEndRef} />
+
+          {/* 回到底部浮动按钮 */}
+          {showScrollToBottom && (
+            <button
+              onClick={scrollToBottom}
+              className="sticky bottom-3 left-1/2 -translate-x-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface-warm)] border border-[var(--border)] shadow-lg hover:bg-[var(--surface-warm-hover)] transition-all duration-200 z-10"
+              title={t('copilot.scrollToBottom')}
+            >
+              <ChevronDown size={16} className="text-[var(--muted)]" />
+            </button>
+          )}
         </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center px-6 overflow-auto">
