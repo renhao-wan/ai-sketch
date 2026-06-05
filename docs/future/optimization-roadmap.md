@@ -716,67 +716,133 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 
 ## 十、优先级总结
 
-### 🔴 严重问题（12 项）
+### 🔴 严重问题
 
-| # | 问题 | 模块 |
-|---|------|------|
-| 1 | 截断策略按条数而非 token 数 | 上下文管理 |
-| 2 | 中间轮次修改历史完全丢失 | 上下文管理 |
-| 3 | 历史图片每次请求都重发 | 上下文管理 |
-| 4 | Anthropic temperature=1 | LLM 客户端 |
-| 5 | 数据库写放大 | 数据库 |
-| 6 | closeDb() 从未被调用 | 数据库/Electron |
-| 7 | onMaximizeChange 监听器泄漏 | Electron |
-| 8 | NSIS 卸载路径错误 | Electron |
-| 9 | Mermaid 14/21 种类型降级 | Mermaid 画布 |
-| 10 | 代码 300 字符硬截断 | 消息气泡 |
-| 11 | 流式期间每帧 3 次 setState | Editor 页面 |
-| 12 | Excalidraw 流式期间每个元素完整重绘 | Excalidraw 画布 |
+| # | 问题 | 模块 | 状态 |
+|---|------|------|------|
+| 14 | 截断策略按条数而非 token 数 | 上下文管理 | ❌ |
+| 15 | 中间轮次修改历史完全丢失 | 上下文管理 | ❌ |
+| 16 | 历史图片每次请求都重发 | 上下文管理 | ❌ |
+| 17 | 图片数据不入历史上下文 | 上下文管理 | ❌ |
+| 18 | Mermaid 14/21 种类型降级 | Mermaid 画布 | ❌ |
+| 19 | Excalidraw 流式期间每个元素完整重绘 | Excalidraw 画布 | ❌ |
+| 20 | onMaximizeChange 监听器泄漏 | Electron | ❌ |
+| 21 | NSIS 卸载路径错误 | Electron | ❌ |
+| 6 | 数据库写放大 → 防抖模式 | 数据库 | ✅ |
+| 7 | closeDb() 在 Electron 退出前调用 | 数据库/Electron | ✅ |
+| 8 | Temperature 改为可配置参数 | LLM 客户端 | ✅ |
+| 10 | 代码预览展开/收起按钮 | 消息气泡 | ✅ |
 
-### 建议优先解决的 5 个问题
+### 建议优先解决的 5 个未完成问题
 
 1. **上下文截断改为 token 预算机制** — "上下文控制不好"的根本原因
-2. **数据库写放大改为防抖模式** — 影响所有用户的性能
-3. **closeDb() 在 Electron 退出前调用** — 防止数据丢失
-4. **降低 temperature 到 0.3-0.5** — 直接提升生成质量
-5. **图片数据不入历史上下文** — 大幅降低 token 消耗
+2. **图片数据不入历史上下文** — 大幅降低 token 消耗
+3. **历史图片不再每次重发** — 与上条配合，减少请求体积
+4. **Excalidraw 流式 debounce** — 影响渲染性能和用户体验
+5. **onMaximizeChange 监听器泄漏** — Electron 内存泄漏
 
-### 🟡 中等问题（48 项）
+### 🟡 中等问题（25 项）
 
-详见各章节，主要集中在：
-- 状态管理碎片化（Editor 21 个 useState）
-- 流式渲染体验不完整（Mermaid/Draw.io 无预览）
+详见附录 A #22-#46，主要集中在：
+- 上下文管理（截断通知 role、首条消息格式化、system prompt 裁剪）
+- LLM 客户端（自动重试、max_tokens 可配置）
 - 提示词质量（矛盾、抽象、不支持的功能）
-- 国际化不完整（硬编码中文、无参数插值）
-- Electron 功能缺失（无自动更新、无崩溃恢复）
+- Editor 页面（useState 碎片化、sessionStorage 耦合、panelWidth 不持久化）
+- 画布（scrollToContent 跳动、元素转换失败静默吞没）
+- Electron（无崩溃恢复、无自动更新）
+- 国际化（参数插值、硬编码中文）
 
-### 🟢 轻微问题（27 项）
+### 🟢 轻微问题（12 项）
 
-详见各章节，主要集中在：
-- 代码风格（DRY 违反、类型断言）
-- 性能微调（代理缓存 TTL、JSON.stringify hash）
-- 死代码（未使用的 API、未调用的函数）
-- UI 细节（按钮尺寸、注释不一致）
+详见附录 A #47-#58，主要集中在：
+- 代码风格（类型重复定义、DRY 违反、死注释）
+- 数据库（时间格式不统一、API Key 明文、ID 生成算法）
+- 策略模式（VALID_STARTS 重复、ImageStrategy 全局可变状态）
 
 ---
 
 ## 附录 A：优化进度跟踪
 
-> **图例**: ✅ 已完成 | ⏳ 进行中 | ❌ 未开始
+> **图例**: ✅ 已完成 | ❌ 未开始
+> **严重度**: 🔴 严重 | 🟡 中等 | 🟢 轻微
 
-| # | 优化项 | 状态 | 完成日期 | 备注 |
-|---|--------|------|----------|------|
-| 1 | 字体加载优化 (`font-display: swap`) | ✅ | 2026-06-04 | `app/layout.tsx` |
-| 2 | 数据库索引优化 | ✅ | 2026-06-04 | `lib/db/index.ts` 添加 `idx_messages_created_at` |
-| 3 | 动态导入优化（懒加载重型组件） | ✅ | 2026-06-04 | ConfigSelector、BottomContextPanel、HistoryModal、LLMSettings |
-| 4 | 数据库行映射改用 getAsObject() | ✅ | 2026-06-04 | `config-manager.ts`、`conversation-manager.ts` |
-| 5 | AI 响应缓存 | ✅ | 2026-06-04 | `cache-manager.ts`、`route.ts` |
-| 6 | 数据库写放大 → 防抖模式 | ✅ | 2026-06-05 | `requestSave()` 500ms 防抖，`closeDb()` 时立即写盘 |
-| 7 | closeDb() 在 Electron 退出前调用 | ✅ | 2026-06-05 | `electron/main.ts` 添加 `before-quit` 事件调用 `closeDb()` |
-| 8 | Temperature 改为可配置参数 | ✅ | 2026-06-04 | 默认 0.5，UI 滑块控件 |
-| 9 | 生成失败消息不存数据库 | ✅ | 2026-06-04 | 避免上下文污染 |
-| 10 | 代码预览展开/收起按钮 | ✅ | 2026-06-04 | 默认收起，点击展开 |
-| 11 | 图片数据不入历史上下文 | ❌ | - | - |
+### ✅ 已完成（13 项）
+
+| # | 优化项 | 严重度 | 完成日期 | 备注 |
+|---|--------|--------|----------|------|
+| 1 | 字体加载优化 (`font-display: swap`) | 🟢 | 2026-06-04 | `app/layout.tsx` |
+| 2 | 数据库索引优化 | 🟢 | 2026-06-04 | `lib/db/index.ts` 添加 `idx_messages_created_at` |
+| 3 | 动态导入优化（懒加载重型组件） | 🟢 | 2026-06-04 | ConfigSelector、BottomContextPanel、HistoryModal、LLMSettings |
+| 4 | 数据库行映射改用 getAsObject() | 🟡 | 2026-06-04 | `config-manager.ts`、`conversation-manager.ts` |
+| 5 | AI 响应缓存 | 🟡 | 2026-06-04 | `cache-manager.ts`、`route.ts` |
+| 6 | 数据库写放大 → 防抖模式 | 🔴 | 2026-06-05 | `requestSave()` 500ms 防抖，`closeDb()` 时立即写盘 |
+| 7 | closeDb() 在 Electron 退出前调用 | 🔴 | 2026-06-05 | `electron/main.ts` `window-all-closed` 中调用 |
+| 8 | Temperature 改为可配置参数 | 🔴 | 2026-06-04 | 默认 0.5，UI 滑块控件 |
+| 9 | 生成失败消息不存数据库 | 🟡 | 2026-06-04 | 避免上下文污染 |
+| 10 | 代码预览展开/收起按钮 | 🔴 | 2026-06-04 | 默认收起，点击展开 |
+| 11 | CHART_TYPE_NAMES 重复三份 → 共享常量 | 🟡 | 2026-06-04 | `lib/diagram/constants.ts` |
+| 12 | 快捷键/关于页/LLM 复制国际化 | 🟡 | 2026-06-05 | descriptionKey 翻译、依赖描述翻译、编号后缀 |
+| 13 | 缓存管理 API 暴露 + 数据清理集成 | 🟡 | 2026-06-05 | clear-cache/cache-stats action、DataSettings 集成 |
+
+### ❌ 未完成 — 严重（8 项）
+
+| # | 优化项 | 模块 | 说明 |
+|---|--------|------|------|
+| 14 | 截断策略按条数而非 token 数 | 上下文管理 | `MAX_CONTEXT_MESSAGES=20`，无 token 预算 |
+| 15 | 中间轮次修改历史完全丢失 | 上下文管理 | 无摘要机制，超 20 轮直接丢弃 |
+| 16 | 历史图片每次请求都重发 | 上下文管理 | `toLLMMessage` 无条件附带所有 base64 图片 |
+| 17 | 图片数据不入历史上下文 | 上下文管理 | 只在当前轮次发送图片，历史保留描述文字 |
+| 18 | Mermaid 14/21 种类型降级为 flowchart | Mermaid 画布 | `MERMAID_TYPE_MAP` 未改 |
+| 19 | Excalidraw 流式每元素完整重绘 | Excalidraw 画布 | `feed()` 无 debounce，每元素调 `updateScene` |
+| 20 | onMaximizeChange 监听器泄漏 | Electron | `preload.ts` 未返回清理函数 |
+| 21 | NSIS 卸载路径错误 | Electron | `$APPDATA\ai-sketch` vs 实际 `com.ai-sketch.app` |
+
+### ❌ 未完成 — 中等（25 项）
+
+| # | 优化项 | 模块 | 说明 |
+|---|--------|------|------|
+| 22 | 截断通知 role 为 assistant 应为 system | 上下文管理 | 破坏 user/assistant 交替规则 |
+| 23 | 首条消息未经 getUserPrompt 格式化 | 上下文管理 | 历史消息原始发送，与当前轮次格式不一致 |
+| 24 | 图片以 base64 TEXT 存储 | 上下文管理 | 单行数据量极大，影响查询性能 |
+| 25 | system prompt 发送全部 22 种图表规范 | 上下文管理 | 约 90% 规范是无用 token 浪费 |
+| 26 | LLM 生成失败后无自动重试 | LLM 客户端 | 仅 429 限流重试，无 validate + retry |
+| 27 | max_tokens 硬编码且不一致 | LLM 客户端 | Anthropic 64000 vs OpenAI 16384，不可配置 |
+| 28 | output 示例与要求矛盾 | 提示词 | 要求"不用代码块"但示例用了代码块 |
+| 29 | 坐标规划指导过于简单 | 提示词 | 仅"间距大于 800px"，无具体规划策略 |
+| 30 | AI Action 提示词间距矛盾 | 提示词 | layout 80-120px vs system 800px+ |
+| 31 | beautify 要求不支持的功能 | 提示词 | 要求阴影/渐变，Excalidraw API 不支持 |
+| 32 | useState 碎片化（13 个） | Editor | 已从 21 减到 13，未用 useReducer |
+| 33 | sessionStorage 隐式耦合 | Editor | 页面间通过字符串 key 通信，无类型约束 |
+| 34 | 流式期间每帧 2 次 setState | Editor | onCodeUpdate + onMessagesUpdate 各触发 setState |
+| 35 | panelWidth 不持久化 | Editor | 注释标注 `not persisted`，刷新重置 |
+| 36 | 格式切换无确认对话框 | Editor | 切换时清空代码和渲染数据，无确认提示 |
+| 37 | scrollToContent 流式期间每元素调用 | Excalidraw 画布 | 画布视角不断跳动 |
+| 38 | 元素转换失败静默吞没 | Excalidraw 画布 | `catch { /* skip */ }` 无日志无提示 |
+| 39 | 无崩溃恢复 | Electron | 无 `render-process-gone` 监听 |
+| 40 | 无自动更新 | Electron | 未引入 `electron-updater` |
+| 41 | 不支持参数插值 | 国际化 | `t()` 只接受 key，不处理 `{count}` 占位符 |
+| 42 | 硬编码中文（prompts/constants/错误消息） | 国际化 | LLM prompt 故意中文，但错误消息应国际化 |
+| 43 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
+| 44 | 缺少 Migration 机制 | 数据库 | 仅 ad-hoc ALTER TABLE，不可扩展 |
+| 45 | Excalidraw validate 不检查 schema | 策略模式 | 无元素结构校验 |
+| 46 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
+
+### ❌ 未完成 — 轻微（12 项）
+
+| # | 优化项 | 模块 | 说明 |
+|---|--------|------|------|
+| 47 | system prompt getSystemPrompt() 重复调用 | 上下文管理 | route.ts 中调用两次，未缓存 |
+| 48 | 时间格式不统一 | 数据库 | config 用 ISO 字符串，conversation/message 用时间戳 |
+| 49 | API Key 明文存储 | 数据库 | 桌面端风险较低，建议简单加密 |
+| 50 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
+| 51 | DiagramFormat 重复定义 | 类型 | `lib/types/` + `lib/prompts/types.ts` 两处 |
+| 52 | SourceType/InputSourceType 未统一 | 类型 | 注释承认问题但未修复 |
+| 53 | Mermaid VALID_STARTS 重复 | 策略模式 | 模块级常量和 postProcess 内局部变量重复 |
+| 54 | ImageStrategy 全局可变状态 | 策略模式 | 全局单例含可变 `diagramFormat` |
+| 55 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
+| 56 | 窗口状态未持久化 | Electron | 未监听 resize/move 保存 bounds |
+| 57 | macOS 缺少公证/标准菜单 | Electron | 需 `afterSign` 钩子 + 标准菜单 |
+| 58 | constants.ts 遗留死注释 | 代码风格 | `// Must match CHART_TYPE_NAMES in lib/prompts.ts` 已不存在 |
 
 ---
 
