@@ -837,7 +837,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 48 | 时间格式不统一 | 数据库 | config 用 ISO 字符串，conversation/message 用时间戳 |
 | 49 | API Key 明文存储 | 数据库 | 桌面端风险较低，建议简单加密 |
 | 50 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
-| 51 | DiagramFormat 重复定义 | 类型 | `lib/types/` + `lib/prompts/types.ts` 两处 |
+| 51 | DiagramFormat 重复定义 | 类型 | ✅ 已修复：统一从 `lib/types/diagram-strategy` 导入 |
 | 52 | SourceType/InputSourceType 未统一 | 类型 | ✅ 已修复：移除 InputSourceType，统一用 SourceType |
 | 53 | Mermaid VALID_STARTS 重复 | 策略模式 | ✅ 已修复：postProcess 复用模块级常量 |
 | 54 | ImageStrategy 全局可变状态 | 策略模式 | 全局单例含可变 `diagramFormat` |
