@@ -92,6 +92,7 @@ async function initDb(): Promise<Database> {
   `);
 
   db.run(`CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, created_at)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at DESC)`);
 
   // 仅在新建数据库时持久化，已有文件无需重复写盘
