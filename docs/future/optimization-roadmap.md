@@ -769,10 +769,12 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 1 | 字体加载优化 (`font-display: swap`) | ✅ | 2026-06-04 | `app/layout.tsx` |
 | 2 | 数据库索引优化 | ✅ | 2026-06-04 | `lib/db/index.ts` 添加 `idx_messages_created_at` |
 | 3 | 动态导入优化（懒加载重型组件） | ✅ | 2026-06-04 | ConfigSelector、BottomContextPanel、HistoryModal、LLMSettings |
-| 4 | 数据库写放大 → 防抖模式 | ❌ | - | - |
-| 5 | closeDb() 在 Electron 退出前调用 | ❌ | - | - |
-| 6 | 降低 temperature 到 0.3-0.5 | ❌ | - | - |
-| 7 | 图片数据不入历史上下文 | ❌ | - | - |
+| 4 | 数据库行映射改用 getAsObject() | ✅ | 2026-06-04 | `config-manager.ts`、`conversation-manager.ts` |
+| 5 | AI 响应缓存 | ✅ | 2026-06-04 | `cache-manager.ts`、`route.ts` |
+| 6 | 数据库写放大 → 防抖模式 | ❌ | - | - |
+| 7 | closeDb() 在 Electron 退出前调用 | ❌ | - | - |
+| 8 | 降低 temperature 到 0.3-0.5 | ❌ | - | - |
+| 9 | 图片数据不入历史上下文 | ❌ | - | - |
 
 ---
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { callLLM } from '@/lib/llm/client';
 import { configManager } from '@/lib/db/config-manager';
 import { conversationManager } from '@/lib/db/conversation-manager';
+import { cacheManager } from '@/lib/db/cache-manager';
 import { getStrategy } from '@/lib/strategies/registry';
 import type { LLMConfig, LLMMessage, ImageData } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
@@ -151,6 +152,22 @@ export async function POST(request: Request) {
 
     console.log(`[Generate] Messages count: ${fullMessages.length}, System prompt length: ${strategy.getSystemPrompt().length}`);
 
+    // ── 检查缓存（仅对非图片输入、非重新生成、单轮对话生效）──
+    const cacheKey = allImages.length === 0 && !regenerate && contextMessages.length <= 2
+      ? strategy.getUserPrompt(userContent, chartType)
+      : null;
+    let cachedResponse: string | null = null;
+
+    if (cacheKey) {
+      perfMark('Cache Lookup');
+      cachedResponse = await cacheManager.get(cacheKey, diagramFormat, chartType);
+      perfEnd('Cache Lookup');
+
+      if (cachedResponse) {
+        console.log('[Generate] Cache hit');
+      }
+    }
+
     // ── SSE stream ──
     const encoder = new TextEncoder();
     let accumulatedCode = '';
@@ -174,24 +191,50 @@ export async function POST(request: Request) {
           const metaEvent = `data: ${JSON.stringify({ type: 'meta', conversationId: activeConversationId })}\n\n`;
           controller.enqueue(encoder.encode(metaEvent));
 
-          perfMark('LLM Call (First Token)');
-          await callLLM(config!, fullMessages, (chunk) => {
-            if (isFirstChunk) {
-              perfEnd('LLM Call (First Token)');
-              perfMark('LLM Streaming');
-              isFirstChunk = false;
-            }
-            accumulatedCode += chunk;
-            const data = `data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`;
-            controller.enqueue(encoder.encode(data));
-          }, combinedController.signal);
+          let finalCode: string;
 
-          if (!isFirstChunk) {
-            perfEnd('LLM Streaming');
+          if (cachedResponse) {
+            // 使用缓存的响应
+            finalCode = cachedResponse;
+
+            // 模拟流式输出（分块发送）
+            const chunkSize = 50;
+            for (let i = 0; i < finalCode.length; i += chunkSize) {
+              const chunk = finalCode.substring(i, i + chunkSize);
+              const data = `data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`;
+              controller.enqueue(encoder.encode(data));
+            }
+          } else {
+            // 调用 LLM
+            perfMark('LLM Call (First Token)');
+            await callLLM(config!, fullMessages, (chunk) => {
+              if (isFirstChunk) {
+                perfEnd('LLM Call (First Token)');
+                perfMark('LLM Streaming');
+                isFirstChunk = false;
+              }
+              accumulatedCode += chunk;
+              const data = `data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`;
+              controller.enqueue(encoder.encode(data));
+            }, combinedController.signal);
+
+            if (!isFirstChunk) {
+              perfEnd('LLM Streaming');
+            }
+
+            // 保存到缓存（如果有缓存 key）
+            if (cacheKey) {
+              const processedForCache = strategy.postProcess(accumulatedCode);
+              const optimizedForCache = strategy.optimize(processedForCache);
+              await cacheManager.set(cacheKey, diagramFormat, chartType, optimizedForCache);
+            }
+
+            finalCode = accumulatedCode;
           }
+
           perfMark('Post Process');
           // Save assistant message after stream completes
-          const processedCode = strategy.postProcess(accumulatedCode);
+          const processedCode = strategy.postProcess(finalCode);
           const optimizedCode = strategy.optimize(processedCode);
           await conversationManager.addMessage({
             conversationId: activeConversationId!,

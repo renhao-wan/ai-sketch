@@ -95,6 +95,22 @@ async function initDb(): Promise<Database> {
   db.run(`CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at DESC)`);
 
+  // AI 响应缓存表
+  db.run(`
+    CREATE TABLE IF NOT EXISTS response_cache (
+      id TEXT PRIMARY KEY,
+      prompt_hash TEXT NOT NULL,
+      format TEXT NOT NULL,
+      chart_type TEXT NOT NULL,
+      response TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      last_used_at INTEGER NOT NULL,
+      use_count INTEGER DEFAULT 1
+    )
+  `);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_response_cache_hash ON response_cache(prompt_hash, format, chart_type)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_response_cache_last_used ON response_cache(last_used_at DESC)`);
+
   // 仅在新建数据库时持久化，已有文件无需重复写盘
   if (isNew) {
     try {
