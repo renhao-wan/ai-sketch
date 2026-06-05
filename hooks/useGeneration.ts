@@ -21,6 +21,7 @@ interface UseGenerationOptions {
   onConversationIdUpdate: (id: string) => void;
   onMessagesUpdate: (updater: (prev: ConversationMessage[]) => ConversationMessage[]) => void;
   onConfigReminder: () => void;
+  onChartTypeUpdate?: (chartType: string) => void;
 }
 
 /**
@@ -250,6 +251,9 @@ export function useGeneration(options: UseGenerationOptions) {
       return;
     }
 
+    // 更新图表类型状态
+    options.onChartTypeUpdate?.(chartType);
+
     const userContent = typeof userMessage === 'string' ? userMessage : (userMessage.text || '');
 
     // 创建乐观消息
@@ -289,7 +293,7 @@ export function useGeneration(options: UseGenerationOptions) {
   /**
    * 重新生成
    */
-  const regenerate = useCallback(async (messages: ConversationMessage[]) => {
+  const regenerate = useCallback(async (messages: ConversationMessage[], chartType: string = 'auto') => {
     if (isGenerating || messages.length === 0) return;
 
     if (!isConfigValid(options.config)) {
@@ -329,7 +333,7 @@ export function useGeneration(options: UseGenerationOptions) {
 
     await executeGeneration({
       userInput,
-      chartType: messages.find(m => m.role === 'user')?.content ? 'auto' : 'auto',
+      chartType,
       sourceType: lastUserMsg.sourceType || 'text',
       regenerate: true,
       optimisticAssistantMsg,

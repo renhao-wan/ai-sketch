@@ -14,11 +14,11 @@ import { EXPLAIN_SYSTEM_PROMPT, buildExplainUserPrompt } from './explain';
 import type { DiagramFormat, AIActionType } from '../types';
 
 /** AI 操作动词映射 */
-const ACTION_VERBS: Record<AIActionType, string> = {
-  layout: '优化布局',
-  beautify: '美化',
-  simplify: '简化',
-  explain: '解释',
+const ACTION_VERBS: Record<AIActionType, { verb: string; suffix?: string }> = {
+  layout: { verb: '优化', suffix: '的布局' },
+  beautify: { verb: '美化' },
+  simplify: { verb: '简化' },
+  explain: { verb: '解释' },
 };
 
 /** AI 操作系统提示词映射 */
@@ -40,7 +40,8 @@ export function buildActionUserPrompt(action: AIActionType, code: string, format
   if (action === 'explain') {
     return buildExplainUserPrompt(code, format);
   }
-  return `请${ACTION_VERBS[action]}以下 ${format.toUpperCase()} 图表代码：\n\n${code}`;
+  const { verb, suffix } = ACTION_VERBS[action];
+  return `请${verb}以下 ${format.toUpperCase()} 图表代码${suffix || ''}：\n\n${code}`;
 }
 
 /**

@@ -11,6 +11,8 @@ export interface SSECallbacks {
   onMeta?: (conversationId: string) => void;
   /** 收到内容 chunk（已去除代码围栏） */
   onContent: (stripped: string, raw: string) => void;
+  /** 收到结果事件（最终处理后的内容） */
+  onResult?: (content: string) => void;
   /** 收到错误事件 */
   onError?: (error: string) => void;
 }
@@ -64,6 +66,9 @@ export async function consumeSSEStream(
         } else if (parsed.type === 'content' && parsed.content) {
           accumulatedCode += parsed.content as string;
           callbacks.onContent(accumulatedCode, parsed.content as string);
+        } else if (parsed.type === 'result' && parsed.content) {
+          // 最终结果事件（服务端已处理，如去除代码围栏）
+          callbacks.onResult?.(parsed.content as string);
         } else if (parsed.type === 'error') {
           throw new Error(parsed.error as string);
         } else if (parsed.content) {

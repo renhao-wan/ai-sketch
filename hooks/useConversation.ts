@@ -7,7 +7,9 @@ import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 interface UseConversationOptions {
   onFormatChange?: (format: DiagramFormat) => void;
+  onChartTypeChange?: (chartType: string) => void;
   onCodeClear?: () => void;
+  onError?: (message: string) => void;
 }
 
 /**
@@ -28,10 +30,13 @@ export function useConversation(options: UseConversationOptions = {}) {
         options.onFormatChange?.(conv.format as DiagramFormat);
       }
 
+      // 恢复图表类型
+      options.onChartTypeChange?.(conv.chartType);
+
       options.onCodeClear?.();
     } catch (err) {
       console.error('Failed to load conversation:', err);
-      throw err;
+      options.onError?.('Failed to load conversation');
     }
   }, [options]);
 

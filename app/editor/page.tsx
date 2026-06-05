@@ -91,11 +91,13 @@ function EditorContent() {
   // 会话管理 Hook
   const conversation = useConversation({
     onFormatChange: (f) => setFormat(f),
+    onChartTypeChange: setCurrentChartType,
     onCodeClear: () => {
       setGeneratedCode('');
       setRenderData(null);
       setJsonError(null);
     },
+    onError: (msg) => generation.setApiError(msg),
   });
 
   // 代码生成 Hook
@@ -113,6 +115,7 @@ function EditorContent() {
       showNotification(t('editor.configReminder'), t('editor.pleaseConfigLLM'), 'warning');
       setIsConfigManagerOpen(true);
     },
+    onChartTypeUpdate: setCurrentChartType,
   });
 
   // AI 操作 Hook
@@ -298,7 +301,7 @@ function EditorContent() {
           onFormatChange={(f) => { setFormat(f); setRenderData(null); setGeneratedCode(''); }}
           onOpenConfig={() => setIsConfigManagerOpen(true)}
           onExport={handleExport}
-          onRegenerate={() => generation.regenerate(conversation.messages)}
+          onRegenerate={() => generation.regenerate(conversation.messages, currentChartType)}
           onShowDiagram={handleShowDiagram}
           apiError={generation.apiError}
           onClearError={() => generation.setApiError(null)}

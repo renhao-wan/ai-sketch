@@ -69,19 +69,19 @@ export function useAIActions(options: UseAIActionsOptions) {
           onContent: (stripped) => {
             accumulated = stripped;
           },
+          onResult: (content) => {
+            // 服务端返回的最终结果（已去除代码围栏）
+            finalResult = content;
+          },
         },
       );
-
-      // 从累积的代码中提取最终结果
-      // 注意：AI action 可能返回 result 类型的事件，需要特殊处理
-      // 这里简化处理，直接使用累积的内容
-      finalResult = accumulatedCode;
 
       if (actionId === 'explain') {
         setAiExplanation(accumulatedCode);
         options.onExplanationUpdate(accumulatedCode);
         options.onBottomPanelTabChange('explain');
       } else {
+        // 优先使用 result 事件的内容（已去除代码围栏）
         const codeToApply = finalResult || accumulatedCode;
         options.onCodeUpdate(codeToApply);
 
