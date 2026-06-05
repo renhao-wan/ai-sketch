@@ -11,6 +11,7 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
 import path from 'path';
 import { startServer, stopServer } from './server';
+import { closeDb } from '../lib/db/index';
 
 /** 主窗口实例 */
 let mainWindow: BrowserWindow | null = null;
@@ -107,6 +108,11 @@ app.whenReady().then(async () => {
     );
     app.quit();
   }
+});
+
+// 应用退出前关闭数据库，确保数据持久化
+app.on('before-quit', () => {
+  closeDb();
 });
 
 // 所有窗口关闭时退出应用（Windows/Linux）

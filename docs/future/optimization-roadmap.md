@@ -772,7 +772,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 4 | 数据库行映射改用 getAsObject() | ✅ | 2026-06-04 | `config-manager.ts`、`conversation-manager.ts` |
 | 5 | AI 响应缓存 | ✅ | 2026-06-04 | `cache-manager.ts`、`route.ts` |
 | 6 | 数据库写放大 → 防抖模式 | ❌ | - | - |
-| 7 | closeDb() 在 Electron 退出前调用 | ❌ | - | - |
+| 7 | closeDb() 在 Electron 退出前调用 | ✅ | 2026-06-05 | `electron/main.ts` 添加 `before-quit` 事件调用 `closeDb()` |
 | 8 | Temperature 改为可配置参数 | ✅ | 2026-06-04 | 默认 0.5，UI 滑块控件 |
 | 9 | 生成失败消息不存数据库 | ✅ | 2026-06-04 | 避免上下文污染 |
 | 10 | 代码预览展开/收起按钮 | ✅ | 2026-06-04 | 默认收起，点击展开 |
