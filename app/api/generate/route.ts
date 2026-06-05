@@ -31,11 +31,15 @@ export async function POST(request: Request) {
   const perfMark = (label: string) => console.time(`[Generate] ${label}`);
   const perfEnd = (label: string) => console.timeEnd(`[Generate] ${label}`);
 
+  let activeConversationId: string | null = null;
+  let isNewConversation = false;
+  let regenerate = false;
+
   try {
     perfMark('Total');
 
     perfMark('Parse Request');
-    const { configId, config: configBody, userInput, chartType, format, conversationId, sourceType: frontendSourceType, regenerate } = await request.json() as {
+    const { configId, config: configBody, userInput, chartType, format, conversationId, sourceType: frontendSourceType, regenerate: regen } = await request.json() as {
       configId?: string;
       config?: LLMConfig;
       userInput: string | { text?: string; image?: ImageData; images?: ImageData[] };
@@ -45,6 +49,8 @@ export async function POST(request: Request) {
       sourceType?: string;
       regenerate?: boolean;
     };
+    regenerate = regen ?? false;
+    activeConversationId = conversationId || null;
     perfEnd('Parse Request');
 
     let config: LLMConfig | undefined;
@@ -74,11 +80,10 @@ export async function POST(request: Request) {
     const strategy = getStrategy(diagramFormat);
 
     // ── Conversation management ──
-    let activeConversationId = conversationId || null;
-
     perfMark('Conversation Management');
     // Create conversation if none exists
     if (!activeConversationId) {
+      isNewConversation = true;
       const userInputText = typeof userInput === 'string' ? userInput : (userInput.text || '');
       const title = userInputText.length > 50 ? userInputText.substring(0, 50) + '...' : userInputText || 'Image Generation';
       const conv = await conversationManager.create({
@@ -287,6 +292,20 @@ export async function POST(request: Request) {
         } catch (error) {
           console.error('Error in stream:', error);
 
+          // 清理失败时的脏数据
+          try {
+            if (isNewConversation) {
+              // 新建的会话：删除整个会话（含 user 消息）
+              await conversationManager.delete(activeConversationId!);
+            } else if (!regenerate) {
+              // 已有会话：仅删除刚添加的 user 消息
+              await conversationManager.deleteLastMessage(activeConversationId!);
+            }
+            // regenerate 模式：已删除旧 assistant 消息，无需额外清理
+          } catch (cleanupError) {
+            console.error('Cleanup after failure failed:', cleanupError);
+          }
+
           const isAbort = error instanceof DOMException && error.name === 'AbortError';
           const errorMessage = isAbort
             ? 'Generation cancelled'
@@ -294,9 +313,6 @@ export async function POST(request: Request) {
 
           const errorData = `data: ${JSON.stringify({ type: 'error', error: errorMessage })}\n\n`;
           controller.enqueue(encoder.encode(errorData));
-
-          // 生成失败时不保存错误消息到数据库，避免污染后续对话上下文
-          // 用户可手动点击"重新生成"按钮重试
 
           controller.close();
         } finally {
@@ -314,6 +330,18 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Error generating code:', error);
+
+    // 清理流启动前失败时的脏数据
+    try {
+      if (isNewConversation && activeConversationId) {
+        await conversationManager.delete(activeConversationId);
+      } else if (activeConversationId && !regenerate) {
+        await conversationManager.deleteLastMessage(activeConversationId);
+      }
+    } catch (cleanupError) {
+      console.error('Cleanup after outer failure failed:', cleanupError);
+    }
+
     return NextResponse.json(
       { error: process.env.NODE_ENV === 'development' ? (error as Error).message : '生成失败，请稍后重试' },
       { status: 500 },

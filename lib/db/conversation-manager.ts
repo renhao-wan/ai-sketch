@@ -384,6 +384,25 @@ class ConversationManager {
     });
   }
 
+  /** 删除最后一条消息（任意角色），用于生成失败时清理 */
+  async deleteLastMessage(conversationId: string): Promise<void> {
+    const db = await getDb();
+    const result = db.exec(
+      'SELECT id FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1',
+      [conversationId],
+    );
+    if (result.length === 0 || result[0].values.length === 0) return;
+    const msgId = result[0].values[0][0] as string;
+
+    withTransaction(db, () => {
+      db.run('DELETE FROM messages WHERE id = ?', [msgId]);
+      db.run(
+        'UPDATE conversations SET message_count = MAX(message_count - 1, 0), updated_at = ? WHERE id = ?',
+        [Date.now(), conversationId],
+      );
+    });
+  }
+
   async updateCurrentCode(conversationId: string, code: string): Promise<void> {
     const db = await getDb();
     const now = Date.now();
