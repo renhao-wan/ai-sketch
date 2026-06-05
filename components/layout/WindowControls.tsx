@@ -52,7 +52,7 @@ export default function WindowControls() {
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      cleanupMaximize();
+      cleanupMaximize?.();
     };
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
