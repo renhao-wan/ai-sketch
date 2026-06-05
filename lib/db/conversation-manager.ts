@@ -16,17 +16,6 @@ interface ConversationRow {
   updated_at: number;
 }
 
-interface MessageRow {
-  id: string;
-  conversation_id: string;
-  role: string;
-  content: string;
-  image_data: string | null;
-  image_mime_type: string | null;
-  source_type: string | null;
-  created_at: number;
-}
-
 function rowToConversation(row: ConversationRow): Conversation {
   return {
     id: row.id,
@@ -42,32 +31,32 @@ function rowToConversation(row: ConversationRow): Conversation {
   };
 }
 
-/** 将数据库行数组解析为 Conversation 对象 */
-function parseConversationRow(row: unknown[]): Conversation {
+/** 将数据库行对象解析为 Conversation 对象 */
+function parseConversationRow(row: Record<string, unknown>): Conversation {
   return rowToConversation({
-    id: row[0] as string,
-    title: row[1] as string,
-    chart_type: row[2] as string,
-    format: row[3] as string,
-    config_name: row[4] as string | null,
-    config_model: row[5] as string | null,
-    current_code: row[6] as string,
-    message_count: row[7] as number,
-    created_at: row[8] as number,
-    updated_at: row[9] as number,
+    id: row.id as string,
+    title: row.title as string,
+    chart_type: row.chart_type as string,
+    format: row.format as string,
+    config_name: row.config_name as string | null,
+    config_model: row.config_model as string | null,
+    current_code: row.current_code as string,
+    message_count: row.message_count as number,
+    created_at: row.created_at as number,
+    updated_at: row.updated_at as number,
   });
 }
 
-function rowToMessage(row: MessageRow): ConversationMessage {
+function rowToMessage(row: Record<string, unknown>): ConversationMessage {
   return {
-    id: row.id,
-    conversationId: row.conversation_id,
+    id: row.id as string,
+    conversationId: row.conversation_id as string,
     role: row.role as 'user' | 'assistant',
-    content: row.content,
-    imageData: row.image_data || undefined,
-    imageMimeType: row.image_mime_type || undefined,
+    content: row.content as string,
+    imageData: (row.image_data as string) || undefined,
+    imageMimeType: (row.image_mime_type as string) || undefined,
     sourceType: (row.source_type as 'text' | 'file' | 'image') || 'text',
-    createdAt: row.created_at,
+    createdAt: row.created_at as number,
   };
 }
 
@@ -126,18 +115,26 @@ class ConversationManager {
     const sql = limit
       ? 'SELECT * FROM conversations ORDER BY updated_at DESC LIMIT ?'
       : 'SELECT * FROM conversations ORDER BY updated_at DESC';
-    const result = limit ? db.exec(sql, [limit]) : db.exec(sql);
-    if (result.length === 0) return [];
-    return result[0].values.map((row: unknown[]) => parseConversationRow(row));
+    const stmt = db.prepare(sql);
+    if (limit !== undefined) stmt.bind([limit]);
+    const conversations: Conversation[] = [];
+    while (stmt.step()) {
+      conversations.push(parseConversationRow(stmt.getAsObject() as Record<string, unknown>));
+    }
+    stmt.free();
+    return conversations;
   }
 
   async getById(id: string): Promise<ConversationWithMessages | null> {
     const db = await getDb();
-    const convResult = db.exec('SELECT * FROM conversations WHERE id = ?', [id]);
-    if (convResult.length === 0 || convResult[0].values.length === 0) return null;
-
-    const row = convResult[0].values[0];
-    const conversation = parseConversationRow(row);
+    const stmt = db.prepare('SELECT * FROM conversations WHERE id = ?');
+    stmt.bind([id]);
+    if (!stmt.step()) {
+      stmt.free();
+      return null;
+    }
+    const conversation = parseConversationRow(stmt.getAsObject() as Record<string, unknown>);
+    stmt.free();
 
     const messages = await this.getMessages(id);
     return { ...conversation, messages };
@@ -153,8 +150,14 @@ class ConversationManager {
   }>): Promise<Conversation | null> {
     const db = await getDb();
     // 检查是否存在并获取完整行数据
-    const existing = db.exec('SELECT * FROM conversations WHERE id = ?', [id]);
-    if (existing.length === 0 || existing[0].values.length === 0) return null;
+    const stmt = db.prepare('SELECT * FROM conversations WHERE id = ?');
+    stmt.bind([id]);
+    if (!stmt.step()) {
+      stmt.free();
+      return null;
+    }
+    const existing = stmt.getAsObject() as Record<string, unknown>;
+    stmt.free();
 
     const now = Date.now();
     const sets: string[] = ['updated_at = ?'];
@@ -172,17 +175,16 @@ class ConversationManager {
     saveToDisk();
 
     // 直接构造返回对象，无需再次 SELECT
-    const row = existing[0].values[0];
     return {
       id,
-      title: data.title ?? (row[1] as string),
-      chartType: data.chartType ?? (row[2] as string),
-      format: (data.format ?? (row[3] as string) ?? 'excalidraw') as DiagramFormat,
-      configName: data.configName ?? (row[4] as string | null) ?? undefined,
-      configModel: data.configModel ?? (row[5] as string | null) ?? undefined,
-      currentCode: data.currentCode ?? (row[6] as string),
-      messageCount: row[7] as number,
-      createdAt: row[8] as number,
+      title: data.title ?? (existing.title as string),
+      chartType: data.chartType ?? (existing.chart_type as string),
+      format: (data.format ?? (existing.format as string) ?? 'excalidraw') as DiagramFormat,
+      configName: data.configName ?? (existing.config_name as string | null) ?? undefined,
+      configModel: data.configModel ?? (existing.config_model as string | null) ?? undefined,
+      currentCode: data.currentCode ?? (existing.current_code as string),
+      messageCount: existing.message_count as number,
+      createdAt: existing.created_at as number,
       updatedAt: now,
     };
   }
@@ -286,20 +288,14 @@ class ConversationManager {
         params.push(offset);
       }
     }
-    const result = db.exec(sql, params);
-    if (result.length === 0) return [];
-    return result[0].values.map((row: unknown[]) =>
-      rowToMessage({
-        id: row[0] as string,
-        conversation_id: row[1] as string,
-        role: row[2] as string,
-        content: row[3] as string,
-        image_data: row[4] as string | null,
-        image_mime_type: row[5] as string | null,
-        source_type: row[6] as string | null,
-        created_at: row[7] as number,
-      }),
-    );
+    const stmt = db.prepare(sql);
+    stmt.bind(params);
+    const messages: ConversationMessage[] = [];
+    while (stmt.step()) {
+      messages.push(rowToMessage(stmt.getAsObject() as Record<string, unknown>));
+    }
+    stmt.free();
+    return messages;
   }
 
   async buildContextMessages(conversationId: string, maxMessages: number = MAX_CONTEXT_MESSAGES): Promise<LLMMessage[]> {
@@ -315,50 +311,42 @@ class ConversationManager {
       return messages.map(toLLMMessage);
     }
 
-    // 获取第一条 user 消息
-    const firstUserResult = db.exec(
+    // 获取第一条 user �消息
+    let firstMessage: ConversationMessage | null = null;
+    const firstUserStmt = db.prepare(
       'SELECT * FROM messages WHERE conversation_id = ? AND role = ? ORDER BY created_at ASC LIMIT 1',
-      [conversationId, 'user'],
     );
-    const allFirstResult = db.exec(
-      'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 1',
-      [conversationId],
-    );
-    const firstRow = firstUserResult.length > 0 && firstUserResult[0].values.length > 0
-      ? firstUserResult[0].values[0]
-      : allFirstResult[0]?.values[0];
+    firstUserStmt.bind([conversationId, 'user']);
+    if (firstUserStmt.step()) {
+      firstMessage = rowToMessage(firstUserStmt.getAsObject() as Record<string, unknown>);
+    }
+    firstUserStmt.free();
 
-    if (!firstRow) return [];
+    // 如果没有 user 消息，获取第一条消息
+    if (!firstMessage) {
+      const firstStmt = db.prepare(
+        'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 1',
+      );
+      firstStmt.bind([conversationId]);
+      if (firstStmt.step()) {
+        firstMessage = rowToMessage(firstStmt.getAsObject() as Record<string, unknown>);
+      }
+      firstStmt.free();
+    }
 
-    const firstMessage = rowToMessage({
-      id: firstRow[0] as string,
-      conversation_id: firstRow[1] as string,
-      role: firstRow[2] as string,
-      content: firstRow[3] as string,
-      image_data: firstRow[4] as string | null,
-      image_mime_type: firstRow[5] as string | null,
-      source_type: firstRow[6] as string | null,
-      created_at: firstRow[7] as number,
-    });
+    if (!firstMessage) return [];
 
     // 获取最近 N-1 条消息（倒序查询后反转）
-    const recentResult = db.exec(
+    const recentStmt = db.prepare(
       'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT ?',
-      [conversationId, maxMessages - 1],
     );
-    const recentRows = recentResult.length > 0 ? [...recentResult[0].values].reverse() : [];
-    const recentMessages = recentRows.map((row: unknown[]) =>
-      rowToMessage({
-        id: row[0] as string,
-        conversation_id: row[1] as string,
-        role: row[2] as string,
-        content: row[3] as string,
-        image_data: row[4] as string | null,
-        image_mime_type: row[5] as string | null,
-        source_type: row[6] as string | null,
-        created_at: row[7] as number,
-      }),
-    );
+    recentStmt.bind([conversationId, maxMessages - 1]);
+    const recentMessages: ConversationMessage[] = [];
+    while (recentStmt.step()) {
+      recentMessages.push(rowToMessage(recentStmt.getAsObject() as Record<string, unknown>));
+    }
+    recentStmt.free();
+    recentMessages.reverse();
 
     const contextMessages: ConversationMessage[] = [firstMessage];
 

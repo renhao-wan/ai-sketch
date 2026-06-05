@@ -27,18 +27,19 @@ interface ConfigRow {
   updated_at: string;
 }
 
-function rowToConfig(row: ConfigRow): LLMConfig {
+/** 将数据库行对象解析为 LLMConfig */
+function rowToConfig(row: Record<string, unknown>): LLMConfig {
   return {
-    id: row.id,
-    name: row.name,
+    id: row.id as string,
+    name: row.name as string,
     type: row.type as 'openai' | 'anthropic',
-    baseUrl: row.base_url,
-    apiKey: row.api_key,
-    model: row.model,
-    description: row.description,
-    isActive: row.is_active === 1,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    baseUrl: row.base_url as string,
+    apiKey: row.api_key as string,
+    model: row.model as string,
+    description: row.description as string,
+    isActive: (row.is_active as number) === 1,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
   };
 }
 
@@ -47,22 +48,13 @@ class ConfigManager {
 
   async getAllConfigs(): Promise<LLMConfig[]> {
     const db = await getDb();
-    const result = db.exec('SELECT * FROM llm_configs ORDER BY created_at DESC');
-    if (result.length === 0) return [];
-    return result[0].values.map((row: unknown[]) =>
-      rowToConfig({
-        id: row[0] as string,
-        name: row[1] as string,
-        type: row[2] as string,
-        base_url: row[3] as string,
-        api_key: row[4] as string,
-        model: row[5] as string,
-        description: row[6] as string,
-        is_active: row[7] as number,
-        created_at: row[8] as string,
-        updated_at: row[9] as string,
-      }),
-    );
+    const stmt = db.prepare('SELECT * FROM llm_configs ORDER BY created_at DESC');
+    const configs: LLMConfig[] = [];
+    while (stmt.step()) {
+      configs.push(rowToConfig(stmt.getAsObject() as Record<string, unknown>));
+    }
+    stmt.free();
+    return configs;
   }
 
   async getConfig(id: string): Promise<LLMConfig | undefined> {
@@ -298,25 +290,16 @@ class ConfigManager {
   async searchConfigs(query: string): Promise<LLMConfig[]> {
     const db = await getDb();
     const lowerQuery = `%${query.toLowerCase()}%`;
-    const result = db.exec(
+    const stmt = db.prepare(
       `SELECT * FROM llm_configs WHERE LOWER(name) LIKE ? OR LOWER(description) LIKE ? OR LOWER(type) LIKE ? ORDER BY created_at DESC`,
-      [lowerQuery, lowerQuery, lowerQuery],
     );
-    if (result.length === 0) return [];
-    return result[0].values.map((row: unknown[]) =>
-      rowToConfig({
-        id: row[0] as string,
-        name: row[1] as string,
-        type: row[2] as string,
-        base_url: row[3] as string,
-        api_key: row[4] as string,
-        model: row[5] as string,
-        description: row[6] as string,
-        is_active: row[7] as number,
-        created_at: row[8] as string,
-        updated_at: row[9] as string,
-      }),
-    );
+    stmt.bind([lowerQuery, lowerQuery, lowerQuery]);
+    const configs: LLMConfig[] = [];
+    while (stmt.step()) {
+      configs.push(rowToConfig(stmt.getAsObject() as Record<string, unknown>));
+    }
+    stmt.free();
+    return configs;
   }
 
   async getStats(): Promise<ConfigStats> {
