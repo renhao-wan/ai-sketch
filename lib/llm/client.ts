@@ -7,6 +7,7 @@ import type { LLMConfig, LLMMessage, ModelInfo, TestConnectionResult } from '@/l
 import { fetch as undiciFetch } from 'undici';
 import { proxyManager } from './proxy-manager';
 import { getProvider } from './providers';
+import { parseSSEStream, parseSSEData } from '@/lib/api/sse-parser';
 
 // ── URL validation ──
 
@@ -41,8 +42,6 @@ async function proxyFetch(url: string, options?: RequestInit): Promise<Response>
   return fetch(url, options);
 }
 
-const MAX_PARSE_ERRORS = 10;
-
 interface SSEProcessorOptions {
   body: ReadableStream<Uint8Array>;
   onChunk?: (chunk: string) => void;
@@ -54,65 +53,30 @@ interface SSEProcessorOptions {
 
 /**
  * Unified SSE stream processor for both OpenAI and Anthropic
+ * 使用共享的 parseSSEStream 解析器
  */
 async function processSSEStream(options: SSEProcessorOptions): Promise<string> {
   const { body, onChunk, signal, extractContent, checkStop, skipLine } = options;
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
   let fullText = '';
-  let buffer = '';
-  let consecutiveParseErrors = 0;
 
-  try {
-    while (true) {
-      if (signal?.aborted) {
-        reader.releaseLock();
-        throw new DOMException('The operation was aborted.', 'AbortError');
+  await parseSSEStream({
+    body,
+    signal,
+    onLine: (data) => {
+      const json = parseSSEData(data);
+
+      const truncationMsg = checkStop?.(json);
+      if (truncationMsg) {
+        throw new Error(truncationMsg);
       }
 
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        if (skipLine?.(trimmed)) continue;
-
-        if (trimmed.startsWith('data: ')) {
-          try {
-            const json = JSON.parse(trimmed.slice(6)) as Record<string, unknown>;
-            consecutiveParseErrors = 0;
-
-            const truncationMsg = checkStop?.(json);
-            if (truncationMsg) {
-              throw new Error(truncationMsg);
-            }
-
-            const content = extractContent(json);
-            if (content) {
-              fullText += content;
-              if (onChunk) onChunk(content);
-            }
-          } catch (e) {
-            if (e instanceof SyntaxError) {
-              consecutiveParseErrors++;
-              if (consecutiveParseErrors >= MAX_PARSE_ERRORS) {
-                throw new Error('Too many consecutive SSE parse failures — stream may be corrupted');
-              }
-            } else {
-              throw e;
-            }
-          }
-        }
+      const content = extractContent(json);
+      if (content) {
+        fullText += content;
+        if (onChunk) onChunk(content);
       }
-    }
-  } finally {
-    reader.releaseLock();
-  }
+    },
+  });
 
   return fullText;
 }
