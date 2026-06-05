@@ -229,6 +229,8 @@ export const zh = {
   // Message Bubble
   'message.generatedCode': '生成代码',
   'message.characters': '个字符',
+  'message.expandAll': '展开全部',
+  'message.collapse': '收起',
 
   // Scroll to top
   'scrollToTop': '回到顶部',

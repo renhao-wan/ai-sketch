@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { User, Bot, RefreshCw, Copy, Download, Check, Play } from 'lucide-react';
+import React, { useState, useRef, useCallback } from 'react';
+import { User, Bot, RefreshCw, Copy, Download, Check, Play, ChevronDown, ChevronUp } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
 import { parseStoredImages } from '@/lib/utils';
 import Tooltip from '@/components/ui/Tooltip';
@@ -20,7 +20,10 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, 
   const { t } = useLocale();
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const CODE_PREVIEW_LENGTH = 300;
+  const isLongCode = !isUser && message.content.length > CODE_PREVIEW_LENGTH;
 
   const handleCopy = useCallback(() => {
     if (!onCopy) return;
@@ -114,9 +117,18 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, 
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent-indigo)] animate-pulse" />
                 )}
               </div>
-              <pre className="text-xs font-mono bg-[var(--surface-warm-hover)] rounded-lg p-2.5 overflow-x-auto max-h-40 scrollbar-thin">
-                <code>{message.content.length > 300 ? message.content.substring(0, 300) + '...' : message.content}</code>
+              <pre className="text-xs font-mono bg-[var(--surface-warm-hover)] rounded-lg p-2.5 overflow-x-auto scrollbar-thin" style={{ maxHeight: expanded ? 'none' : '10rem' }}>
+                <code>{expanded || !isLongCode ? message.content : message.content.substring(0, CODE_PREVIEW_LENGTH) + '...'}</code>
               </pre>
+              {isLongCode && (
+                <button
+                  onClick={() => setExpanded(!expanded)}
+                  className="flex items-center gap-1 mt-1.5 text-[11px] text-[var(--accent-indigo)] hover:text-[var(--accent-indigo)]/80 transition-colors duration-200"
+                >
+                  {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                  {expanded ? t('message.collapse') : t('message.expandAll')}
+                </button>
+              )}
               <div className="flex items-center justify-between mt-1">
                 <p className="text-[11px] text-[var(--muted)]">
                   {message.content.length} {t('message.characters')}

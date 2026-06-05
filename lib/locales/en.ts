@@ -231,6 +231,8 @@ export const en: TranslationDict = {
   // Message Bubble
   'message.generatedCode': 'Generated Code',
   'message.characters': 'characters',
+  'message.expandAll': 'Expand all',
+  'message.collapse': 'Collapse',
 
   // Scroll to top
   'scrollToTop': 'Back to Top',
