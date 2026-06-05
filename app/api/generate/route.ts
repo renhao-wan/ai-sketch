@@ -191,16 +191,16 @@ export async function POST(request: Request) {
           const metaEvent = `data: ${JSON.stringify({ type: 'meta', conversationId: activeConversationId })}\n\n`;
           controller.enqueue(encoder.encode(metaEvent));
 
-          let finalCode: string;
+          let optimizedCode: string;
 
           if (cachedResponse) {
-            // 使用缓存的响应
-            finalCode = cachedResponse;
+            // 使用缓存的响应（已经是处理过的最终代码）
+            optimizedCode = cachedResponse;
 
             // 模拟流式输出（分块发送）
             const chunkSize = 50;
-            for (let i = 0; i < finalCode.length; i += chunkSize) {
-              const chunk = finalCode.substring(i, i + chunkSize);
+            for (let i = 0; i < optimizedCode.length; i += chunkSize) {
+              const chunk = optimizedCode.substring(i, i + chunkSize);
               const data = `data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`;
               controller.enqueue(encoder.encode(data));
             }
@@ -222,20 +222,19 @@ export async function POST(request: Request) {
               perfEnd('LLM Streaming');
             }
 
+            perfMark('Post Process');
+            // 处理 LLM 响应
+            const processedCode = strategy.postProcess(accumulatedCode);
+            optimizedCode = strategy.optimize(processedCode);
+
             // 保存到缓存（如果有缓存 key）
             if (cacheKey) {
-              const processedForCache = strategy.postProcess(accumulatedCode);
-              const optimizedForCache = strategy.optimize(processedForCache);
-              await cacheManager.set(cacheKey, diagramFormat, chartType, optimizedForCache);
+              await cacheManager.set(cacheKey, diagramFormat, chartType, optimizedCode);
             }
-
-            finalCode = accumulatedCode;
+            perfEnd('Post Process');
           }
 
-          perfMark('Post Process');
-          // Save assistant message after stream completes
-          const processedCode = strategy.postProcess(finalCode);
-          const optimizedCode = strategy.optimize(processedCode);
+          // Save assistant message
           await conversationManager.addMessage({
             conversationId: activeConversationId!,
             role: 'assistant',
@@ -243,7 +242,6 @@ export async function POST(request: Request) {
             sourceType: 'text',
           });
           await conversationManager.updateCurrentCode(activeConversationId!, optimizedCode);
-          perfEnd('Post Process');
 
           perfEnd('Total');
 

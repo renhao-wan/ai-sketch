@@ -446,11 +446,13 @@ class ConversationManager {
     // 获取分页数据
     const dataSql = `SELECT * FROM conversations ${whereStr} ORDER BY ${sortField} ${sortOrder} LIMIT ? OFFSET ?`;
     const dataParams = [...queryParams, limit, offset];
-    const result = db.exec(dataSql, dataParams);
-
-    const conversations = result.length > 0
-      ? result[0].values.map((row: unknown[]) => parseConversationRow(row))
-      : [];
+    const stmt = db.prepare(dataSql);
+    stmt.bind(dataParams);
+    const conversations: Conversation[] = [];
+    while (stmt.step()) {
+      conversations.push(parseConversationRow(stmt.getAsObject() as Record<string, unknown>));
+    }
+    stmt.free();
 
     return { conversations, total };
   }

@@ -84,11 +84,10 @@ class CacheManager {
     }
 
     // 更新使用时间和次数
-    const updateStmt = db.prepare(
+    db.run(
       'UPDATE response_cache SET last_used_at = ?, use_count = use_count + 1 WHERE id = ?',
+      [now, entry.id],
     );
-    updateStmt.run([now, entry.id]);
-    updateStmt.free();
     saveToDisk();
 
     return entry.response;
@@ -111,18 +110,16 @@ class CacheManager {
 
     if (exists) {
       // 已存在，更新
-      const updateStmt = db.prepare(
+      db.run(
         'UPDATE response_cache SET response = ?, last_used_at = ?, use_count = use_count + 1 WHERE prompt_hash = ? AND format = ? AND chart_type = ?',
+        [response, now, promptHash, format, chartType],
       );
-      updateStmt.run([response, now, promptHash, format, chartType]);
-      updateStmt.free();
     } else {
       // 不存在，插入
-      const insertStmt = db.prepare(
+      db.run(
         'INSERT INTO response_cache (id, prompt_hash, format, chart_type, response, created_at, last_used_at, use_count) VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
+        [id, promptHash, format, chartType, response, now, now],
       );
-      insertStmt.run([id, promptHash, format, chartType, response, now, now]);
-      insertStmt.free();
     }
 
     saveToDisk();
@@ -134,9 +131,7 @@ class CacheManager {
   /** 删除缓存条目 */
   private async delete(id: string): Promise<void> {
     const db = await getDb();
-    const stmt = db.prepare('DELETE FROM response_cache WHERE id = ?');
-    stmt.run([id]);
-    stmt.free();
+    db.run('DELETE FROM response_cache WHERE id = ?', [id]);
     saveToDisk();
   }
 
@@ -146,9 +141,7 @@ class CacheManager {
     const now = Date.now();
 
     // 删除过期的缓存
-    const deleteExpiredStmt = db.prepare('DELETE FROM response_cache WHERE created_at < ?');
-    deleteExpiredStmt.run([now - this.TTL]);
-    deleteExpiredStmt.free();
+    db.run('DELETE FROM response_cache WHERE created_at < ?', [now - this.TTL]);
 
     // 检查总条目数
     const countStmt = db.prepare('SELECT COUNT(*) FROM response_cache');
@@ -161,11 +154,10 @@ class CacheManager {
     // 如果超过最大条目数，删除最久未使用的
     if (count > this.MAX_ENTRIES) {
       const excess = count - this.MAX_ENTRIES;
-      const deleteOldStmt = db.prepare(
+      db.run(
         'DELETE FROM response_cache WHERE id IN (SELECT id FROM response_cache ORDER BY last_used_at ASC LIMIT ?)',
+        [excess],
       );
-      deleteOldStmt.run([excess]);
-      deleteOldStmt.free();
     }
 
     saveToDisk();
