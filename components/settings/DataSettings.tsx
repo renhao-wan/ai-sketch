@@ -269,7 +269,7 @@ export default function DataSettings() {
             <button
               onClick={handleResetPreferences}
               disabled={isAnyOperationInProgress}
-              className="flex items-center justify-center gap-1.5 w-36 py-2 text-sm font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1.5 w-24 py-2 text-sm font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RotateCcw size={14} className={isResettingPreferences ? 'animate-spin' : ''} />
               <span>{isResettingPreferences ? t('common.loading') : t('settings.resetPreferences')}</span>
@@ -290,7 +290,7 @@ export default function DataSettings() {
             <button
               onClick={handleClearConversations}
               disabled={isAnyOperationInProgress || conversationCount === 0}
-              className="flex items-center justify-center gap-1.5 w-36 py-2 text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1.5 w-24 py-2 text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Trash2 size={14} className={isClearingConversations ? 'animate-pulse' : ''} />
               <span>{isClearingConversations ? t('common.loading') : t('settings.clearConversations')}</span>
@@ -311,7 +311,7 @@ export default function DataSettings() {
             <button
               onClick={handleClearConfigs}
               disabled={isAnyOperationInProgress || configCount === 0}
-              className="flex items-center justify-center gap-1.5 w-36 py-2 text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1.5 w-24 py-2 text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Trash2 size={14} className={isClearingConfigs ? 'animate-pulse' : ''} />
               <span>{isClearingConfigs ? t('common.loading') : t('settings.clearConfigs')}</span>
@@ -332,7 +332,7 @@ export default function DataSettings() {
             <button
               onClick={handleClearCache}
               disabled={isAnyOperationInProgress || cacheCount === 0}
-              className="flex items-center justify-center gap-1.5 w-36 py-2 text-sm font-medium text-amber-500 bg-amber-500/10 hover:bg-amber-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1.5 w-24 py-2 text-sm font-medium text-amber-500 bg-amber-500/10 hover:bg-amber-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Zap size={14} className={isClearingCache ? 'animate-pulse' : ''} />
               <span>{isClearingCache ? t('common.loading') : t('settings.clearCache')}</span>
@@ -353,7 +353,7 @@ export default function DataSettings() {
             <button
               onClick={handleResetAll}
               disabled={isAnyOperationInProgress}
-              className="flex items-center justify-center gap-1.5 w-36 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1.5 w-24 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RotateCcw size={14} className={isResettingAll ? 'animate-spin' : ''} />
               <span>{isResettingAll ? t('common.loading') : t('settings.resetAll')}</span>
