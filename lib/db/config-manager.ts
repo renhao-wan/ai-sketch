@@ -1,5 +1,6 @@
 import { getDb, requestSave } from './index';
 import { withTransaction } from './transaction';
+import { encrypt, decrypt, isEncrypted } from './crypto';
 import { testConnection } from '@/lib/llm/client';
 import { generateId } from '@/lib/utils';
 import type { LLMConfig, TestConnectionResult } from '@/lib/types';
@@ -30,12 +31,15 @@ interface ConfigRow {
 
 /** 将数据库行对象解析为 LLMConfig */
 function rowToConfig(row: Record<string, unknown>): LLMConfig {
+  const rawKey = row.api_key as string;
+  // 兼容读取：未加密的明文直接返回，已加密的解密后返回
+  const apiKey = isEncrypted(rawKey) ? decrypt(rawKey) : rawKey;
   return {
     id: row.id as string,
     name: row.name as string,
     type: row.type as 'openai' | 'anthropic',
     baseUrl: row.base_url as string,
-    apiKey: row.api_key as string,
+    apiKey,
     model: row.model as string,
     description: row.description as string,
     isActive: (row.is_active as number) === 1,
@@ -130,7 +134,7 @@ class ConfigManager {
           newConfig.name,
           newConfig.type,
           newConfig.baseUrl,
-          newConfig.apiKey,
+          encrypt(newConfig.apiKey),
           newConfig.model,
           newConfig.description || '',
           0,
@@ -165,7 +169,7 @@ class ConfigManager {
         merged.name,
         merged.type,
         merged.baseUrl,
-        merged.apiKey,
+        encrypt(merged.apiKey),
         merged.model,
         merged.description || '',
         merged.isActive ? 1 : 0,
