@@ -13,6 +13,24 @@ function isRetryableError(error: unknown): boolean {
   return true;
 }
 
+/** 生成失败后清理脏数据：新建会话删除整个会话，已有会话删除刚添加的消息 */
+async function cleanupOnFailure(
+  conversationId: string | null,
+  isNew: boolean,
+  isRegenerate: boolean,
+): Promise<void> {
+  if (!conversationId) return;
+  try {
+    if (isNew) {
+      await conversationManager.delete(conversationId);
+    } else if (!isRegenerate) {
+      await conversationManager.deleteLastMessage(conversationId);
+    }
+  } catch (e) {
+    console.error('Cleanup after failure failed:', e);
+  }
+}
+
 /**
  * POST /api/generate
  * Generate diagram code based on user input and format.
@@ -292,19 +310,7 @@ export async function POST(request: Request) {
         } catch (error) {
           console.error('Error in stream:', error);
 
-          // 清理失败时的脏数据
-          try {
-            if (isNewConversation) {
-              // 新建的会话：删除整个会话（含 user 消息）
-              await conversationManager.delete(activeConversationId!);
-            } else if (!regenerate) {
-              // 已有会话：仅删除刚添加的 user 消息
-              await conversationManager.deleteLastMessage(activeConversationId!);
-            }
-            // regenerate 模式：已删除旧 assistant 消息，无需额外清理
-          } catch (cleanupError) {
-            console.error('Cleanup after failure failed:', cleanupError);
-          }
+          await cleanupOnFailure(activeConversationId, isNewConversation, regenerate);
 
           const isAbort = error instanceof DOMException && error.name === 'AbortError';
           const errorMessage = isAbort
@@ -331,16 +337,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error generating code:', error);
 
-    // 清理流启动前失败时的脏数据
-    try {
-      if (isNewConversation && activeConversationId) {
-        await conversationManager.delete(activeConversationId);
-      } else if (activeConversationId && !regenerate) {
-        await conversationManager.deleteLastMessage(activeConversationId);
-      }
-    } catch (cleanupError) {
-      console.error('Cleanup after outer failure failed:', cleanupError);
-    }
+    await cleanupOnFailure(activeConversationId, isNewConversation, regenerate);
 
     return NextResponse.json(
       { error: process.env.NODE_ENV === 'development' ? (error as Error).message : '生成失败，请稍后重试' },
