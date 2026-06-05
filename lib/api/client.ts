@@ -87,6 +87,22 @@ export async function searchConfigs(query: string): Promise<LLMConfig[]> {
   });
 }
 
+export async function clearCache(): Promise<{ success: boolean }> {
+  return request('/api/configs/actions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'clear-cache' }),
+  });
+}
+
+export async function fetchCacheStats(): Promise<{ total: number; hitRate: number }> {
+  return request('/api/configs/actions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'cache-stats' }),
+  });
+}
+
 // ── Migration ──
 
 export async function migrateFromLocalStorage(data: {

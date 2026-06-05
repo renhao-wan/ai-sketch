@@ -6,7 +6,7 @@ import { useLocale } from '@/lib/locales';
 import { useSettings } from '@/hooks/useSettings';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
 import Notification from '@/components/ui/Notification';
-import { HardDrive, RotateCcw, Trash2, Database, Settings, AlertTriangle } from 'lucide-react';
+import { HardDrive, RotateCcw, Trash2, Database, Settings, AlertTriangle, Zap } from 'lucide-react';
 import type { ConfirmDialogState, NotificationState } from '@/lib/types';
 
 /** 数据管理组件 — 存储统计、数据清理与重置 */
@@ -17,12 +17,14 @@ export default function DataSettings() {
   // ── Storage statistics ──
   const [conversationCount, setConversationCount] = useState(0);
   const [configCount, setConfigCount] = useState(0);
+  const [cacheCount, setCacheCount] = useState(0);
   const [statsLoading, setStatsLoading] = useState(true);
 
   // ── Operation states ──
   const [isResettingPreferences, setIsResettingPreferences] = useState(false);
   const [isClearingConversations, setIsClearingConversations] = useState(false);
   const [isClearingConfigs, setIsClearingConfigs] = useState(false);
+  const [isClearingCache, setIsClearingCache] = useState(false);
   const [isResettingAll, setIsResettingAll] = useState(false);
 
   // ── Confirm dialog ──
@@ -44,12 +46,14 @@ export default function DataSettings() {
   /** Load storage statistics */
   const loadStats = useCallback(async () => {
     try {
-      const [convResult, configResult] = await Promise.all([
+      const [convResult, configResult, cacheResult] = await Promise.all([
         api.fetchConversationCount(),
         api.fetchConfigs(),
+        api.fetchCacheStats(),
       ]);
       setConversationCount(convResult.count);
       setConfigCount(configResult.configs.length);
+      setCacheCount(cacheResult.total);
     } catch (err) {
       console.error('Failed to load storage stats:', err);
     } finally {
@@ -141,6 +145,28 @@ export default function DataSettings() {
     });
   };
 
+  /** Clear all response cache */
+  const handleClearCache = () => {
+    setConfirmDialog({
+      isOpen: true,
+      title: t('settings.clearCache'),
+      message: t('settings.clearCacheConfirm'),
+      onConfirm: async () => {
+        setIsClearingCache(true);
+        try {
+          await api.clearCache();
+          setCacheCount(0);
+          showNotification('success', t('settings.clearCacheSuccess'));
+        } catch (err) {
+          console.error('Clear cache failed:', err);
+          showNotification('error', t('settings.operationFailed'));
+        } finally {
+          setIsClearingCache(false);
+        }
+      },
+    });
+  };
+
   /** Reset all data and settings */
   const handleResetAll = () => {
     setConfirmDialog({
@@ -165,9 +191,13 @@ export default function DataSettings() {
             }
           }
 
+          // Clear cache
+          await api.clearCache();
+
           // Update local counts
           setConversationCount(0);
           setConfigCount(0);
+          setCacheCount(0);
 
           showNotification('success', t('settings.resetAllSuccess'));
         } catch (err) {
@@ -181,7 +211,7 @@ export default function DataSettings() {
   };
 
   /** Check if any operation is in progress */
-  const isAnyOperationInProgress = isResettingPreferences || isClearingConversations || isClearingConfigs || isResettingAll;
+  const isAnyOperationInProgress = isResettingPreferences || isClearingConversations || isClearingConfigs || isClearingCache || isResettingAll;
 
   return (
     <div className="space-y-6">
@@ -191,7 +221,7 @@ export default function DataSettings() {
           <HardDrive size={18} className="text-[var(--accent-indigo)]" />
           <h3 className="text-lg font-semibold text-[var(--fg)]">{t('settings.storageStats')}</h3>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)]">
             <p className="text-sm text-[var(--muted)] mb-1">{t('settings.conversations')}</p>
             <p className="text-2xl font-semibold text-[var(--fg)]">
@@ -202,6 +232,12 @@ export default function DataSettings() {
             <p className="text-sm text-[var(--muted)] mb-1">{t('settings.configs')}</p>
             <p className="text-2xl font-semibold text-[var(--fg)]">
               {statsLoading ? '...' : configCount}
+            </p>
+          </div>
+          <div className="p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)]">
+            <p className="text-sm text-[var(--muted)] mb-1">{t('settings.cacheEntries')}</p>
+            <p className="text-2xl font-semibold text-[var(--fg)]">
+              {statsLoading ? '...' : cacheCount}
             </p>
           </div>
         </div>
@@ -276,6 +312,27 @@ export default function DataSettings() {
             >
               <Trash2 size={14} className={isClearingConfigs ? 'animate-pulse' : ''} />
               <span>{isClearingConfigs ? t('common.loading') : t('settings.clearConfigs')}</span>
+            </button>
+          </div>
+
+          {/* Clear Cache */}
+          <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <Zap size={18} className="text-amber-500" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--fg)]">{t('settings.clearCache')}</p>
+                <p className="text-xs text-[var(--muted)]">{t('settings.clearCacheDesc')}</p>
+              </div>
+            </div>
+            <button
+              onClick={handleClearCache}
+              disabled={isAnyOperationInProgress || cacheCount === 0}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-amber-500 bg-amber-500/10 hover:bg-amber-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Zap size={14} className={isClearingCache ? 'animate-pulse' : ''} />
+              <span>{isClearingCache ? t('common.loading') : t('settings.clearCache')}</span>
             </button>
           </div>
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { configManager } from '@/lib/db/config-manager';
+import { cacheManager } from '@/lib/db/cache-manager';
 
 /** Action 处理函数类型 */
 type ActionHandler = (body: Record<string, unknown>) => Promise<unknown>;
@@ -42,6 +43,15 @@ const actionHandlers: Record<string, ActionHandler> = {
       !!body.proxyEnabled,
     );
     return { success: true };
+  },
+
+  'clear-cache': async () => {
+    await cacheManager.clearAll();
+    return { success: true };
+  },
+
+  'cache-stats': async () => {
+    return cacheManager.getStats();
   },
 };
 
