@@ -783,6 +783,8 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 11 | CHART_TYPE_NAMES 重复三份 → 共享常量 | 🟡 | 2026-06-04 | `lib/diagram/constants.ts` |
 | 12 | 快捷键/关于页/LLM 复制国际化 | 🟡 | 2026-06-05 | descriptionKey 翻译、依赖描述翻译、编号后缀 |
 | 13 | 缓存管理 API 暴露 + 数据清理集成 | 🟡 | 2026-06-05 | clear-cache/cache-stats action、DataSettings 集成 |
+| 14 | NSIS 卸载路径修正 | 🔴 | 2026-06-05 | appId 改为 ai-sketch，与卸载脚本路径一致 |
+| 15 | onMaximizeChange 监听器泄漏修复 | 🔴 | 2026-06-05 | preload.ts 返回清理函数，WindowControls 正确调用 |
 
 ### ❌ 未完成 — 严重（8 项）
 
@@ -794,8 +796,8 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 17 | 图片数据不入历史上下文 | 上下文管理 | 只在当前轮次发送图片，历史保留描述文字 |
 | 18 | Mermaid 14/21 种类型降级为 flowchart | Mermaid 画布 | `MERMAID_TYPE_MAP` 未改 |
 | 19 | Excalidraw 流式每元素完整重绘 | Excalidraw 画布 | `feed()` 无 debounce，每元素调 `updateScene` |
-| 20 | onMaximizeChange 监听器泄漏 | Electron | `preload.ts` 未返回清理函数 |
-| 21 | NSIS 卸载路径错误 | Electron | `$APPDATA\ai-sketch` vs 实际 `com.ai-sketch.app` |
+| 20 | onMaximizeChange 监听器泄漏 | Electron | ✅ 已修复：`preload.ts` 返回清理函数 |
+| 21 | NSIS 卸载路径错误 | Electron | ✅ 已修复：`appId` 改为 `ai-sketch` 匹配卸载路径 |
 
 ### ❌ 未完成 — 中等（25 项）
 
