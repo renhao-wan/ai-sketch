@@ -24,8 +24,8 @@ interface ConfigRow {
   model: string;
   description: string;
   is_active: number;
-  created_at: string;
-  updated_at: string;
+  created_at: number;
+  updated_at: number;
 }
 
 /** 将数据库行对象解析为 LLMConfig */
@@ -40,8 +40,8 @@ function rowToConfig(row: Record<string, unknown>): LLMConfig {
     description: row.description as string,
     isActive: (row.is_active as number) === 1,
     temperature: (row.temperature as number) ?? 0.5,
-    createdAt: row.created_at as string,
-    updatedAt: row.updated_at as string,
+    createdAt: row.created_at as number,
+    updatedAt: row.updated_at as number,
   };
 }
 
@@ -105,7 +105,7 @@ class ConfigManager {
   async createConfig(configData: Partial<LLMConfig>): Promise<LLMConfig> {
     const db = await getDb();
     const id = this.generateId();
-    const now = new Date().toISOString();
+    const now = Date.now();
 
     const newConfig: LLMConfig = {
       id,
@@ -156,7 +156,7 @@ class ConfigManager {
     const existing = await this.getConfig(id);
     if (!existing) throw new Error('配置不存在');
 
-    const now = new Date().toISOString();
+    const now = Date.now();
     const merged = { ...existing, ...updateData, id, updatedAt: now };
 
     db.run(
