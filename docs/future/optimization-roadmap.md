@@ -844,7 +844,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 55 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
 | 56 | 窗口状态未持久化 | Electron | 未监听 resize/move 保存 bounds |
 | 57 | macOS 缺少公证/标准菜单 | Electron | 需 `afterSign` 钩子 + 标准菜单 |
-| 58 | constants.ts 遗留死注释 | 代码风格 | `// Must match CHART_TYPE_NAMES in lib/prompts.ts` 已不存在 |
+| 58 | constants.ts 遗留死注释 | 代码风格 | ✅ 已修复 |
 
 ---
 
