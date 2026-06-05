@@ -233,6 +233,7 @@ export const en: TranslationDict = {
   'message.characters': 'characters',
   'message.expandAll': 'Expand all',
   'message.collapse': 'Collapse',
+  'message.clickToExpand': 'Click to expand code',
 
   // Scroll to top
   'scrollToTop': 'Back to Top',

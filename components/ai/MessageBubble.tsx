@@ -117,22 +117,48 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, 
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent-indigo)] animate-pulse" />
                 )}
               </div>
-              <pre className="text-xs font-mono bg-[var(--surface-warm-hover)] rounded-lg p-2.5 overflow-x-auto scrollbar-thin" style={{ maxHeight: expanded ? 'none' : '10rem' }}>
-                <code>{expanded || !isLongCode ? message.content : message.content.substring(0, CODE_PREVIEW_LENGTH) + '...'}</code>
-              </pre>
-              {isLongCode && (
+
+              {/* 收起状态：显示友好的提示卡片 */}
+              {!expanded ? (
                 <button
-                  onClick={() => setExpanded(!expanded)}
-                  className="flex items-center gap-1 mt-1.5 text-[11px] text-[var(--accent-indigo)] hover:text-[var(--accent-indigo)]/80 transition-colors duration-200"
+                  onClick={() => setExpanded(true)}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 bg-[var(--surface-warm-hover)] rounded-lg border border-dashed border-[var(--border)] hover:border-[var(--accent-indigo)]/30 hover:bg-[var(--accent-indigo)]/5 transition-all duration-200 group"
                 >
-                  {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                  {expanded ? t('message.collapse') : t('message.expandAll')}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--muted)] group-hover:text-[var(--accent-indigo)] transition-colors">
+                      {t('message.clickToExpand')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-[var(--muted)]/70">
+                      {message.content.length} {t('message.characters')}
+                    </span>
+                    <ChevronDown size={14} className="text-[var(--muted)] group-hover:text-[var(--accent-indigo)] transition-colors" />
+                  </div>
                 </button>
+              ) : (
+                <>
+                  {/* 展开状态：显示代码预览 */}
+                  <pre className="text-xs font-mono bg-[var(--surface-warm-hover)] rounded-lg p-2.5 overflow-x-auto max-h-40 scrollbar-thin">
+                    <code>{isLongCode ? message.content.substring(0, CODE_PREVIEW_LENGTH) + '...' : message.content}</code>
+                  </pre>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <button
+                      onClick={() => setExpanded(false)}
+                      className="flex items-center gap-1 text-[11px] text-[var(--accent-indigo)] hover:text-[var(--accent-indigo)]/80 transition-colors duration-200"
+                    >
+                      <ChevronUp size={12} />
+                      {t('message.collapse')}
+                    </button>
+                    <span className="text-[11px] text-[var(--muted)]/70">
+                      {message.content.length} {t('message.characters')}
+                    </span>
+                  </div>
+                </>
               )}
+
               <div className="flex items-center justify-between mt-1">
-                <p className="text-[11px] text-[var(--muted)]">
-                  {message.content.length} {t('message.characters')}
-                </p>
+                <div />
                 {actionButtons}
               </div>
             </div>
