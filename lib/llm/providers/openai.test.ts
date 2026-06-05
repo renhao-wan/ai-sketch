@@ -26,6 +26,16 @@ describe('OpenAIProvider', () => {
       const body = provider.buildRequestBody('gpt-4', []) as Record<string, unknown>;
       expect(body.temperature).toBe(0.5);
     });
+
+    it('应使用自定义 maxTokens', () => {
+      const body = provider.buildRequestBody('gpt-4', [], 0.5, 8192) as Record<string, unknown>;
+      expect(body.max_tokens).toBe(8192);
+    });
+
+    it('未传 maxTokens 时应使用默认值 16384', () => {
+      const body = provider.buildRequestBody('gpt-4', []) as Record<string, unknown>;
+      expect(body.max_tokens).toBe(16384);
+    });
   });
 
   describe('getEndpoint', () => {

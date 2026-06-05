@@ -124,6 +124,9 @@ export const en: TranslationDict = {
   'config.fillAllRequired': 'Please fill in all required fields',
   'config.temperature': 'Temperature',
   'config.temperatureHint': 'Controls output randomness, 0=deterministic, 2=max randomness, recommended 0.3-0.5',
+  'config.maxTokens': 'Max Output Tokens',
+  'config.maxTokensPlaceholder': 'Leave empty for default',
+  'config.maxTokensHint': 'Controls the maximum length of a single generation. Leave empty to use provider defaults (OpenAI: 16384, Anthropic: 64000)',
   'config.bannerTitle': 'Many configurations, consider cleanup',
   'config.bannerDescription': 'You have {count} configurations. Consider cleaning up unused ones.',
 

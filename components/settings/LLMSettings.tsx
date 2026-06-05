@@ -598,6 +598,24 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
           </div>
           <p className="text-xs text-[var(--muted)] mt-1">{t('config.temperatureHint')}</p>
         </div>
+
+        <div>
+          <label htmlFor="configMaxTokens" className="block text-sm font-medium text-[var(--fg)] mb-1.5">
+            {t('config.maxTokens')}
+          </label>
+          <input
+            id="configMaxTokens"
+            type="number"
+            min="256"
+            max="200000"
+            step="256"
+            value={formData.maxTokens ?? ''}
+            onChange={(e) => setFormData({ ...formData, maxTokens: e.target.value ? parseInt(e.target.value, 10) : undefined })}
+            placeholder={t('config.maxTokensPlaceholder')}
+            className={inputClass}
+          />
+          <p className="text-xs text-[var(--muted)] mt-1">{t('config.maxTokensHint')}</p>
+        </div>
         </div>
 
         {/* Footer - Fixed */}

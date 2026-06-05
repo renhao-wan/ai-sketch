@@ -33,6 +33,16 @@ describe('AnthropicProvider', () => {
       const body = provider.buildRequestBody('claude-3', [{ role: 'user' as const, content: 'hi' }]) as Record<string, unknown>;
       expect(body.system).toBeUndefined();
     });
+
+    it('应使用自定义 maxTokens', () => {
+      const body = provider.buildRequestBody('claude-3', [{ role: 'user' as const, content: 'hi' }], 0.5, 32000) as Record<string, unknown>;
+      expect(body.max_tokens).toBe(32000);
+    });
+
+    it('未传 maxTokens 时应使用默认值 64000', () => {
+      const body = provider.buildRequestBody('claude-3', [{ role: 'user' as const, content: 'hi' }]) as Record<string, unknown>;
+      expect(body.max_tokens).toBe(64000);
+    });
   });
 
   describe('getEndpoint', () => {

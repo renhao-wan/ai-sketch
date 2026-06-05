@@ -143,16 +143,16 @@ export async function callLLM(
   onChunk?: (chunk: string) => void,
   signal?: AbortSignal,
 ): Promise<string> {
-  const { type, baseUrl, apiKey, model, temperature } = config;
+  const { type, baseUrl, apiKey, model, temperature, maxTokens } = config;
 
-  console.log(`[LLM Client] Calling ${type} API, model: ${model}, baseUrl: ${baseUrl}, temperature: ${temperature ?? 0.5}`);
+  console.log(`[LLM Client] Calling ${type} API, model: ${model}, baseUrl: ${baseUrl}, temperature: ${temperature ?? 0.5}, maxTokens: ${maxTokens ?? 'default'}`);
 
   validateBaseUrl(baseUrl);
 
   const provider = getProvider(type);
   const url = provider.getEndpoint(baseUrl);
   const headers = provider.buildRequestHeaders(apiKey);
-  const body = provider.buildRequestBody(model, messages, temperature);
+  const body = provider.buildRequestBody(model, messages, temperature, maxTokens);
   const extractors = provider.getSSEExtractors();
 
   const response = await fetchWithRetry(url, {

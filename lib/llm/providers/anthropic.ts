@@ -22,7 +22,7 @@ export class AnthropicProvider implements LLMProvider {
     };
   }
 
-  buildRequestBody(model: string, messages: LLMMessage[], temperature?: number): object {
+  buildRequestBody(model: string, messages: LLMMessage[], temperature?: number, maxTokens?: number): object {
     const systemMessage = messages.find(m => m.role === 'system');
     const chatMessages = messages.filter(m => m.role !== 'system');
 
@@ -30,7 +30,7 @@ export class AnthropicProvider implements LLMProvider {
       model,
       messages: chatMessages.map(m => this.processMessage(m)),
       system: systemMessage ? [{ type: 'text', text: systemMessage.content }] : undefined,
-      max_tokens: 64000,
+      max_tokens: maxTokens ?? 64000,
       stream: true,
       temperature: temperature ?? 0.5,
     };

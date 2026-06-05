@@ -10,6 +10,8 @@ export interface LLMConfig {
   isActive?: boolean;
   /** 生成温度，控制输出随机性，范围 0-2，默认 0.5 */
   temperature?: number;
+  /** 最大输出 token 数，控制生成长度，默认值取决于 provider 类型 */
+  maxTokens?: number;
   createdAt?: number;
   updatedAt?: number;
 }
