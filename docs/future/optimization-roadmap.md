@@ -839,7 +839,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 50 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
 | 51 | DiagramFormat 重复定义 | 类型 | `lib/types/` + `lib/prompts/types.ts` 两处 |
 | 52 | SourceType/InputSourceType 未统一 | 类型 | ✅ 已修复：移除 InputSourceType，统一用 SourceType |
-| 53 | Mermaid VALID_STARTS 重复 | 策略模式 | 模块级常量和 postProcess 内局部变量重复 |
+| 53 | Mermaid VALID_STARTS 重复 | 策略模式 | ✅ 已修复：postProcess 复用模块级常量 |
 | 54 | ImageStrategy 全局可变状态 | 策略模式 | 全局单例含可变 `diagramFormat` |
 | 55 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
 | 56 | 窗口状态未持久化 | Electron | 未监听 resize/move 保存 bounds |
