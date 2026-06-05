@@ -39,6 +39,7 @@ function rowToConfig(row: Record<string, unknown>): LLMConfig {
     model: row.model as string,
     description: row.description as string,
     isActive: (row.is_active as number) === 1,
+    temperature: (row.temperature as number) ?? 0.5,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -115,14 +116,15 @@ class ConfigManager {
       model: configData.model || '',
       description: configData.description || '',
       isActive: false,
+      temperature: configData.temperature ?? 0.5,
       createdAt: now,
       updatedAt: now,
     };
 
     withTransaction(db, () => {
       db.run(
-        `INSERT INTO llm_configs (id, name, type, base_url, api_key, model, description, is_active, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO llm_configs (id, name, type, base_url, api_key, model, description, is_active, temperature, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           newConfig.id!,
           newConfig.name,
@@ -132,6 +134,7 @@ class ConfigManager {
           newConfig.model,
           newConfig.description || '',
           0,
+          newConfig.temperature ?? 0.5,
           newConfig.createdAt!,
           newConfig.updatedAt!,
         ],
@@ -157,7 +160,7 @@ class ConfigManager {
     const merged = { ...existing, ...updateData, id, updatedAt: now };
 
     db.run(
-      `UPDATE llm_configs SET name = ?, type = ?, base_url = ?, api_key = ?, model = ?, description = ?, is_active = ?, updated_at = ? WHERE id = ?`,
+      `UPDATE llm_configs SET name = ?, type = ?, base_url = ?, api_key = ?, model = ?, description = ?, is_active = ?, temperature = ?, updated_at = ? WHERE id = ?`,
       [
         merged.name,
         merged.type,
@@ -166,6 +169,7 @@ class ConfigManager {
         merged.model,
         merged.description || '',
         merged.isActive ? 1 : 0,
+        merged.temperature ?? 0.5,
         merged.updatedAt!,
         id,
       ],

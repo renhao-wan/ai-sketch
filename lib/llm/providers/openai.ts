@@ -21,12 +21,13 @@ export class OpenAIProvider implements LLMProvider {
     };
   }
 
-  buildRequestBody(model: string, messages: LLMMessage[]): object {
+  buildRequestBody(model: string, messages: LLMMessage[], temperature?: number): object {
     return {
       model,
       messages: messages.map(m => this.processMessage(m)),
       stream: true,
       max_tokens: 16384,
+      temperature: temperature ?? 0.5,
     };
   }
 

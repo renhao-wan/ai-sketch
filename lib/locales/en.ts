@@ -123,6 +123,8 @@ export const en: TranslationDict = {
   'config.fillRequired': 'Please fill in provider type, base URL, and API key first',
   'config.loadModelFailed': 'Failed to load models',
   'config.fillAllRequired': 'Please fill in all required fields',
+  'config.temperature': 'Temperature',
+  'config.temperatureHint': 'Controls output randomness, 0=deterministic, 2=max randomness, recommended 0.3-0.5',
   'config.bannerTitle': 'Many configurations, consider cleanup',
   'config.bannerDescription': 'You have {count} configurations. Consider cleaning up unused ones.',
 

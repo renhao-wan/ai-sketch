@@ -8,6 +8,8 @@ export interface LLMConfig {
   model: string;
   description?: string;
   isActive?: boolean;
+  /** 生成温度，控制输出随机性，范围 0-2，默认 0.5 */
+  temperature?: number;
   createdAt?: string;
   updatedAt?: string;
 }

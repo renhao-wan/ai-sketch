@@ -576,6 +576,28 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
             />
           )}
         </div>
+
+        <div>
+          <label htmlFor="configTemperature" className="block text-sm font-medium text-[var(--fg)] mb-1.5">
+            {t('config.temperature')}
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              id="configTemperature"
+              type="range"
+              min="0"
+              max="2"
+              step="0.1"
+              value={formData.temperature ?? 0.5}
+              onChange={(e) => setFormData({ ...formData, temperature: parseFloat(e.target.value) })}
+              className="flex-1 h-2 bg-[var(--surface-warm-hover)] rounded-lg appearance-none cursor-pointer accent-[var(--accent-indigo)]"
+            />
+            <span className="text-sm font-mono text-[var(--fg)] w-10 text-right">
+              {(formData.temperature ?? 0.5).toFixed(1)}
+            </span>
+          </div>
+          <p className="text-xs text-[var(--muted)] mt-1">{t('config.temperatureHint')}</p>
+        </div>
         </div>
 
         {/* Footer - Fixed */}
