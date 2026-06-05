@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { AppIcon } from '@/components/layout/TopBar';
 import { setInitData } from '@/lib/utils/init-data';
 import AIPromptBox from '@/components/ai/AIPromptBox';
-import HistoryModal from '@/components/dialogs/HistoryModal';
 import { useLocale } from '@/lib/locales';
 import { useShortcuts } from '@/hooks/useShortcuts';
 import { timeAgo } from '@/lib/utils/time-ago';
@@ -14,6 +14,9 @@ import * as api from '@/lib/api/client';
 import Tooltip from '@/components/ui/Tooltip';
 import WindowControls from '@/components/layout/WindowControls';
 import type { Conversation } from '@/lib/types';
+
+// 动态导入 HistoryModal（模态框，按需加载）
+const HistoryModal = dynamic(() => import('@/components/dialogs/HistoryModal'), { ssr: false });
 
 export default function HomePage() {
   const router = useRouter();

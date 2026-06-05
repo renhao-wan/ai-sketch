@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { AppIcon } from '@/components/layout/TopBar';
 import WindowControls from '@/components/layout/WindowControls';
 import AICopilotPanel from '@/components/ai/AICopilotPanel';
 import FloatingAIActions from '@/components/ai/FloatingAIActions';
-import BottomContextPanel from '@/components/layout/BottomContextPanel';
 import CodeEditor from '@/components/editor/CodeEditor';
-import ConfigSelector from '@/components/dialogs/ConfigSelector';
 import Notification from '@/components/ui/Notification';
 import DiagramCanvas from '@/components/canvases/DiagramCanvas';
 import type { StreamRendererRef } from '@/components/canvases/ExcalidrawCanvas';
@@ -24,6 +23,10 @@ import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 import { generateId, parseStoredImages } from '@/lib/utils';
 import { consumeSSEStream } from '@/lib/api/sse-consumer';
+
+// 动态导入重型组件（按需加载）
+const ConfigSelector = dynamic(() => import('@/components/dialogs/ConfigSelector'), { ssr: false });
+const BottomContextPanel = dynamic(() => import('@/components/layout/BottomContextPanel'), { ssr: false });
 
 function EditorContent() {
   const router = useRouter();

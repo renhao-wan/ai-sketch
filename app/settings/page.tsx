@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useLocale, type TranslationKey } from '@/lib/locales';
 import { useShortcuts } from '@/hooks/useShortcuts';
 import { SettingsSidebar, SettingsTab } from '@/components/settings/SettingsSidebar';
 import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
-import { LLMSettings } from '@/components/settings/LLMSettings';
 import { NetworkSettings } from '@/components/settings/NetworkSettings';
 import ConversationSettings from '@/components/settings/ConversationSettings';
 import DataSettings from '@/components/settings/DataSettings';
@@ -16,6 +16,9 @@ import { Search } from 'lucide-react';
 import WindowControls from '@/components/layout/WindowControls';
 import { AppIcon } from '@/components/layout/TopBar';
 import Tooltip from '@/components/ui/Tooltip';
+
+// 动态导入重型设置组件（按需加载）
+const LLMSettings = dynamic(() => import('@/components/settings/LLMSettings').then(mod => ({ default: mod.LLMSettings })), { ssr: false });
 
 const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'network', 'conversations', 'data', 'shortcuts', 'about'];
 

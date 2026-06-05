@@ -768,7 +768,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 |---|--------|------|----------|------|
 | 1 | 字体加载优化 (`font-display: swap`) | ✅ | 2026-06-04 | `app/layout.tsx` |
 | 2 | 数据库索引优化 | ✅ | 2026-06-04 | `lib/db/index.ts` 添加 `idx_messages_created_at` |
-| 3 | 动态导入优化（懒加载重型组件） | ❌ | - | - |
+| 3 | 动态导入优化（懒加载重型组件） | ✅ | 2026-06-04 | ConfigSelector、BottomContextPanel、HistoryModal、LLMSettings |
 | 4 | 数据库写放大 → 防抖模式 | ❌ | - | - |
 | 5 | closeDb() 在 Electron 退出前调用 | ❌ | - | - |
 | 6 | 降低 temperature 到 0.3-0.5 | ❌ | - | - |
