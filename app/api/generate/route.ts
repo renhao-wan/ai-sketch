@@ -259,17 +259,8 @@ export async function POST(request: Request) {
           const errorData = `data: ${JSON.stringify({ type: 'error', error: errorMessage })}\n\n`;
           controller.enqueue(encoder.encode(errorData));
 
-          // Save failure marker so conversation state stays consistent
-          try {
-            await conversationManager.addMessage({
-              conversationId: activeConversationId!,
-              role: 'assistant',
-              content: `[Generation failed: ${errorMessage}]`,
-              sourceType: 'text',
-            });
-          } catch {
-            // Ignore secondary failure
-          }
+          // 生成失败时不保存错误消息到数据库，避免污染后续对话上下文
+          // 用户可手动点击"重新生成"按钮重试
 
           controller.close();
         } finally {
