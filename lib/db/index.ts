@@ -19,6 +19,8 @@ let dbInstance: Database | null = null;
 let dbPromise: Promise<Database> | null = null;
 /** 标记数据库是否有未持久化的写入 */
 let isDirty = false;
+/** 防抖写入定时器 */
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function initDb(): Promise<Database> {
   const dir = path.dirname(DB_PATH);
@@ -176,13 +178,30 @@ export function saveToDisk(): void {
 }
 
 /**
+ * 请求延迟持久化（防抖模式）
+ * 多次写入合并为一次，500ms 内只执行最后一次
+ * 适用于所有常规业务写入，避免频繁 I/O 阻塞事件循环
+ */
+export function requestSave(): void {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    saveToDisk();
+  }, 500);
+}
+
+/**
  * 关闭数据库连接，释放 WASM 内存
  * 在 Electron 应用退出前调用
  */
 export function closeDb(): void {
   if (!dbInstance) return;
   try {
-    // 最后一次持久化
+    // 取消防抖定时器，立即持久化
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
     saveToDisk();
     dbInstance.close();
   } catch (e) {

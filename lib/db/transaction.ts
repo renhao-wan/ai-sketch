@@ -4,7 +4,7 @@
  */
 
 import type { Database } from 'sql.js';
-import { saveToDisk } from './index';
+import { requestSave } from './index';
 
 /**
  * 在事务中执行操作
@@ -24,6 +24,6 @@ export function withTransaction(db: Database, fn: () => void, persist = true): v
     throw e;
   }
   if (persist) {
-    saveToDisk();
+    requestSave();
   }
 }

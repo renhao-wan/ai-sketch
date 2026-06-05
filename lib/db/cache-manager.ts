@@ -1,4 +1,4 @@
-import { getDb, saveToDisk } from './index';
+import { getDb, requestSave } from './index';
 import { generateId } from '@/lib/utils';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
@@ -75,7 +75,7 @@ class CacheManager {
       'UPDATE response_cache SET last_used_at = ?, use_count = use_count + 1 WHERE id = ?',
       [now, entry.id],
     );
-    saveToDisk();
+    requestSave();
 
     return entry.response;
   }
@@ -109,7 +109,7 @@ class CacheManager {
       );
     }
 
-    saveToDisk();
+    requestSave();
 
     // 清理过期和多余的缓存
     await this.cleanup();
@@ -119,7 +119,7 @@ class CacheManager {
   private async delete(id: string): Promise<void> {
     const db = await getDb();
     db.run('DELETE FROM response_cache WHERE id = ?', [id]);
-    saveToDisk();
+    requestSave();
   }
 
   /** 清理过期和多余的缓存 */
@@ -147,14 +147,14 @@ class CacheManager {
       );
     }
 
-    saveToDisk();
+    requestSave();
   }
 
   /** 清空所有缓存 */
   async clearAll(): Promise<void> {
     const db = await getDb();
     db.run('DELETE FROM response_cache');
-    saveToDisk();
+    requestSave();
   }
 
   /** 获取缓存统计信息 */

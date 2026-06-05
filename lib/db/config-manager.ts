@@ -1,4 +1,4 @@
-import { getDb, saveToDisk } from './index';
+import { getDb, requestSave } from './index';
 import { withTransaction } from './transaction';
 import { testConnection } from '@/lib/llm/client';
 import { generateId } from '@/lib/utils';
@@ -175,7 +175,7 @@ class ConfigManager {
       ],
     );
 
-    saveToDisk();
+    requestSave();
     return merged;
   }
 
@@ -207,7 +207,7 @@ class ConfigManager {
 
     const db = await getDb();
     db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('active_config_id', ?)", [id]);
-    saveToDisk();
+    requestSave();
     return config;
   }
 
@@ -346,7 +346,7 @@ class ConfigManager {
     const db = await getDb();
     db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('proxy_url', ?)", [proxyUrl]);
     db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('proxy_enabled', ?)", [proxyEnabled ? 'true' : 'false']);
-    saveToDisk();
+    requestSave();
   }
 }
 

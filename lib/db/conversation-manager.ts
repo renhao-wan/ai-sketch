@@ -1,4 +1,4 @@
-import { getDb, saveToDisk } from './index';
+import { getDb, requestSave } from './index';
 import { withTransaction } from './transaction';
 import { generateId, parseStoredImages } from '@/lib/utils';
 import type { Conversation, ConversationMessage, ConversationWithMessages, LLMMessage } from '@/lib/types';
@@ -95,7 +95,7 @@ class ConversationManager {
        VALUES (?, ?, ?, ?, ?, ?, '', 0, ?, ?)`,
       [id, title, data.chartType, data.format, data.configName || null, data.configModel || null, now, now],
     );
-    saveToDisk();
+    requestSave();
 
     return {
       id,
@@ -180,7 +180,7 @@ class ConversationManager {
 
     params.push(id);
     db.run(`UPDATE conversations SET ${sets.join(', ')} WHERE id = ?`, params);
-    saveToDisk();
+    requestSave();
 
     // 直接构造返回对象，无需再次 SELECT
     return {
@@ -388,13 +388,13 @@ class ConversationManager {
     const db = await getDb();
     const now = Date.now();
     db.run('UPDATE conversations SET current_code = ?, updated_at = ? WHERE id = ?', [code, now, conversationId]);
-    saveToDisk();
+    requestSave();
   }
 
   async updateTitle(conversationId: string, title: string): Promise<void> {
     const db = await getDb();
     db.run('UPDATE conversations SET title = ? WHERE id = ?', [title, conversationId]);
-    saveToDisk();
+    requestSave();
   }
 
   /** 搜索会话，支持标题模糊搜索、排序和分页 */
