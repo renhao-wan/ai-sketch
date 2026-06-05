@@ -357,6 +357,22 @@ class ConfigManager {
     db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('proxy_enabled', ?)", [proxyEnabled ? 'true' : 'false']);
     requestSave();
   }
+
+  /** 获取 LLM 失败重试次数（默认 2，即最多 3 次尝试） */
+  async getMaxRetries(): Promise<number> {
+    const db = await getDb();
+    const result = db.exec("SELECT value FROM meta WHERE key = 'llm_max_retries'");
+    if (result.length === 0 || result[0].values.length === 0) return 2;
+    const val = parseInt(result[0].values[0][0] as string, 10);
+    return isNaN(val) ? 2 : val;
+  }
+
+  /** 设置 LLM 失败重试次数 */
+  async setMaxRetries(maxRetries: number): Promise<void> {
+    const db = await getDb();
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('llm_max_retries', ?)", [String(Math.max(0, Math.min(5, maxRetries)))]);
+    requestSave();
+  }
 }
 
 export const configManager = new ConfigManager();

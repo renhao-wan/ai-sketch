@@ -7,6 +7,12 @@ import { getStrategy } from '@/lib/strategies/registry';
 import type { LLMConfig, LLMMessage, ImageData } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
+/** LLM 生成失败时是否值得重试（排除用户主动取消） */
+function isRetryableError(error: unknown): boolean {
+  if (error instanceof DOMException && error.name === 'AbortError') return false;
+  return true;
+}
+
 /**
  * POST /api/generate
  * Generate diagram code based on user input and format.
@@ -206,22 +212,52 @@ export async function POST(request: Request) {
               controller.enqueue(encoder.encode(data));
             }
           } else {
-            // 调用 LLM
-            perfMark('LLM Call (First Token)');
-            await callLLM(config!, fullMessages, (chunk) => {
-              if (isFirstChunk) {
-                perfEnd('LLM Call (First Token)');
-                perfMark('LLM Streaming');
-                isFirstChunk = false;
-              }
-              accumulatedCode += chunk;
-              const data = `data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`;
-              controller.enqueue(encoder.encode(data));
-            }, combinedController.signal);
+            // 获取全局重试配置
+            const maxRetries = await configManager.getMaxRetries();
+            let lastError: unknown = null;
 
-            if (!isFirstChunk) {
-              perfEnd('LLM Streaming');
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+              try {
+                // 重试时重置状态
+                if (attempt > 0) {
+                  console.log(`[Generate] 重试第 ${attempt} 次（共 ${maxRetries} 次重试）`);
+                  accumulatedCode = '';
+                  isFirstChunk = true;
+                  // 通知客户端正在重试
+                  const retryEvent = `data: ${JSON.stringify({ type: 'retry', attempt, maxRetries })}\n\n`;
+                  controller.enqueue(encoder.encode(retryEvent));
+                }
+
+                // 调用 LLM
+                perfMark('LLM Call (First Token)');
+                await callLLM(config!, fullMessages, (chunk) => {
+                  if (isFirstChunk) {
+                    perfEnd('LLM Call (First Token)');
+                    perfMark('LLM Streaming');
+                    isFirstChunk = false;
+                  }
+                  accumulatedCode += chunk;
+                  const data = `data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`;
+                  controller.enqueue(encoder.encode(data));
+                }, combinedController.signal);
+
+                if (!isFirstChunk) {
+                  perfEnd('LLM Streaming');
+                }
+
+                // 成功则跳出重试循环
+                lastError = null;
+                break;
+              } catch (err) {
+                lastError = err;
+                console.error(`[Generate] LLM 调用失败 (attempt ${attempt + 1}/${maxRetries + 1}):`, err);
+                // 不可重试的错误（如用户取消）或已用完重试次数，直接跳出
+                if (!isRetryableError(err) || attempt >= maxRetries) break;
+              }
             }
+
+            // 如果所有重试都失败了，抛出最后一个错误
+            if (lastError) throw lastError;
 
             perfMark('Post Process');
             // 处理 LLM 响应

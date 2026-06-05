@@ -54,6 +54,7 @@ async function consumeStream(
   callbacks: {
     onMeta?: (convId: string) => void;
     onContent: (code: string) => void;
+    onRetry?: () => void;
   },
   t: (key: TranslationKey) => string,
 ): Promise<StreamResult> {
@@ -80,6 +81,7 @@ async function consumeStream(
         callbacks.onMeta?.(convId);
       },
       onContent: callbacks.onContent,
+      onRetry: callbacks.onRetry,
     },
   );
 
@@ -192,6 +194,14 @@ export function useGeneration(options: UseGenerationOptions) {
             options.streamRendererRef.current?.feed(stripped);
             options.onMessagesUpdate(prev => prev.map(m =>
               m.id === optimisticAssistantMsg.id ? { ...m, content: stripped } : m
+            ));
+          },
+          onRetry: () => {
+            // 重试时清空画布和已累积的代码，准备接收新内容
+            options.onCodeUpdate('');
+            options.streamRendererRef.current?.reset();
+            options.onMessagesUpdate(prev => prev.map(m =>
+              m.id === optimisticAssistantMsg.id ? { ...m, content: '' } : m
             ));
           },
         },

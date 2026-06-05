@@ -45,6 +45,16 @@ const actionHandlers: Record<string, ActionHandler> = {
     return { success: true };
   },
 
+  'get-retries': async () => {
+    const maxRetries = await configManager.getMaxRetries();
+    return { maxRetries };
+  },
+
+  'set-retries': async (body) => {
+    await configManager.setMaxRetries(body.maxRetries as number);
+    return { success: true };
+  },
+
   'clear-cache': async () => {
     await cacheManager.clearAll();
     return { success: true };

@@ -344,6 +344,15 @@ export const zh = {
   'proxy.saveSuccess': '代理配置已保存',
   'proxy.saveFailed': '保存失败',
 
+  // 重试设置
+  'retries.title': '生成失败重试',
+  'retries.description': 'LLM 生成失败时自动重试，避免临时错误导致生成中断',
+  'retries.maxRetries': '最大重试次数',
+  'retries.maxRetriesHint': '0=不重试，推荐 2 次。仅对非用户取消的失败生效，每次重试会重新发起完整 LLM 请求',
+  'retries.save': '保存',
+  'retries.saveSuccess': '重试配置已保存',
+  'retries.saveFailed': '保存失败',
+
   // 关于应用
   'about.defaultDescription': 'AI Sketch 是一款 AI 驱动的图表生成 Web 应用。用户通过自然语言描述，由 LLM 生成可渲染的图表代码，支持 Excalidraw JSON、Mermaid、Draw.io XML 三种格式。',
   'about.developer': '开发者信息',

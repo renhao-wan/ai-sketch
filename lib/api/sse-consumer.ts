@@ -15,6 +15,8 @@ export interface SSECallbacks {
   onResult?: (content: string) => void;
   /** 收到错误事件 */
   onError?: (error: string) => void;
+  /** 收到重试事件（服务端正在重试 LLM 调用） */
+  onRetry?: (attempt: number, maxRetries: number) => void;
 }
 
 /** SSE 消费结果 */
@@ -63,6 +65,10 @@ export async function consumeSSEStream(
 
         if (parsed.type === 'meta' && parsed.conversationId) {
           callbacks.onMeta?.(parsed.conversationId as string);
+        } else if (parsed.type === 'retry') {
+          // 重试时重置已累积的代码
+          accumulatedCode = '';
+          callbacks.onRetry?.(parsed.attempt as number, parsed.maxRetries as number);
         } else if (parsed.type === 'content' && parsed.content) {
           accumulatedCode += parsed.content as string;
           callbacks.onContent(accumulatedCode, parsed.content as string);

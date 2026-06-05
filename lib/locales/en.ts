@@ -346,6 +346,15 @@ export const en: TranslationDict = {
   'proxy.saveSuccess': 'Proxy settings saved',
   'proxy.saveFailed': 'Save failed',
 
+  // Retry settings
+  'retries.title': 'Generation Retry',
+  'retries.description': 'Automatically retry when LLM generation fails, avoiding interruptions from temporary errors',
+  'retries.maxRetries': 'Max Retries',
+  'retries.maxRetriesHint': '0=no retry, recommended 2. Only applies to non-user-cancelled failures. Each retry re-initiates the full LLM request',
+  'retries.save': 'Save',
+  'retries.saveSuccess': 'Retry settings saved',
+  'retries.saveFailed': 'Save failed',
+
   // About
   'about.defaultDescription': 'AI Sketch is an AI-powered diagram generation web app. Users describe their ideas in natural language, and the LLM generates renderable diagram code in three formats: Excalidraw JSON, Mermaid, and Draw.io XML.',
   'about.developer': 'Developer',
