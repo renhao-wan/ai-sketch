@@ -77,7 +77,7 @@ export function KeyboardShortcutsSettings({ searchQuery = '' }: KeyboardShortcut
                   key={shortcut.id}
                   className="flex items-center justify-between p-3 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]"
                 >
-                  <span className="text-sm text-[var(--fg)]">{shortcut.description}</span>
+                  <span className="text-sm text-[var(--fg)]">{t(shortcut.descriptionKey as TranslationKey)}</span>
                   <div className="flex gap-1">
                     {shortcut.keys.map((key, index) => (
                       <kbd
@@ -100,7 +100,7 @@ export function KeyboardShortcutsSettings({ searchQuery = '' }: KeyboardShortcut
         <div className="text-center py-8">
           <Keyboard size={32} className="mx-auto mb-3 text-[var(--muted)]" />
           <p className="text-sm text-[var(--muted)]">
-            {searchQuery ? '没有找到匹配的快捷键' : '暂无快捷键'}
+            {searchQuery ? t('shortcuts.noMatch') : t('shortcuts.noShortcuts')}
           </p>
         </div>
       )}

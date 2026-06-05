@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale } from '@/lib/locales';
+import { useLocale, type TranslationKey } from '@/lib/locales';
 import { AppIcon } from '@/components/layout/TopBar';
 import { User, Code2, FileText, Shield, ExternalLink } from 'lucide-react';
 
@@ -167,7 +167,7 @@ export function AboutSettings() {
                 </div>
               </div>
               <p className="text-xs text-[var(--muted)] mb-2 line-clamp-2">
-                {dep.description}
+                {t(`about.dep.${dep.name}` as TranslationKey)}
               </p>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 px-2 py-0.5 rounded">

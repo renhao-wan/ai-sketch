@@ -215,13 +215,26 @@ class ConfigManager {
     const original = await this.getConfig(id);
     if (!original) throw new Error('原配置不存在');
 
+    // 自动生成带编号的名称：查找已有同名配置的最大编号
+    const baseName = newName || original.name;
+    const allConfigs = await this.getAllConfigs();
+    const pattern = new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\((\\d+)\\)$`);
+    let maxNum = 0;
+    for (const cfg of allConfigs) {
+      const match = cfg.name.match(pattern);
+      if (match) {
+        maxNum = Math.max(maxNum, parseInt(match[1], 10));
+      }
+    }
+
     return this.createConfig({
-      name: newName || `${original.name} (副本)`,
+      name: `${baseName} (${maxNum + 1})`,
       type: original.type,
       baseUrl: original.baseUrl,
       apiKey: original.apiKey,
       model: original.model,
       description: original.description,
+      temperature: original.temperature,
     });
   }
 

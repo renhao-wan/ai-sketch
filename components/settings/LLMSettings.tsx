@@ -99,7 +99,7 @@ export function LLMSettings() {
   /** 克隆配置 */
   const handleClone = async (config: LLMConfig) => {
     try {
-      await api.cloneConfig(config.id!, `${config.name} ${t('config.cloneSuffix')}`);
+      await api.cloneConfig(config.id!);
       await loadConfigs();
       setError('');
     } catch (err) {
