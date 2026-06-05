@@ -122,17 +122,15 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, 
               {!expanded ? (
                 <button
                   onClick={() => setExpanded(true)}
-                  className="w-full flex items-center justify-between px-3.5 py-2.5 bg-[var(--surface-warm-hover)] rounded-lg border border-dashed border-[var(--border)] hover:border-[var(--accent-indigo)]/30 hover:bg-[var(--accent-indigo)]/5 transition-all duration-200 group"
+                  className="w-full flex items-center gap-2 px-3.5 py-2.5 bg-[var(--surface-warm-hover)] rounded-lg border border-dashed border-[var(--border)] hover:border-[var(--accent-indigo)]/30 hover:bg-[var(--accent-indigo)]/5 transition-all duration-200 group"
                 >
                   <span className="text-xs text-[var(--muted)] group-hover:text-[var(--accent-indigo)] transition-colors">
                     {t('message.clickToExpand')}
                   </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-[var(--muted)]/70">
-                      {message.content.length} {t('message.characters')}
-                    </span>
-                    <ChevronDown size={14} className="text-[var(--muted)] group-hover:text-[var(--accent-indigo)] transition-colors" />
-                  </div>
+                  <span className="text-[11px] text-[var(--muted)]/70">
+                    {message.content.length} {t('message.characters')}
+                  </span>
+                  <ChevronDown size={14} className="text-[var(--muted)] group-hover:text-[var(--accent-indigo)] transition-colors ml-auto" />
                 </button>
               ) : (
                 <>
