@@ -290,19 +290,15 @@ app.on('before-quit', async () => {
 
 ---
 
-#### 问题：max_tokens 硬编码且不一致（中等）
+#### 问题：max_tokens 硬编码且不一致（中等）✅
 
-**现状**：
-- Anthropic: `max_tokens: 64000`
-- OpenAI: `max_tokens: 16384`
-
-**影响**：两个 provider 差异 4 倍，无法根据图表类型或模型调整。
-
-**改进方案**：暴露为配置参数，提供合理的默认值。
+**现状**：已修复。`maxTokens` 改为每个 LLM 配置的独立参数，默认值统一为 16384。
 
 ---
 
-#### 问题：LLM 生成失败后无自动重试（中等）
+#### 问题：LLM 生成失败后无自动重试（中等）✅
+
+**现状**：已修复。新增全局重试机制，通过 NetworkSettings 配置重试次数（默认 2 次）。
 
 **位置**：`app/api/generate/route.ts` 第 209-229 行、`lib/strategies/excalidraw-strategy.ts` `postProcess` 方法
 
@@ -726,8 +722,8 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 17 | 图片数据不入历史上下文 | 上下文管理 | ❌ |
 | 18 | Mermaid 14/21 种类型降级 | Mermaid 画布 | ❌ |
 | 19 | Excalidraw 流式期间每个元素完整重绘 | Excalidraw 画布 | ❌ |
-| 20 | onMaximizeChange 监听器泄漏 | Electron | ❌ |
-| 21 | NSIS 卸载路径错误 | Electron | ❌ |
+| 20 | onMaximizeChange 监听器泄漏 | Electron | ✅ |
+| 21 | NSIS 卸载路径错误 | Electron | ✅ |
 | 6 | 数据库写放大 → 防抖模式 | 数据库 | ✅ |
 | 7 | closeDb() 在 Electron 退出前调用 | 数据库/Electron | ✅ |
 | 8 | Temperature 改为可配置参数 | LLM 客户端 | ✅ |
@@ -739,25 +735,25 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 2. **图片数据不入历史上下文** — 大幅降低 token 消耗
 3. **历史图片不再每次重发** — 与上条配合，减少请求体积
 4. **Excalidraw 流式 debounce** — 影响渲染性能和用户体验
-5. **onMaximizeChange 监听器泄漏** — Electron 内存泄漏
+5. **截断通知 role 修正** — 破坏 user/assistant 交替规则
 
-### 🟡 中等问题（25 项）
+### 🟡 中等问题（23 项）
 
 详见附录 A #22-#46，主要集中在：
 - 上下文管理（截断通知 role、首条消息格式化、system prompt 裁剪）
-- LLM 客户端（自动重试、max_tokens 可配置）
 - 提示词质量（矛盾、抽象、不支持的功能）
 - Editor 页面（useState 碎片化、sessionStorage 耦合、panelWidth 不持久化）
 - 画布（scrollToContent 跳动、元素转换失败静默吞没）
 - Electron（无崩溃恢复、无自动更新）
 - 国际化（参数插值、硬编码中文）
 
-### 🟢 轻微问题（12 项）
+### 🟢 轻微问题（6 项）
 
-详见附录 A #47-#58，主要集中在：
-- 代码风格（类型重复定义、DRY 违反、死注释）
-- 数据库（时间格式不统一、API Key 明文、ID 生成算法）
-- 策略模式（VALID_STARTS 重复、ImageStrategy 全局可变状态）
+详见附录 A #45-#50，主要集中在：
+- 数据库（ID 生成算法）
+- 策略模式（ImageStrategy 全局可变状态）
+- Electron（窗口状态持久化、macOS 公证）
+- Draw.io（CSS transform 缩放）
 
 ---
 
@@ -766,7 +762,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 > **图例**: ✅ 已完成 | ❌ 未开始
 > **严重度**: 🔴 严重 | 🟡 中等 | 🟢 轻微
 
-### ✅ 已完成（13 项）
+### ✅ 已完成（23 项）
 
 | # | 优化项 | 严重度 | 完成日期 | 备注 |
 |---|--------|--------|----------|------|
@@ -785,8 +781,16 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 13 | 缓存管理 API 暴露 + 数据清理集成 | 🟡 | 2026-06-05 | clear-cache/cache-stats action、DataSettings 集成 |
 | 14 | NSIS 卸载路径修正 | 🔴 | 2026-06-05 | appId 改为 ai-sketch，与卸载脚本路径一致 |
 | 15 | onMaximizeChange 监听器泄漏修复 | 🔴 | 2026-06-05 | preload.ts 返回清理函数，WindowControls 正确调用 |
+| 16 | max_tokens 改为可配置参数 | 🟡 | 2026-06-05 | 每个 LLM 配置独立设置，默认 16384 |
+| 17 | LLM 生成失败自动重试 | 🟡 | 2026-06-05 | 全局配置（NetworkSettings），默认 2 次重试 |
+| 18 | 时间格式统一为 Unix 时间戳 | 🟢 | 2026-06-05 | `llm_configs` 的 `created_at`/`updated_at` 改为 INTEGER |
+| 19 | API Key 加密存储 | 🟢 | 2026-06-05 | AES-256-GCM，密钥存 `ai-sketch.db.key` |
+| 20 | DiagramFormat 重复定义 | 🟢 | 2026-06-05 | 统一从 `lib/types/diagram-strategy` 导入 |
+| 21 | SourceType/InputSourceType 未统一 | 🟢 | 2026-06-05 | 移除 InputSourceType，统一用 SourceType |
+| 22 | Mermaid VALID_STARTS 重复 | 🟢 | 2026-06-05 | postProcess 复用模块级常量 |
+| 23 | constants.ts 遗留死注释 | 🟢 | 2026-06-05 | 移除 `// Must match CHART_TYPE_NAMES` |
 
-### ❌ 未完成 — 严重（8 项）
+### ❌ 未完成 — 严重（6 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
@@ -796,10 +800,8 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 17 | 图片数据不入历史上下文 | 上下文管理 | 只在当前轮次发送图片，历史保留描述文字 |
 | 18 | Mermaid 14/21 种类型降级为 flowchart | Mermaid 画布 | `MERMAID_TYPE_MAP` 未改 |
 | 19 | Excalidraw 流式每元素完整重绘 | Excalidraw 画布 | `feed()` 无 debounce，每元素调 `updateScene` |
-| 20 | onMaximizeChange 监听器泄漏 | Electron | ✅ 已修复：`preload.ts` 返回清理函数 |
-| 21 | NSIS 卸载路径错误 | Electron | ✅ 已修复：`appId` 改为 `ai-sketch` 匹配卸载路径 |
 
-### ❌ 未完成 — 中等（25 项）
+### ❌ 未完成 — 中等（23 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
@@ -807,44 +809,36 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 23 | 首条消息未经 getUserPrompt 格式化 | 上下文管理 | 历史消息原始发送，与当前轮次格式不一致 |
 | 24 | 图片以 base64 TEXT 存储 | 上下文管理 | 单行数据量极大，影响查询性能 |
 | 25 | system prompt 发送全部 22 种图表规范 | 上下文管理 | 约 90% 规范是无用 token 浪费 |
-| 26 | LLM 生成失败后无自动重试 | LLM 客户端 | 仅 429 限流重试，无 validate + retry |
-| 27 | max_tokens 硬编码且不一致 | LLM 客户端 | Anthropic 64000 vs OpenAI 16384，不可配置 |
-| 28 | output 示例与要求矛盾 | 提示词 | 要求"不用代码块"但示例用了代码块 |
-| 29 | 坐标规划指导过于简单 | 提示词 | 仅"间距大于 800px"，无具体规划策略 |
-| 30 | AI Action 提示词间距矛盾 | 提示词 | layout 80-120px vs system 800px+ |
-| 31 | beautify 要求不支持的功能 | 提示词 | 要求阴影/渐变，Excalidraw API 不支持 |
-| 32 | useState 碎片化（13 个） | Editor | 已从 21 减到 13，未用 useReducer |
-| 33 | sessionStorage 隐式耦合 | Editor | 页面间通过字符串 key 通信，无类型约束 |
-| 34 | 流式期间每帧 2 次 setState | Editor | onCodeUpdate + onMessagesUpdate 各触发 setState |
-| 35 | panelWidth 不持久化 | Editor | 注释标注 `not persisted`，刷新重置 |
-| 36 | 格式切换无确认对话框 | Editor | 切换时清空代码和渲染数据，无确认提示 |
-| 37 | scrollToContent 流式期间每元素调用 | Excalidraw 画布 | 画布视角不断跳动 |
-| 38 | 元素转换失败静默吞没 | Excalidraw 画布 | `catch { /* skip */ }` 无日志无提示 |
-| 39 | 无崩溃恢复 | Electron | 无 `render-process-gone` 监听 |
-| 40 | 无自动更新 | Electron | 未引入 `electron-updater` |
-| 41 | 不支持参数插值 | 国际化 | `t()` 只接受 key，不处理 `{count}` 占位符 |
-| 42 | 硬编码中文（prompts/constants/错误消息） | 国际化 | LLM prompt 故意中文，但错误消息应国际化 |
-| 43 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
-| 44 | 缺少 Migration 机制 | 数据库 | 仅 ad-hoc ALTER TABLE，不可扩展 |
-| 45 | Excalidraw validate 不检查 schema | 策略模式 | 无元素结构校验 |
-| 46 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
+| 26 | output 示例与要求矛盾 | 提示词 | 要求"不用代码块"但示例用了代码块 |
+| 27 | 坐标规划指导过于简单 | 提示词 | 仅"间距大于 800px"，无具体规划策略 |
+| 28 | AI Action 提示词间距矛盾 | 提示词 | layout 80-120px vs system 800px+ |
+| 29 | beautify 要求不支持的功能 | 提示词 | 要求阴影/渐变，Excalidraw API 不支持 |
+| 30 | useState 碎片化（13 个） | Editor | 已从 21 减到 13，未用 useReducer |
+| 31 | sessionStorage 隐式耦合 | Editor | 页面间通过字符串 key 通信，无类型约束 |
+| 32 | 流式期间每帧 2 次 setState | Editor | onCodeUpdate + onMessagesUpdate 各触发 setState |
+| 33 | panelWidth 不持久化 | Editor | 注释标注 `not persisted`，刷新重置 |
+| 34 | 格式切换无确认对话框 | Editor | 切换时清空代码和渲染数据，无确认提示 |
+| 35 | scrollToContent 流式期间每元素调用 | Excalidraw 画布 | 画布视角不断跳动 |
+| 36 | 元素转换失败静默吞没 | Excalidraw 画布 | `catch { /* skip */ }` 无日志无提示 |
+| 37 | 无崩溃恢复 | Electron | 无 `render-process-gone` 监听 |
+| 38 | 无自动更新 | Electron | 未引入 `electron-updater` |
+| 39 | 不支持参数插值 | 国际化 | `t()` 只接受 key，不处理 `{count}` 占位符 |
+| 40 | 硬编码中文（prompts/constants/错误消息） | 国际化 | LLM prompt 故意中文，但错误消息应国际化 |
+| 41 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
+| 42 | 缺少 Migration 机制 | 数据库 | 仅 ad-hoc ALTER TABLE，不可扩展 |
+| 43 | Excalidraw validate 不检查 schema | 策略模式 | 无元素结构校验 |
+| 44 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
 
-### ❌ 未完成 — 轻微（12 项）
+### ❌ 未完成 — 轻微（7 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
-| 47 | system prompt getSystemPrompt() 重复调用 | 上下文管理 | route.ts 中调用两次，未缓存 |
-| 48 | 时间格式不统一 | 数据库 | ✅ 已修复：统一为 Unix 时间戳 |
-| 49 | API Key 明文存储 | 数据库 | ✅ 已修复：AES-256-GCM 加密，密钥存 .key 文件 |
-| 50 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
-| 51 | DiagramFormat 重复定义 | 类型 | ✅ 已修复：统一从 `lib/types/diagram-strategy` 导入 |
-| 52 | SourceType/InputSourceType 未统一 | 类型 | ✅ 已修复：移除 InputSourceType，统一用 SourceType |
-| 53 | Mermaid VALID_STARTS 重复 | 策略模式 | ✅ 已修复：postProcess 复用模块级常量 |
-| 54 | ImageStrategy 全局可变状态 | 策略模式 | 全局单例含可变 `diagramFormat` |
-| 55 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
-| 56 | 窗口状态未持久化 | Electron | 未监听 resize/move 保存 bounds |
-| 57 | macOS 缺少公证/标准菜单 | Electron | 需 `afterSign` 钩子 + 标准菜单 |
-| 58 | constants.ts 遗留死注释 | 代码风格 | ✅ 已修复 |
+| 45 | system prompt getSystemPrompt() 重复调用 | 上下文管理 | route.ts 中调用两次，未缓存 |
+| 46 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
+| 47 | ImageStrategy 全局可变状态 | 策略模式 | 全局单例含可变 `diagramFormat` |
+| 48 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
+| 49 | 窗口状态未持久化 | Electron | 未监听 resize/move 保存 bounds |
+| 50 | macOS 缺少公证/标准菜单 | Electron | 需 `afterSign` 钩子 + 标准菜单 |
 
 ---
 
