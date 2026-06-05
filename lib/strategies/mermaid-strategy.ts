@@ -43,16 +43,11 @@ class MermaidStrategy implements DiagramStrategy {
     code = code.replace(/^```mermaid\s*/i, '').replace(/```\s*$/, '');
 
     // 2. 尝试提取 Mermaid 代码（如果前面有解释文字）
-    const validStarts = ['flowchart', 'graph', 'sequenceDiagram', 'classDiagram',
-      'erDiagram', 'gantt', 'pie', 'stateDiagram', 'journey',
-      'mindmap', 'timeline', 'block-beta', 'sankey-beta', 'xychart-beta',
-      'requirementDiagram', 'gitGraph', 'C4Context', 'C4Container', 'C4Component'];
-
     const lines = code.split('\n');
     let startIndex = -1;
     for (let i = 0; i < lines.length; i++) {
       const trimmedLine = lines[i].trim();
-      if (validStarts.some(kw => trimmedLine.startsWith(kw))) {
+      if (VALID_STARTS.some(kw => trimmedLine.startsWith(kw))) {
         startIndex = i;
         break;
       }
