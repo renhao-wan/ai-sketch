@@ -18,7 +18,7 @@ interface UseGenerationOptions {
   onCodeUpdate: (code: string) => void;
   onRenderDataUpdate: (data: unknown) => void;
   onJsonErrorUpdate: (error: string | null) => void;
-  onConversationIdUpdate: (id: string) => void;
+  onConversationIdUpdate: (id: string | null) => void;
   onMessagesUpdate: (updater: (prev: ConversationMessage[]) => ConversationMessage[]) => void;
   onConfigReminder: () => void;
   onChartTypeUpdate?: (chartType: string) => void;
@@ -150,6 +150,9 @@ export function useGeneration(options: UseGenerationOptions) {
     setApiError(null);
     options.onJsonErrorUpdate(null);
 
+    // 记录请求前的 conversationId，用于失败时回滚（新建会话失败后服务端会删除该会话）
+    const previousConversationId = options.conversationId;
+
     const sendTime = performance.now();
     let firstContentTime: number | null = null;
 
@@ -234,6 +237,12 @@ export function useGeneration(options: UseGenerationOptions) {
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       console.error('[Generation] Error:', error);
+
+      // 新建会话失败时，服务端已删除该会话，回滚客户端的 conversationId
+      if (previousConversationId === null) {
+        options.onConversationIdUpdate(null);
+      }
+
       setApiError(
         error instanceof TypeError || (error as Error).message === 'Failed to fetch'
           ? t('editor.networkError')
