@@ -3,7 +3,8 @@
  */
 
 import type { LLMConfig, LLMMessage, ModelInfo, TestConnectionResult } from '@/lib/types';
-import { ProxyAgent, fetch as undiciFetch } from 'undici';
+import { fetch as undiciFetch } from 'undici';
+import { proxyManager } from './proxy-manager';
 
 // ── URL validation ──
 
@@ -24,69 +25,6 @@ function validateBaseUrl(url: string): void {
   }
 }
 
-// ── Proxy support ──
-// 优先从 DB 读取代理配置（用户在设置中配置），回退到环境变量
-let cachedAgent: ProxyAgent | undefined;
-let cachedProxyUrl: string | null = null;
-let lastCheck = 0;
-let hasChecked = false; // 标记是否已查询过代理配置（含"无代理"状态）
-const CACHE_TTL = 5000; // 5 秒缓存
-
-/** 获取代理 Agent（带缓存，动态读取 DB 配置） */
-async function getProxyAgent(): Promise<ProxyAgent | undefined> {
-  const now = Date.now();
-  if (now - lastCheck < CACHE_TTL && hasChecked) {
-    return cachedAgent;
-  }
-  lastCheck = now;
-  hasChecked = true;
-
-  try {
-    console.time('[LLM Client] Load Proxy Config');
-    const { configManager } = await import('@/lib/db/config-manager');
-    const { proxyUrl, proxyEnabled } = await configManager.getProxy();
-    console.timeEnd('[LLM Client] Load Proxy Config');
-
-    if (proxyEnabled && proxyUrl) {
-      if (proxyUrl !== cachedProxyUrl) {
-        // 关闭旧的代理实例，避免连接泄漏
-        if (cachedAgent) {
-          try { await cachedAgent.close(); } catch { /* ignore */ }
-        }
-        cachedProxyUrl = proxyUrl;
-        cachedAgent = new ProxyAgent(proxyUrl);
-      }
-      return cachedAgent;
-    }
-  } catch {
-    // DB 不可用时回退到环境变量
-  }
-
-  // 回退：环境变量
-  const envProxy = process.env.HTTPS_PROXY || process.env.https_proxy
-    || process.env.HTTP_PROXY || process.env.http_proxy;
-  if (envProxy) {
-    if (envProxy !== cachedProxyUrl) {
-      // 关闭旧的代理实例，避免连接泄漏
-      if (cachedAgent) {
-        try { await cachedAgent.close(); } catch { /* ignore */ }
-      }
-      cachedProxyUrl = envProxy;
-      cachedAgent = new ProxyAgent(envProxy);
-    }
-    return cachedAgent;
-  }
-
-  // 无代理时，清除旧的 agent
-  if (cachedAgent) {
-    try { await cachedAgent.close(); } catch { /* ignore */ }
-    cachedAgent = undefined;
-    cachedProxyUrl = null;
-  }
-
-  return undefined;
-}
-
 /**
  * 代理感知的 fetch 封装
  * 有代理时用 undici.fetch + ProxyAgent，无代理时用全局 fetch
@@ -94,7 +32,7 @@ async function getProxyAgent(): Promise<ProxyAgent | undefined> {
  * 因此需要类型断言；返回值类型与全局 fetch 兼容但签名不同，需双重断言。
  */
 async function proxyFetch(url: string, options?: RequestInit): Promise<Response> {
-  const agent = await getProxyAgent();
+  const agent = await proxyManager.getAgent();
   if (agent) {
     return undiciFetch(url, { ...options, dispatcher: agent } as any) as unknown as Promise<Response>;
   }
