@@ -124,11 +124,9 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, 
                   onClick={() => setExpanded(true)}
                   className="w-full flex items-center justify-between px-3.5 py-2.5 bg-[var(--surface-warm-hover)] rounded-lg border border-dashed border-[var(--border)] hover:border-[var(--accent-indigo)]/30 hover:bg-[var(--accent-indigo)]/5 transition-all duration-200 group"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-[var(--muted)] group-hover:text-[var(--accent-indigo)] transition-colors">
-                      {t('message.clickToExpand')}
-                    </span>
-                  </div>
+                  <span className="text-xs text-[var(--muted)] group-hover:text-[var(--accent-indigo)] transition-colors">
+                    {t('message.clickToExpand')}
+                  </span>
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] text-[var(--muted)]/70">
                       {message.content.length} {t('message.characters')}
