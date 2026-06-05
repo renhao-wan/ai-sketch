@@ -183,6 +183,7 @@ export function saveToDisk(): void {
  * 适用于所有常规业务写入，避免频繁 I/O 阻塞事件循环
  */
 export function requestSave(): void {
+  isDirty = true;
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     saveTimer = null;

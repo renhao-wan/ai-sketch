@@ -110,14 +110,10 @@ app.whenReady().then(async () => {
   }
 });
 
-// 应用退出前关闭数据库，确保数据持久化
-app.on('before-quit', () => {
-  closeDb();
-});
-
 // 所有窗口关闭时退出应用（Windows/Linux）
 app.on('window-all-closed', async () => {
   await stopServer();
+  closeDb();
   app.quit();
 });
 

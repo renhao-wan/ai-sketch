@@ -109,9 +109,7 @@ class CacheManager {
       );
     }
 
-    requestSave();
-
-    // 清理过期和多余的缓存
+    // 清理过期和多余的缓存（cleanup 末尾统一 requestSave）
     await this.cleanup();
   }
 
@@ -158,7 +156,7 @@ class CacheManager {
   }
 
   /** 获取缓存统计信息 */
-  async getStats(): Promise<{ total: number; hitRate: number }> {
+  async getStats(): Promise<{ total: number; avgUseCount: number }> {
     const db = await getDb();
 
     const countStmt = db.prepare('SELECT COUNT(*) as total, SUM(use_count) as total_uses FROM response_cache');
@@ -171,10 +169,10 @@ class CacheManager {
     }
     countStmt.free();
 
-    // 计算命中率（简化计算：总使用次数 / 总条目数）
-    const hitRate = total > 0 ? totalUses / total : 0;
+    // 平均使用次数：总使用次数 / 总条目数
+    const avgUseCount = total > 0 ? totalUses / total : 0;
 
-    return { total, hitRate };
+    return { total, avgUseCount };
   }
 }
 

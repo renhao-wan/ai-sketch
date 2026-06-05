@@ -95,7 +95,7 @@ export async function clearCache(): Promise<{ success: boolean }> {
   });
 }
 
-export async function fetchCacheStats(): Promise<{ total: number; hitRate: number }> {
+export async function fetchCacheStats(): Promise<{ total: number; avgUseCount: number }> {
   return request('/api/configs/actions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
