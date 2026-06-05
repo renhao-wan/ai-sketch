@@ -18,11 +18,11 @@ import { consumeInitData } from '@/lib/utils/init-data';
 import { useLocale } from '@/lib/locales';
 import { useShortcuts } from '@/hooks/useShortcuts';
 import { useNotification } from '@/hooks/useNotification';
-import type { LLMConfig, AIActionId, ConversationMessage } from '@/lib/types';
+import { useConversation } from '@/hooks/useConversation';
+import { useGeneration } from '@/hooks/useGeneration';
+import { useAIActions } from '@/hooks/useAIActions';
+import type { LLMConfig } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
-
-import { generateId, parseStoredImages } from '@/lib/utils';
-import { consumeSSEStream } from '@/lib/api/sse-consumer';
 
 // 动态导入重型组件（按需加载）
 const ConfigSelector = dynamic(() => import('@/components/dialogs/ConfigSelector'), { ssr: false });
@@ -38,27 +38,26 @@ function EditorContent() {
   const [format, setFormat] = useState<DiagramFormat>('excalidraw');
 
   const [renderData, setRenderData] = useState<unknown>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isApplyingCode, setIsApplyingCode] = useState(false);
 
-  const [apiError, setApiError] = useState<string | null>(null);
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [currentInput, setCurrentInput] = useState('');
   const [currentChartType, setCurrentChartType] = useState('auto');
   const { notification, showNotification, closeNotification } = useNotification();
-  const [aiActionLoading, setAiActionLoading] = useState<AIActionId | null>(null);
-  const [aiExplanation, setAiExplanation] = useState('');
   const [bottomPanelTab, setBottomPanelTab] = useState('code');
-
-  // Conversation state
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ConversationMessage[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
-  useEffect(() => { isStreamingRef.current = isStreaming; }, [isStreaming]);
 
   // Panel width (not persisted — resets on refresh/navigate)
   const [panelWidth, setPanelWidth] = useState(360);
   const [isElectron, setIsElectron] = useState(false);
+
+  // Refs
+  const pendingInitRef = useRef<import('@/lib/utils/init-data').InitData | null>(null);
+  const pendingSourceRef = useRef<string>('text');
+  const streamRendererRef = useRef<StreamRendererRef | null>(null);
+  const formatRef = useRef(format);
+  useEffect(() => { formatRef.current = format; }, [format]);
+  const isFirstFormatRef = useRef(true);
+  const skipFormatClearRef = useRef(false);
 
   // 检测是否在 Electron 环境中
   useEffect(() => {
@@ -66,11 +65,11 @@ function EditorContent() {
   }, []);
 
   const handlePanelWidthChange = useCallback((w: number) => {
-    // Electron 环境需要更大最小宽度以容纳窗口控制按钮
     const minWidth = isElectron ? 320 : 280;
     setPanelWidth(Math.min(Math.max(w, minWidth), 600));
   }, [isElectron]);
 
+  // 加载配置
   const loadConfig = useCallback(async () => {
     try {
       const data = await api.fetchConfigs();
@@ -89,16 +88,69 @@ function EditorContent() {
     loadConfig();
   }, [loadConfig]);
 
-  // Load conversation from sessionStorage on mount (set by homepage history)
+  // 会话管理 Hook
+  const conversation = useConversation({
+    onFormatChange: (f) => setFormat(f),
+    onCodeClear: () => {
+      setGeneratedCode('');
+      setRenderData(null);
+      setJsonError(null);
+    },
+  });
+
+  // 代码生成 Hook
+  const generation = useGeneration({
+    config,
+    format,
+    conversationId: conversation.conversationId,
+    streamRendererRef,
+    onCodeUpdate: setGeneratedCode,
+    onRenderDataUpdate: setRenderData,
+    onJsonErrorUpdate: setJsonError,
+    onConversationIdUpdate: conversation.setConversationId,
+    onMessagesUpdate: conversation.setMessages,
+    onConfigReminder: () => {
+      showNotification(t('editor.configReminder'), t('editor.pleaseConfigLLM'), 'warning');
+      setIsConfigManagerOpen(true);
+    },
+  });
+
+  // AI 操作 Hook
+  const aiActions = useAIActions({
+    config,
+    format,
+    generatedCode,
+    abortControllerRef: generation.abortControllerRef,
+    onCodeUpdate: setGeneratedCode,
+    onExplanationUpdate: (exp) => {}, // 已在 Hook 内部处理
+    onBottomPanelTabChange: setBottomPanelTab,
+    onRenderDataUpdate: setRenderData,
+    onJsonErrorUpdate: setJsonError,
+    onNotification: showNotification,
+  });
+
+  // 格式切换时清空代码
+  useEffect(() => {
+    if (isFirstFormatRef.current) { isFirstFormatRef.current = false; return; }
+    if (skipFormatClearRef.current) { skipFormatClearRef.current = false; return; }
+    setGeneratedCode('');
+    setJsonError(null);
+    setRenderData(null);
+    streamRendererRef.current?.reset();
+  }, [format]);
+
+  const strategy = getStrategy(format);
+
+  // Load conversation from sessionStorage on mount
   useEffect(() => {
     const convId = sessionStorage.getItem('ai-sketch-load-conversation');
     if (!convId) return;
     sessionStorage.removeItem('ai-sketch-load-conversation');
-    handleLoadConversation(convId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅在挂载时读取 sessionStorage，不需要依赖 handleLoadConversation
+    conversation.loadConversation(convId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Consume init data from sessionStorage on mount (set by homepage before navigation)
+  // Consume init data from sessionStorage on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const source = params.get('source');
@@ -125,180 +177,15 @@ function EditorContent() {
       setCurrentChartType('auto');
     }
 
-    // 存储 source 参数，用于自动发送时确定 sourceType
     pendingInitRef.current = init;
     pendingSourceRef.current = source;
   }, []);
 
-  const pendingInitRef = useRef<import('@/lib/utils/init-data').InitData | null>(null);
-  const pendingSourceRef = useRef<string>('text');
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const streamRendererRef = useRef<StreamRendererRef | null>(null);
-  const formatRef = useRef(format);
-  useEffect(() => { formatRef.current = format; }, [format]);
-  const isFirstFormatRef = useRef(true);
-  const skipFormatClearRef = useRef(false);
-  const isStreamingRef = useRef(false);
-  useEffect(() => {
-    if (isFirstFormatRef.current) { isFirstFormatRef.current = false; return; }
-    if (skipFormatClearRef.current) { skipFormatClearRef.current = false; return; }
-    setGeneratedCode('');
-    setJsonError(null);
-    setRenderData(null);
-    streamRendererRef.current?.reset();
-  }, [format]);
-  const strategy = getStrategy(format);
-
-  const handleCancelGeneration = useCallback(() => {
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = null;
-    setIsGenerating(false);
-    setIsStreaming(false);
-  }, []);
-
-  // Abort in-flight stream on unmount
-  useEffect(() => {
-    return () => {
-      abortControllerRef.current?.abort();
-    };
-  }, []);
-
-  const handleSendMessage = useCallback(async (userMessage: string | { text?: string; images?: unknown[] }, chartType: string = 'auto', sourceType: string = 'text') => {
-    if (isGenerating) return;
-
-    if (!isConfigValid(config)) {
-      showNotification(t('editor.configReminder'), t('editor.pleaseConfigLLM'), 'warning');
-      setIsConfigManagerOpen(true);
-      return;
-    }
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    const userContent = typeof userMessage === 'string' ? userMessage : (userMessage.text || '');
-
-    setCurrentChartType(chartType);
-    setIsGenerating(true);
-    setIsStreaming(true);
-    setApiError(null);
-    setJsonError(null);
-
-    // Optimistic: add user + assistant messages to local state
-    const optimisticUserMsg: ConversationMessage = {
-      id: generateId(),
-      conversationId: conversationId || '',
-      role: 'user',
-      content: userContent,
-      sourceType: sourceType as 'text' | 'file' | 'image',
-      createdAt: Date.now(),
-      ...(sourceType === 'image' && typeof userMessage === 'object' && userMessage.images?.length ? {
-        imageData: (userMessage.images[0] as { data?: string })?.data,
-        imageMimeType: (userMessage.images[0] as { mimeType?: string })?.mimeType,
-      } : {}),
-    };
-    const optimisticAssistantMsg: ConversationMessage = {
-      id: generateId(),
-      conversationId: conversationId || '',
-      role: 'assistant',
-      content: '',
-      sourceType: 'text',
-      createdAt: Date.now(),
-    };
-    setMessages(prev => [...prev, optimisticUserMsg, optimisticAssistantMsg]);
-
-    let firstContentTime: number | null = null;
-    const sendTime = performance.now();
-    console.log('[Editor] Sending message...');
-
-    try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ configId: config!.id, userInput: userMessage, chartType, format, conversationId, sourceType }),
-        signal: controller.signal,
-      });
-
-      console.log(`[Editor] Response received in ${Math.round(performance.now() - sendTime)}ms`);
-
-      if (!response.ok) {
-        let errorMessage = t('editor.generateFailed');
-        try {
-          const errorData = await response.json();
-          if (errorData.error) errorMessage = errorData.error;
-        } catch {
-          switch (response.status) {
-            case 400: errorMessage = t('editor.requestError'); break;
-            case 401: case 403: errorMessage = t('editor.apiKeyError'); break;
-            case 429: errorMessage = t('editor.rateLimit'); break;
-            case 500: case 502: case 503: errorMessage = t('editor.serverError'); break;
-            default: errorMessage = `${t('editor.requestFailed')} (${response.status})`;
-          }
-        }
-        throw new Error(errorMessage);
-      }
-
-      if (!response.body) throw new Error('Response body is null');
-
-      let activeConvId = conversationId;
-      const { accumulatedCode } = await consumeSSEStream(
-        response.body.getReader(),
-        controller.signal,
-        {
-          onMeta: (convId) => {
-            activeConvId = convId;
-            setConversationId(convId);
-            setMessages(prev => prev.map(m =>
-              (m.id === optimisticUserMsg.id || m.id === optimisticAssistantMsg.id) ? { ...m, conversationId: convId } : m
-            ));
-          },
-          onContent: (stripped) => {
-            if (!firstContentTime) {
-              firstContentTime = performance.now();
-              console.log(`[Editor] First content received in ${Math.round(firstContentTime - sendTime)}ms`);
-            }
-            setGeneratedCode(stripped);
-            streamRendererRef.current?.feed(stripped);
-            setMessages(prev => prev.map(m =>
-              m.id === optimisticAssistantMsg.id ? { ...m, content: stripped } : m
-            ));
-          },
-        },
-      );
-
-      console.log(`[Editor] Stream completed in ${Math.round(performance.now() - sendTime)}ms, total chars: ${accumulatedCode.length}`);
-
-      // Full postProcess + optimize + validate after stream completes
-      const currentStrategy = getStrategy(formatRef.current);
-      const processedCode = currentStrategy.postProcess(accumulatedCode);
-      const optimizedCode = currentStrategy.optimize(processedCode);
-      setGeneratedCode(optimizedCode);
-      tryParseAndApply(optimizedCode, currentStrategy);
-      streamRendererRef.current?.reset();
-
-      // Update streaming assistant message with final post-processed code
-      setMessages(prev => prev.map(m =>
-        m.id === optimisticAssistantMsg.id ? { ...m, content: optimizedCode, conversationId: activeConvId || m.conversationId } : m
-      ));
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return;
-      console.error('[stream] error:', error);
-      setApiError(error instanceof TypeError || (error as Error).message === 'Failed to fetch'
-        ? t('editor.networkError')
-        : (error as Error).message);
-    } finally {
-      abortControllerRef.current = null;
-      setIsGenerating(false);
-      setIsStreaming(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- t 和 tryParseAndApply 不应在依赖中，避免不必要的重渲染
-  }, [config, format, conversationId, isGenerating]);
-
   // Send pending init data once config is loaded
   useEffect(() => {
     if (!pendingInitRef.current) return;
-    if (!configLoaded) return; // 等待配置加载完成后再判断
+    if (!configLoaded) return;
 
-    // Config loaded but invalid — show reminder and open config selector
     if (!isConfigValid(config)) {
       showNotification(t('editor.configReminder'), t('editor.pleaseConfigLLM'), 'warning');
       setIsConfigManagerOpen(true);
@@ -309,84 +196,33 @@ function EditorContent() {
     pendingInitRef.current = null;
 
     const data = init.data;
-    // 使用 URL 参数 source 确定 sourceType（首页传文件时 orchestrator 返回 type='text'，但 source='file'）
     const resolvedSource = pendingSourceRef.current || (init.type === 'image' ? 'image' : init.type === 'file' ? 'file' : 'text');
 
     if (init.type === 'text' && typeof data === 'string') {
-      handleSendMessage(data, 'auto', resolvedSource);
+      generation.sendMessage(data, 'auto', resolvedSource);
     } else if (init.type === 'file' && data) {
-      handleSendMessage(data as string, 'auto', resolvedSource);
+      generation.sendMessage(data as string, 'auto', resolvedSource);
     } else if (init.type === 'image' && data) {
-      handleSendMessage(data as { text?: string; images?: unknown[] }, 'auto', 'image');
+      generation.sendMessage(data as { text?: string; images?: unknown[] }, 'auto', 'image');
     }
     setCurrentInput('');
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- t 来自 useLocale，是稳定的引用
-  }, [config, configLoaded, handleSendMessage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config, configLoaded]);
 
-  // Mermaid 和 Draw.io 不在流式期间渲染，等流式完成后再渲染（由 tryParseAndApply 处理）
-  // 侧边栏 AI 输出仍然流式显示
-
-  const tryParseAndApply = (code: string, strat?: ReturnType<typeof getStrategy>) => {
-    const s = strat || strategy;
-    const result = s.validate(code);
-    if (result.valid) {
-      setRenderData(result.data);
-      setJsonError(null);
-    } else {
-      setJsonError(result.error);
-    }
+  const handleConfigSelect = (selectedConfig: LLMConfig | null) => {
+    if (selectedConfig) setConfig(selectedConfig);
   };
-
-  const handleApplyCode = async () => {
-    setIsApplyingCode(true);
-    try { await new Promise(r => setTimeout(r, 300)); tryParseAndApply(generatedCode); }
-    finally { setIsApplyingCode(false); }
-  };
-
-  const handleConfigSelect = (selectedConfig: LLMConfig | null) => { if (selectedConfig) setConfig(selectedConfig); };
-
-  const handleLoadConversation = useCallback(async (id: string) => {
-    try {
-      const conv = await api.getConversation(id);
-      setConversationId(conv.id);
-      setMessages(conv.messages);
-      setCurrentChartType(conv.chartType);
-      if (conv.format && ['excalidraw', 'mermaid', 'drawio'].includes(conv.format)) {
-        setFormat(conv.format);
-      }
-      setGeneratedCode('');
-      setRenderData(null);
-      setJsonError(null);
-    } catch (err) {
-      console.error('Failed to load conversation:', err);
-      setApiError('Failed to load conversation');
-    }
-  }, []);
-
-  const handleNewConversation = useCallback(() => {
-    setConversationId(null);
-    setMessages([]);
-    setGeneratedCode('');
-    setRenderData(null);
-    setCurrentInput('');
-    setJsonError(null);
-    setApiError(null);
-    setFormat('excalidraw');
-    setCurrentChartType('auto');
-    streamRendererRef.current?.reset();
-  }, []);
 
   // 注册快捷键
   useShortcuts({
     onGoHome: () => router.push('/'),
-    onNewConversation: handleNewConversation,
+    onNewConversation: conversation.newConversation,
     onOpenSettings: (tab) => router.push(tab ? `/settings?tab=${tab}` : '/settings'),
   });
 
   const detectCodeFormat = (code: string): DiagramFormat => {
     const trimmed = code.trim();
     if (trimmed.startsWith('<')) return 'drawio';
-    // Excalidraw: JSON array (elements) or object with elements array
     if (trimmed.startsWith('[')) return 'excalidraw';
     if (trimmed.startsWith('{') && trimmed.includes('"elements"')) return 'excalidraw';
     return 'mermaid';
@@ -411,211 +247,20 @@ function EditorContent() {
     }
   }, [format]);
 
-  const handleRegenerate = useCallback(async () => {
-    if (isGenerating || messages.length === 0) return;
-    if (!isConfigValid(config)) {
-      showNotification(t('editor.configReminder'), t('editor.pleaseConfigLLM'), 'warning');
-      setIsConfigManagerOpen(true);
-      return;
-    }
-
-    // 找到最后一条 user 消息和 assistant 消息
-    const lastUserIdx = [...messages].reverse().findIndex(m => m.role === 'user');
-    if (lastUserIdx === -1) return;
-    const lastUserMsg = messages[messages.length - 1 - lastUserIdx];
-
-    // 从 user 消息中还原 images
-    const images = parseStoredImages(lastUserMsg.imageData, lastUserMsg.imageMimeType);
-
-    const userInput = images.length > 0
-      ? { text: lastUserMsg.content, images }
-      : lastUserMsg.content;
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    setIsGenerating(true);
-    setIsStreaming(true);
-    setApiError(null);
-    setJsonError(null);
-    setGeneratedCode('');
-    setRenderData(null);
-
-    // 删除旧的 assistant 消息，添加新的占位
-    setMessages(prev => {
-      const lastAssistantIdx = [...prev].reverse().findIndex(m => m.role === 'assistant');
-      if (lastAssistantIdx === -1) return prev;
-      const idx = prev.length - 1 - lastAssistantIdx;
-      return [...prev.slice(0, idx), ...prev.slice(idx + 1)];
-    });
-
-    // 仅添加 assistant 占位消息（不添加新的 user 消息）
-    const optimisticAssistantMsg: ConversationMessage = {
-      id: generateId(),
-      conversationId: conversationId || '',
-      role: 'assistant',
-      content: '',
-      sourceType: 'text',
-      createdAt: Date.now(),
-    };
-    setMessages(prev => [...prev, optimisticAssistantMsg]);
-
+  const handleApplyCode = async () => {
+    setIsApplyingCode(true);
     try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          configId: config!.id,
-          userInput,
-          chartType: currentChartType,
-          format,
-          conversationId,
-          sourceType: lastUserMsg.sourceType || 'text',
-          regenerate: true,
-        }),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        let errorMessage = t('editor.generateFailed');
-        try {
-          const errorData = await response.json();
-          if (errorData.error) errorMessage = errorData.error;
-        } catch {
-          switch (response.status) {
-            case 400: errorMessage = t('editor.requestError'); break;
-            case 401: case 403: errorMessage = t('editor.apiKeyError'); break;
-            case 429: errorMessage = t('editor.rateLimit'); break;
-            case 500: case 502: case 503: errorMessage = t('editor.serverError'); break;
-            default: errorMessage = `${t('editor.requestFailed')} (${response.status})`;
-          }
-        }
-        throw new Error(errorMessage);
-      }
-
-      if (!response.body) throw new Error('Response body is null');
-
-      const { accumulatedCode } = await consumeSSEStream(
-        response.body.getReader(),
-        controller.signal,
-        {
-          onContent: (stripped) => {
-            setGeneratedCode(stripped);
-            streamRendererRef.current?.feed(stripped);
-            setMessages(prev => prev.map(m =>
-              m.id === optimisticAssistantMsg.id ? { ...m, content: stripped } : m
-            ));
-          },
-        },
-      );
-
-      // 与 handleSendMessage 一致：postProcess + optimize
-      const currentStrategy = getStrategy(formatRef.current);
-      const processedCode = currentStrategy.postProcess(accumulatedCode);
-      const optimizedCode = currentStrategy.optimize(processedCode);
-      setGeneratedCode(optimizedCode);
-      setMessages(prev => prev.map(m =>
-        m.id === optimisticAssistantMsg.id ? { ...m, content: optimizedCode } : m
-      ));
-      tryParseAndApply(optimizedCode, currentStrategy);
-    } catch (error) {
-      if ((error as Error).name !== 'AbortError') {
-        setApiError((error as Error).message || t('editor.generateFailed'));
-      }
-    } finally {
-      setIsGenerating(false);
-      setIsStreaming(false);
-      abortControllerRef.current = null;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- tryParseAndApply 不应在依赖中，避免不必要的重渲染
-  }, [isGenerating, messages, config, currentChartType, format, conversationId, t]);
-
-  const handleAIAction = async (actionId: AIActionId) => {
-    if (!generatedCode) {
-      showNotification(t('aiAction.noCode'), '', 'warning');
-      return;
-    }
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    setAiActionLoading(actionId);
-
-    try {
-      const response = await fetch('/api/ai-action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: generatedCode,
-          format,
-          action: actionId,
-          configId: config?.id,
-        }),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'AI action failed');
-      }
-
-      if (!response.body) throw new Error('No response stream');
-
-      // 使用统一的 consumeSSEStream 替代手动 SSE 解析
-      let accumulated = '';
-      let finalResult = '';
-
-      const reader = response.body.getReader();
-      try {
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        while (true) {
-          if (controller.signal.aborted) break;
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            if (line.trim() === '' || line.trim() === 'data: [DONE]') continue;
-            if (!line.startsWith('data: ')) continue;
-
-            try {
-              const parsed = JSON.parse(line.slice(6));
-              if (parsed.type === 'content') {
-                accumulated += parsed.content;
-              } else if (parsed.type === 'result') {
-                finalResult = parsed.content;
-              } else if (parsed.type === 'error') {
-                throw new Error(parsed.error);
-              }
-            } catch (e) {
-              if (e instanceof SyntaxError) continue; // Skip invalid JSON
-              throw e;
-            }
-          }
-        }
-      } finally {
-        reader.releaseLock();
-      }
-
-      if (actionId === 'explain') {
-        setAiExplanation(accumulated);
-        setBottomPanelTab('explain');
+      await new Promise(r => setTimeout(r, 300));
+      const s = getStrategy(format);
+      const result = s.validate(generatedCode);
+      if (result.valid) {
+        setRenderData(result.data);
+        setJsonError(null);
       } else {
-        const codeToApply = finalResult || accumulated;
-        setGeneratedCode(codeToApply);
-        tryParseAndApply(codeToApply);
+        setJsonError(result.error);
       }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return;
-      console.error('AI action error:', error);
-      showNotification(t('aiAction.loading'), (error as Error).message, 'error');
     } finally {
-      setAiActionLoading(null);
-      abortControllerRef.current = null;
+      setIsApplyingCode(false);
     }
   };
 
@@ -639,24 +284,24 @@ function EditorContent() {
 
         {/* AI Copilot Panel (Left) */}
         <AICopilotPanel
-          conversationId={conversationId}
-          messages={messages}
-          isStreaming={isStreaming}
-          onLoadConversation={handleLoadConversation}
-          onNewConversation={handleNewConversation}
-          onSendMessage={handleSendMessage}
-          onCancel={handleCancelGeneration}
-          isGenerating={isGenerating}
+          conversationId={conversation.conversationId}
+          messages={conversation.messages}
+          isStreaming={generation.isStreaming}
+          onLoadConversation={conversation.loadConversation}
+          onNewConversation={conversation.newConversation}
+          onSendMessage={generation.sendMessage}
+          onCancel={generation.cancelGeneration}
+          isGenerating={generation.isGenerating}
           currentInput={currentInput}
           currentChartType={currentChartType}
           currentFormat={format}
           onFormatChange={(f) => { setFormat(f); setRenderData(null); setGeneratedCode(''); }}
           onOpenConfig={() => setIsConfigManagerOpen(true)}
           onExport={handleExport}
-          onRegenerate={handleRegenerate}
+          onRegenerate={() => generation.regenerate(conversation.messages)}
           onShowDiagram={handleShowDiagram}
-          apiError={apiError}
-          onClearError={() => setApiError(null)}
+          apiError={generation.apiError}
+          onClearError={() => generation.setApiError(null)}
           panelWidth={panelWidth}
           onPanelWidthChange={handlePanelWidthChange}
           headerExtra={<WindowControls />}
@@ -666,20 +311,20 @@ function EditorContent() {
         <div className="flex-1 flex flex-col relative">
           {/* Floating AI Actions */}
           <FloatingAIActions
-            onAction={handleAIAction}
-            loadingAction={aiActionLoading}
-            disabled={isGenerating || !generatedCode}
+            onAction={aiActions.handleAIAction}
+            loadingAction={aiActions.aiActionLoading}
+            disabled={generation.isGenerating || !generatedCode}
           />
 
           {/* Canvas */}
           <div className="flex-1 relative">
-            <DiagramCanvas format={format} data={renderData} isStreaming={isStreaming} streamRendererRef={streamRendererRef} />
+            <DiagramCanvas format={format} data={renderData} isStreaming={generation.isStreaming} streamRendererRef={streamRendererRef} />
           </div>
 
           {/* Bottom Context Panel */}
           <BottomContextPanel
             generatedCode={generatedCode}
-            explanation={aiExplanation}
+            explanation={aiActions.aiExplanation}
             format={format}
             activeTab={bottomPanelTab}
             onTabChange={setBottomPanelTab}
@@ -691,7 +336,7 @@ function EditorContent() {
               onClear={() => setGeneratedCode('')}
               jsonError={jsonError}
               onClearJsonError={() => setJsonError(null)}
-              isGenerating={isGenerating}
+              isGenerating={generation.isGenerating}
               isApplyingCode={isApplyingCode}
               language={strategy.codeLanguage}
             />
