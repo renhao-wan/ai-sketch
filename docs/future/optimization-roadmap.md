@@ -302,6 +302,59 @@ app.on('before-quit', async () => {
 
 ---
 
+#### 问题：LLM 生成失败后无自动重试（中等）
+
+**位置**：`app/api/generate/route.ts` 第 209-229 行、`lib/strategies/excalidraw-strategy.ts` `postProcess` 方法
+
+**现状**：
+- `postProcess` 有两级修复链（`repairJsonClosure` → `fixUnescapedQuotes`），但修复彻底失败后直接返回原始文本，不会请求 LLM 重新生成
+- 用户只能手动点击"重新生成"按钮
+- 429 限流有自动重试（`fetchWithRetry`，最多 3 次），但 JSON 格式错误没有重试
+
+**影响**：
+- LLM 输出格式错误时，用户看到的是损坏的代码或空白画布
+- 用户需要手动操作才能重试，体验不流畅
+
+**改进方案**：
+
+```typescript
+// 在 generate route 中添加自动重试逻辑
+const MAX_AUTO_RETRIES = 2;
+
+for (let attempt = 0; attempt <= MAX_AUTO_RETRIES; attempt++) {
+  const rawCode = await streamFromLLM(messages);
+  const processed = strategy.postProcess(rawCode);
+  const validation = strategy.validate(processed);
+
+  if (validation.valid) {
+    // 成功，返回结果
+    return processed;
+  }
+
+  if (attempt < MAX_AUTO_RETRIES) {
+    // 在 user message 中添加错误反馈，让 LLM 知道上次输出有问题
+    messages.push({
+      role: 'assistant',
+      content: rawCode,
+    });
+    messages.push({
+      role: 'user',
+      content: `上次生成的代码格式不正确（${validation.error}），请重新生成，确保输出有效的 ${strategy.codeLanguage} 格式。`,
+    });
+  }
+}
+
+// 所有重试都失败，返回最后一次的结果让 postProcess 做最佳修复
+```
+
+关键点：
+1. 仅在 `validate` 失败时重试，而非网络错误（网络错误由 `fetchWithRetry` 处理）
+2. 将错误反馈注入上下文，让 LLM 知道上次输出的问题
+3. 限制最大重试次数（2 次），避免无限循环和 token 浪费
+4. 重试对用户透明，SSE 流中可发送 `status` 事件提示"正在重试"
+
+---
+
 ### 4.2 提示词系统问题
 
 #### 问题：output 示例与要求矛盾（中等）
