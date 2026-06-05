@@ -223,6 +223,7 @@ app/editor/page.tsx（编辑器）
 
 ## 相关文档
 
+- [设计模式](./design-patterns.md) — 项目中使用的所有设计模式详解
 - [图表格式策略模式](./diagram-strategy.md) — DiagramStrategy 接口详解
 - [输入类型策略模式](./input-strategy.md) — InputStrategy 接口详解
 - [API 接口文档](../api/endpoints.md) — 后端 API 接口说明
