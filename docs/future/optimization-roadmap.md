@@ -835,7 +835,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 |---|--------|------|------|
 | 47 | system prompt getSystemPrompt() 重复调用 | 上下文管理 | route.ts 中调用两次，未缓存 |
 | 48 | 时间格式不统一 | 数据库 | ✅ 已修复：统一为 Unix 时间戳 |
-| 49 | API Key 明文存储 | 数据库 | 桌面端风险较低，建议简单加密 |
+| 49 | API Key 明文存储 | 数据库 | ✅ 已修复：AES-256-GCM 加密，密钥存 .key 文件 |
 | 50 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
 | 51 | DiagramFormat 重复定义 | 类型 | ✅ 已修复：统一从 `lib/types/diagram-strategy` 导入 |
 | 52 | SourceType/InputSourceType 未统一 | 类型 | ✅ 已修复：移除 InputSourceType，统一用 SourceType |
