@@ -11,6 +11,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "electron:dev": "concurrently \"next dev --webpack\" \"wait-on http://localhost:3000 && node scripts/start-electron.js\"",
     "electron:build": "ts-node --project scripts/tsconfig.json --transpile-only scripts/build.ts",
     "pack": "electron-builder --dir",
@@ -50,6 +52,7 @@
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
+    "vitest": "^4.1.8",
     "wait-on": "^7.2.0"
   }
 }
