@@ -68,7 +68,7 @@ export function LLMSettings() {
   /** 新建配置 */
   const handleCreateNew = () => {
     setIsCreating(true);
-    setEditingConfig({ name: '', type: 'openai', baseUrl: '', apiKey: '', model: '', description: '' });
+    setEditingConfig({ name: '', type: 'openai', baseUrl: '', apiKey: '', model: '', description: '', temperature: 0.5 });
   };
 
   /** 编辑配置 */

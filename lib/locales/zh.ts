@@ -121,7 +121,7 @@ export const zh = {
   'config.fillRequired': '请先填写提供商类型、基础 URL 和 API 密钥',
   'config.loadModelFailed': '加载模型失败',
   'config.fillAllRequired': '请填写所有必填字段',
-  'config.temperature': 'Temperature',
+  'config.temperature': '温度',
   'config.temperatureHint': '控制输出随机性，0=确定性，2=最大随机性，推荐 0.3-0.5',
   'config.bannerTitle': '配置较多，建议清理',
   'config.bannerDescription': '您已有 {count} 个配置，建议清理不常用的配置。',
