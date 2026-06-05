@@ -85,8 +85,8 @@ class ConfigManager {
         model: row.model as string,
         description: row.description as string,
         is_active: row.is_active as number,
-        created_at: row.created_at as string,
-        updated_at: row.updated_at as string,
+        created_at: row.created_at as number,
+        updated_at: row.updated_at as number,
       });
     } finally {
       stmt.free();
