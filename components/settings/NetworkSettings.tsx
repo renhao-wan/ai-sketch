@@ -88,24 +88,20 @@ export function NetworkSettings() {
     }
   };
 
-  /** 保存重试配置 */
-  const handleSaveRetries = async () => {
-    setSaving(true);
+  /** 切换重试次数（点击即保存） */
+  const handleRetryChange = async (value: number) => {
+    const prev = maxRetries;
+    setMaxRetries(value);
     try {
       const res = await fetch('/api/configs/actions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'set-retries', maxRetries }),
+        body: JSON.stringify({ action: 'set-retries', maxRetries: value }),
       });
-      if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        throw new Error(text || `HTTP ${res.status}`);
-      }
-      setNotification({ isOpen: true, title: t('retries.saveSuccess'), message: '', type: 'success' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch (err) {
-      setNotification({ isOpen: true, title: t('retries.saveFailed'), message: (err as Error).message, type: 'error' });
-    } finally {
-      setSaving(false);
+      console.error('Failed to save retry setting:', err);
+      setMaxRetries(prev);
     }
   };
 
@@ -175,41 +171,33 @@ export function NetworkSettings() {
 
       {/* LLM 失败重试 */}
       <section>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-[var(--accent-indigo)]/10 flex items-center justify-center">
-            <RefreshCw size={18} className="text-[var(--accent-indigo)]" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-[var(--fg)]">{t('retries.title')}</p>
-            <p className="text-xs text-[var(--muted)]">{t('retries.description')}</p>
-          </div>
-        </div>
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-[var(--fg)]">{t('retries.maxRetries')}</label>
+        <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]">
           <div className="flex items-center gap-3">
-            <input
-              type="range"
-              min="0"
-              max="5"
-              step="1"
-              value={maxRetries}
-              onChange={(e) => setMaxRetries(parseInt(e.target.value, 10))}
-              className="flex-1 h-2 bg-[var(--surface-warm-hover)] rounded-lg appearance-none cursor-pointer accent-[var(--accent-indigo)]"
-            />
-            <span className="text-sm font-mono text-[var(--fg)] w-8 text-right">{maxRetries}</span>
+            <div className="w-10 h-10 rounded-full bg-[var(--accent-indigo)]/10 flex items-center justify-center">
+              <RefreshCw size={18} className="text-[var(--accent-indigo)]" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[var(--fg)]">{t('retries.title')}</p>
+              <p className="text-xs text-[var(--muted)]">{t('retries.description')}</p>
+            </div>
           </div>
-          <p className="text-xs text-[var(--muted)]">{t('retries.maxRetriesHint')}</p>
-          <div className="flex justify-end">
-            <button
-              onClick={handleSaveRetries}
-              disabled={saving}
-              className="px-5 py-2 text-sm text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium flex items-center gap-2"
-            >
-              {saving && <Loader2 size={14} className="animate-spin" />}
-              {t('retries.save')}
-            </button>
+          <div className="flex items-center rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--border)] p-0.5">
+            {[0, 1, 2, 3, 4, 5].map((v) => (
+              <button
+                key={v}
+                onClick={() => handleRetryChange(v)}
+                className={`w-8 h-7 text-xs font-medium rounded-md transition-all duration-150 ${
+                  maxRetries === v
+                    ? 'bg-[var(--accent-indigo)] text-white shadow-sm'
+                    : 'text-[var(--muted)] hover:text-[var(--fg)]'
+                }`}
+              >
+                {v}
+              </button>
+            ))}
           </div>
         </div>
+        <p className="mt-2 text-xs text-[var(--muted)]">{t('retries.maxRetriesHint')}</p>
       </section>
 
       <Notification
