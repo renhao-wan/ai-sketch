@@ -194,6 +194,9 @@ export default function DataSettings() {
           // Clear cache
           await api.clearCache();
 
+          // Reset global settings (proxy, retries, etc.)
+          await api.resetMeta();
+
           // Update local counts
           setConversationCount(0);
           setConfigCount(0);

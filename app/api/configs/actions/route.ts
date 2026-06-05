@@ -55,6 +55,11 @@ const actionHandlers: Record<string, ActionHandler> = {
     return { success: true };
   },
 
+  'reset-meta': async () => {
+    await configManager.resetMeta();
+    return { success: true };
+  },
+
   'clear-cache': async () => {
     await cacheManager.clearAll();
     return { success: true };

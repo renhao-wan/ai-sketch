@@ -95,6 +95,14 @@ export async function clearCache(): Promise<{ success: boolean }> {
   });
 }
 
+export async function resetMeta(): Promise<{ success: boolean }> {
+  return request('/api/configs/actions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'reset-meta' }),
+  });
+}
+
 export async function fetchCacheStats(): Promise<{ total: number; avgUseCount: number }> {
   return request('/api/configs/actions', {
     method: 'POST',

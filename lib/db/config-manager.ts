@@ -373,6 +373,13 @@ class ConfigManager {
     db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('llm_max_retries', ?)", [String(Math.max(0, Math.min(5, maxRetries)))]);
     requestSave();
   }
+
+  /** 重置所有全局设置（proxy、retries、active_config_id） */
+  async resetMeta(): Promise<void> {
+    const db = await getDb();
+    db.run("DELETE FROM meta");
+    requestSave();
+  }
 }
 
 export const configManager = new ConfigManager();
