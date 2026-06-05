@@ -231,7 +231,7 @@ export const zh = {
   'message.characters': '个字符',
   'message.expandAll': '展开全部',
   'message.collapse': '收起',
-  'message.clickToExpand': '点击展开查看代码',
+  'message.clickToExpand': '点击查看',
 
   // Scroll to top
   'scrollToTop': '回到顶部',
