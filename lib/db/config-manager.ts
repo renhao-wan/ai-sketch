@@ -1,4 +1,5 @@
 import { getDb, saveToDisk } from './index';
+import { withTransaction } from './transaction';
 import { testConnection } from '@/lib/llm/client';
 import { generateId } from '@/lib/utils';
 import type { LLMConfig, TestConnectionResult } from '@/lib/types';
@@ -118,8 +119,7 @@ class ConfigManager {
       updatedAt: now,
     };
 
-    db.run('BEGIN');
-    try {
+    withTransaction(db, () => {
       db.run(
         `INSERT INTO llm_configs (id, name, type, base_url, api_key, model, description, is_active, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -143,13 +143,8 @@ class ConfigManager {
       if (count === 1) {
         db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('active_config_id', ?)", [id]);
       }
-      db.run('COMMIT');
-    } catch (e) {
-      db.run('ROLLBACK');
-      throw e;
-    }
+    });
 
-    saveToDisk();
     return newConfig;
   }
 
@@ -188,8 +183,7 @@ class ConfigManager {
     // 在事务外查询活跃配置 ID，避免 BEGIN 后 await（为未来异步数据库驱动兼容）
     const activeId = await this.getActiveConfigId();
 
-    db.run('BEGIN');
-    try {
+    withTransaction(db, () => {
       if (activeId === id) {
         db.run("DELETE FROM meta WHERE key = 'active_config_id'");
         // 用 SQL 查询替代全量加载
@@ -200,12 +194,7 @@ class ConfigManager {
       }
 
       db.run('DELETE FROM llm_configs WHERE id = ?', [id]);
-      db.run('COMMIT');
-    } catch (e) {
-      db.run('ROLLBACK');
-      throw e;
-    }
-    saveToDisk();
+    });
   }
 
   async setActiveConfig(id: string): Promise<LLMConfig> {

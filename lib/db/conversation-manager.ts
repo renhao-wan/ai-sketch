@@ -1,4 +1,5 @@
 import { getDb, saveToDisk } from './index';
+import { withTransaction } from './transaction';
 import { generateId, parseStoredImages } from '@/lib/utils';
 import type { Conversation, ConversationMessage, ConversationWithMessages, LLMMessage } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
@@ -198,46 +199,28 @@ class ConversationManager {
 
   async delete(id: string): Promise<void> {
     const db = await getDb();
-    db.run('BEGIN');
-    try {
+    withTransaction(db, () => {
       db.run('DELETE FROM messages WHERE conversation_id = ?', [id]);
       db.run('DELETE FROM conversations WHERE id = ?', [id]);
-      db.run('COMMIT');
-    } catch (e) {
-      db.run('ROLLBACK');
-      throw e;
-    }
-    saveToDisk();
+    });
   }
 
   async deleteMany(ids: string[]): Promise<void> {
     if (ids.length === 0) return;
     const db = await getDb();
     const placeholders = ids.map(() => '?').join(',');
-    db.run('BEGIN');
-    try {
+    withTransaction(db, () => {
       db.run(`DELETE FROM messages WHERE conversation_id IN (${placeholders})`, ids);
       db.run(`DELETE FROM conversations WHERE id IN (${placeholders})`, ids);
-      db.run('COMMIT');
-    } catch (e) {
-      db.run('ROLLBACK');
-      throw e;
-    }
-    saveToDisk();
+    });
   }
 
   async clearAll(): Promise<void> {
     const db = await getDb();
-    db.run('BEGIN');
-    try {
+    withTransaction(db, () => {
       db.run('DELETE FROM messages');
       db.run('DELETE FROM conversations');
-      db.run('COMMIT');
-    } catch (e) {
-      db.run('ROLLBACK');
-      throw e;
-    }
-    saveToDisk();
+    });
   }
 
   async addMessage(data: {
@@ -252,8 +235,7 @@ class ConversationManager {
     const id = this.generateId();
     const now = Date.now();
 
-    db.run('BEGIN');
-    try {
+    withTransaction(db, () => {
       db.run(
         `INSERT INTO messages (id, conversation_id, role, content, image_data, image_mime_type, source_type, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -264,12 +246,7 @@ class ConversationManager {
         'UPDATE conversations SET message_count = message_count + 1, updated_at = ? WHERE id = ?',
         [now, data.conversationId],
       );
-      db.run('COMMIT');
-    } catch (e) {
-      db.run('ROLLBACK');
-      throw e;
-    }
-    saveToDisk();
+    });
 
     return {
       id,
@@ -398,19 +375,13 @@ class ConversationManager {
     if (result.length === 0 || result[0].values.length === 0) return;
     const msgId = result[0].values[0][0] as string;
 
-    db.run('BEGIN');
-    try {
+    withTransaction(db, () => {
       db.run('DELETE FROM messages WHERE id = ?', [msgId]);
       db.run(
         'UPDATE conversations SET message_count = MAX(message_count - 1, 0), updated_at = ? WHERE id = ?',
         [Date.now(), conversationId],
       );
-      db.run('COMMIT');
-    } catch (e) {
-      db.run('ROLLBACK');
-      throw e;
-    }
-    saveToDisk();
+    });
   }
 
   async updateCurrentCode(conversationId: string, code: string): Promise<void> {
