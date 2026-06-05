@@ -50,35 +50,40 @@ class ConfigManager {
     const db = await getDb();
     const stmt = db.prepare('SELECT * FROM llm_configs ORDER BY created_at DESC');
     const configs: LLMConfig[] = [];
-    while (stmt.step()) {
-      configs.push(rowToConfig(stmt.getAsObject() as Record<string, unknown>));
+    try {
+      while (stmt.step()) {
+        configs.push(rowToConfig(stmt.getAsObject() as Record<string, unknown>));
+      }
+    } finally {
+      stmt.free();
     }
-    stmt.free();
     return configs;
   }
 
   async getConfig(id: string): Promise<LLMConfig | undefined> {
     const db = await getDb();
     const stmt = db.prepare('SELECT * FROM llm_configs WHERE id = ?');
-    stmt.bind([id]);
-    if (!stmt.step()) {
+    try {
+      stmt.bind([id]);
+      if (!stmt.step()) {
+        return undefined;
+      }
+      const row = stmt.getAsObject() as Record<string, unknown>;
+      return rowToConfig({
+        id: row.id as string,
+        name: row.name as string,
+        type: row.type as string,
+        base_url: row.base_url as string,
+        api_key: row.api_key as string,
+        model: row.model as string,
+        description: row.description as string,
+        is_active: row.is_active as number,
+        created_at: row.created_at as string,
+        updated_at: row.updated_at as string,
+      });
+    } finally {
       stmt.free();
-      return undefined;
     }
-    const row = stmt.getAsObject() as Record<string, unknown>;
-    stmt.free();
-    return rowToConfig({
-      id: row.id as string,
-      name: row.name as string,
-      type: row.type as string,
-      base_url: row.base_url as string,
-      api_key: row.api_key as string,
-      model: row.model as string,
-      description: row.description as string,
-      is_active: row.is_active as number,
-      created_at: row.created_at as string,
-      updated_at: row.updated_at as string,
-    });
   }
 
   async getActiveConfig(): Promise<LLMConfig | null> {
@@ -293,12 +298,15 @@ class ConfigManager {
     const stmt = db.prepare(
       `SELECT * FROM llm_configs WHERE LOWER(name) LIKE ? OR LOWER(description) LIKE ? OR LOWER(type) LIKE ? ORDER BY created_at DESC`,
     );
-    stmt.bind([lowerQuery, lowerQuery, lowerQuery]);
     const configs: LLMConfig[] = [];
-    while (stmt.step()) {
-      configs.push(rowToConfig(stmt.getAsObject() as Record<string, unknown>));
+    try {
+      stmt.bind([lowerQuery, lowerQuery, lowerQuery]);
+      while (stmt.step()) {
+        configs.push(rowToConfig(stmt.getAsObject() as Record<string, unknown>));
+      }
+    } finally {
+      stmt.free();
     }
-    stmt.free();
     return configs;
   }
 

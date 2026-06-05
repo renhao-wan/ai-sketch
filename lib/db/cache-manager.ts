@@ -13,17 +13,6 @@ interface CacheEntry {
   useCount: number;
 }
 
-interface CacheRow {
-  id: string;
-  prompt_hash: string;
-  format: string;
-  chart_type: string;
-  response: string;
-  created_at: number;
-  last_used_at: number;
-  use_count: number;
-}
-
 /** 将数据库行对象解析为 CacheEntry */
 function rowToCacheEntry(row: Record<string, unknown>): CacheEntry {
   return {
@@ -38,15 +27,13 @@ function rowToCacheEntry(row: Record<string, unknown>): CacheEntry {
   };
 }
 
-/** 计算字符串的简单哈希值 */
-function simpleHash(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return Math.abs(hash).toString(36);
+/** 计算字符串的 SHA-256 哈希值 */
+async function hashPrompt(str: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
 }
 
 /** 缓存管理器 */
@@ -60,7 +47,7 @@ class CacheManager {
   /** 获取缓存 */
   async get(prompt: string, format: DiagramFormat, chartType: string): Promise<string | null> {
     const db = await getDb();
-    const promptHash = simpleHash(prompt);
+    const promptHash = await hashPrompt(prompt);
 
     const stmt = db.prepare(
       'SELECT * FROM response_cache WHERE prompt_hash = ? AND format = ? AND chart_type = ?',
@@ -96,7 +83,7 @@ class CacheManager {
   /** 设置缓存 */
   async set(prompt: string, format: DiagramFormat, chartType: string, response: string): Promise<void> {
     const db = await getDb();
-    const promptHash = simpleHash(prompt);
+    const promptHash = await hashPrompt(prompt);
     const now = Date.now();
     const id = generateId();
 

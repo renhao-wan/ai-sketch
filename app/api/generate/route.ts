@@ -153,8 +153,9 @@ export async function POST(request: Request) {
     console.log(`[Generate] Messages count: ${fullMessages.length}, System prompt length: ${strategy.getSystemPrompt().length}`);
 
     // ── 检查缓存（仅对非图片输入、非重新生成、单轮对话生效）──
+    // 缓存键包含 prompt + model + format + chartType，确保不同配置不会混淆
     const cacheKey = allImages.length === 0 && !regenerate && contextMessages.length <= 2
-      ? strategy.getUserPrompt(userContent, chartType)
+      ? `${strategy.getUserPrompt(userContent, chartType)}|${config.model}|${config.name || config.type}`
       : null;
     let cachedResponse: string | null = null;
 

@@ -118,26 +118,30 @@ class ConversationManager {
     const stmt = db.prepare(sql);
     if (limit !== undefined) stmt.bind([limit]);
     const conversations: Conversation[] = [];
-    while (stmt.step()) {
-      conversations.push(parseConversationRow(stmt.getAsObject() as Record<string, unknown>));
+    try {
+      while (stmt.step()) {
+        conversations.push(parseConversationRow(stmt.getAsObject() as Record<string, unknown>));
+      }
+    } finally {
+      stmt.free();
     }
-    stmt.free();
     return conversations;
   }
 
   async getById(id: string): Promise<ConversationWithMessages | null> {
     const db = await getDb();
     const stmt = db.prepare('SELECT * FROM conversations WHERE id = ?');
-    stmt.bind([id]);
-    if (!stmt.step()) {
+    try {
+      stmt.bind([id]);
+      if (!stmt.step()) {
+        return null;
+      }
+      const conversation = parseConversationRow(stmt.getAsObject() as Record<string, unknown>);
+      const messages = await this.getMessages(id);
+      return { ...conversation, messages };
+    } finally {
       stmt.free();
-      return null;
     }
-    const conversation = parseConversationRow(stmt.getAsObject() as Record<string, unknown>);
-    stmt.free();
-
-    const messages = await this.getMessages(id);
-    return { ...conversation, messages };
   }
 
   async update(id: string, data: Partial<{
@@ -151,13 +155,16 @@ class ConversationManager {
     const db = await getDb();
     // 检查是否存在并获取完整行数据
     const stmt = db.prepare('SELECT * FROM conversations WHERE id = ?');
-    stmt.bind([id]);
-    if (!stmt.step()) {
+    let existing: Record<string, unknown>;
+    try {
+      stmt.bind([id]);
+      if (!stmt.step()) {
+        return null;
+      }
+      existing = stmt.getAsObject() as Record<string, unknown>;
+    } finally {
       stmt.free();
-      return null;
     }
-    const existing = stmt.getAsObject() as Record<string, unknown>;
-    stmt.free();
 
     const now = Date.now();
     const sets: string[] = ['updated_at = ?'];
@@ -289,12 +296,15 @@ class ConversationManager {
       }
     }
     const stmt = db.prepare(sql);
-    stmt.bind(params);
     const messages: ConversationMessage[] = [];
-    while (stmt.step()) {
-      messages.push(rowToMessage(stmt.getAsObject() as Record<string, unknown>));
+    try {
+      stmt.bind(params);
+      while (stmt.step()) {
+        messages.push(rowToMessage(stmt.getAsObject() as Record<string, unknown>));
+      }
+    } finally {
+      stmt.free();
     }
-    stmt.free();
     return messages;
   }
 
@@ -316,22 +326,28 @@ class ConversationManager {
     const firstUserStmt = db.prepare(
       'SELECT * FROM messages WHERE conversation_id = ? AND role = ? ORDER BY created_at ASC LIMIT 1',
     );
-    firstUserStmt.bind([conversationId, 'user']);
-    if (firstUserStmt.step()) {
-      firstMessage = rowToMessage(firstUserStmt.getAsObject() as Record<string, unknown>);
+    try {
+      firstUserStmt.bind([conversationId, 'user']);
+      if (firstUserStmt.step()) {
+        firstMessage = rowToMessage(firstUserStmt.getAsObject() as Record<string, unknown>);
+      }
+    } finally {
+      firstUserStmt.free();
     }
-    firstUserStmt.free();
 
     // 如果没有 user 消息，获取第一条消息
     if (!firstMessage) {
       const firstStmt = db.prepare(
         'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 1',
       );
-      firstStmt.bind([conversationId]);
-      if (firstStmt.step()) {
-        firstMessage = rowToMessage(firstStmt.getAsObject() as Record<string, unknown>);
+      try {
+        firstStmt.bind([conversationId]);
+        if (firstStmt.step()) {
+          firstMessage = rowToMessage(firstStmt.getAsObject() as Record<string, unknown>);
+        }
+      } finally {
+        firstStmt.free();
       }
-      firstStmt.free();
     }
 
     if (!firstMessage) return [];
@@ -340,12 +356,15 @@ class ConversationManager {
     const recentStmt = db.prepare(
       'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT ?',
     );
-    recentStmt.bind([conversationId, maxMessages - 1]);
     const recentMessages: ConversationMessage[] = [];
-    while (recentStmt.step()) {
-      recentMessages.push(rowToMessage(recentStmt.getAsObject() as Record<string, unknown>));
+    try {
+      recentStmt.bind([conversationId, maxMessages - 1]);
+      while (recentStmt.step()) {
+        recentMessages.push(rowToMessage(recentStmt.getAsObject() as Record<string, unknown>));
+      }
+    } finally {
+      recentStmt.free();
     }
-    recentStmt.free();
     recentMessages.reverse();
 
     const contextMessages: ConversationMessage[] = [firstMessage];
@@ -447,12 +466,15 @@ class ConversationManager {
     const dataSql = `SELECT * FROM conversations ${whereStr} ORDER BY ${sortField} ${sortOrder} LIMIT ? OFFSET ?`;
     const dataParams = [...queryParams, limit, offset];
     const stmt = db.prepare(dataSql);
-    stmt.bind(dataParams);
     const conversations: Conversation[] = [];
-    while (stmt.step()) {
-      conversations.push(parseConversationRow(stmt.getAsObject() as Record<string, unknown>));
+    try {
+      stmt.bind(dataParams);
+      while (stmt.step()) {
+        conversations.push(parseConversationRow(stmt.getAsObject() as Record<string, unknown>));
+      }
+    } finally {
+      stmt.free();
     }
-    stmt.free();
 
     return { conversations, total };
   }
