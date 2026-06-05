@@ -30,7 +30,7 @@ export class AnthropicProvider implements LLMProvider {
       model,
       messages: chatMessages.map(m => this.processMessage(m)),
       system: systemMessage ? [{ type: 'text', text: systemMessage.content }] : undefined,
-      max_tokens: maxTokens ?? 64000,
+      max_tokens: maxTokens ?? 16384,
       stream: true,
       temperature: temperature ?? 0.5,
     };

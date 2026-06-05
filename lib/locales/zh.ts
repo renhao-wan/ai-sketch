@@ -124,7 +124,7 @@ export const zh = {
   'config.temperatureHint': '控制输出随机性，0=确定性，2=最大随机性，推荐 0.3-0.5',
   'config.maxTokens': '最大输出 Token 数',
   'config.maxTokensPlaceholder': '留空使用默认值',
-  'config.maxTokensHint': '控制单次生成的最大长度，留空则使用 provider 默认值（OpenAI: 16384, Anthropic: 64000）',
+  'config.maxTokensHint': '控制单次生成的最大长度，留空则使用默认值 16384',
   'config.bannerTitle': '配置较多，建议清理',
   'config.bannerDescription': '您已有 {count} 个配置，建议清理不常用的配置。',
 

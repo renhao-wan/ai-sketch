@@ -23,7 +23,7 @@ describe('AnthropicProvider', () => {
       expect(body.model).toBe('claude-3');
       expect(body.stream).toBe(true);
       expect(body.temperature).toBe(0.4);
-      expect(body.max_tokens).toBe(64000);
+      expect(body.max_tokens).toBe(16384);
       // system 应从 messages 中分离
       expect(body.messages).toHaveLength(1);
       expect(body.system).toEqual([{ type: 'text', text: 'you are helpful' }]);
@@ -39,9 +39,9 @@ describe('AnthropicProvider', () => {
       expect(body.max_tokens).toBe(32000);
     });
 
-    it('未传 maxTokens 时应使用默认值 64000', () => {
+    it('未传 maxTokens 时应使用默认值 16384', () => {
       const body = provider.buildRequestBody('claude-3', [{ role: 'user' as const, content: 'hi' }]) as Record<string, unknown>;
-      expect(body.max_tokens).toBe(64000);
+      expect(body.max_tokens).toBe(16384);
     });
   });
 
