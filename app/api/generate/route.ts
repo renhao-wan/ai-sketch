@@ -173,13 +173,14 @@ export async function POST(request: Request) {
       contextMessages.push(newUserMessage);
     }
 
+    const systemPrompt = strategy.getSystemPrompt();
     const fullMessages: LLMMessage[] = [
-      { role: 'system', content: strategy.getSystemPrompt() },
+      { role: 'system', content: systemPrompt },
       ...contextMessages,
     ];
     perfEnd('Build Context');
 
-    console.log(`[Generate] Messages count: ${fullMessages.length}, System prompt length: ${strategy.getSystemPrompt().length}`);
+    console.log(`[Generate] Messages count: ${fullMessages.length}, System prompt length: ${systemPrompt.length}`);
 
     // ── 检查缓存（仅对非图片输入、非重新生成、单轮对话生效）──
     // 缓存键包含 prompt + model + format + chartType，确保不同配置不会混淆
