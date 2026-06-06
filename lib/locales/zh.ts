@@ -244,6 +244,22 @@ export const zh = {
   'drawio.renderError': 'Draw.io 渲染错误',
   'drawio.loadTimeout': 'Draw.io 查看器加载超时，请检查网络连接',
 
+  // Draw.io editor (mxGraph)
+  'drawio.tool.select': '选择',
+  'drawio.tool.rectangle': '矩形',
+  'drawio.tool.ellipse': '椭圆',
+  'drawio.tool.diamond': '菱形',
+  'drawio.tool.text': '文本',
+  'drawio.tool.arrow': '箭头',
+  'drawio.action.delete': '删除',
+  'drawio.action.editLabel': '编辑标签',
+  'drawio.action.addRect': '添加矩形',
+  'drawio.action.addText': '添加文本',
+  'drawio.action.copy': '复制',
+  'drawio.action.paste': '粘贴',
+  'drawio.error.loadFailed': '加载 @maxgraph/core 失败',
+  'drawio.error.xmlParse': 'XML 解析错误',
+
   // Mermaid Canvas
   'mermaid.renderFailed': 'Mermaid 渲染失败',
   'mermaid.syntaxError': 'Mermaid 语法错误',

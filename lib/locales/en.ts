@@ -246,6 +246,22 @@ export const en: TranslationDict = {
   'drawio.renderError': 'Draw.io Render Error',
   'drawio.loadTimeout': 'Draw.io viewer failed to load. Please check your network connection.',
 
+  // Draw.io editor (mxGraph)
+  'drawio.tool.select': 'Select',
+  'drawio.tool.rectangle': 'Rectangle',
+  'drawio.tool.ellipse': 'Ellipse',
+  'drawio.tool.diamond': 'Diamond',
+  'drawio.tool.text': 'Text',
+  'drawio.tool.arrow': 'Arrow',
+  'drawio.action.delete': 'Delete',
+  'drawio.action.editLabel': 'Edit Label',
+  'drawio.action.addRect': 'Add Rectangle',
+  'drawio.action.addText': 'Add Text',
+  'drawio.action.copy': 'Copy',
+  'drawio.action.paste': 'Paste',
+  'drawio.error.loadFailed': 'Failed to load @maxgraph/core',
+  'drawio.error.xmlParse': 'XML parse error',
+
   // Mermaid Canvas
   'mermaid.renderFailed': 'Mermaid render failed',
   'mermaid.syntaxError': 'Mermaid Syntax Error',
