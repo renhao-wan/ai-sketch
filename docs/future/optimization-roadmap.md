@@ -711,13 +711,13 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 4. **Excalidraw 流式 debounce** — 影响渲染性能和用户体验
 5. **截断通知 role 修正** — 破坏 user/assistant 交替规则
 
-### 🟡 中等问题（16 项）
+### 🟡 中等问题（7 项）
 
-详见附录 A #22-#37，主要集中在：
-- 上下文管理（截断通知 role、首条消息格式化）
-- Editor 页面（useState 碎片化、sessionStorage 耦合、panelWidth 不持久化）
+详见附录 A，主要集中在：
+- 上下文管理（截断通知 role、首条消息格式化、图片 base64 存储）
 - 画布（scrollToContent 跳动、元素转换失败静默吞没）
-- 国际化（参数插值、硬编码中文）
+- 输入策略（FileStrategy 编码/截断）
+- Draw.io（外部依赖）
 
 ### 🟢 轻微问题（1 项）
 
@@ -731,7 +731,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 > **图例**: ✅ 已完成 | ❌ 未开始
 > **严重度**: 🔴 严重 | 🟡 中等 | 🟢 轻微
 
-### ✅ 已完成（41 项）
+### ✅ 已完成（43 项）
 
 | # | 优化项 | 严重度 | 完成日期 | 备注 |
 |---|--------|--------|----------|------|
@@ -776,6 +776,8 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 39 | UI 组件硬编码中文 | 🟡 | 2026-06-05 | upload/toolbar/lang 等组件改用 i18n key |
 | 40 | Prompt 语言适配 | 🟡 | 2026-06-05 | 添加 LANGUAGE_RULE，LLM 根据用户输入语言生成标签 |
 | 41 | ID 生成改用 crypto.randomUUID() | 🟢 | 2026-06-05 | 消除 Date.now+Math.random 碰撞风险 |
+| 42 | useState 碎片化 → useReducer | 🟡 | 2026-06-05 | config/result 状态改用 reducer，14→8 useState |
+| 43 | sessionStorage 类型约束 | 🟢 | 2026-06-05 | init-data.ts 已有 InitData 接口，类型安全 |
 
 ### ❌ 未完成 — 严重（6 项）
 
@@ -788,22 +790,17 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 18 | Mermaid 14/21 种类型降级为 flowchart | Mermaid 画布 | `MERMAID_TYPE_MAP` 未改 |
 | 19 | Excalidraw 流式每元素完整重绘 | Excalidraw 画布 | `feed()` 无 debounce，每元素调 `updateScene` |
 
-### ❌ 未完成 — 中等（12 项）
+### ❌ 未完成 — 中等（7 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
 | 22 | 截断通知 role 为 assistant 应为 system | 上下文管理 | 破坏 user/assistant 交替规则 |
 | 23 | 首条消息未经 getUserPrompt 格式化 | 上下文管理 | 历史消息原始发送，与当前轮次格式不一致 |
 | 24 | 图片以 base64 TEXT 存储 | 上下文管理 | 单行数据量极大，影响查询性能 |
-| 25 | useState 碎片化（13 个） | Editor | 已从 21 减到 13，未用 useReducer |
-| 26 | sessionStorage 隐式耦合 | Editor | 页面间通过字符串 key 通信，无类型约束 |
-| 27 | 流式期间每帧 2 次 setState | Editor | onCodeUpdate + onMessagesUpdate 各触发 setState |
-| 28 | panelWidth 不持久化 | Editor | 注释标注 `not persisted`，刷新重置 |
-| 29 | 格式切换无确认对话框 | Editor | 切换时清空代码和渲染数据，无确认提示 |
-| 30 | scrollToContent 流式期间每元素调用 | Excalidraw 画布 | 画布视角不断跳动 |
-| 31 | 元素转换失败静默吞没 | Excalidraw 画布 | `catch { /* skip */ }` 无日志无提示 |
-| 32 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
-| 33 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
+| 25 | scrollToContent 流式期间每元素调用 | Excalidraw 画布 | 画布视角不断跳动 |
+| 26 | 元素转换失败静默吞没 | Excalidraw 画布 | `catch { /* skip */ }` 无日志无提示 |
+| 27 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
+| 28 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
 
 ### ❌ 未完成 — 轻微（1 项）
 

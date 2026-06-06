@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, useReducer, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { AppIcon } from '@/components/layout/TopBar';
@@ -28,25 +28,67 @@ import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 const ConfigSelector = dynamic(() => import('@/components/dialogs/ConfigSelector'), { ssr: false });
 const BottomContextPanel = dynamic(() => import('@/components/layout/BottomContextPanel'), { ssr: false });
 
+// --- Reducer 类型定义 ---
+
+/** 配置状态 */
+interface ConfigState {
+  config: LLMConfig | null;
+  loaded: boolean;
+}
+type ConfigAction =
+  | { type: 'SET_CONFIG'; payload: LLMConfig | null }
+  | { type: 'LOADED' };
+
+function configReducer(state: ConfigState, action: ConfigAction): ConfigState {
+  switch (action.type) {
+    case 'SET_CONFIG': return { ...state, config: action.payload };
+    case 'LOADED': return { ...state, loaded: true };
+    default: return state;
+  }
+}
+
+/** 生成结果状态 */
+interface GenerationResultState {
+  code: string;
+  renderData: unknown;
+  jsonError: string | null;
+}
+type GenerationResultAction =
+  | { type: 'SET_CODE'; payload: string }
+  | { type: 'SET_RENDER_DATA'; payload: unknown }
+  | { type: 'SET_JSON_ERROR'; payload: string | null }
+  | { type: 'CLEAR' };
+
+function generationResultReducer(state: GenerationResultState, action: GenerationResultAction): GenerationResultState {
+  switch (action.type) {
+    case 'SET_CODE': return { ...state, code: action.payload };
+    case 'SET_RENDER_DATA': return { ...state, renderData: action.payload };
+    case 'SET_JSON_ERROR': return { ...state, jsonError: action.payload };
+    case 'CLEAR': return { code: '', renderData: null, jsonError: null };
+    default: return state;
+  }
+}
+
 function EditorContent() {
   const router = useRouter();
   const { t } = useLocale();
-  const [config, setConfig] = useState<LLMConfig | null>(null);
-  const [configLoaded, setConfigLoaded] = useState(false);
-  const [isConfigManagerOpen, setIsConfigManagerOpen] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState('');
+
+  // 配置状态（reducer）
+  const [configState, dispatchConfig] = useReducer(configReducer, { config: null, loaded: false });
+  const { config, loaded: configLoaded } = configState;
+
+  // 生成结果状态（reducer）
+  const [genResult, dispatchGenResult] = useReducer(generationResultReducer, { code: '', renderData: null, jsonError: null });
+  const { code: generatedCode, renderData, jsonError } = genResult;
+
+  // 独立状态（useState）
   const [format, setFormat] = useState<DiagramFormat>('excalidraw');
-
-  const [renderData, setRenderData] = useState<unknown>(null);
+  const [isConfigManagerOpen, setIsConfigManagerOpen] = useState(false);
   const [isApplyingCode, setIsApplyingCode] = useState(false);
-
-  const [jsonError, setJsonError] = useState<string | null>(null);
   const [currentInput, setCurrentInput] = useState('');
   const [currentChartType, setCurrentChartType] = useState('auto');
   const { notification, showNotification, closeNotification } = useNotification();
   const [bottomPanelTab, setBottomPanelTab] = useState('code');
-
-  // Panel width (not persisted — resets on refresh/navigate)
   const [panelWidth, setPanelWidth] = useState(360);
   const [isElectron, setIsElectron] = useState(false);
 
@@ -75,12 +117,12 @@ function EditorContent() {
       const data = await api.fetchConfigs();
       if (data.activeConfigId) {
         const active = data.configs.find(c => c.id === data.activeConfigId);
-        if (active) setConfig(active);
+        if (active) dispatchConfig({ type: 'SET_CONFIG', payload: active });
       }
     } catch (err) {
       console.error('Failed to load config:', err);
     } finally {
-      setConfigLoaded(true);
+      dispatchConfig({ type: 'LOADED' });
     }
   }, []);
 
@@ -92,11 +134,7 @@ function EditorContent() {
   const conversation = useConversation({
     onFormatChange: (f) => setFormat(f),
     onChartTypeChange: setCurrentChartType,
-    onCodeClear: () => {
-      setGeneratedCode('');
-      setRenderData(null);
-      setJsonError(null);
-    },
+    onCodeClear: () => dispatchGenResult({ type: 'CLEAR' }),
     onError: (msg) => generation.setApiError(msg),
   });
 
@@ -106,9 +144,9 @@ function EditorContent() {
     format,
     conversationId: conversation.conversationId,
     streamRendererRef,
-    onCodeUpdate: setGeneratedCode,
-    onRenderDataUpdate: setRenderData,
-    onJsonErrorUpdate: setJsonError,
+    onCodeUpdate: (code) => dispatchGenResult({ type: 'SET_CODE', payload: code }),
+    onRenderDataUpdate: (data) => dispatchGenResult({ type: 'SET_RENDER_DATA', payload: data }),
+    onJsonErrorUpdate: (err) => dispatchGenResult({ type: 'SET_JSON_ERROR', payload: err }),
     onConversationIdUpdate: conversation.setConversationId,
     onMessagesUpdate: conversation.setMessages,
     onConfigReminder: () => {
@@ -124,11 +162,11 @@ function EditorContent() {
     format,
     generatedCode,
     abortControllerRef: generation.abortControllerRef,
-    onCodeUpdate: setGeneratedCode,
+    onCodeUpdate: (code) => dispatchGenResult({ type: 'SET_CODE', payload: code }),
     onExplanationUpdate: (exp) => {}, // 已在 Hook 内部处理
     onBottomPanelTabChange: setBottomPanelTab,
-    onRenderDataUpdate: setRenderData,
-    onJsonErrorUpdate: setJsonError,
+    onRenderDataUpdate: (data) => dispatchGenResult({ type: 'SET_RENDER_DATA', payload: data }),
+    onJsonErrorUpdate: (err) => dispatchGenResult({ type: 'SET_JSON_ERROR', payload: err }),
     onNotification: showNotification,
   });
 
@@ -136,9 +174,7 @@ function EditorContent() {
   useEffect(() => {
     if (isFirstFormatRef.current) { isFirstFormatRef.current = false; return; }
     if (skipFormatClearRef.current) { skipFormatClearRef.current = false; return; }
-    setGeneratedCode('');
-    setJsonError(null);
-    setRenderData(null);
+    dispatchGenResult({ type: 'CLEAR' });
     streamRendererRef.current?.reset();
   }, [format]);
 
@@ -213,7 +249,7 @@ function EditorContent() {
   }, [config, configLoaded]);
 
   const handleConfigSelect = (selectedConfig: LLMConfig | null) => {
-    if (selectedConfig) setConfig(selectedConfig);
+    if (selectedConfig) dispatchConfig({ type: 'SET_CONFIG', payload: selectedConfig });
   };
 
   // 注册快捷键
@@ -240,13 +276,13 @@ function EditorContent() {
     const strat = getStrategy(detectedFormat);
     const processed = strat.postProcess(content);
     const optimized = strat.optimize(processed);
-    setGeneratedCode(optimized);
+    dispatchGenResult({ type: 'SET_CODE', payload: optimized });
     const result = strat.validate(optimized);
     if (result.valid) {
-      setRenderData(result.data);
-      setJsonError(null);
+      dispatchGenResult({ type: 'SET_RENDER_DATA', payload: result.data });
+      dispatchGenResult({ type: 'SET_JSON_ERROR', payload: null });
     } else {
-      setJsonError(result.error);
+      dispatchGenResult({ type: 'SET_JSON_ERROR', payload: result.error });
     }
   }, [format]);
 
@@ -257,10 +293,10 @@ function EditorContent() {
       const s = getStrategy(format);
       const result = s.validate(generatedCode);
       if (result.valid) {
-        setRenderData(result.data);
-        setJsonError(null);
+        dispatchGenResult({ type: 'SET_RENDER_DATA', payload: result.data });
+        dispatchGenResult({ type: 'SET_JSON_ERROR', payload: null });
       } else {
-        setJsonError(result.error);
+        dispatchGenResult({ type: 'SET_JSON_ERROR', payload: result.error });
       }
     } finally {
       setIsApplyingCode(false);
@@ -298,7 +334,7 @@ function EditorContent() {
           currentInput={currentInput}
           currentChartType={currentChartType}
           currentFormat={format}
-          onFormatChange={(f) => { setFormat(f); setRenderData(null); setGeneratedCode(''); }}
+          onFormatChange={(f) => { setFormat(f); dispatchGenResult({ type: 'CLEAR' }); }}
           onOpenConfig={() => setIsConfigManagerOpen(true)}
           onExport={handleExport}
           onRegenerate={() => generation.regenerate(conversation.messages, currentChartType)}
@@ -334,11 +370,11 @@ function EditorContent() {
           >
             <CodeEditor
               code={generatedCode}
-              onChange={(v) => setGeneratedCode(v ?? '')}
+              onChange={(v) => dispatchGenResult({ type: 'SET_CODE', payload: v ?? '' })}
               onApply={handleApplyCode}
-              onClear={() => setGeneratedCode('')}
+              onClear={() => dispatchGenResult({ type: 'SET_CODE', payload: '' })}
               jsonError={jsonError}
-              onClearJsonError={() => setJsonError(null)}
+              onClearJsonError={() => dispatchGenResult({ type: 'SET_JSON_ERROR', payload: null })}
               isGenerating={generation.isGenerating}
               isApplyingCode={isApplyingCode}
               language={strategy.codeLanguage}
