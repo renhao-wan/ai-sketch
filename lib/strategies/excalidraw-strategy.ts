@@ -10,6 +10,12 @@ import { optimizeExcalidrawCode } from '@/lib/diagram/optimize-arrows';
 import { repairJsonClosure, stripCodeFences, extractFirstJsonArray } from '@/lib/diagram/json-repair';
 import { createExportBlob, buildImagePrompt } from './helpers';
 
+/** Excalidraw 支持的元素类型 */
+const VALID_ELEMENT_TYPES = new Set([
+  'rectangle', 'ellipse', 'diamond', 'text', 'arrow', 'line',
+  'freedraw', 'image', 'frame', 'embeddable',
+]);
+
 class ExcalidrawStrategy implements DiagramStrategy {
   readonly format = 'excalidraw' as const;
   readonly displayName = 'Excalidraw';
@@ -56,6 +62,21 @@ class ExcalidrawStrategy implements DiagramStrategy {
       if (!arrayStr) return { valid: false, error: '代码中未找到有效的 JSON 数组' };
       const parsed = JSON.parse(arrayStr);
       if (!Array.isArray(parsed)) return { valid: false, error: '解析结果不是 JSON 数组' };
+
+      // 校验每个元素的基本结构
+      for (let i = 0; i < parsed.length; i++) {
+        const el = parsed[i];
+        if (!el || typeof el !== 'object') {
+          return { valid: false, error: `元素 [${i}] 不是有效对象` };
+        }
+        if (typeof el.type !== 'string' || !VALID_ELEMENT_TYPES.has(el.type)) {
+          return { valid: false, error: `元素 [${i}] type 无效或缺失，收到: ${JSON.stringify(el.type)}` };
+        }
+        if (typeof el.x !== 'number' || typeof el.y !== 'number') {
+          return { valid: false, error: `元素 [${i}] 缺少 x/y 坐标` };
+        }
+      }
+
       return { valid: true, data: parsed };
     } catch (e) {
       if (e instanceof SyntaxError) return { valid: false, error: 'JSON 语法错误：' + e.message };
