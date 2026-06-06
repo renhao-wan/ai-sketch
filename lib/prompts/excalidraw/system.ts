@@ -21,9 +21,7 @@ export const EXCALIDRAW_SYSTEM_PROMPT = `## 任务
 - 确保 JSON 格式正确，可被 JSON.parse 解析
 
 输出示例：
-\`\`\`
 [{"type": "rectangle", "x": 100, "y": 200, "width": 180, "height": 80, "backgroundColor": "#e3f2fd", "strokeColor": "#1976d2"}]
-\`\`\`
 
 ${IMAGE_HANDLING_INSTRUCTIONS}
 
