@@ -78,6 +78,24 @@ function createWindow(): void {
     mainWindow?.webContents.send('window-maximize-changed', false);
   });
 
+  // 崩溃恢复：渲染进程崩溃时提示用户重新加载
+  mainWindow.webContents.on('render-process-gone', async (_event, details) => {
+    console.error('[Electron] Render process gone:', details.reason);
+    const { response } = await dialog.showMessageBox({
+      type: 'error',
+      title: '页面崩溃',
+      message: '页面发生崩溃，是否重新加载？',
+      detail: `原因: ${details.reason}`,
+      buttons: ['重新加载', '关闭'],
+      defaultId: 0,
+    });
+    if (response === 0) {
+      mainWindow?.webContents.reload();
+    } else {
+      mainWindow?.close();
+    }
+  });
+
   // 窗口关闭时清理引用
   mainWindow.on('closed', () => {
     mainWindow = null;
