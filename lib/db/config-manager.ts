@@ -76,18 +76,7 @@ class ConfigManager {
         return undefined;
       }
       const row = stmt.getAsObject() as Record<string, unknown>;
-      return rowToConfig({
-        id: row.id as string,
-        name: row.name as string,
-        type: row.type as string,
-        base_url: row.base_url as string,
-        api_key: row.api_key as string,
-        model: row.model as string,
-        description: row.description as string,
-        is_active: row.is_active as number,
-        created_at: row.created_at as number,
-        updated_at: row.updated_at as number,
-      });
+      return rowToConfig(row);
     } finally {
       stmt.free();
     }
@@ -166,24 +155,25 @@ class ConfigManager {
     const now = Date.now();
     const merged = { ...existing, ...updateData, id, updatedAt: now };
 
-    db.run(
-      `UPDATE llm_configs SET name = ?, type = ?, base_url = ?, api_key = ?, model = ?, description = ?, is_active = ?, temperature = ?, max_tokens = ?, updated_at = ? WHERE id = ?`,
-      [
-        merged.name,
-        merged.type,
-        merged.baseUrl,
-        encrypt(merged.apiKey),
-        merged.model,
-        merged.description || '',
-        merged.isActive ? 1 : 0,
-        merged.temperature ?? 0.5,
-        merged.maxTokens ?? 16384,
-        merged.updatedAt!,
-        id,
-      ],
-    );
+    withTransaction(db, () => {
+      db.run(
+        `UPDATE llm_configs SET name = ?, type = ?, base_url = ?, api_key = ?, model = ?, description = ?, is_active = ?, temperature = ?, max_tokens = ?, updated_at = ? WHERE id = ?`,
+        [
+          merged.name,
+          merged.type,
+          merged.baseUrl,
+          encrypt(merged.apiKey),
+          merged.model,
+          merged.description || '',
+          merged.isActive ? 1 : 0,
+          merged.temperature ?? 0.5,
+          merged.maxTokens ?? 16384,
+          merged.updatedAt!,
+          id,
+        ],
+      );
+    });
 
-    requestSave();
     return merged;
   }
 
@@ -373,7 +363,7 @@ class ConfigManager {
     const db = await getDb();
     db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('proxy_url', ?)", [proxyUrl]);
     db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('proxy_enabled', ?)", [proxyEnabled ? 'true' : 'false']);
-    requestSave();
+    await requestSave();
   }
 
   /** 获取 LLM 失败重试次数（默认 2，即最多 3 次尝试） */

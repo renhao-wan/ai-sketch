@@ -30,9 +30,7 @@ export function withErrorHandling<T extends (...args: never[]) => Promise<Respon
       const prefix = context ? `[API] ${context}` : '[API]';
       console.error(`${prefix} Error:`, error);
 
-      const message = process.env.NODE_ENV === 'development'
-        ? (error as Error).message
-        : '请求处理失败，请稍后重试';
+      const message = (error as Error).message || '请求处理失败，请稍后重试';
 
       return NextResponse.json({ error: message }, { status: 500 });
     }
