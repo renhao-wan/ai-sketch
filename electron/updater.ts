@@ -21,6 +21,8 @@ export function initAutoUpdater(mainWindow: BrowserWindow | null): void {
   // 关闭自动下载，由用户手动触发
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
+  // 允许开发模式下检查更新（未打包时默认跳过）
+  autoUpdater.forceDevUpdateConfig = true;
 
   autoUpdater.on('checking-for-update', () => {
     sendStatus(mainWindow, 'checking');
@@ -65,7 +67,6 @@ export function initAutoUpdater(mainWindow: BrowserWindow | null): void {
 
 /** 手动检查更新 */
 export function checkForUpdates(mainWindow: BrowserWindow | null): void {
-  console.log('[Updater] Manual check triggered');
   autoUpdater.checkForUpdates()
     .then((result) => {
       console.log('[Updater] Check result:', result ? 'found' : 'none');

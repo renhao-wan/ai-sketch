@@ -216,7 +216,6 @@ ipcMain.handle('window-close', () => {
 
 // IPC 处理：自动更新
 ipcMain.handle('update-check', () => {
-  console.log('[IPC] update-check received');
   checkForUpdates(mainWindow);
 });
 

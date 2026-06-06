@@ -4,7 +4,7 @@ copyright: Copyright © 2024 AI Sketch
 
 publish:
   provider: github
-  owner: user
+  owner: renhao-wan
   repo: ai-sketch
 
 directories:

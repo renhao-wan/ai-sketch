@@ -1,9 +1,12 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useLocale, type TranslationKey } from '@/lib/locales';
 import { AppIcon } from '@/components/layout/TopBar';
 import { User, Code2, FileText, Shield, ExternalLink, RefreshCw, Download, Check, Loader2, X, ArrowUpCircle } from 'lucide-react';
 import { useUpdate } from '@/hooks/useUpdate';
+import Notification from '@/components/ui/Notification';
+import type { NotificationState } from '@/lib/types';
 
 /** 应用信息（从 package.json 读取） */
 const APP_INFO = {
@@ -34,6 +37,34 @@ const APP_INFO = {
 export function AboutSettings() {
   const { t } = useLocale();
   const { isElectron, status, info, progress, error, checkForUpdates, downloadUpdate, installUpdate } = useUpdate();
+  const [localChecking, setLocalChecking] = useState(false);
+  const [notification, setNotification] = useState<NotificationState>({ isOpen: false, title: '', message: '', type: 'info' });
+
+  const handleCheck = () => {
+    setLocalChecking(true);
+    checkForUpdates();
+    setTimeout(() => setLocalChecking(false), 3000);
+  };
+
+  const isChecking = status === 'checking' || localChecking;
+
+  // 状态变化时重置本地 checking + 弹出通知
+  useEffect(() => {
+    if (status !== 'idle' && status !== 'checking') {
+      setLocalChecking(false);
+    }
+    if (status === 'available' && info?.version) {
+      setNotification({ isOpen: true, title: t('update.available'), message: `v${info.version}`, type: 'info' });
+    } else if (status === 'downloaded') {
+      setNotification({ isOpen: true, title: t('update.downloaded'), message: t('update.downloadedHint'), type: 'success' });
+    } else if (status === 'error') {
+      // 截取错误信息的第一行，避免过长
+      const shortError = error?.split('\n')[0]?.substring(0, 60) || t('update.error');
+      setNotification({ isOpen: true, title: t('update.error'), message: shortError, type: 'error' });
+    } else if (status === 'not-available') {
+      setNotification({ isOpen: true, title: t('about.upToDate'), message: '', type: 'success' });
+    }
+  }, [status, info, error, t]);
 
   return (
     <div className="space-y-8">
@@ -116,7 +147,7 @@ export function AboutSettings() {
             {/* 错误 */}
             {status === 'error' && (
               <button
-                onClick={checkForUpdates}
+                onClick={handleCheck}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-500 hover:bg-red-500/10 rounded-lg transition-all duration-200"
               >
                 <RefreshCw size={12} />
@@ -125,14 +156,14 @@ export function AboutSettings() {
             )}
 
             {/* 检查更新 */}
-            {(status === 'idle' || status === 'checking') && (
+            {(status === 'idle' || status === 'checking' || localChecking) && (
               <button
-                onClick={checkForUpdates}
-                disabled={status === 'checking'}
+                onClick={handleCheck}
+                disabled={isChecking}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg transition-all duration-200 disabled:opacity-50"
               >
-                <RefreshCw size={12} className={status === 'checking' ? 'animate-spin' : ''} />
-                {status === 'checking' ? t('about.checking') : t('about.checkUpdate')}
+                <RefreshCw size={12} className={isChecking ? 'animate-spin' : ''} />
+                {isChecking ? t('about.checking') : t('about.checkUpdate')}
               </button>
             )}
           </div>
@@ -264,6 +295,14 @@ export function AboutSettings() {
           ))}
         </div>
       </section>
+
+      <Notification
+        isOpen={notification.isOpen}
+        onClose={() => setNotification({ ...notification, isOpen: false })}
+        title={notification.title}
+        message={notification.message}
+        type={notification.type}
+      />
     </div>
   );
 }
