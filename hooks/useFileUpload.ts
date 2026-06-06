@@ -13,8 +13,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { imageStrategy, orchestrator } from '@/lib/input-strategies/registry';
-import { getStrategy } from '@/lib/strategies/registry';
+import { orchestrator } from '@/lib/input-strategies/registry';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 import type { MessagePayload } from '@/lib/types/input-strategy';
 
@@ -101,24 +100,10 @@ export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadRetu
     setAttachError('');
 
     try {
-      // 为图片策略设置图表格式
-      if (options?.diagramFormat) {
-        imageStrategy.setDiagramFormat(options.diagramFormat);
-      }
-
-      const result = await orchestrator.handleFiles(merged, prompt || '', 'auto');
+      const result = await orchestrator.handleFiles(merged, prompt || '', 'auto', options?.diagramFormat);
       if (result.success) {
-        let finalPayload = result.payload;
-        // 图片无描述时，补充默认 prompt（orchestrator 的 merge 不调用 strategy.buildMessage）
-        if (finalPayload.type === 'image' && finalPayload.content && !finalPayload.content.text) {
-          const fmt = options?.diagramFormat || 'excalidraw';
-          finalPayload = {
-            ...finalPayload,
-            content: { ...finalPayload.content, text: getStrategy(fmt).generateImagePrompt('auto') },
-          };
-        }
         setAttachments(merged);
-        setPayload(finalPayload);
+        setPayload(result.payload);
         setAttachStatus('success');
       } else {
         setAttachError(result.errors.map(e => `${e.fileName}: ${e.error}`).join('; '));
@@ -153,11 +138,7 @@ export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadRetu
     setAttachError('');
 
     try {
-      if (options?.diagramFormat) {
-        imageStrategy.setDiagramFormat(options.diagramFormat);
-      }
-
-      const result = await orchestrator.handleFiles(remaining, '', 'auto');
+      const result = await orchestrator.handleFiles(remaining, '', 'auto', options?.diagramFormat);
       if (result.success) {
         setAttachments(remaining);
         setPayload(result.payload);

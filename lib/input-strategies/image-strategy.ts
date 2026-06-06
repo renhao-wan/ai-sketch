@@ -14,11 +14,6 @@ export interface ImageProcessedData {
 
 class ImageStrategy implements InputStrategy {
   readonly sourceType = 'image' as const;
-  private diagramFormat: DiagramFormat = 'excalidraw';
-
-  setDiagramFormat(format: DiagramFormat) {
-    this.diagramFormat = format;
-  }
 
   canHandle(file: File): boolean {
     return Object.keys(SUPPORTED_IMAGE_TYPES).includes(file.type);
@@ -39,9 +34,9 @@ class ImageStrategy implements InputStrategy {
     return { imageObject, previewUrl };
   }
 
-  buildMessage(processedData: unknown, userPrompt: string, chartType: string): MessagePayload {
+  buildMessage(processedData: unknown, userPrompt: string, chartType: string, diagramFormat: DiagramFormat = 'excalidraw'): MessagePayload {
     const { imageObject } = processedData as ImageProcessedData;
-    const text = userPrompt.trim() || getStrategy(this.diagramFormat).generateImagePrompt(chartType);
+    const text = userPrompt.trim() || getStrategy(diagramFormat).generateImagePrompt(chartType);
     return {
       type: 'image',
       content: { text, images: [imageObject] },

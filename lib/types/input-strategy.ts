@@ -4,6 +4,7 @@
  */
 
 import type { SourceType } from './index';
+import type { DiagramFormat } from './diagram-strategy';
 
 /** Validation result */
 export type InputValidationResult =
@@ -46,5 +47,5 @@ export interface InputStrategy {
    * Build a normalized message payload from the processed data and optional user prompt.
    * The payload is ready to be passed to onSendMessage.
    */
-  buildMessage(processedData: unknown, userPrompt: string, chartType: string): MessagePayload;
+  buildMessage(processedData: unknown, userPrompt: string, chartType: string, diagramFormat?: DiagramFormat): MessagePayload;
 }
