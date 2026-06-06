@@ -811,7 +811,6 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 39 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
 | 40 | ImageStrategy 全局可变状态 | 策略模式 | 全局单例含可变 `diagramFormat` |
 | 41 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
-| 50 | macOS 缺少公证/标准菜单 | Electron | 需 `afterSign` 钩子 + 标准菜单 |
 
 ---
 

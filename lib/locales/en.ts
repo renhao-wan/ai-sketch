@@ -371,6 +371,8 @@ export const en: TranslationDict = {
   'about.dep.Mermaid': 'Diagram Rendering',
   'about.dep.Monaco Editor': 'Code Editor',
   'about.dep.sql.js': 'SQLite WASM',
+  'about.checkUpdate': 'Check for Updates',
+  'about.checking': 'Checking...',
 
   // Keyboard shortcuts
   'shortcuts.search': 'Search shortcuts...',
@@ -404,4 +406,14 @@ export const en: TranslationDict = {
   'window.maximize': 'Maximize',
   'window.restore': 'Restore',
   'window.close': 'Close',
+
+  // Update
+  'update.available': 'Update Available',
+  'update.availableHint': 'A new version is available',
+  'update.download': 'Download',
+  'update.downloading': 'Downloading...',
+  'update.downloaded': 'Ready to Install',
+  'update.downloadedHint': 'Download complete. Restart to apply.',
+  'update.install': 'Restart',
+  'update.error': 'Update Failed',
 };

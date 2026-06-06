@@ -27,6 +27,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppVersion: (): Promise<string> => ipcRenderer.invoke('get-app-version'),
 
   /**
+   * 自动更新 API
+   */
+  update: {
+    /** 手动检查更新 */
+    check: () => ipcRenderer.invoke('update-check'),
+    /** 下载更新 */
+    download: () => ipcRenderer.invoke('update-download'),
+    /** 安装更新并重启 */
+    install: () => ipcRenderer.invoke('update-install'),
+    /** 监听更新状态变化 */
+    onStatus: (callback: (data: { status: string; data?: unknown }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: { status: string; data?: unknown }) => callback(data);
+      ipcRenderer.on('update-status', handler);
+      return () => {
+        ipcRenderer.removeListener('update-status', handler);
+      };
+    },
+  },
+
+  /**
    * 窗口控制 API
    */
   window: {

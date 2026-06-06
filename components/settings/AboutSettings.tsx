@@ -2,7 +2,8 @@
 
 import { useLocale, type TranslationKey } from '@/lib/locales';
 import { AppIcon } from '@/components/layout/TopBar';
-import { User, Code2, FileText, Shield, ExternalLink } from 'lucide-react';
+import { User, Code2, FileText, Shield, ExternalLink, RefreshCw } from 'lucide-react';
+import { useUpdate } from '@/hooks/useUpdate';
 
 /** 应用信息（从 package.json 读取） */
 const APP_INFO = {
@@ -32,6 +33,7 @@ const APP_INFO = {
 
 export function AboutSettings() {
   const { t } = useLocale();
+  const { isElectron, status, checkForUpdates } = useUpdate();
 
   return (
     <div className="space-y-8">
@@ -50,6 +52,16 @@ export function AboutSettings() {
               v{APP_INFO.version}
             </p>
           </div>
+          {isElectron && (
+            <button
+              onClick={checkForUpdates}
+              disabled={status === 'checking'}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg transition-all duration-200 disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={status === 'checking' ? 'animate-spin' : ''} />
+              {status === 'checking' ? t('about.checking') : t('about.checkUpdate')}
+            </button>
+          )}
         </div>
         <p className="text-[var(--fg)] leading-relaxed">
           {t('about.defaultDescription')}

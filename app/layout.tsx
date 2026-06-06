@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ClientProviders from "@/components/layout/ClientProviders";
 import GlowBackground from "@/components/ui/GlowBackground";
+import UpdateBanner from "@/components/ui/UpdateBanner";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ClientProviders>
           <GlowBackground />
           {children}
+          <UpdateBanner />
         </ClientProviders>
       </body>
     </html>

@@ -369,6 +369,8 @@ export const zh = {
   'about.dep.Mermaid': '图表渲染',
   'about.dep.Monaco Editor': '代码编辑器',
   'about.dep.sql.js': 'SQLite WASM',
+  'about.checkUpdate': '检查更新',
+  'about.checking': '检查中...',
 
   // 快捷键设置
   'shortcuts.search': '搜索快捷键...',
@@ -402,6 +404,16 @@ export const zh = {
   'window.maximize': '最大化',
   'window.restore': '还原',
   'window.close': '关闭',
+
+  // 更新
+  'update.available': '发现新版本',
+  'update.availableHint': '有新版本可用，建议更新',
+  'update.download': '下载',
+  'update.downloading': '正在下载...',
+  'update.downloaded': '更新已就绪',
+  'update.downloadedHint': '新版本下载完成，重启即可应用',
+  'update.install': '重启安装',
+  'update.error': '更新失败',
 } as const;
 
 export type TranslationKey = keyof typeof zh;

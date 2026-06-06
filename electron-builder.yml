@@ -2,6 +2,11 @@ appId: ai-sketch
 productName: AI Sketch
 copyright: Copyright © 2024 AI Sketch
 
+publish:
+  provider: github
+  owner: user
+  repo: ai-sketch
+
 directories:
   output: dist
   buildResources: electron/resources

@@ -4,6 +4,13 @@
  * 为 window.electronAPI 提供 TypeScript 类型支持
  */
 
+interface ElectronUpdateAPI {
+  check: () => Promise<void>;
+  download: () => Promise<void>;
+  install: () => Promise<void>;
+  onStatus: (callback: (data: { status: string; data?: unknown }) => void) => () => void;
+}
+
 interface ElectronWindowAPI {
   minimize: () => Promise<void>;
   maximize: () => Promise<void>;
@@ -16,6 +23,7 @@ interface ElectronAPI {
   getUserDataPath: () => Promise<string>;
   confirmDeleteData: () => Promise<boolean>;
   getAppVersion: () => Promise<string>;
+  update: ElectronUpdateAPI;
   window: ElectronWindowAPI;
 }
 

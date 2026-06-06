@@ -13,6 +13,7 @@ import path from 'path';
 import { startServer, stopServer } from './server';
 import { closeDb } from '../lib/db/index';
 import { loadWindowState, saveWindowState } from './window-state';
+import { initAutoUpdater, checkForUpdates, downloadUpdate, quitAndInstall } from './updater';
 
 /** 主窗口实例 */
 let mainWindow: BrowserWindow | null = null;
@@ -141,6 +142,11 @@ app.whenReady().then(async () => {
 
     // 创建窗口
     createWindow();
+
+    // 初始化自动更新（仅生产模式）
+    if (!isDev) {
+      initAutoUpdater(mainWindow);
+    }
   } catch (error) {
     dialog.showErrorBox(
       '启动失败',
@@ -207,4 +213,17 @@ ipcMain.handle('window-is-maximized', () => {
 
 ipcMain.handle('window-close', () => {
   mainWindow?.close();
+});
+
+// IPC 处理：自动更新
+ipcMain.handle('update-check', () => {
+  checkForUpdates();
+});
+
+ipcMain.handle('update-download', () => {
+  downloadUpdate();
+});
+
+ipcMain.handle('update-install', () => {
+  quitAndInstall();
 });
