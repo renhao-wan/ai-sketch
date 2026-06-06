@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",
+    "@maxgraph/core": "^0.23.0",
     "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/typography": "^0.5.19",
     "@types/dompurify": "^3.2.0",
