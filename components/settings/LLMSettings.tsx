@@ -224,7 +224,7 @@ export function LLMSettings() {
         <CountBanner
           show={showBanner}
           title={t('config.bannerTitle')}
-          description={t('config.bannerDescription').replace('{count}', String(configs.length))}
+          description={t('config.bannerDescription', { count: configs.length })}
           onDismiss={handleDismissBanner}
         />
 

@@ -212,7 +212,7 @@ export default function ConversationSettings() {
     setConfirmDialog({
       isOpen: true,
       title: t('conversation.batchDelete'),
-      message: t('conversation.batchDeleteConfirm').replace('{count}', String(count)),
+      message: t('conversation.batchDeleteConfirm', { count }),
       onConfirm: async () => {
         try {
           await api.deleteConversations(Array.from(selectedIds));
@@ -220,7 +220,7 @@ export default function ConversationSettings() {
           setSelectedIds(new Set());
           setIsSelectMode(false);
           await loadConversations(true, 0);
-          showNotification('success', t('conversation.batchDeleteSuccess').replace('{count}', String(count)));
+          showNotification('success', t('conversation.batchDeleteSuccess', { count }));
         } catch (err) {
           console.error('Batch delete failed:', err);
           showNotification('error', t('conversation.batchDeleteFailed'));
@@ -265,9 +265,7 @@ export default function ConversationSettings() {
     setConfirmDialog({
       isOpen: true,
       title: t('conversation.keepFirstN'),
-      message: t('conversation.keepFirstNConfirm')
-        .replace('{keep}', String(count))
-        .replace('{delete}', String(deleteCount)),
+      message: t('conversation.keepFirstNConfirm', { keep: count, delete: deleteCount }),
       onConfirm: async () => {
         try {
           const result = await api.fetchConversations({
@@ -285,7 +283,7 @@ export default function ConversationSettings() {
           pageRef.current = 0;
           setKeepCount('');
           await loadConversations(true, 0);
-          showNotification('success', t('conversation.keepFirstNSuccess').replace('{count}', String(deleteCount)));
+          showNotification('success', t('conversation.keepFirstNSuccess', { count: deleteCount }));
         } catch (err) {
           console.error('Keep first N failed:', err);
           showNotification('error', t('conversation.keepFirstNFailed'));
@@ -302,7 +300,7 @@ export default function ConversationSettings() {
         <CountBanner
           show={showBanner}
           title={t('conversation.bannerTitle')}
-          description={t('conversation.bannerDescription').replace('{count}', String(totalCount))}
+          description={t('conversation.bannerDescription', { count: totalCount })}
           onDismiss={handleDismissBanner}
         />
 
@@ -328,7 +326,7 @@ export default function ConversationSettings() {
           </button>
           {totalCount > 0 && (
             <p className="flex items-center text-xs text-[var(--muted)] ml-auto">
-              {t('conversation.countTotal').replace('{count}', String(totalCount))}
+              {t('conversation.countTotal', { count: totalCount })}
             </p>
           )}
         </div>
@@ -374,7 +372,7 @@ export default function ConversationSettings() {
                   <>
                     <span className="text-sm text-[var(--muted)]">
                       {selectedIds.size > 0
-                        ? t('conversation.selectedCount').replace('{count}', String(selectedIds.size))
+                        ? t('conversation.selectedCount', { count: selectedIds.size })
                         : t('conversation.selectHint')
                       }
                     </span>

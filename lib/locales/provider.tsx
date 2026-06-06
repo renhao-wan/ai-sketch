@@ -14,7 +14,8 @@ const dictionaries: Record<Locale, TranslationDict> = { zh, en };
 interface LocaleContextValue {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: TranslationKey) => string;
+  /** 翻译函数，支持参数插值：t('key', { param: value }) */
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string;
 }
 
 export const LocaleContext = createContext<LocaleContextValue | null>(null);
@@ -55,8 +56,14 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     }).catch(() => { /* 忽略保存失败 */ });
   }, []);
 
-  const t = useCallback((key: TranslationKey): string => {
-    return dictionaries[locale][key] ?? key;
+  const t = useCallback((key: TranslationKey, params?: Record<string, string | number>): string => {
+    let value = dictionaries[locale][key] ?? key;
+    if (params) {
+      for (const [k, v] of Object.entries(params)) {
+        value = value.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+      }
+    }
+    return value;
   }, [locale]);
 
   return (
