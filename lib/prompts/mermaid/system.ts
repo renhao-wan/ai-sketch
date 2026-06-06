@@ -3,7 +3,7 @@
  * 优化：精简冗余描述，保留核心语法参考，强化输出约束
  */
 
-import { IMAGE_HANDLING_INSTRUCTIONS, ANALYSIS_STEP, VISUAL_STYLE_BASE } from '../shared';
+import { IMAGE_HANDLING_INSTRUCTIONS, ANALYSIS_STEP, VISUAL_STYLE_BASE, LANGUAGE_RULE } from '../shared';
 
 /** Mermaid 系统提示词 */
 export const MERMAID_SYSTEM_PROMPT = `## 任务
@@ -31,6 +31,8 @@ flowchart TD
 \`\`\`
 
 ${IMAGE_HANDLING_INSTRUCTIONS}
+
+${LANGUAGE_RULE}
 
 ## 执行步骤
 

@@ -3,7 +3,7 @@
  * 优化：精简冗余描述，保留核心 API 参考，强化关键约束
  */
 
-import { IMAGE_HANDLING_INSTRUCTIONS, ANALYSIS_STEP, VISUAL_STYLE_BASE } from '../shared';
+import { IMAGE_HANDLING_INSTRUCTIONS, ANALYSIS_STEP, VISUAL_STYLE_BASE, LANGUAGE_RULE } from '../shared';
 
 /** Excalidraw 系统提示词 */
 export const EXCALIDRAW_SYSTEM_PROMPT = `## 任务
@@ -24,6 +24,8 @@ export const EXCALIDRAW_SYSTEM_PROMPT = `## 任务
 [{"type": "rectangle", "x": 100, "y": 200, "width": 180, "height": 80, "backgroundColor": "#e3f2fd", "strokeColor": "#1976d2"}]
 
 ${IMAGE_HANDLING_INSTRUCTIONS}
+
+${LANGUAGE_RULE}
 
 ## 执行步骤
 

@@ -3,7 +3,7 @@
  * 优化：精简冗余描述，保留核心 XML 语法参考，强化标签位置规范
  */
 
-import { IMAGE_HANDLING_INSTRUCTIONS, ANALYSIS_STEP, VISUAL_STYLE_BASE } from '../shared';
+import { IMAGE_HANDLING_INSTRUCTIONS, ANALYSIS_STEP, VISUAL_STYLE_BASE, LANGUAGE_RULE } from '../shared';
 
 /** Draw.io 系统提示词 */
 export const DRAWIO_SYSTEM_PROMPT = `## 任务
@@ -36,6 +36,8 @@ export const DRAWIO_SYSTEM_PROMPT = `## 任务
 \`\`\`
 
 ${IMAGE_HANDLING_INSTRUCTIONS}
+
+${LANGUAGE_RULE}
 
 ## 执行步骤
 
