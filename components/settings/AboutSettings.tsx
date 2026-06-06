@@ -39,6 +39,11 @@ export function AboutSettings() {
   const { isElectron, status, info, progress, error, checkForUpdates, downloadUpdate, installUpdate } = useUpdate();
   const [localChecking, setLocalChecking] = useState(false);
   const [notification, setNotification] = useState<NotificationState>({ isOpen: false, title: '', message: '', type: 'info' });
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleCheck = () => {
     setLocalChecking(true);
@@ -157,7 +162,7 @@ export function AboutSettings() {
 
             {/* 检查更新 */}
             {(status === 'idle' || status === 'checking' || localChecking) && (
-              isElectron ? (
+              mounted && isElectron ? (
                 <button
                   onClick={handleCheck}
                   disabled={isChecking}
