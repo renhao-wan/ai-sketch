@@ -72,6 +72,8 @@ export interface ExcalidrawElement {
   width?: number;
   height?: number;
   id?: string;
+  /** 旋转角度（弧度） */
+  rotation?: number;
   start?: { id: string };
   end?: { id: string };
   [key: string]: unknown;
