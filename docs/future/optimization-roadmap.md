@@ -645,7 +645,7 @@ onMaximizeChange: (callback: (isMaximized: boolean) => void) => {
 |---|------|----------|------|
 | 不支持参数插值 | 实现 `t('key', { count: 5 })` 语法 | ✅ 已修复 |
 | 硬编码中文字符串 | 全局搜索并替换为 i18n key | ✅ 已修复 |
-| 模板 prompt 依赖翻译值 | 将 prompt 内容与翻译文本分离 | ❌ 未修复 |
+| 模板 prompt 依赖翻译值 | 将 prompt 内容与翻译文本分离 | ✅ 已修复 |
 
 ---
 
@@ -733,7 +733,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 > **图例**: ✅ 已完成 | ❌ 未开始
 > **严重度**: 🔴 严重 | 🟡 中等 | 🟢 轻微
 
-### ✅ 已完成（39 项）
+### ✅ 已完成（40 项）
 
 | # | 优化项 | 严重度 | 完成日期 | 备注 |
 |---|--------|--------|----------|------|
@@ -776,6 +776,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 37 | 箭头旋转角度支持 | 🟢 | 2026-06-05 | ExcalidrawElement.rotation + 旋转矩阵变换 |
 | 38 | t() 参数插值 | 🟡 | 2026-06-05 | t('key', { param: value }) 语法 + 全局替换 .replace() |
 | 39 | UI 组件硬编码中文 | 🟡 | 2026-06-05 | upload/toolbar/lang 等组件改用 i18n key |
+| 40 | Prompt 语言适配 | 🟡 | 2026-06-05 | 添加 LANGUAGE_RULE，LLM 根据用户输入语言生成标签 |
 
 ### ❌ 未完成 — 严重（6 项）
 
@@ -810,8 +811,8 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
-| 40 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
-| 41 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
+| 41 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
+| 42 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
 
 ---
 
