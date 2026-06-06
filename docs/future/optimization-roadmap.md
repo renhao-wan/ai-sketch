@@ -590,10 +590,8 @@ onMaximizeChange: (callback: (isMaximized: boolean) => void) => {
 
 | # | 问题 | 改进方案 |
 |---|------|----------|
-| 无崩溃恢复 | 添加 `webContents.on('render-process-gone')` 监听，显示错误页面或重启 |
+| 无崩溃恢复 | ✅ 已修复：监听 `render-process-gone`，弹窗提示重新加载 |
 | 无自动更新 | 引入 `electron-updater`，配置 GitHub Releases 发布 |
-| macOS 缺少公证 | 添加 `afterSign` 钩子调用 `notarytool` |
-| macOS 缺少标准菜单 | 为 macOS 添加标准应用菜单 |
 
 ---
 
@@ -601,7 +599,7 @@ onMaximizeChange: (callback: (isMaximized: boolean) => void) => {
 
 | # | 问题 | 改进方案 |
 |---|------|----------|
-| 窗口状态未持久化 | 监听 `resize`/`move` 事件，保存 bounds 到 electron-store |
+| 窗口状态未持久化 | ✅ 已修复：保存到 `window-state.json`，启动时恢复 |
 | 各页面重复 header | 抽取为共享 layout 组件 |
 | 无全局 isElectron Context | 创建 `ElectronProvider` 在应用根部统一检测 |
 | 服务器启动无超时 | 添加超时控制和加载进度提示 |
@@ -714,21 +712,20 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 4. **Excalidraw 流式 debounce** — 影响渲染性能和用户体验
 5. **截断通知 role 修正** — 破坏 user/assistant 交替规则
 
-### 🟡 中等问题（18 项）
+### 🟡 中等问题（17 项）
 
-详见附录 A #22-#39，主要集中在：
+详见附录 A #22-#38，主要集中在：
 - 上下文管理（截断通知 role、首条消息格式化）
 - Editor 页面（useState 碎片化、sessionStorage 耦合、panelWidth 不持久化）
 - 画布（scrollToContent 跳动、元素转换失败静默吞没）
-- Electron（无崩溃恢复、无自动更新）
+- Electron（无自动更新）
 - 国际化（参数插值、硬编码中文）
 
-### 🟢 轻微问题（6 项）
+### 🟢 轻微问题（3 项）
 
-详见附录 A #40-#45，主要集中在：
+详见附录 A #39-#41，主要集中在：
 - 数据库（ID 生成算法）
 - 策略模式（ImageStrategy 全局可变状态）
-- Electron（窗口状态持久化、macOS 公证）
 - Draw.io（CSS transform 缩放）
 
 ---
@@ -738,7 +735,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 > **图例**: ✅ 已完成 | ❌ 未开始
 > **严重度**: 🔴 严重 | 🟡 中等 | 🟢 轻微
 
-### ✅ 已完成（29 项）
+### ✅ 已完成（31 项）
 
 | # | 优化项 | 严重度 | 完成日期 | 备注 |
 |---|--------|--------|----------|------|
@@ -771,6 +768,8 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 27 | beautify 要求不支持的功能 | 🟡 | 2026-06-05 | 移除阴影/渐变，改用 roundness/fillStyle |
 | 28 | getSystemPrompt 重复调用 | 🟢 | 2026-06-05 | 缓存到变量复用 |
 | 29 | system prompt 全部图表规范 | 🟡 | 2026-06-05 | 已验证：system prompt 不含规范，user prompt 按需注入 |
+| 30 | Electron 崩溃恢复 | 🟡 | 2026-06-05 | 监听 render-process-gone，弹窗提示重新加载 |
+| 31 | 窗口状态持久化 | 🟢 | 2026-06-05 | 保存到 userData/window-state.json，启动时恢复 |
 
 ### ❌ 未完成 — 严重（6 项）
 
@@ -783,7 +782,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 18 | Mermaid 14/21 种类型降级为 flowchart | Mermaid 画布 | `MERMAID_TYPE_MAP` 未改 |
 | 19 | Excalidraw 流式每元素完整重绘 | Excalidraw 画布 | `feed()` 无 debounce，每元素调 `updateScene` |
 
-### ❌ 未完成 — 中等（18 项）
+### ❌ 未完成 — 中等（17 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
@@ -797,23 +796,21 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 29 | 格式切换无确认对话框 | Editor | 切换时清空代码和渲染数据，无确认提示 |
 | 30 | scrollToContent 流式期间每元素调用 | Excalidraw 画布 | 画布视角不断跳动 |
 | 31 | 元素转换失败静默吞没 | Excalidraw 画布 | `catch { /* skip */ }` 无日志无提示 |
-| 32 | 无崩溃恢复 | Electron | 无 `render-process-gone` 监听 |
-| 33 | 无自动更新 | Electron | 未引入 `electron-updater` |
-| 34 | 不支持参数插值 | 国际化 | `t()` 只接受 key，不处理 `{count}` 占位符 |
-| 35 | 硬编码中文（prompts/constants/错误消息） | 国际化 | LLM prompt 故意中文，但错误消息应国际化 |
-| 36 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
-| 37 | 缺少 Migration 机制 | 数据库 | 仅 ad-hoc ALTER TABLE，不可扩展 |
-| 38 | Excalidraw validate 不检查 schema | 策略模式 | 无元素结构校验 |
-| 39 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
+| 32 | 无自动更新 | Electron | 未引入 `electron-updater` |
+| 33 | 不支持参数插值 | 国际化 | `t()` 只接受 key，不处理 `{count}` 占位符 |
+| 34 | 硬编码中文（prompts/constants/错误消息） | 国际化 | LLM prompt 故意中文，但错误消息应国际化 |
+| 35 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
+| 36 | 缺少 Migration 机制 | 数据库 | 仅 ad-hoc ALTER TABLE，不可扩展 |
+| 37 | Excalidraw validate 不检查 schema | 策略模式 | 无元素结构校验 |
+| 38 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
 
-### ❌ 未完成 — 轻微（6 项）
+### ❌ 未完成 — 轻微（3 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
-| 40 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
-| 41 | ImageStrategy 全局可变状态 | 策略模式 | 全局单例含可变 `diagramFormat` |
-| 42 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
-| 43 | 窗口状态未持久化 | Electron | 未监听 resize/move 保存 bounds |
+| 39 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
+| 40 | ImageStrategy 全局可变状态 | 策略模式 | 全局单例含可变 `diagramFormat` |
+| 41 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
 | 50 | macOS 缺少公证/标准菜单 | Electron | 需 `afterSign` 钩子 + 标准菜单 |
 
 ---
