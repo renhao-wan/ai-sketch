@@ -60,6 +60,25 @@ const actionHandlers: Record<string, ActionHandler> = {
     return { success: true };
   },
 
+  'get-preference': async (body) => {
+    const value = await configManager.getPreference(body.key as string);
+    return { value };
+  },
+
+  'set-preference': async (body) => {
+    await configManager.setPreference(body.key as string, body.value as string);
+    return { success: true };
+  },
+
+  'get-all-preferences': async (body) => {
+    const keys = body.keys as string[];
+    const result: Record<string, string | null> = {};
+    for (const key of keys) {
+      result[key] = await configManager.getPreference(key);
+    }
+    return result;
+  },
+
   'clear-cache': async () => {
     await cacheManager.clearAll();
     return { success: true };

@@ -19,25 +19,40 @@ interface LocaleContextValue {
 
 export const LocaleContext = createContext<LocaleContextValue | null>(null);
 
-const STORAGE_KEY = 'ai-sketch-locale';
-
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  // 初始值统一为 'zh'（SSR 安全），mount 后从 localStorage 读取真实值
+  // 初始值统一为 'zh'（SSR 安全），mount 后从数据库读取真实值
   const [locale, setLocaleState] = useState<Locale>('zh');
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'zh' || stored === 'en') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- 从 localStorage 同步语言设置，仅执行一次
-      setLocaleState(stored);
-      document.documentElement.lang = stored === 'zh' ? 'zh-CN' : 'en';
-    }
+    const loadLocale = async () => {
+      try {
+        const res = await fetch('/api/configs/actions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get-preference', key: 'preference_locale' }),
+        });
+        const data = await res.json();
+        if (data.value === 'zh' || data.value === 'en') {
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- 从数据库同步语言设置，仅执行一次
+          setLocaleState(data.value);
+          document.documentElement.lang = data.value === 'zh' ? 'zh-CN' : 'en';
+        }
+      } catch {
+        // 加载失败保持默认 'zh'
+      }
+    };
+    loadLocale();
   }, []);
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
-    localStorage.setItem(STORAGE_KEY, newLocale);
     document.documentElement.lang = newLocale === 'zh' ? 'zh-CN' : 'en';
+    // 异步保存到数据库
+    fetch('/api/configs/actions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'set-preference', key: 'preference_locale', value: newLocale }),
+    }).catch(() => { /* 忽略保存失败 */ });
   }, []);
 
   const t = useCallback((key: TranslationKey): string => {

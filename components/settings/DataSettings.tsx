@@ -11,7 +11,7 @@ import type { ConfirmDialogState, NotificationState } from '@/lib/types';
 
 /** 数据管理组件 — 存储统计、数据清理与重置 */
 export default function DataSettings() {
-  const { t } = useLocale();
+  const { t, setLocale } = useLocale();
   const { updateSetting } = useSettings();
 
   // ── Storage statistics ──
@@ -83,7 +83,7 @@ export default function DataSettings() {
           // Reset theme to light
           updateSetting('theme', 'light');
           // Reset locale to zh
-          updateSetting('locale', 'zh');
+          setLocale('zh');
           showNotification('success', t('settings.resetPreferencesSuccess'));
         } catch (err) {
           console.error('Reset preferences failed:', err);
@@ -178,7 +178,7 @@ export default function DataSettings() {
         try {
           // Reset preferences
           updateSetting('theme', 'light');
-          updateSetting('locale', 'zh');
+          setLocale('zh');
 
           // Clear conversations
           await api.clearAllConversations();

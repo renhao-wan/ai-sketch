@@ -338,6 +338,24 @@ class ConfigManager {
     return stats;
   }
 
+  // ==================== 通用偏好设置 ====================
+
+  /** 获取偏好设置值（通用，适用于 locale/theme/glow 等字符串值） */
+  async getPreference(key: string): Promise<string | null> {
+    const db = await getDb();
+    const row = db.exec('SELECT value FROM meta WHERE key = ?', [key]);
+    return row.length > 0 && row[0].values.length > 0
+      ? (row[0].values[0][0] as string)
+      : null;
+  }
+
+  /** 设置偏好设置值 */
+  async setPreference(key: string, value: string): Promise<void> {
+    const db = await getDb();
+    db.run('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)', [key, value]);
+    await requestSave();
+  }
+
   /** 获取代理配置 */
   async getProxy(): Promise<{ proxyUrl: string; proxyEnabled: boolean }> {
     const db = await getDb();
