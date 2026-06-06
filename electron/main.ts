@@ -12,6 +12,7 @@ import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
 import path from 'path';
 import { startServer, stopServer } from './server';
 import { closeDb } from '../lib/db/index';
+import { loadWindowState, saveWindowState } from './window-state';
 
 /** 主窗口实例 */
 let mainWindow: BrowserWindow | null = null;
@@ -40,9 +41,13 @@ const isDev = process.env.ELECTRON_DEV === 'true';
  * - 延迟显示（show: false + ready-to-show），避免启动时白屏闪烁
  */
 function createWindow(): void {
+  const savedState = loadWindowState();
+
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    x: savedState.x,
+    y: savedState.y,
+    width: savedState.width,
+    height: savedState.height,
     minWidth: 800,
     minHeight: 600,
     frame: false, // 完全无边框，不显示原生标题栏和按钮
@@ -64,11 +69,28 @@ function createWindow(): void {
     mainWindow.loadURL(`http://localhost:${port}`);
   }
 
-  // 页面加载完成后再显示窗口并最大化
+  // 页面加载完成后再显示窗口，恢复最大化状态
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
-    mainWindow?.maximize();
+    if (savedState.isMaximized) {
+      mainWindow?.maximize();
+    }
   });
+
+  // 窗口移动/调整大小时保存状态
+  const saveCurrentState = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    const bounds = mainWindow.getBounds();
+    saveWindowState({
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      isMaximized: mainWindow.isMaximized(),
+    });
+  };
+  mainWindow.on('resize', saveCurrentState);
+  mainWindow.on('move', saveCurrentState);
 
   // 窗口最大化/还原时主动通知渲染进程（更新图标）
   mainWindow.on('maximize', () => {
