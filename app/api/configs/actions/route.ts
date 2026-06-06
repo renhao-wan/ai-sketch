@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 import { configManager } from '@/lib/db/config-manager';
 import { cacheManager } from '@/lib/db/cache-manager';
 
@@ -86,6 +88,21 @@ const actionHandlers: Record<string, ActionHandler> = {
 
   'cache-stats': async () => {
     return cacheManager.getStats();
+  },
+
+  'reset-window-state': async () => {
+    // 窗口状态文件位于 userData 根目录（数据库文件所在目录的上两级）
+    const dbPath = process.env.AI_SKETCH_DB_PATH || path.join(process.cwd(), 'data', 'ai-sketch.db');
+    const userDataDir = path.dirname(path.dirname(dbPath));
+    const stateFile = path.join(userDataDir, 'window-state.json');
+    try {
+      if (fs.existsSync(stateFile)) {
+        fs.unlinkSync(stateFile);
+      }
+    } catch (e) {
+      console.error('Failed to delete window-state.json:', e);
+    }
+    return { success: true };
   },
 };
 

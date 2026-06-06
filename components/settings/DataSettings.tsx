@@ -197,6 +197,13 @@ export default function DataSettings() {
           // Reset global settings (proxy, retries, etc.)
           await api.resetMeta();
 
+          // Reset window state
+          await fetch('/api/configs/actions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'reset-window-state' }),
+          });
+
           // Update local counts
           setConversationCount(0);
           setConfigCount(0);
