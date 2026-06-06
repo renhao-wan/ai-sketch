@@ -30,15 +30,10 @@ export default function DiagramCanvas({ format, data, isStreaming, streamBuffer,
 
   const isEmpty = normalized === null || normalized === undefined;
 
-  // 非活跃 canvas 传空数据清空内容，但组件保持挂载
+  // 按需挂载：根据当前格式提取对应数据
   const excalidrawElements = format === 'excalidraw' && Array.isArray(normalized) ? normalized : [];
   const mermaidCode = format === 'mermaid' && typeof normalized === 'string' ? normalized : '';
   const drawioCode = format === 'drawio' && typeof normalized === 'string' ? normalized : '';
-
-  // 确定各 canvas 的 z-index（Excalidraw 和 Mermaid 不需要 iframe 可见即可初始化）
-  const zExcalidraw = format === 'excalidraw' ? 3 : -1;
-  const zMermaid = format === 'mermaid' ? 3 : -1;
-  const zDrawio = format === 'drawio' ? 3 : -2; // 始终在底层（iframe 需要可见）
 
   return (
     <div className="w-full h-full canvas-grid-bg relative">
@@ -62,15 +57,13 @@ export default function DiagramCanvas({ format, data, isStreaming, streamBuffer,
         </div>
       )}
 
-      {/* 三个 Canvas 始终挂载，用 z-index 控制前后，传空数据清空非活跃内容 */}
-      <div className="absolute inset-0" style={{ zIndex: zDrawio }}>
-        <DrawioCanvas code={drawioCode} />
-      </div>
-      <div className="absolute inset-0" style={{ zIndex: zExcalidraw }}>
-        <ExcalidrawCanvas elements={excalidrawElements} isStreaming={format === 'excalidraw' ? isStreaming : undefined} streamRendererRef={streamRendererRef} />
-      </div>
-      <div className="absolute inset-0" style={{ zIndex: zMermaid }}>
-        <MermaidCanvas code={mermaidCode} isStreaming={format === 'mermaid' ? isStreaming : undefined} />
+      {/* 按需挂载：只渲染当前格式的 Canvas */}
+      <div className="absolute inset-0">
+        {format === 'drawio' && <DrawioCanvas code={drawioCode} />}
+        {format === 'excalidraw' && (
+          <ExcalidrawCanvas elements={excalidrawElements} isStreaming={isStreaming} streamRendererRef={streamRendererRef} />
+        )}
+        {format === 'mermaid' && <MermaidCanvas code={mermaidCode} isStreaming={isStreaming} />}
       </div>
     </div>
   );
