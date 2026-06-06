@@ -35,6 +35,7 @@ export function useUpdate() {
     if (!electronAPI?.update) return;
 
     const cleanup = electronAPI.update.onStatus(({ status, data }) => {
+      console.log('[useUpdate] status:', status, data);
       switch (status) {
         case 'checking':
           setState(prev => ({ ...prev, status: 'checking', error: null }));
@@ -65,6 +66,7 @@ export function useUpdate() {
   }, []);
 
   const checkForUpdates = useCallback(() => {
+    console.log('[useUpdate] check called, electronAPI:', !!window.electronAPI, 'update:', !!window.electronAPI?.update);
     window.electronAPI?.update?.check();
   }, []);
 

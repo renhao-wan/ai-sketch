@@ -11,7 +11,6 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
 import path from 'path';
 import { startServer, stopServer } from './server';
-import { closeDb } from '../lib/db/index';
 import { loadWindowState, saveWindowState } from './window-state';
 import { initAutoUpdater, checkForUpdates, downloadUpdate, quitAndInstall } from './updater';
 
@@ -143,10 +142,8 @@ app.whenReady().then(async () => {
     // 创建窗口
     createWindow();
 
-    // 初始化自动更新（仅生产模式）
-    if (!isDev) {
-      initAutoUpdater(mainWindow);
-    }
+    // 初始化自动更新
+    initAutoUpdater(mainWindow);
   } catch (error) {
     dialog.showErrorBox(
       '启动失败',
@@ -159,6 +156,8 @@ app.whenReady().then(async () => {
 // 所有窗口关闭时退出应用（Windows/Linux）
 app.on('window-all-closed', async () => {
   await stopServer();
+  // 动态导入避免编译时 rootDir 限制
+  const { closeDb } = require('../lib/db/index');
   closeDb();
   app.quit();
 });
@@ -217,7 +216,8 @@ ipcMain.handle('window-close', () => {
 
 // IPC 处理：自动更新
 ipcMain.handle('update-check', () => {
-  checkForUpdates();
+  console.log('[IPC] update-check received');
+  checkForUpdates(mainWindow);
 });
 
 ipcMain.handle('update-download', () => {

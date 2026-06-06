@@ -58,111 +58,86 @@ export function AboutSettings() {
         </p>
       </section>
 
-      {/* 版本更新（仅 Electron） */}
-      {isElectron && (
-        <section>
-          <h3 className="text-lg font-semibold text-[var(--fg)] mb-4 flex items-center gap-2">
+      {/* 版本更新 */}
+      <section>
+        <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]">
+          <div className="flex items-center gap-3">
             <ArrowUpCircle size={18} className="text-[var(--accent-indigo)]" />
-            {t('about.versionUpdate')}
-          </h3>
-
-          <div className="p-4 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)] space-y-3">
-            {/* 当前版本 */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-[var(--muted)]">{t('about.currentVersion')}</span>
-              <span className="text-sm font-mono text-[var(--fg)]">v{APP_INFO.version}</span>
+            <div>
+              <p className="text-sm font-medium text-[var(--fg)]">{t('about.versionUpdate')}</p>
+              <p className="text-xs text-[var(--muted)]">v{APP_INFO.version}</p>
             </div>
+          </div>
 
+          {/* 状态对应的操作区 */}
+          <div className="flex items-center gap-2">
             {/* 已是最新 */}
             {status === 'not-available' && (
-              <div className="flex items-center gap-2 text-sm text-green-600">
-                <Check size={14} />
-                <span>{t('about.upToDate')}</span>
-              </div>
+              <span className="flex items-center gap-1 text-xs text-green-600">
+                <Check size={12} />{t('about.upToDate')}
+              </span>
             )}
 
             {/* 有新版本 */}
             {status === 'available' && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-[var(--accent-indigo)]">
-                  <Download size={14} />
-                  <span>{t('update.available')} v{info?.version}</span>
-                </div>
-                <button
-                  onClick={downloadUpdate}
-                  className="px-4 py-1.5 text-sm font-medium text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-lg hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200"
-                >
-                  {t('update.download')}
-                </button>
-              </div>
+              <button
+                onClick={downloadUpdate}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-lg hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200"
+              >
+                <Download size={12} />
+                {t('update.download')} v{info?.version}
+              </button>
             )}
 
             {/* 下载中 */}
             {status === 'downloading' && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2 text-[var(--accent-indigo)]">
-                    <Loader2 size={14} className="animate-spin" />
-                    <span>{t('update.downloading')}</span>
-                  </div>
-                  <span className="font-mono text-[var(--muted)]">{Math.round(progress)}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-[var(--surface-warm-hover)] rounded-full overflow-hidden">
+              <div className="flex items-center gap-2">
+                <div className="w-20 h-1.5 bg-[var(--surface-warm-hover)] rounded-full overflow-hidden">
                   <div
                     className="h-full bg-[var(--accent-indigo)] rounded-full transition-all duration-300"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
+                <span className="text-xs font-mono text-[var(--muted)]">{Math.round(progress)}%</span>
               </div>
             )}
 
             {/* 下载完成 */}
             {status === 'downloaded' && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-green-600">
-                  <Check size={14} />
-                  <span>{t('update.downloaded')}</span>
-                </div>
-                <button
-                  onClick={installUpdate}
-                  className="px-4 py-1.5 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 active:scale-[0.98] transition-all duration-200"
-                >
-                  {t('update.install')}
-                </button>
-              </div>
+              <button
+                onClick={installUpdate}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 active:scale-[0.98] transition-all duration-200"
+              >
+                <Check size={12} />
+                {t('update.install')}
+              </button>
             )}
 
             {/* 错误 */}
             {status === 'error' && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-red-500 min-w-0">
-                  <X size={14} className="flex-shrink-0" />
-                  <span className="truncate">{error || t('update.error')}</span>
-                </div>
-                <button
-                  onClick={checkForUpdates}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg transition-all duration-200 flex-shrink-0"
-                >
-                  <RefreshCw size={12} />
-                  {t('about.retry')}
-                </button>
-              </div>
+              <button
+                onClick={checkForUpdates}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-500 hover:bg-red-500/10 rounded-lg transition-all duration-200"
+              >
+                <RefreshCw size={12} />
+                {t('about.retry')}
+              </button>
             )}
 
-            {/* 检查更新按钮（idle / checking 状态） */}
+            {/* 检查更新 */}
             {(status === 'idle' || status === 'checking') && (
               <button
                 onClick={checkForUpdates}
                 disabled={status === 'checking'}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg transition-all duration-200 disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg transition-all duration-200 disabled:opacity-50"
               >
-                <RefreshCw size={14} className={status === 'checking' ? 'animate-spin' : ''} />
+                <RefreshCw size={12} className={status === 'checking' ? 'animate-spin' : ''} />
                 {status === 'checking' ? t('about.checking') : t('about.checkUpdate')}
               </button>
             )}
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* 开发者信息 */}
       <section>

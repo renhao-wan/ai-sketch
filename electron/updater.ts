@@ -64,10 +64,16 @@ export function initAutoUpdater(mainWindow: BrowserWindow | null): void {
 }
 
 /** 手动检查更新 */
-export function checkForUpdates(): void {
-  autoUpdater.checkForUpdates().catch((err) => {
-    console.error('[Updater] Manual check failed:', err.message);
-  });
+export function checkForUpdates(mainWindow: BrowserWindow | null): void {
+  console.log('[Updater] Manual check triggered');
+  autoUpdater.checkForUpdates()
+    .then((result) => {
+      console.log('[Updater] Check result:', result ? 'found' : 'none');
+    })
+    .catch((err) => {
+      console.error('[Updater] Manual check failed:', err.message);
+      sendStatus(mainWindow, 'error', err.message);
+    });
 }
 
 /** 下载更新 */

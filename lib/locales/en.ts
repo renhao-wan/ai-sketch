@@ -377,6 +377,7 @@ export const en: TranslationDict = {
   'about.currentVersion': 'Current Version',
   'about.upToDate': 'You are up to date',
   'about.retry': 'Retry',
+  'about.desktopOnly': 'Auto-update is only available in the desktop app',
 
   // Keyboard shortcuts
   'shortcuts.search': 'Search shortcuts...',

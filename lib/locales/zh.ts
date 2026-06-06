@@ -375,6 +375,7 @@ export const zh = {
   'about.currentVersion': '当前版本',
   'about.upToDate': '已是最新版本',
   'about.retry': '重试',
+  'about.desktopOnly': '自动更新仅在桌面端应用中可用',
 
   // 快捷键设置
   'shortcuts.search': '搜索快捷键...',
