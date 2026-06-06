@@ -52,3 +52,7 @@ next-env.d.ts
 # electron build output
 dist-electron/
 dist/
+lib/db/*.js
+lib/db/*.d.ts
+lib/db/*.js.map
+lib/db/*.d.ts.map
