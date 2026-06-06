@@ -353,50 +353,27 @@ for (let attempt = 0; attempt <= MAX_AUTO_RETRIES; attempt++) {
 
 ### 4.2 提示词系统问题
 
-#### 问题：output 示例与要求矛盾（中等）
+#### 问题：output 示例与要求矛盾（中等）✅
 
-**位置**：`lib/prompts/excalidraw/system.ts` 第 19-25 行
-
-**现状**：要求"不要用代码块包裹"但示例用了代码块。
-
-**改进方案**：移除示例中的代码块包裹，保持与要求一致。
+**现状**：已修复。移除示例中的代码块包裹，与要求一致。
 
 ---
 
-#### 问题：坐标规划指导过于简单（中等）
+#### 问题：坐标规划指导过于简单（中等）✅
 
-**现状**：仅说"间距大于 800px"，无具体坐标规划策略。
-
-**影响**：LLM 不知道如何系统性规划坐标，导致元素间距不均匀、密度差异大。
-
-**改进方案**：提供坐标规划模板，如：
-```
-对于 N 个节点的流程图：
-- 水平间距：200px
-- 垂直间距：150px
-- 起始坐标：(100, 100)
-- 每行最多 4 个节点
-```
+**现状**：已修复。补充水平/垂直间距、起始坐标、每行密度、画布范围等具体策略。
 
 ---
 
-#### 问题：AI Action 提示词矛盾（中等）
+#### 问题：AI Action 提示词间距矛盾（中等）✅
 
-**位置**：`lib/prompts/ai-actions/layout.ts` vs `excalidraw/system.ts`
-
-**现状**：layout 要求"80-120px 间距" vs system prompt 要求"大于 800px"。
-
-**改进方案**：统一间距建议，或说明不同场景下的不同要求。
+**现状**：已修复。layout 间距建议统一为 150-200px。
 
 ---
 
-#### 问题：beautify 要求不支持的功能（中等）
+#### 问题：beautify 要求不支持的功能（中等）✅
 
-**位置**：`lib/prompts/ai-actions/beautify.ts`
-
-**现状**：要求"阴影/渐变效果"但 Excalidraw skeleton API 不支持。
-
-**改进方案**：移除不支持的功能要求，或改用 Excalidraw 支持的样式属性。
+**现状**：已修复。移除阴影/渐变要求，改用 Excalidraw 支持的 roundness 和 fillStyle。
 
 ---
 
@@ -737,11 +714,10 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 4. **Excalidraw 流式 debounce** — 影响渲染性能和用户体验
 5. **截断通知 role 修正** — 破坏 user/assistant 交替规则
 
-### 🟡 中等问题（23 项）
+### 🟡 中等问题（18 项）
 
-详见附录 A #22-#46，主要集中在：
-- 上下文管理（截断通知 role、首条消息格式化、system prompt 裁剪）
-- 提示词质量（矛盾、抽象、不支持的功能）
+详见附录 A #22-#39，主要集中在：
+- 上下文管理（截断通知 role、首条消息格式化）
 - Editor 页面（useState 碎片化、sessionStorage 耦合、panelWidth 不持久化）
 - 画布（scrollToContent 跳动、元素转换失败静默吞没）
 - Electron（无崩溃恢复、无自动更新）
@@ -749,7 +725,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 
 ### 🟢 轻微问题（6 项）
 
-详见附录 A #45-#50，主要集中在：
+详见附录 A #40-#45，主要集中在：
 - 数据库（ID 生成算法）
 - 策略模式（ImageStrategy 全局可变状态）
 - Electron（窗口状态持久化、macOS 公证）
@@ -762,7 +738,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 > **图例**: ✅ 已完成 | ❌ 未开始
 > **严重度**: 🔴 严重 | 🟡 中等 | 🟢 轻微
 
-### ✅ 已完成（23 项）
+### ✅ 已完成（29 项）
 
 | # | 优化项 | 严重度 | 完成日期 | 备注 |
 |---|--------|--------|----------|------|
@@ -789,6 +765,12 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 21 | SourceType/InputSourceType 未统一 | 🟢 | 2026-06-05 | 移除 InputSourceType，统一用 SourceType |
 | 22 | Mermaid VALID_STARTS 重复 | 🟢 | 2026-06-05 | postProcess 复用模块级常量 |
 | 23 | constants.ts 遗留死注释 | 🟢 | 2026-06-05 | 移除 `// Must match CHART_TYPE_NAMES` |
+| 24 | output 示例与要求矛盾 | 🟡 | 2026-06-05 | 移除示例中的代码块包裹 |
+| 25 | 坐标规划指导过于简单 | 🟡 | 2026-06-05 | 补充水平/垂直间距、起始坐标、密度、画布范围 |
+| 26 | AI Action 提示词间距矛盾 | 🟡 | 2026-06-05 | layout 间距统一为 150-200px |
+| 27 | beautify 要求不支持的功能 | 🟡 | 2026-06-05 | 移除阴影/渐变，改用 roundness/fillStyle |
+| 28 | getSystemPrompt 重复调用 | 🟢 | 2026-06-05 | 缓存到变量复用 |
+| 29 | system prompt 全部图表规范 | 🟡 | 2026-06-05 | 已验证：system prompt 不含规范，user prompt 按需注入 |
 
 ### ❌ 未完成 — 严重（6 项）
 
@@ -801,43 +783,37 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 18 | Mermaid 14/21 种类型降级为 flowchart | Mermaid 画布 | `MERMAID_TYPE_MAP` 未改 |
 | 19 | Excalidraw 流式每元素完整重绘 | Excalidraw 画布 | `feed()` 无 debounce，每元素调 `updateScene` |
 
-### ❌ 未完成 — 中等（23 项）
+### ❌ 未完成 — 中等（18 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
 | 22 | 截断通知 role 为 assistant 应为 system | 上下文管理 | 破坏 user/assistant 交替规则 |
 | 23 | 首条消息未经 getUserPrompt 格式化 | 上下文管理 | 历史消息原始发送，与当前轮次格式不一致 |
 | 24 | 图片以 base64 TEXT 存储 | 上下文管理 | 单行数据量极大，影响查询性能 |
-| 25 | system prompt 发送全部 22 种图表规范 | 上下文管理 | 约 90% 规范是无用 token 浪费 |
-| 26 | output 示例与要求矛盾 | 提示词 | 要求"不用代码块"但示例用了代码块 |
-| 27 | 坐标规划指导过于简单 | 提示词 | 仅"间距大于 800px"，无具体规划策略 |
-| 28 | AI Action 提示词间距矛盾 | 提示词 | layout 80-120px vs system 800px+ |
-| 29 | beautify 要求不支持的功能 | 提示词 | 要求阴影/渐变，Excalidraw API 不支持 |
-| 30 | useState 碎片化（13 个） | Editor | 已从 21 减到 13，未用 useReducer |
-| 31 | sessionStorage 隐式耦合 | Editor | 页面间通过字符串 key 通信，无类型约束 |
-| 32 | 流式期间每帧 2 次 setState | Editor | onCodeUpdate + onMessagesUpdate 各触发 setState |
-| 33 | panelWidth 不持久化 | Editor | 注释标注 `not persisted`，刷新重置 |
-| 34 | 格式切换无确认对话框 | Editor | 切换时清空代码和渲染数据，无确认提示 |
-| 35 | scrollToContent 流式期间每元素调用 | Excalidraw 画布 | 画布视角不断跳动 |
-| 36 | 元素转换失败静默吞没 | Excalidraw 画布 | `catch { /* skip */ }` 无日志无提示 |
-| 37 | 无崩溃恢复 | Electron | 无 `render-process-gone` 监听 |
-| 38 | 无自动更新 | Electron | 未引入 `electron-updater` |
-| 39 | 不支持参数插值 | 国际化 | `t()` 只接受 key，不处理 `{count}` 占位符 |
-| 40 | 硬编码中文（prompts/constants/错误消息） | 国际化 | LLM prompt 故意中文，但错误消息应国际化 |
-| 41 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
-| 42 | 缺少 Migration 机制 | 数据库 | 仅 ad-hoc ALTER TABLE，不可扩展 |
-| 43 | Excalidraw validate 不检查 schema | 策略模式 | 无元素结构校验 |
-| 44 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
+| 25 | useState 碎片化（13 个） | Editor | 已从 21 减到 13，未用 useReducer |
+| 26 | sessionStorage 隐式耦合 | Editor | 页面间通过字符串 key 通信，无类型约束 |
+| 27 | 流式期间每帧 2 次 setState | Editor | onCodeUpdate + onMessagesUpdate 各触发 setState |
+| 28 | panelWidth 不持久化 | Editor | 注释标注 `not persisted`，刷新重置 |
+| 29 | 格式切换无确认对话框 | Editor | 切换时清空代码和渲染数据，无确认提示 |
+| 30 | scrollToContent 流式期间每元素调用 | Excalidraw 画布 | 画布视角不断跳动 |
+| 31 | 元素转换失败静默吞没 | Excalidraw 画布 | `catch { /* skip */ }` 无日志无提示 |
+| 32 | 无崩溃恢复 | Electron | 无 `render-process-gone` 监听 |
+| 33 | 无自动更新 | Electron | 未引入 `electron-updater` |
+| 34 | 不支持参数插值 | 国际化 | `t()` 只接受 key，不处理 `{count}` 占位符 |
+| 35 | 硬编码中文（prompts/constants/错误消息） | 国际化 | LLM prompt 故意中文，但错误消息应国际化 |
+| 36 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
+| 37 | 缺少 Migration 机制 | 数据库 | 仅 ad-hoc ALTER TABLE，不可扩展 |
+| 38 | Excalidraw validate 不检查 schema | 策略模式 | 无元素结构校验 |
+| 39 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
 
-### ❌ 未完成 — 轻微（7 项）
+### ❌ 未完成 — 轻微（6 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
-| 45 | system prompt getSystemPrompt() 重复调用 | 上下文管理 | route.ts 中调用两次，未缓存 |
-| 46 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
-| 47 | ImageStrategy 全局可变状态 | 策略模式 | 全局单例含可变 `diagramFormat` |
-| 48 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
-| 49 | 窗口状态未持久化 | Electron | 未监听 resize/move 保存 bounds |
+| 40 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
+| 41 | ImageStrategy 全局可变状态 | 策略模式 | 全局单例含可变 `diagramFormat` |
+| 42 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
+| 43 | 窗口状态未持久化 | Electron | 未监听 resize/move 保存 bounds |
 | 50 | macOS 缺少公证/标准菜单 | Electron | 需 `afterSign` 钩子 + 标准菜单 |
 
 ---
