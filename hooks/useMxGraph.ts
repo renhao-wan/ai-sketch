@@ -98,6 +98,7 @@ export function useMxGraph({ containerRef, code }: UseMxGraphOptions): UseMxGrap
     if (!container || graphRef.current) return;
 
     let graph: Graph | null = null;
+    let wheelHandler: ((e: WheelEvent) => void) | null = null;
 
     import('@maxgraph/core').then(({
       Graph: GraphClass,
@@ -129,13 +130,14 @@ export function useMxGraph({ containerRef, code }: UseMxGraphOptions): UseMxGrap
       graph.centerZoom = true;
 
       // 滚轮缩放
-      container.addEventListener('wheel', (e: WheelEvent) => {
+      wheelHandler = (e: WheelEvent) => {
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           const delta = e.deltaY > 0 ? 0.9 : 1.1;
           graph!.zoom(delta);
         }
-      }, { passive: false });
+      };
+      container.addEventListener('wheel', wheelHandler, { passive: false });
 
       // 监听选中变化
       graph.getSelectionModel().addListener(InternalEvent.CHANGE, () => {
@@ -155,6 +157,9 @@ export function useMxGraph({ containerRef, code }: UseMxGraphOptions): UseMxGrap
     });
 
     return () => {
+      if (wheelHandler) {
+        container.removeEventListener('wheel', wheelHandler);
+      }
       if (graph) {
         graph.destroy();
         graphRef.current = null;
@@ -208,11 +213,15 @@ export function useMxGraph({ containerRef, code }: UseMxGraphOptions): UseMxGrap
     if (tool === 'select') {
       // 恢复默认交互
       graph.setEnabled(true);
-      containerRef.current!.style.cursor = 'default';
+      if (containerRef.current) {
+        containerRef.current.style.cursor = 'default';
+      }
     } else {
       // 进入绘图模式
       graph.setEnabled(false);
-      containerRef.current!.style.cursor = 'crosshair';
+      if (containerRef.current) {
+        containerRef.current.style.cursor = 'crosshair';
+      }
     }
   }, [containerRef]);
 
