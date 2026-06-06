@@ -619,21 +619,21 @@ onMaximizeChange: (callback: (isMaximized: boolean) => void) => {
 
 ### 8.2 策略实现问题
 
-| # | 问题 | 位置 | 改进方案 |
-|---|------|------|----------|
-| Mermaid VALID_STARTS 重复 | `mermaid-strategy.ts` | 删除内部硬编码，复用模块级常量 |
-| ImageStrategy 全局可变状态 | `image-strategy.ts` | 改为 `buildMessage` 参数传入格式 |
-| Excalidraw validate 不检查 schema | `excalidraw-strategy.ts` | 添加基本的元素结构校验 |
-| postProcess 服务端/客户端职责模糊 | `drawio-strategy.ts` | 明确标注或统一行为 |
+| # | 问题 | 位置 | 改进方案 | 状态 |
+|---|------|------|----------|------|
+| Mermaid VALID_STARTS 重复 | `mermaid-strategy.ts` | 删除内部硬编码，复用模块级常量 | ✅ 已修复 |
+| ImageStrategy 全局可变状态 | `image-strategy.ts` | 改为 `buildMessage` 参数传入格式 | ✅ 已修复 |
+| Excalidraw validate 不检查 schema | `excalidraw-strategy.ts` | 添加基本的元素结构校验 | ✅ 已修复 |
+| postProcess 服务端/客户端职责模糊 | `drawio-strategy.ts` | 明确标注或统一行为 | ✅ 已修复 |
 
 ---
 
 ### 8.3 箭头优化
 
-| # | 问题 | 改进方案 |
-|---|------|----------|
-| 重叠元素处理不可预测 | 添加重叠检测，跳过或使用默认边缘 |
-| 未考虑元素旋转角度 | 计算边缘中心点时应用旋转矩阵 |
+| # | 问题 | 改进方案 | 状态 |
+|---|------|----------|------|
+| 重叠元素处理不可预测 | 添加重叠检测，使用方向向量选择边缘 | ✅ 已修复 |
+| 未考虑元素旋转角度 | 计算边缘中心点时应用旋转矩阵 | ✅ 已修复 |
 
 ---
 
@@ -720,11 +720,10 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 - 画布（scrollToContent 跳动、元素转换失败静默吞没）
 - 国际化（参数插值、硬编码中文）
 
-### 🟢 轻微问题（3 项）
+### 🟢 轻微问题（2 项）
 
-详见附录 A #39-#41，主要集中在：
+详见附录 A #38-#39，主要集中在：
 - 数据库（ID 生成算法）
-- 策略模式（ImageStrategy 全局可变状态）
 - Draw.io（CSS transform 缩放）
 
 ---
@@ -734,7 +733,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 > **图例**: ✅ 已完成 | ❌ 未开始
 > **严重度**: 🔴 严重 | 🟡 中等 | 🟢 轻微
 
-### ✅ 已完成（32 项）
+### ✅ 已完成（37 项）
 
 | # | 优化项 | 严重度 | 完成日期 | 备注 |
 |---|--------|--------|----------|------|
@@ -770,6 +769,11 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 30 | Electron 崩溃恢复 | 🟡 | 2026-06-05 | 监听 render-process-gone，弹窗提示重新加载 |
 | 31 | 窗口状态持久化 | 🟢 | 2026-06-05 | 保存到 userData/window-state.json，启动时恢复 |
 | 32 | Electron 自动更新 | 🟡 | 2026-06-05 | electron-updater + UpdateBanner + AboutSettings 手动检查 |
+| 33 | ImageStrategy 全局可变状态 | 🟢 | 2026-06-05 | 移除 setDiagramFormat，改为 buildMessage 参数传入 |
+| 34 | Excalidraw validate 不检查 schema | 🟡 | 2026-06-05 | 添加 type/x/y 必填字段校验 + 合法类型白名单 |
+| 35 | Draw.io postProcess 服务端/客户端不一致 | 🟡 | 2026-06-05 | 移除 DOMParser 依赖，统一使用字符串匹配 |
+| 36 | 箭头重叠元素处理 | 🟢 | 2026-06-05 | 包围盒重叠检测 + 方向向量回退策略 |
+| 37 | 箭头旋转角度支持 | 🟢 | 2026-06-05 | ExcalidrawElement.rotation + 旋转矩阵变换 |
 
 ### ❌ 未完成 — 严重（6 项）
 
@@ -782,7 +786,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 18 | Mermaid 14/21 种类型降级为 flowchart | Mermaid 画布 | `MERMAID_TYPE_MAP` 未改 |
 | 19 | Excalidraw 流式每元素完整重绘 | Excalidraw 画布 | `feed()` 无 debounce，每元素调 `updateScene` |
 
-### ❌ 未完成 — 中等（16 项）
+### ❌ 未完成 — 中等（15 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
@@ -800,16 +804,14 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 33 | 硬编码中文（prompts/constants/错误消息） | 国际化 | LLM prompt 故意中文，但错误消息应国际化 |
 | 34 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
 | 35 | 缺少 Migration 机制 | 数据库 | 仅 ad-hoc ALTER TABLE，不可扩展 |
-| 36 | Excalidraw validate 不检查 schema | 策略模式 | 无元素结构校验 |
-| 37 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
+| 36 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
 
-### ❌ 未完成 — 轻微（3 项）
+### ❌ 未完成 — 轻微（2 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
-| 39 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
-| 40 | ImageStrategy 全局可变状态 | 策略模式 | 全局单例含可变 `diagramFormat` |
-| 41 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
+| 38 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
+| 39 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
 
 ---
 
