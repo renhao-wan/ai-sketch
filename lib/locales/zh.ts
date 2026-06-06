@@ -49,6 +49,13 @@ export const zh = {
   'editor.requestFailed': '请求失败',
   'editor.networkError': '网络连接失败，请检查网络连接',
 
+  // API Error Messages
+  'api.requestError': '请求参数错误',
+  'api.apiKeyError': 'API Key 无效或权限不足',
+  'api.rateLimit': '请求过于频繁，请稍后重试',
+  'api.serverError': '服务器错误，请稍后重试',
+  'api.requestFailed': '请求处理失败，请稍后重试',
+
   // AI Copilot Panel
   'copilot.expandPanel': '展开面板',
   'copilot.export': '导出',
@@ -127,6 +134,16 @@ export const zh = {
   'config.maxTokensHint': '控制单次生成的最大长度，留空则使用默认值 16384',
   'config.bannerTitle': '配置较多，建议清理',
   'config.bannerDescription': '您已有 {count} 个配置，建议清理不常用的配置。',
+  'config.validation.nameRequired': '配置名称不能为空',
+  'config.validation.invalidType': '配置类型必须是 openai 或 anthropic',
+  'config.validation.urlRequired': 'API地址不能为空',
+  'config.validation.urlInvalid': 'API地址格式不正确',
+  'config.validation.apiKeyRequired': 'API密钥不能为空',
+  'config.validation.modelRequired': '模型名称不能为空',
+  'config.validation.invalid': '配置无效',
+  'config.validation.importFormatError': '导入数据格式错误',
+  'config.notFound': '配置不存在',
+  'config.defaultName': '新配置',
 
   // History
   'history.title': '历史记录',
@@ -204,6 +221,7 @@ export const zh = {
   'toolbar.redo': '重做',
   'toolbar.zoomIn': '放大',
   'toolbar.zoomOut': '缩小',
+  'toolbar.fitToView': '适应视图',
 
   // Error Boundary
   'error.title': '出错了',
@@ -212,6 +230,8 @@ export const zh = {
   'error.refresh': '刷新页面',
 
   // Image Upload
+  'upload.processing': '处理中...',
+  'upload.ready': '就绪',
 
   // Diagram Canvas
   'canvas.emptyState': '描述图表内容，AI 将为你生成',
@@ -249,6 +269,8 @@ export const zh = {
 
   // Language switcher
   'lang.label': '语言',
+  'lang.zh': '简体中文',
+  'lang.en': 'English',
 
   // Time ago
   'time.justNow': '刚刚',

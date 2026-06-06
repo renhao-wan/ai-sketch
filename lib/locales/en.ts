@@ -51,6 +51,13 @@ export const en: TranslationDict = {
   'editor.requestFailed': 'Request failed',
   'editor.networkError': 'Network connection failed. Please check your connection.',
 
+  // API Error Messages
+  'api.requestError': 'Invalid request',
+  'api.apiKeyError': 'API key is invalid or has insufficient permissions',
+  'api.rateLimit': 'Too many requests. Please try again later.',
+  'api.serverError': 'Server error. Please try again later.',
+  'api.requestFailed': 'Request failed. Please try again later.',
+
   // AI Copilot Panel
   'copilot.expandPanel': 'Expand Panel',
   'copilot.export': 'Export',
@@ -129,6 +136,16 @@ export const en: TranslationDict = {
   'config.maxTokensHint': 'Controls the maximum length of a single generation. Leave empty to use the default value of 16384',
   'config.bannerTitle': 'Many configurations, consider cleanup',
   'config.bannerDescription': 'You have {count} configurations. Consider cleaning up unused ones.',
+  'config.validation.nameRequired': 'Config name is required',
+  'config.validation.invalidType': 'Provider type must be openai or anthropic',
+  'config.validation.urlRequired': 'API URL is required',
+  'config.validation.urlInvalid': 'Invalid API URL format',
+  'config.validation.apiKeyRequired': 'API key is required',
+  'config.validation.modelRequired': 'Model name is required',
+  'config.validation.invalid': 'Invalid configuration',
+  'config.validation.importFormatError': 'Invalid import data format',
+  'config.notFound': 'Configuration not found',
+  'config.defaultName': 'New Config',
 
   // History
   'history.title': 'History',
@@ -206,6 +223,7 @@ export const en: TranslationDict = {
   'toolbar.redo': 'Redo',
   'toolbar.zoomIn': 'Zoom In',
   'toolbar.zoomOut': 'Zoom Out',
+  'toolbar.fitToView': 'Fit to View',
 
   // Error Boundary
   'error.title': 'Something Went Wrong',
@@ -214,6 +232,8 @@ export const en: TranslationDict = {
   'error.refresh': 'Refresh Page',
 
   // Image Upload
+  'upload.processing': 'Processing...',
+  'upload.ready': 'Ready',
 
   // Diagram Canvas
   'canvas.emptyState': 'Describe a diagram and AI will generate it',
@@ -251,6 +271,8 @@ export const en: TranslationDict = {
 
   // Language switcher
   'lang.label': 'Language',
+  'lang.zh': '简体中文',
+  'lang.en': 'English',
 
   // Time ago
   'time.justNow': 'just now',

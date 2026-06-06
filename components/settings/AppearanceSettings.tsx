@@ -31,7 +31,7 @@ export function AppearanceSettings() {
                 : 'bg-[var(--surface-warm-hover)] text-[var(--muted)] border border-transparent hover:text-[var(--fg)]'
             }`}
           >
-            简体中文
+            {t('lang.zh')}
           </button>
           <button
             onClick={() => setLocale('en')}
@@ -41,7 +41,7 @@ export function AppearanceSettings() {
                 : 'bg-[var(--surface-warm-hover)] text-[var(--muted)] border border-transparent hover:text-[var(--fg)]'
             }`}
           >
-            English
+            {t('lang.en')}
           </button>
         </div>
       </section>
