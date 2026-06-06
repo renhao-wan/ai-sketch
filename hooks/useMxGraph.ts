@@ -82,6 +82,7 @@ function loadXml(
 
 export function useMxGraph({ containerRef, code }: UseMxGraphOptions): UseMxGraphReturn {
   const graphRef = useRef<Graph | null>(null);
+  const [graph, setGraph] = useState<Graph | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<DrawioTool>('select');
   const [hasSelection, setHasSelection] = useState(false);
@@ -97,7 +98,7 @@ export function useMxGraph({ containerRef, code }: UseMxGraphOptions): UseMxGrap
     const container = containerRef.current;
     if (!container || graphRef.current) return;
 
-    let graph: Graph | null = null;
+    let graphInstance: Graph | null = null;
     let wheelHandler: ((e: WheelEvent) => void) | null = null;
 
     import('@maxgraph/core').then(({
@@ -114,43 +115,44 @@ export function useMxGraph({ containerRef, code }: UseMxGraphOptions): UseMxGrap
       cachedCodecClass = CodecClass;
       cachedXmlUtils = xmlUtilsMod;
 
-      graph = new GraphClass(container);
+      graphInstance = new GraphClass(container);
 
       // 配置编辑能力
-      graph.setEnabled(true);
-      graph.setCellsSelectable(true);
-      graph.setCellsMovable(true);
-      graph.setCellsResizable(true);
-      graph.setCellsEditable(true); // 双击编辑标签
-      graph.setConnectable(true); // 允许连线
-      graph.setDropEnabled(false);
+      graphInstance.setEnabled(true);
+      graphInstance.setCellsSelectable(true);
+      graphInstance.setCellsMovable(true);
+      graphInstance.setCellsResizable(true);
+      graphInstance.setCellsEditable(true);
+      graphInstance.setConnectable(true);
+      graphInstance.setDropEnabled(false);
 
       // 启用内置缩放/平移
-      graph.setPanning(true);
-      graph.centerZoom = true;
+      graphInstance.setPanning(true);
+      graphInstance.centerZoom = true;
 
       // 滚轮缩放
       wheelHandler = (e: WheelEvent) => {
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           const delta = e.deltaY > 0 ? 0.9 : 1.1;
-          graph!.zoom(delta);
+          graphInstance!.zoom(delta);
         }
       };
       container.addEventListener('wheel', wheelHandler, { passive: false });
 
       // 监听选中变化
-      graph.getSelectionModel().addListener(InternalEvent.CHANGE, () => {
-        const cells = graph!.getSelectionCells();
+      graphInstance.getSelectionModel().addListener(InternalEvent.CHANGE, () => {
+        const cells = graphInstance!.getSelectionCells();
         setHasSelection(cells.length > 0);
       });
 
-      graphRef.current = graph;
+      graphRef.current = graphInstance;
+      setGraph(graphInstance);
 
       // 解析初始 XML
       const xml = codeRef.current;
       if (xml) {
-        loadXml(graph, xml, xmlUtilsMod, CodecClass, setError);
+        loadXml(graphInstance, xml, xmlUtilsMod, CodecClass, setError);
       }
     }).catch((e: Error) => {
       setError('加载 @maxgraph/core 失败: ' + e.message);
@@ -160,8 +162,8 @@ export function useMxGraph({ containerRef, code }: UseMxGraphOptions): UseMxGrap
       if (wheelHandler) {
         container.removeEventListener('wheel', wheelHandler);
       }
-      if (graph) {
-        graph.destroy();
+      if (graphInstance) {
+        graphInstance.destroy();
         graphRef.current = null;
       }
     };
@@ -170,15 +172,14 @@ export function useMxGraph({ containerRef, code }: UseMxGraphOptions): UseMxGrap
 
   // XML 变化时重新加载
   useEffect(() => {
-    const graph = graphRef.current;
-    if (!graph) return;
+    const g = graphRef.current;
+    if (!g) return;
 
     import('@maxgraph/core').then(({ xmlUtils: xmlUtilsMod, Codec: CodecClass }) => {
       if (code) {
-        loadXml(graph, code, xmlUtilsMod, CodecClass, setError);
+        loadXml(g, code, xmlUtilsMod, CodecClass, setError);
       } else {
-        // 空内容，清空画布
-        graph.getDataModel().clear();
+        g.getDataModel().clear();
         setError(null);
       }
     });
@@ -186,39 +187,37 @@ export function useMxGraph({ containerRef, code }: UseMxGraphOptions): UseMxGrap
 
   // 删除选中元素
   const deleteSelected = useCallback(() => {
-    const graph = graphRef.current;
-    if (!graph) return;
-    const cells = graph.getSelectionCells();
+    const g = graphRef.current;
+    if (!g) return;
+    const cells = g.getSelectionCells();
     if (cells.length > 0) {
-      graph.removeCells(cells);
+      g.removeCells(cells);
     }
   }, []);
 
   // 导出当前 XML
   const exportXml = useCallback((): string => {
-    const graph = graphRef.current;
-    if (!graph || !cachedCodecClass || !cachedXmlUtils) return '';
+    const g = graphRef.current;
+    if (!g || !cachedCodecClass || !cachedXmlUtils) return '';
 
     const encoder = new cachedCodecClass();
-    const node = encoder.encode(graph.getDataModel());
+    const node = encoder.encode(g.getDataModel());
     return node ? cachedXmlUtils.getXml(node) : '';
   }, []);
 
   // 工具切换
   const handleSetActiveTool = useCallback((tool: DrawioTool) => {
     setActiveTool(tool);
-    const graph = graphRef.current;
-    if (!graph) return;
+    const g = graphRef.current;
+    if (!g) return;
 
     if (tool === 'select') {
-      // 恢复默认交互
-      graph.setEnabled(true);
+      g.setEnabled(true);
       if (containerRef.current) {
         containerRef.current.style.cursor = 'default';
       }
     } else {
-      // 进入绘图模式
-      graph.setEnabled(false);
+      g.setEnabled(false);
       if (containerRef.current) {
         containerRef.current.style.cursor = 'crosshair';
       }
@@ -226,7 +225,7 @@ export function useMxGraph({ containerRef, code }: UseMxGraphOptions): UseMxGrap
   }, [containerRef]);
 
   return {
-    graph: graphRef.current,
+    graph,
     error,
     activeTool,
     setActiveTool: handleSetActiveTool,

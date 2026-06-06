@@ -16,13 +16,11 @@ function sendStatus(window: BrowserWindow | null, status: UpdateStatus, data?: u
   }
 }
 
-/** 初始化自动更新 */
+/** 初始化自动更新（仅注册事件监听，不自动检查） */
 export function initAutoUpdater(mainWindow: BrowserWindow | null): void {
   // 关闭自动下载，由用户手动触发
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
-  // 允许开发模式下检查更新（未打包时默认跳过）
-  autoUpdater.forceDevUpdateConfig = true;
 
   autoUpdater.on('checking-for-update', () => {
     sendStatus(mainWindow, 'checking');
@@ -53,16 +51,8 @@ export function initAutoUpdater(mainWindow: BrowserWindow | null): void {
   });
 
   autoUpdater.on('error', (error) => {
-    console.error('[Updater] Error:', error.message);
     sendStatus(mainWindow, 'error', error.message);
   });
-
-  // 启动后延迟 5 秒检查更新（避免影响启动速度）
-  setTimeout(() => {
-    autoUpdater.checkForUpdates().catch((err) => {
-      console.error('[Updater] Check failed:', err.message);
-    });
-  }, 5000);
 }
 
 /** 手动检查更新 */

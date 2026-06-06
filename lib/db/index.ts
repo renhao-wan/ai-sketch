@@ -59,12 +59,6 @@ async function initDb(): Promise<Database> {
     )
   `);
 
-  // 为已有数据库添加 temperature 列（如果不存在）
-  try {
-    db.run('ALTER TABLE llm_configs ADD COLUMN temperature REAL DEFAULT 0.5');
-  } catch {
-    // 列已存在，忽略错误
-  }
 
   db.run(`
     CREATE TABLE IF NOT EXISTS meta (
