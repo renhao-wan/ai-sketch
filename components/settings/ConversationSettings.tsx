@@ -3,15 +3,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import * as api from '@/lib/api/client';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
-import Notification from '@/components/ui/Notification';
 import ScrollToTop from '@/components/ui/ScrollToTop';
 import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
+import { useNotification } from '@/lib/contexts/NotificationContext';
 import { Trash2, Search, Edit3, Check, X, ChevronDown, ChevronUp, ListChecks } from 'lucide-react';
 import CountBanner from '@/components/ui/CountBanner';
 import { useCountBanner } from '@/hooks/useCountBanner';
-import type { Conversation, ConfirmDialogState, NotificationState } from '@/lib/types';
+import type { Conversation, ConfirmDialogState } from '@/lib/types';
 
 const PAGE_SIZE = 20;
 
@@ -56,12 +56,7 @@ export default function ConversationSettings() {
   });
 
   // ── Notification ──
-  const [notification, setNotification] = useState<NotificationState>({
-    isOpen: false,
-    title: '',
-    message: '',
-    type: 'info',
-  });
+  const { showNotification } = useNotification();
 
   /** Load conversations with search/sort/pagination support */
   const loadConversations = useCallback(async (reset = false, pageNum = 0) => {
@@ -118,10 +113,7 @@ export default function ConversationSettings() {
     }
   }, [hasMore, isLoadingMore, loadMore]);
 
-  /** Show a notification toast */
-  const showNotification = useCallback((type: NotificationState['type'], message: string) => {
-    setNotification({ isOpen: true, title: '', message, type });
-  }, []);
+  // showNotification 从全局 NotificationContext 获取（在上方解构）
 
   /** Toggle select mode */
   const toggleSelectMode = () => {
@@ -148,10 +140,10 @@ export default function ConversationSettings() {
       setItems(prev => prev.map(item =>
         item.id === editingId ? { ...item, title: editingTitle.trim() } : item
       ));
-      showNotification('success', t('conversation.renameSuccess'));
+      showNotification('', t('conversation.renameSuccess'), 'success');
     } catch (err) {
       console.error('Rename failed:', err);
-      showNotification('error', t('conversation.renameFailed'));
+      showNotification('', t('conversation.renameFailed'), 'error');
     } finally {
       setEditingId(null);
     }
@@ -174,10 +166,10 @@ export default function ConversationSettings() {
           await api.deleteConversation(id);
           pageRef.current = 0;
           await loadConversations(true, 0);
-          showNotification('success', t('conversation.deleteSuccess'));
+          showNotification('', t('conversation.deleteSuccess'), 'success');
         } catch (err) {
           console.error('Delete conversation failed:', err);
-          showNotification('error', t('conversation.deleteFailed'));
+          showNotification('', t('conversation.deleteFailed'), 'error');
         }
       },
     });
@@ -220,10 +212,10 @@ export default function ConversationSettings() {
           setSelectedIds(new Set());
           setIsSelectMode(false);
           await loadConversations(true, 0);
-          showNotification('success', t('conversation.batchDeleteSuccess', { count }));
+          showNotification('', t('conversation.batchDeleteSuccess', { count }), 'success');
         } catch (err) {
           console.error('Batch delete failed:', err);
-          showNotification('error', t('conversation.batchDeleteFailed'));
+          showNotification('', t('conversation.batchDeleteFailed'), 'error');
         }
       },
     });
@@ -240,10 +232,10 @@ export default function ConversationSettings() {
           await api.clearAllConversations();
           pageRef.current = 0;
           await loadConversations(true, 0);
-          showNotification('success', t('conversation.clearAllSuccess'));
+          showNotification('', t('conversation.clearAllSuccess'), 'success');
         } catch (err) {
           console.error('Clear all conversations failed:', err);
-          showNotification('error', t('conversation.clearAllFailed'));
+          showNotification('', t('conversation.clearAllFailed'), 'error');
         }
       },
     });
@@ -253,11 +245,11 @@ export default function ConversationSettings() {
   const handleKeepFirstN = () => {
     const count = parseInt(keepCount, 10);
     if (isNaN(count) || count < 0) {
-      showNotification('error', t('conversation.keepCountInvalid'));
+      showNotification('', t('conversation.keepCountInvalid'), 'error');
       return;
     }
     if (count >= totalCount) {
-      showNotification('info', t('conversation.keepCountNoChange'));
+      showNotification('', t('conversation.keepCountNoChange'), 'info');
       return;
     }
 
@@ -283,10 +275,10 @@ export default function ConversationSettings() {
           pageRef.current = 0;
           setKeepCount('');
           await loadConversations(true, 0);
-          showNotification('success', t('conversation.keepFirstNSuccess', { count: deleteCount }));
+          showNotification('', t('conversation.keepFirstNSuccess', { count: deleteCount }), 'success');
         } catch (err) {
           console.error('Keep first N failed:', err);
-          showNotification('error', t('conversation.keepFirstNFailed'));
+          showNotification('', t('conversation.keepFirstNFailed'), 'error');
         }
       },
     });
@@ -583,15 +575,6 @@ export default function ConversationSettings() {
         title={confirmDialog.title}
         message={confirmDialog.message}
         type="danger"
-      />
-
-      {/* Notification Toast */}
-      <Notification
-        isOpen={notification.isOpen}
-        onClose={() => setNotification({ ...notification, isOpen: false })}
-        title={notification.title || undefined}
-        message={notification.message}
-        type={notification.type}
       />
     </div>
   );

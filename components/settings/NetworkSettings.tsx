@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Globe, Loader2, RefreshCw } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
-import Notification from '@/components/ui/Notification';
-import type { NotificationState } from '@/lib/types';
+import { useNotification } from '@/lib/contexts/NotificationContext';
 
 /** 网络代理与全局 LLM 设置 */
 export function NetworkSettings() {
@@ -14,7 +13,7 @@ export function NetworkSettings() {
   const [maxRetries, setMaxRetries] = useState(2);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [notification, setNotification] = useState<NotificationState>({ isOpen: false, title: '', message: '', type: 'info' });
+  const { showNotification } = useNotification();
 
   /** 加载代理和重试配置 */
   useEffect(() => {
@@ -80,9 +79,9 @@ export function NetworkSettings() {
         const text = await res.text().catch(() => '');
         throw new Error(text || `HTTP ${res.status}`);
       }
-      setNotification({ isOpen: true, title: t('proxy.saveSuccess'), message: '', type: 'success' });
+      showNotification(t('proxy.saveSuccess'), '', 'success');
     } catch (err) {
-      setNotification({ isOpen: true, title: t('proxy.saveFailed'), message: (err as Error).message, type: 'error' });
+      showNotification(t('proxy.saveFailed'), (err as Error).message, 'error');
     } finally {
       setSaving(false);
     }
@@ -199,14 +198,6 @@ export function NetworkSettings() {
         </div>
         <p className="mt-2 text-xs text-[var(--muted)]">{t('retries.maxRetriesHint')}</p>
       </section>
-
-      <Notification
-        isOpen={notification.isOpen}
-        onClose={() => setNotification({ ...notification, isOpen: false })}
-        title={notification.title}
-        message={notification.message}
-        type={notification.type}
-      />
     </div>
   );
 }

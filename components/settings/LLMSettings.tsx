@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import * as api from '@/lib/api/client';
-import Notification from '@/components/ui/Notification';
+import { useNotification } from '@/lib/contexts/NotificationContext';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
 import ScrollToTop from '@/components/ui/ScrollToTop';
 import { Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2 } from 'lucide-react';
@@ -11,7 +11,7 @@ import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 import CountBanner from '@/components/ui/CountBanner';
 import { useCountBanner } from '@/hooks/useCountBanner';
-import type { LLMConfig, ModelInfo, NotificationState, ConfirmDialogState } from '@/lib/types';
+import type { LLMConfig, ModelInfo, ConfirmDialogState } from '@/lib/types';
 
 /** ConfigEditor 子组件的 Props */
 interface ConfigEditorProps {
@@ -42,7 +42,7 @@ export function LLMSettings() {
   const [isCreating, setIsCreating] = useState(false);
   const [testingConfigId, setTestingConfigId] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [notification, setNotification] = useState<NotificationState>({ isOpen: false, title: '', message: '', type: 'info' });
+  const { showNotification } = useNotification();
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({ isOpen: false, title: '', message: '', onConfirm: null });
 
   const { showBanner, handleDismissBanner } = useCountBanner({
@@ -88,7 +88,7 @@ export function LLMSettings() {
           await api.deleteConfig(configId);
           await loadConfigs();
           setError('');
-          setNotification({ isOpen: true, title: t('config.deleteSuccess'), message: t('config.deleteSuccessMsg'), type: 'success' });
+          showNotification(t('config.deleteSuccess'), t('config.deleteSuccessMsg'), 'success');
         } catch (err) {
           setError(t('config.deleteFailed') + (err as Error).message);
         }
@@ -124,14 +124,13 @@ export function LLMSettings() {
     setError('');
     try {
       const result = await api.testConnection(config);
-      setNotification({
-        isOpen: true,
-        title: result.success ? t('config.testSuccess') : t('config.testFailed'),
-        message: result.message,
-        type: result.success ? 'success' : 'error',
-      });
+      showNotification(
+        result.success ? t('config.testSuccess') : t('config.testFailed'),
+        result.message,
+        result.success ? 'success' : 'error',
+      );
     } catch (err) {
-      setNotification({ isOpen: true, title: t('config.testFailed'), message: (err as Error).message, type: 'error' });
+      showNotification(t('config.testFailed'), (err as Error).message, 'error');
     } finally {
       setTestingConfigId(null);
     }
@@ -182,12 +181,11 @@ export function LLMSettings() {
         const text = await file.text();
         const result = await api.importConfigs(text);
         if (result.success) {
-          setNotification({
-            isOpen: true,
-            title: t('config.importSuccess'),
-            message: `${t('config.imported')} ${result.count} ${t('config.importedCount')}`,
-            type: 'success',
-          });
+          showNotification(
+            t('config.importSuccess'),
+            `${t('config.imported')} ${result.count} ${t('config.importedCount')}`,
+            'success',
+          );
           await loadConfigs();
         } else {
           setError(t('config.importFailed') + result.message);
@@ -364,15 +362,6 @@ export function LLMSettings() {
           onCancel={() => { setEditingConfig(null); setIsCreating(false); }}
         />
       )}
-
-      {/* 通知 */}
-      <Notification
-        isOpen={notification.isOpen}
-        onClose={() => setNotification(prev => ({ ...prev, isOpen: false }))}
-        title={notification.title}
-        message={notification.message}
-        type={notification.type}
-      />
 
       {/* 删除确认对话框 */}
       <ConfirmDialog

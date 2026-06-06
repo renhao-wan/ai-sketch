@@ -8,7 +8,7 @@ import WindowControls from '@/components/layout/WindowControls';
 import AICopilotPanel from '@/components/ai/AICopilotPanel';
 import FloatingAIActions from '@/components/ai/FloatingAIActions';
 import CodeEditor from '@/components/editor/CodeEditor';
-import Notification from '@/components/ui/Notification';
+import { useNotification } from '@/lib/contexts/NotificationContext';
 import DiagramCanvas from '@/components/canvases/DiagramCanvas';
 import type { StreamRendererRef } from '@/components/canvases/ExcalidrawCanvas';
 import * as api from '@/lib/api/client';
@@ -17,7 +17,6 @@ import { getStrategy } from '@/lib/strategies/registry';
 import { consumeInitData } from '@/lib/utils/init-data';
 import { useLocale } from '@/lib/locales';
 import { useShortcuts } from '@/hooks/useShortcuts';
-import { useNotification } from '@/hooks/useNotification';
 import { useConversation } from '@/hooks/useConversation';
 import { useGeneration } from '@/hooks/useGeneration';
 import { useAIActions } from '@/hooks/useAIActions';
@@ -87,7 +86,7 @@ function EditorContent() {
   const [isApplyingCode, setIsApplyingCode] = useState(false);
   const [currentInput, setCurrentInput] = useState('');
   const [currentChartType, setCurrentChartType] = useState('auto');
-  const { notification, showNotification, closeNotification } = useNotification();
+  const { showNotification } = useNotification();
   const [bottomPanelTab, setBottomPanelTab] = useState('code');
   const [panelWidth, setPanelWidth] = useState(360);
   const [isElectron, setIsElectron] = useState(false);
@@ -385,7 +384,6 @@ function EditorContent() {
 
       {/* Modals */}
       <ConfigSelector isOpen={isConfigManagerOpen} onClose={() => setIsConfigManagerOpen(false)} onConfigSelect={handleConfigSelect} />
-      <Notification isOpen={notification.isOpen} onClose={closeNotification} title={notification.title} message={notification.message} type={notification.type} />
     </>
   );
 }

@@ -5,8 +5,7 @@ import { useLocale, type TranslationKey } from '@/lib/locales';
 import { AppIcon } from '@/components/layout/TopBar';
 import { User, Code2, FileText, Shield, ExternalLink, RefreshCw, Download, Check, ArrowUpCircle } from 'lucide-react';
 import { useUpdate } from '@/hooks/useUpdate';
-import Notification from '@/components/ui/Notification';
-import type { NotificationState } from '@/lib/types';
+import { useNotification } from '@/lib/contexts/NotificationContext';
 
 /** 应用信息（从 package.json 读取） */
 const APP_INFO = {
@@ -38,7 +37,7 @@ export function AboutSettings() {
   const { t } = useLocale();
   const { isElectron, status, info, progress, error, checkForUpdates, downloadUpdate, installUpdate } = useUpdate();
   const [localChecking, setLocalChecking] = useState(false);
-  const [notification, setNotification] = useState<NotificationState>({ isOpen: false, title: '', message: '', type: 'info' });
+  const { showNotification } = useNotification();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -59,15 +58,14 @@ export function AboutSettings() {
       setLocalChecking(false);
     }
     if (status === 'available' && info?.version) {
-      setNotification({ isOpen: true, title: t('update.available'), message: `v${info.version}`, type: 'info' });
+      showNotification(t('update.available'), `v${info.version}`, 'info');
     } else if (status === 'downloaded') {
-      setNotification({ isOpen: true, title: t('update.downloaded'), message: t('update.downloadedHint'), type: 'success' });
+      showNotification(t('update.downloaded'), t('update.downloadedHint'), 'success');
     } else if (status === 'error') {
-      // 截取错误信息的第一行，避免过长
       const shortError = error?.split('\n')[0]?.substring(0, 60) || t('update.error');
-      setNotification({ isOpen: true, title: t('update.error'), message: shortError, type: 'error' });
+      showNotification(t('update.error'), shortError, 'error');
     } else if (status === 'not-available') {
-      setNotification({ isOpen: true, title: t('about.upToDate'), message: '', type: 'success' });
+      showNotification(t('about.upToDate'), '', 'success');
     }
   }, [status, info, error, t]);
 
@@ -305,13 +303,6 @@ export function AboutSettings() {
         </div>
       </section>
 
-      <Notification
-        isOpen={notification.isOpen}
-        onClose={() => setNotification({ ...notification, isOpen: false })}
-        title={notification.title}
-        message={notification.message}
-        type={notification.type}
-      />
     </div>
   );
 }

@@ -5,9 +5,9 @@ import * as api from '@/lib/api/client';
 import { useLocale } from '@/lib/locales';
 import { useSettings } from '@/hooks/useSettings';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
-import Notification from '@/components/ui/Notification';
+import { useNotification } from '@/lib/contexts/NotificationContext';
 import { HardDrive, RotateCcw, Trash2, Database, Settings, AlertTriangle, Zap } from 'lucide-react';
-import type { ConfirmDialogState, NotificationState } from '@/lib/types';
+import type { ConfirmDialogState } from '@/lib/types';
 
 /** 数据管理组件 — 存储统计、数据清理与重置 */
 export default function DataSettings() {
@@ -36,12 +36,7 @@ export default function DataSettings() {
   });
 
   // ── Notification ──
-  const [notification, setNotification] = useState<NotificationState>({
-    isOpen: false,
-    title: '',
-    message: '',
-    type: 'info',
-  });
+  const { showNotification } = useNotification();
 
   /** Load storage statistics */
   const loadStats = useCallback(async () => {
@@ -66,10 +61,7 @@ export default function DataSettings() {
     loadStats();
   }, [loadStats]);
 
-  /** Show a notification toast */
-  const showNotification = useCallback((type: NotificationState['type'], message: string) => {
-    setNotification({ isOpen: true, title: '', message, type });
-  }, []);
+  // showNotification 从全局 NotificationContext 获取
 
   /** Reset user preferences (theme and language) */
   const handleResetPreferences = () => {
@@ -84,10 +76,10 @@ export default function DataSettings() {
           updateSetting('theme', 'light');
           // Reset locale to zh
           setLocale('zh');
-          showNotification('success', t('settings.resetPreferencesSuccess'));
+          showNotification('', t('settings.resetPreferencesSuccess'), 'success');
         } catch (err) {
           console.error('Reset preferences failed:', err);
-          showNotification('error', t('settings.operationFailed'));
+          showNotification('', t('settings.operationFailed'), 'error');
         } finally {
           setIsResettingPreferences(false);
         }
@@ -106,10 +98,10 @@ export default function DataSettings() {
         try {
           await api.clearAllConversations();
           setConversationCount(0);
-          showNotification('success', t('settings.clearConversationsSuccess'));
+          showNotification('', t('settings.clearConversationsSuccess'), 'success');
         } catch (err) {
           console.error('Clear conversations failed:', err);
-          showNotification('error', t('settings.operationFailed'));
+          showNotification('', t('settings.operationFailed'), 'error');
         } finally {
           setIsClearingConversations(false);
         }
@@ -134,10 +126,10 @@ export default function DataSettings() {
             }
           }
           setConfigCount(0);
-          showNotification('success', t('settings.clearConfigsSuccess'));
+          showNotification('', t('settings.clearConfigsSuccess'), 'success');
         } catch (err) {
           console.error('Clear configs failed:', err);
-          showNotification('error', t('settings.operationFailed'));
+          showNotification('', t('settings.operationFailed'), 'error');
         } finally {
           setIsClearingConfigs(false);
         }
@@ -156,10 +148,10 @@ export default function DataSettings() {
         try {
           await api.clearCache();
           setCacheCount(0);
-          showNotification('success', t('settings.clearCacheSuccess'));
+          showNotification('', t('settings.clearCacheSuccess'), 'success');
         } catch (err) {
           console.error('Clear cache failed:', err);
-          showNotification('error', t('settings.operationFailed'));
+          showNotification('', t('settings.operationFailed'), 'error');
         } finally {
           setIsClearingCache(false);
         }
@@ -209,10 +201,10 @@ export default function DataSettings() {
           setConfigCount(0);
           setCacheCount(0);
 
-          showNotification('success', t('settings.resetAllSuccess'));
+          showNotification('', t('settings.resetAllSuccess'), 'success');
         } catch (err) {
           console.error('Reset all failed:', err);
-          showNotification('error', t('settings.operationFailed'));
+          showNotification('', t('settings.operationFailed'), 'error');
         } finally {
           setIsResettingAll(false);
         }
@@ -380,15 +372,6 @@ export default function DataSettings() {
         title={confirmDialog.title}
         message={confirmDialog.message}
         type="danger"
-      />
-
-      {/* Notification Toast */}
-      <Notification
-        isOpen={notification.isOpen}
-        onClose={() => setNotification({ ...notification, isOpen: false })}
-        title={notification.title || undefined}
-        message={notification.message}
-        type={notification.type}
       />
     </div>
   );
