@@ -373,6 +373,10 @@ export const en: TranslationDict = {
   'about.dep.sql.js': 'SQLite WASM',
   'about.checkUpdate': 'Check for Updates',
   'about.checking': 'Checking...',
+  'about.versionUpdate': 'Version Update',
+  'about.currentVersion': 'Current Version',
+  'about.upToDate': 'You are up to date',
+  'about.retry': 'Retry',
 
   // Keyboard shortcuts
   'shortcuts.search': 'Search shortcuts...',

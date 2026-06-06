@@ -371,6 +371,10 @@ export const zh = {
   'about.dep.sql.js': 'SQLite WASM',
   'about.checkUpdate': '检查更新',
   'about.checking': '检查中...',
+  'about.versionUpdate': '版本更新',
+  'about.currentVersion': '当前版本',
+  'about.upToDate': '已是最新版本',
+  'about.retry': '重试',
 
   // 快捷键设置
   'shortcuts.search': '搜索快捷键...',

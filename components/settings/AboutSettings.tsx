@@ -2,7 +2,7 @@
 
 import { useLocale, type TranslationKey } from '@/lib/locales';
 import { AppIcon } from '@/components/layout/TopBar';
-import { User, Code2, FileText, Shield, ExternalLink, RefreshCw } from 'lucide-react';
+import { User, Code2, FileText, Shield, ExternalLink, RefreshCw, Download, Check, Loader2, X, ArrowUpCircle } from 'lucide-react';
 import { useUpdate } from '@/hooks/useUpdate';
 
 /** 应用信息（从 package.json 读取） */
@@ -33,7 +33,7 @@ const APP_INFO = {
 
 export function AboutSettings() {
   const { t } = useLocale();
-  const { isElectron, status, checkForUpdates } = useUpdate();
+  const { isElectron, status, info, progress, error, checkForUpdates, downloadUpdate, installUpdate } = useUpdate();
 
   return (
     <div className="space-y-8">
@@ -52,21 +52,117 @@ export function AboutSettings() {
               v{APP_INFO.version}
             </p>
           </div>
-          {isElectron && (
-            <button
-              onClick={checkForUpdates}
-              disabled={status === 'checking'}
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg transition-all duration-200 disabled:opacity-50"
-            >
-              <RefreshCw size={14} className={status === 'checking' ? 'animate-spin' : ''} />
-              {status === 'checking' ? t('about.checking') : t('about.checkUpdate')}
-            </button>
-          )}
         </div>
         <p className="text-[var(--fg)] leading-relaxed">
           {t('about.defaultDescription')}
         </p>
       </section>
+
+      {/* 版本更新（仅 Electron） */}
+      {isElectron && (
+        <section>
+          <h3 className="text-lg font-semibold text-[var(--fg)] mb-4 flex items-center gap-2">
+            <ArrowUpCircle size={18} className="text-[var(--accent-indigo)]" />
+            {t('about.versionUpdate')}
+          </h3>
+
+          <div className="p-4 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)] space-y-3">
+            {/* 当前版本 */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[var(--muted)]">{t('about.currentVersion')}</span>
+              <span className="text-sm font-mono text-[var(--fg)]">v{APP_INFO.version}</span>
+            </div>
+
+            {/* 已是最新 */}
+            {status === 'not-available' && (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <Check size={14} />
+                <span>{t('about.upToDate')}</span>
+              </div>
+            )}
+
+            {/* 有新版本 */}
+            {status === 'available' && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-[var(--accent-indigo)]">
+                  <Download size={14} />
+                  <span>{t('update.available')} v{info?.version}</span>
+                </div>
+                <button
+                  onClick={downloadUpdate}
+                  className="px-4 py-1.5 text-sm font-medium text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-lg hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200"
+                >
+                  {t('update.download')}
+                </button>
+              </div>
+            )}
+
+            {/* 下载中 */}
+            {status === 'downloading' && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2 text-[var(--accent-indigo)]">
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>{t('update.downloading')}</span>
+                  </div>
+                  <span className="font-mono text-[var(--muted)]">{Math.round(progress)}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-[var(--surface-warm-hover)] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[var(--accent-indigo)] rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* 下载完成 */}
+            {status === 'downloaded' && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <Check size={14} />
+                  <span>{t('update.downloaded')}</span>
+                </div>
+                <button
+                  onClick={installUpdate}
+                  className="px-4 py-1.5 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 active:scale-[0.98] transition-all duration-200"
+                >
+                  {t('update.install')}
+                </button>
+              </div>
+            )}
+
+            {/* 错误 */}
+            {status === 'error' && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-red-500 min-w-0">
+                  <X size={14} className="flex-shrink-0" />
+                  <span className="truncate">{error || t('update.error')}</span>
+                </div>
+                <button
+                  onClick={checkForUpdates}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg transition-all duration-200 flex-shrink-0"
+                >
+                  <RefreshCw size={12} />
+                  {t('about.retry')}
+                </button>
+              </div>
+            )}
+
+            {/* 检查更新按钮（idle / checking 状态） */}
+            {(status === 'idle' || status === 'checking') && (
+              <button
+                onClick={checkForUpdates}
+                disabled={status === 'checking'}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg transition-all duration-200 disabled:opacity-50"
+              >
+                <RefreshCw size={14} className={status === 'checking' ? 'animate-spin' : ''} />
+                {status === 'checking' ? t('about.checking') : t('about.checkUpdate')}
+              </button>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* 开发者信息 */}
       <section>
