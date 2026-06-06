@@ -255,13 +255,12 @@ app.on('before-quit', async () => {
 
 ### 3.3 其他数据库问题
 
-| # | 问题 | 严重度 | 说明 |
-|---|------|--------|------|
-| 10 | **缺少 Migration 机制** | 中等 | `CREATE TABLE IF NOT EXISTS` 不支持 schema 变更 |
-| 11 | **时间格式不统一** | 轻微 | `llm_configs` 用 ISO 字符串，其他表用毫秒时间戳 |
-| 12 | **行映射使用数组索引** | 中等 | SQL 列顺序变化会静默出错，应改用 `getAsObject()` |
-| 13 | **API Key 明文存储** | 中等 | 桌面端风险较低，但建议做简单加密混淆 |
-| 14 | **ID 生成算法碰撞风险** | 轻微 | 建议改用 `crypto.randomUUID()` |
+| # | 问题 | 严重度 | 说明 | 状态 |
+|---|------|--------|------|------|
+| 11 | **时间格式不统一** | 轻微 | `llm_configs` 用 ISO 字符串，其他表用毫秒时间戳 | ✅ 已修复 |
+| 12 | **行映射使用数组索引** | 中等 | SQL 列顺序变化会静默出错，应改用 `getAsObject()` | ✅ 已修复 |
+| 13 | **API Key 明文存储** | 中等 | 桌面端风险较低，但建议做简单加密混淆 | ✅ 已修复 |
+| 14 | **ID 生成算法碰撞风险** | 轻微 | 建议改用 `crypto.randomUUID()` | ✅ 已修复 |
 
 ---
 
@@ -720,10 +719,9 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 - 画布（scrollToContent 跳动、元素转换失败静默吞没）
 - 国际化（参数插值、硬编码中文）
 
-### 🟢 轻微问题（2 项）
+### 🟢 轻微问题（1 项）
 
-详见附录 A，主要集中在：
-- 数据库（ID 生成算法）
+详见附录 A：
 - Draw.io（CSS transform 缩放）
 
 ---
@@ -733,7 +731,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 > **图例**: ✅ 已完成 | ❌ 未开始
 > **严重度**: 🔴 严重 | 🟡 中等 | 🟢 轻微
 
-### ✅ 已完成（40 项）
+### ✅ 已完成（41 项）
 
 | # | 优化项 | 严重度 | 完成日期 | 备注 |
 |---|--------|--------|----------|------|
@@ -777,6 +775,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 38 | t() 参数插值 | 🟡 | 2026-06-05 | t('key', { param: value }) 语法 + 全局替换 .replace() |
 | 39 | UI 组件硬编码中文 | 🟡 | 2026-06-05 | upload/toolbar/lang 等组件改用 i18n key |
 | 40 | Prompt 语言适配 | 🟡 | 2026-06-05 | 添加 LANGUAGE_RULE，LLM 根据用户输入语言生成标签 |
+| 41 | ID 生成改用 crypto.randomUUID() | 🟢 | 2026-06-05 | 消除 Date.now+Math.random 碰撞风险 |
 
 ### ❌ 未完成 — 严重（6 项）
 
@@ -789,7 +788,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 18 | Mermaid 14/21 种类型降级为 flowchart | Mermaid 画布 | `MERMAID_TYPE_MAP` 未改 |
 | 19 | Excalidraw 流式每元素完整重绘 | Excalidraw 画布 | `feed()` 无 debounce，每元素调 `updateScene` |
 
-### ❌ 未完成 — 中等（13 项）
+### ❌ 未完成 — 中等（12 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
@@ -804,15 +803,13 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 30 | scrollToContent 流式期间每元素调用 | Excalidraw 画布 | 画布视角不断跳动 |
 | 31 | 元素转换失败静默吞没 | Excalidraw 画布 | `catch { /* skip */ }` 无日志无提示 |
 | 32 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
-| 33 | 缺少 Migration 机制 | 数据库 | 仅 ad-hoc ALTER TABLE，不可扩展 |
-| 34 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
+| 33 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
 
-### ❌ 未完成 — 轻微（2 项）
+### ❌ 未完成 — 轻微（1 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
-| 41 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
-| 42 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
+| 34 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
 
 ---
 

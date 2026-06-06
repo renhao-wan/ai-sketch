@@ -98,7 +98,7 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
       if (!mermaidInstance || !containerRef.current) return;
       if (currentRenderId !== renderIdRef.current) return;
 
-      const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const id = `mermaid-${crypto.randomUUID()}`;
       const { svg, bindFunctions } = await mermaidInstance.render(id, code);
 
       if (currentRenderId !== renderIdRef.current) return;
