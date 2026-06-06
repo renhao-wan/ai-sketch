@@ -641,11 +641,11 @@ onMaximizeChange: (callback: (isMaximized: boolean) => void) => {
 
 ### 9.1 国际化
 
-| # | 问题 | 改进方案 |
-|---|------|----------|
-| 不支持参数插值 | 实现 `t('key', { count: 5 })` 语法 |
-| 硬编码中文字符串 | 全局搜索并替换为 i18n key |
-| 模板 prompt 依赖翻译值 | 将 prompt 内容与翻译文本分离 |
+| # | 问题 | 改进方案 | 状态 |
+|---|------|----------|------|
+| 不支持参数插值 | 实现 `t('key', { count: 5 })` 语法 | ✅ 已修复 |
+| 硬编码中文字符串 | 全局搜索并替换为 i18n key | ✅ 已修复 |
+| 模板 prompt 依赖翻译值 | 将 prompt 内容与翻译文本分离 | ❌ 未修复 |
 
 ---
 
@@ -722,7 +722,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 
 ### 🟢 轻微问题（2 项）
 
-详见附录 A #38-#39，主要集中在：
+详见附录 A，主要集中在：
 - 数据库（ID 生成算法）
 - Draw.io（CSS transform 缩放）
 
@@ -733,7 +733,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 > **图例**: ✅ 已完成 | ❌ 未开始
 > **严重度**: 🔴 严重 | 🟡 中等 | 🟢 轻微
 
-### ✅ 已完成（37 项）
+### ✅ 已完成（39 项）
 
 | # | 优化项 | 严重度 | 完成日期 | 备注 |
 |---|--------|--------|----------|------|
@@ -774,6 +774,8 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 35 | Draw.io postProcess 服务端/客户端不一致 | 🟡 | 2026-06-05 | 移除 DOMParser 依赖，统一使用字符串匹配 |
 | 36 | 箭头重叠元素处理 | 🟢 | 2026-06-05 | 包围盒重叠检测 + 方向向量回退策略 |
 | 37 | 箭头旋转角度支持 | 🟢 | 2026-06-05 | ExcalidrawElement.rotation + 旋转矩阵变换 |
+| 38 | t() 参数插值 | 🟡 | 2026-06-05 | t('key', { param: value }) 语法 + 全局替换 .replace() |
+| 39 | UI 组件硬编码中文 | 🟡 | 2026-06-05 | upload/toolbar/lang 等组件改用 i18n key |
 
 ### ❌ 未完成 — 严重（6 项）
 
@@ -786,7 +788,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 18 | Mermaid 14/21 种类型降级为 flowchart | Mermaid 画布 | `MERMAID_TYPE_MAP` 未改 |
 | 19 | Excalidraw 流式每元素完整重绘 | Excalidraw 画布 | `feed()` 无 debounce，每元素调 `updateScene` |
 
-### ❌ 未完成 — 中等（15 项）
+### ❌ 未完成 — 中等（13 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
@@ -800,18 +802,16 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 29 | 格式切换无确认对话框 | Editor | 切换时清空代码和渲染数据，无确认提示 |
 | 30 | scrollToContent 流式期间每元素调用 | Excalidraw 画布 | 画布视角不断跳动 |
 | 31 | 元素转换失败静默吞没 | Excalidraw 画布 | `catch { /* skip */ }` 无日志无提示 |
-| 32 | 不支持参数插值 | 国际化 | `t()` 只接受 key，不处理 `{count}` 占位符 |
-| 33 | 硬编码中文（prompts/constants/错误消息） | 国际化 | LLM prompt 故意中文，但错误消息应国际化 |
-| 34 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
-| 35 | 缺少 Migration 机制 | 数据库 | 仅 ad-hoc ALTER TABLE，不可扩展 |
-| 36 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
+| 32 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
+| 33 | 缺少 Migration 机制 | 数据库 | 仅 ad-hoc ALTER TABLE，不可扩展 |
+| 34 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
 
 ### ❌ 未完成 — 轻微（2 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
-| 38 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
-| 39 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
+| 40 | ID 生成用 Date.now+Math.random | 数据库 | 建议改用 `crypto.randomUUID()` |
+| 41 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
 
 ---
 
