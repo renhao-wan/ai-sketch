@@ -1,7 +1,7 @@
 'use client';
 
 import { Square, Circle, Diamond, Type, ArrowRight, Trash2, Pencil, MousePointer } from 'lucide-react';
-import { useLocale } from '@/lib/locales';
+import { useLocale, type TranslationKey } from '@/lib/locales';
 import type { DrawioTool } from '@/hooks/useMxGraph';
 
 interface DrawioToolbarProps {
@@ -12,7 +12,7 @@ interface DrawioToolbarProps {
   hasSelection: boolean;
 }
 
-const shapeTools: { tool: DrawioTool; icon: typeof Square; labelKey: string }[] = [
+const shapeTools: { tool: DrawioTool; icon: typeof Square; labelKey: TranslationKey }[] = [
   { tool: 'select', icon: MousePointer, labelKey: 'drawio.tool.select' },
   { tool: 'rectangle', icon: Square, labelKey: 'drawio.tool.rectangle' },
   { tool: 'ellipse', icon: Circle, labelKey: 'drawio.tool.ellipse' },
