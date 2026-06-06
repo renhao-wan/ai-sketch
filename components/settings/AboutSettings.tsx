@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useLocale, type TranslationKey } from '@/lib/locales';
 import { AppIcon } from '@/components/layout/TopBar';
-import { User, Code2, FileText, Shield, ExternalLink, RefreshCw, Download, Check, Loader2, X, ArrowUpCircle } from 'lucide-react';
+import { User, Code2, FileText, Shield, ExternalLink, RefreshCw, Download, Check, ArrowUpCircle } from 'lucide-react';
 import { useUpdate } from '@/hooks/useUpdate';
 import Notification from '@/components/ui/Notification';
 import type { NotificationState } from '@/lib/types';
@@ -157,14 +157,18 @@ export function AboutSettings() {
 
             {/* 检查更新 */}
             {(status === 'idle' || status === 'checking' || localChecking) && (
-              <button
-                onClick={handleCheck}
-                disabled={isChecking}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg transition-all duration-200 disabled:opacity-50"
-              >
-                <RefreshCw size={12} className={isChecking ? 'animate-spin' : ''} />
-                {isChecking ? t('about.checking') : t('about.checkUpdate')}
-              </button>
+              isElectron ? (
+                <button
+                  onClick={handleCheck}
+                  disabled={isChecking}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg transition-all duration-200 disabled:opacity-50"
+                >
+                  <RefreshCw size={12} className={isChecking ? 'animate-spin' : ''} />
+                  {isChecking ? t('about.checking') : t('about.checkUpdate')}
+                </button>
+              ) : (
+                <span className="text-xs text-[var(--muted)]">{t('about.desktopOnly')}</span>
+              )
             )}
           </div>
         </div>

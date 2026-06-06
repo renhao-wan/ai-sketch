@@ -36,7 +36,7 @@ const isDev = process.env.ELECTRON_DEV === 'true';
  * 创建主窗口
  *
  * 配置窗口属性：
- * - 默认尺寸 1400x900，最小尺寸 800x600
+ * - 默认尺寸 1200x800，最小尺寸 800x600
  * - 启用上下文隔离，禁用 Node.js 集成（安全最佳实践）
  * - 延迟显示（show: false + ready-to-show），避免启动时白屏闪烁
  */
@@ -77,16 +77,20 @@ function createWindow(): void {
     }
   });
 
-  // 窗口移动/调整大小时保存状态
+  // 窗口移动/调整大小时保存状态（最大化时跳过，避免覆盖恢复尺寸）
   const saveCurrentState = () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (mainWindow.isMaximized()) {
+      saveWindowState({ ...loadWindowState(), isMaximized: true });
+      return;
+    }
     const bounds = mainWindow.getBounds();
     saveWindowState({
       x: bounds.x,
       y: bounds.y,
       width: bounds.width,
       height: bounds.height,
-      isMaximized: mainWindow.isMaximized(),
+      isMaximized: false,
     });
   };
   mainWindow.on('resize', saveCurrentState);
@@ -156,7 +160,7 @@ app.whenReady().then(async () => {
 // 所有窗口关闭时退出应用（Windows/Linux）
 app.on('window-all-closed', async () => {
   await stopServer();
-  // 动态导入避免编译时 rootDir 限制
+  // require 避免编译时 rootDir 限制（electron tsconfig 仅包含 electron/ 目录）
   const { closeDb } = require('../lib/db/index');
   closeDb();
   app.quit();
@@ -220,7 +224,7 @@ ipcMain.handle('update-check', () => {
 });
 
 ipcMain.handle('update-download', () => {
-  downloadUpdate();
+  downloadUpdate(mainWindow);
 });
 
 ipcMain.handle('update-install', () => {

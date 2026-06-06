@@ -78,9 +78,10 @@ export function checkForUpdates(mainWindow: BrowserWindow | null): void {
 }
 
 /** 下载更新 */
-export function downloadUpdate(): void {
+export function downloadUpdate(mainWindow: BrowserWindow | null): void {
   autoUpdater.downloadUpdate().catch((err) => {
     console.error('[Updater] Download failed:', err.message);
+    sendStatus(mainWindow, 'error', err.message);
   });
 }
 
