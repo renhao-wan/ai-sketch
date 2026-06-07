@@ -11,7 +11,8 @@ import { LAYOUT_SYSTEM_PROMPT } from './layout';
 import { BEAUTIFY_SYSTEM_PROMPT } from './beautify';
 import { SIMPLIFY_SYSTEM_PROMPT } from './simplify';
 import { EXPLAIN_SYSTEM_PROMPT, buildExplainUserPrompt } from './explain';
-import type { DiagramFormat, AIActionType } from '../types';
+import type { DiagramFormat } from '../../types/diagram-strategy';
+import type { AIActionType } from '../types';
 
 /** AI 操作动词映射 */
 const ACTION_VERBS: Record<AIActionType, { verb: string; suffix?: string }> = {

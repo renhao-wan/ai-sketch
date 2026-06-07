@@ -2,7 +2,8 @@
 
 import { Square, Circle, Diamond, Type, ArrowRight, Trash2, Pencil, MousePointer } from 'lucide-react';
 import { useLocale, type TranslationKey } from '@/lib/locales';
-import type { DrawioTool } from '@/hooks/useMxGraph';
+
+export type DrawioTool = 'select' | 'rectangle' | 'ellipse' | 'diamond' | 'text' | 'arrow';
 
 interface DrawioToolbarProps {
   activeTool: DrawioTool;

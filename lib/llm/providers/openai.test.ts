@@ -79,11 +79,12 @@ describe('OpenAIProvider', () => {
         content: 'describe this',
         images: [{ data: 'base64data', mimeType: 'image/png' }],
       };
-      const result = provider.processMessage(msg) as Record<string, unknown>;
-      expect(Array.isArray(result.content)).toBe(true);
-      expect(result.content).toHaveLength(2);
-      expect(result.content[1].type).toBe('image_url');
-      expect(result.content[1].image_url.url).toContain('data:image/png;base64,');
+      const result = provider.processMessage(msg) as unknown as Record<string, unknown>;
+      const content = result.content as unknown[];
+      expect(Array.isArray(content)).toBe(true);
+      expect(content).toHaveLength(2);
+      expect((content[1] as Record<string, unknown>).type).toBe('image_url');
+      expect(((content[1] as Record<string, unknown>).image_url as Record<string, unknown>).url).toContain('data:image/png;base64,');
     });
   });
 

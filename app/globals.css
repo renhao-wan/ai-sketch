@@ -643,3 +643,26 @@ html, body {
   background-image: radial-gradient(circle, var(--border) 0.8px, transparent 0.8px);
   background-size: 24px 24px;
 }
+
+/* Draw.io 画布优化 */
+
+/* 框选样式 - 蓝色半透明 */
+div.mxRubberband {
+  border: 2px solid #4A90D9 !important;
+  background-color: rgba(74, 144, 217, 0.15) !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+}
+
+/* 顶点手柄 - 圆形 */
+.drawio-canvas rect + rect,
+.drawio-canvas [cursor="move"] {
+  rx: 50%;
+  ry: 50%;
+}
+
+/* SVG 手柄圆形 */
+.drawio-canvas svg rect[fill="#4A90D9"] {
+  rx: 50%;
+  ry: 50%;
+}

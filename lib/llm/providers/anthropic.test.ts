@@ -85,21 +85,22 @@ describe('AnthropicProvider', () => {
         content: 'describe',
         images: [{ data: 'base64data', mimeType: 'image/jpeg' }],
       };
-      const result = provider.processMessage(msg) as Record<string, unknown>;
-      expect(result.content).toHaveLength(2);
-      expect(result.content[1].type).toBe('image');
-      expect(result.content[1].source.type).toBe('base64');
+      const result = provider.processMessage(msg) as unknown as Record<string, unknown>;
+      const content = result.content as unknown[];
+      expect(content).toHaveLength(2);
+      expect((content[1] as Record<string, unknown>).type).toBe('image');
+      expect(((content[1] as Record<string, unknown>).source as Record<string, unknown>).type).toBe('base64');
     });
 
     it('assistant 角色保持不变', () => {
       const msg = { role: 'assistant' as const, content: 'response' };
-      const result = provider.processMessage(msg) as Record<string, unknown>;
+      const result = provider.processMessage(msg) as unknown as Record<string, unknown>;
       expect(result.role).toBe('assistant');
     });
 
     it('无图片时 system 角色保持不变', () => {
       const msg = { role: 'system' as const, content: 'instruction' };
-      const result = provider.processMessage(msg) as Record<string, unknown>;
+      const result = provider.processMessage(msg) as unknown as Record<string, unknown>;
       expect(result.role).toBe('system');
     });
 
@@ -109,7 +110,7 @@ describe('AnthropicProvider', () => {
         content: 'instruction',
         images: [{ data: 'base64', mimeType: 'image/png' }],
       };
-      const result = provider.processMessage(msg) as Record<string, unknown>;
+      const result = provider.processMessage(msg) as unknown as Record<string, unknown>;
       expect(result.role).toBe('user');
     });
   });
