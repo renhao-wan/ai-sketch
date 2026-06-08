@@ -566,9 +566,12 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
             onChange={(v) => {
               const newType = v as 'openai' | 'anthropic' | 'ollama';
               const updates: Partial<LLMConfig> = { type: newType, model: '' };
-              // 切换到 Ollama 时自动填充默认 URL
-              if (newType === 'ollama' && !formData.baseUrl) {
+              if (newType === 'ollama') {
+                // 切换到 Ollama：自动填充默认地址
                 updates.baseUrl = 'http://localhost:11434';
+              } else if (formData.baseUrl === 'http://localhost:11434') {
+                // 从 Ollama 切换到其他：清除 Ollama 地址
+                updates.baseUrl = '';
               }
               setFormData({ ...formData, ...updates });
             }}
@@ -587,7 +590,7 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
           />
         </div>
 
-        {formData.type !== 'ollama' ? (
+        {formData.type !== 'ollama' && (
           <div>
             <label htmlFor="configApiKey" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.apiKey')} <span className="text-red-500">*</span></label>
             <input
@@ -598,10 +601,6 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
               placeholder="sk-..."
               className={inputClass}
             />
-          </div>
-        ) : (
-          <div className="px-4 py-3 bg-[var(--accent-indigo)]/5 rounded-xl">
-            <p className="text-sm text-[var(--muted)]">{t('config.ollamaNoApiKey')}</p>
           </div>
         )}
 
