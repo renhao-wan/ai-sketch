@@ -28,6 +28,8 @@ async function initDb(): Promise<Database> {
     fs.mkdirSync(dir, { recursive: true });
   }
 
+  console.log('[DB] 初始化数据库，路径:', DB_PATH);
+
   const SQL = await initSqlJs();
   let db: Database;
   let isNew = false;
@@ -35,9 +37,11 @@ async function initDb(): Promise<Database> {
   if (fs.existsSync(DB_PATH)) {
     const buffer = fs.readFileSync(DB_PATH);
     db = new SQL.Database(buffer);
+    console.log('[DB] 加载已有数据库文件');
   } else {
     db = new SQL.Database();
     isNew = true;
+    console.log('[DB] 创建新数据库');
   }
 
   db.run('PRAGMA journal_mode = WAL');
@@ -158,10 +162,15 @@ async function initDb(): Promise<Database> {
   db.run('CREATE INDEX IF NOT EXISTS idx_conversation_tag_relations_tag ON conversation_tag_relations(tag_id)');
   db.run('CREATE INDEX IF NOT EXISTS idx_config_tag_relations_tag ON config_tag_relations(tag_id)');
 
+  // 验证表是否创建成功
+  const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");
+  console.log('[DB] 数据库表:', tables[0]?.values?.map(row => row[0]) || []);
+
   // 持久化数据库（新建或有表结构变更时）
   try {
     const data = db.export();
     fs.writeFileSync(DB_PATH, Buffer.from(data));
+    console.log('[DB] 数据库已持久化到磁盘');
   } catch (e) {
     console.error('[DB] 初始持久化失败:', e);
   }
@@ -177,12 +186,15 @@ export async function getDb(): Promise<Database> {
   if (dbInstance) return dbInstance;
 
   if (!dbPromise) {
+    console.log('[DB] getDb: 首次调用，开始初始化');
     dbPromise = initDb().then(db => {
       dbInstance = db;
+      console.log('[DB] getDb: 初始化完成');
       return db;
     }).catch(e => {
       // 初始化失败时重置，允许后续重试
       dbInstance = null;
+      console.error('[DB] getDb: 初始化失败', e);
       throw e;
     }).finally(() => {
       dbPromise = null;
