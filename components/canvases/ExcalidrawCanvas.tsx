@@ -144,6 +144,7 @@ interface Props {
 
 export default function ExcalidrawCanvas({ elements, isStreaming, streamRendererRef }: Props) {
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
+  const [apiReady, setApiReady] = useState(false);
   const [convertFn, setConvertFn] = useState<ConvertFn | null>(null);
   const { showNotification } = useNotification();
   const { t } = useLocale();
@@ -193,7 +194,10 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
       .catch(console.error);
   }, []);
 
-  const handleAPI = useCallback((api: ExcalidrawImperativeAPI) => { apiRef.current = api; }, []);
+  const handleAPI = useCallback((api: ExcalidrawImperativeAPI) => {
+    apiRef.current = api;
+    setApiReady(true);
+  }, []);
 
   const initialData = useMemo(() => ({
     elements: [],
@@ -265,7 +269,7 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
 
   // Final render after stream ends
   useEffect(() => {
-    if (isStreaming || !convertFn || !apiRef.current) return;
+    if (isStreaming || !convertFn || !apiRef.current || !apiReady) return;
 
     // 空元素时清空画布
     if (!elements?.length) {
@@ -329,7 +333,7 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
 
     resetStreamRefs();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elementsHash, isStreaming, convertFn, resetStreamRefs, showNotification, t]);
+  }, [elementsHash, isStreaming, convertFn, resetStreamRefs, showNotification, t, apiReady]);
 
   return (
     <div className="w-full h-full canvas-grid-bg">
