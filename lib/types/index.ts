@@ -2,7 +2,7 @@
 export interface LLMConfig {
   id?: string;
   name: string;
-  type: 'openai' | 'anthropic';
+  type: 'openai' | 'anthropic' | 'ollama';
   baseUrl: string;
   apiKey: string;
   model: string;
