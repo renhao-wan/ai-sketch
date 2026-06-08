@@ -234,6 +234,9 @@ export const zh = {
   'tags.nameRequired': '标签名称不能为空',
   'tags.nameTooLong': '标签名称不能超过 20 个字符',
   'tags.maxTagsReached': '最多只能选择 10 个标签',
+  'tags.search': '搜索标签...',
+  'tags.duplicateName': '同名标签已存在',
+  'tags.noResults': '未找到匹配的标签',
 
   // Floating AI Actions
   'aiAction.layout': 'AI 布局',

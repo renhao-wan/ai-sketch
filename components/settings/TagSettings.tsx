@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Edit3, Trash2, X, Check } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Edit3, Trash2, X, Check, Search } from 'lucide-react';
 import * as api from '@/lib/api/client';
 import { useNotification } from '@/lib/contexts/NotificationContext';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
@@ -30,11 +30,13 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
   const [conversationTags, setConversationTags] = useState<ConversationTag[]>([]);
   const [editingConvTag, setEditingConvTag] = useState<Partial<ConversationTag> | null>(null);
   const [isCreatingConvTag, setIsCreatingConvTag] = useState(false);
+  const [convSearch, setConvSearch] = useState('');
 
   // 配置标签状态
   const [configTags, setConfigTags] = useState<ConfigTag[]>([]);
   const [editingConfigTag, setEditingConfigTag] = useState<Partial<ConfigTag> | null>(null);
   const [isCreatingConfigTag, setIsCreatingConfigTag] = useState(false);
+  const [configSearch, setConfigSearch] = useState('');
 
   // 确认对话框
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({
@@ -72,6 +74,19 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
     }
   }, [isVisible]);
 
+  // 过滤后的标签列表
+  const filteredConvTags = useMemo(() => {
+    if (!convSearch.trim()) return conversationTags;
+    const q = convSearch.trim().toLowerCase();
+    return conversationTags.filter(tag => tag.name.toLowerCase().includes(q));
+  }, [conversationTags, convSearch]);
+
+  const filteredConfigTags = useMemo(() => {
+    if (!configSearch.trim()) return configTags;
+    const q = configSearch.trim().toLowerCase();
+    return configTags.filter(tag => tag.name.toLowerCase().includes(q));
+  }, [configTags, configSearch]);
+
   // ==================== 对话标签操作 ====================
 
   const handleCreateConvTag = () => {
@@ -90,16 +105,22 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
       return;
     }
 
+    // 前端同名检查
+    if (isCreatingConvTag && conversationTags.some(t => t.name === editingConvTag.name!.trim())) {
+      showNotification(t('tags.createSuccess'), t('tags.duplicateName'), 'error');
+      return;
+    }
+
     try {
       if (isCreatingConvTag) {
         await api.createConversationTag({
-          name: editingConvTag.name,
+          name: editingConvTag.name.trim(),
           color: editingConvTag.color || PRESET_COLORS[0].value,
         });
         showNotification(t('tags.createSuccess'), '', 'success');
       } else {
         await api.updateConversationTag(editingConvTag.id!, {
-          name: editingConvTag.name,
+          name: editingConvTag.name.trim(),
           color: editingConvTag.color,
         });
         showNotification(t('tags.updateSuccess'), '', 'success');
@@ -120,9 +141,11 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
       onConfirm: async () => {
         try {
           await api.deleteConversationTag(tag.id);
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
           showNotification(t('tags.deleteSuccess'), '', 'success');
           await loadTags();
         } catch (err) {
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
           showNotification(t('tags.deleteSuccess'), (err as Error).message, 'error');
         }
       },
@@ -147,16 +170,22 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
       return;
     }
 
+    // 前端同名检查
+    if (isCreatingConfigTag && configTags.some(t => t.name === editingConfigTag.name!.trim())) {
+      showNotification(t('tags.createSuccess'), t('tags.duplicateName'), 'error');
+      return;
+    }
+
     try {
       if (isCreatingConfigTag) {
         await api.createConfigTag({
-          name: editingConfigTag.name,
+          name: editingConfigTag.name.trim(),
           color: editingConfigTag.color || PRESET_COLORS[0].value,
         });
         showNotification(t('tags.createSuccess'), '', 'success');
       } else {
         await api.updateConfigTag(editingConfigTag.id!, {
-          name: editingConfigTag.name,
+          name: editingConfigTag.name.trim(),
           color: editingConfigTag.color,
         });
         showNotification(t('tags.updateSuccess'), '', 'success');
@@ -177,46 +206,147 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
       onConfirm: async () => {
         try {
           await api.deleteConfigTag(tag.id);
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
           showNotification(t('tags.deleteSuccess'), '', 'success');
           await loadTags();
         } catch (err) {
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
           showNotification(t('tags.deleteSuccess'), (err as Error).message, 'error');
         }
       },
     });
   };
 
-  // 渲染标签列表
-  const renderTagList = (
+  // 渲染标签编辑浮层
+  const renderTagModal = (
+    editingTag: Partial<ConversationTag> | Partial<ConfigTag> | null,
+    isCreating: boolean,
+    setEditingTag: (tag: Partial<ConversationTag> | Partial<ConfigTag> | null) => void,
+    setIsCreating: (v: boolean) => void,
+    handleSave: () => void,
+    accentColor: string,
+  ) => {
+    if (!editingTag) return null;
+
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        onClick={() => { setEditingTag(null); setIsCreating(false); }}
+      >
+        <div
+          className="w-full max-w-sm mx-4 p-5 rounded-2xl bg-[var(--surface-warm)] border border-[var(--border)] shadow-2xl space-y-4"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-[var(--fg)]">
+              {isCreating ? t('tags.create') : t('tags.edit')}
+            </span>
+            <button
+              onClick={() => { setEditingTag(null); setIsCreating(false); }}
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          <input
+            type="text"
+            value={editingTag.name || ''}
+            onChange={(e) => setEditingTag({ ...editingTag, name: e.target.value })}
+            placeholder={t('tags.namePlaceholder')}
+            maxLength={20}
+            autoFocus
+            className="w-full px-3 py-2.5 text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30"
+          />
+
+          <div>
+            <label className="block text-xs text-[var(--muted)] mb-2">{t('tags.color')}</label>
+            <div className="flex flex-wrap gap-2">
+              {PRESET_COLORS.map(color => (
+                <button
+                  key={color.value}
+                  onClick={() => setEditingTag({ ...editingTag, color: color.value })}
+                  className={`w-8 h-8 rounded-full transition-all duration-200 ${
+                    editingTag.color === color.value
+                      ? 'ring-2 ring-offset-2 ring-[var(--accent-indigo)] scale-110'
+                      : 'hover:scale-110'
+                  }`}
+                  style={{ backgroundColor: color.value }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={handleSave}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-white rounded-xl hover:opacity-90 active:scale-[0.98] transition-all duration-200 font-medium"
+            style={{ backgroundColor: accentColor }}
+          >
+            <Check size={14} />
+            {isCreating ? t('common.create') : t('common.save')}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // 渲染标签列表区块
+  const renderTagSection = (
     tags: ConversationTag[] | ConfigTag[],
+    filteredTags: ConversationTag[] | ConfigTag[],
     type: 'conversation' | 'config',
+    search: string,
+    setSearch: (v: string) => void,
+    accentColor: string,
   ) => {
     const editingTag = type === 'conversation' ? editingConvTag : editingConfigTag;
     const isCreating = type === 'conversation' ? isCreatingConvTag : isCreatingConfigTag;
     const setEditingTag = type === 'conversation' ? setEditingConvTag : setEditingConfigTag;
+    const setIsCreating = type === 'conversation' ? setIsCreatingConvTag : setIsCreatingConfigTag;
     const handleSave = type === 'conversation' ? handleSaveConvTag : handleSaveConfigTag;
     const handleDelete = type === 'conversation' ? handleDeleteConvTag : handleDeleteConfigTag;
     const handleCreate = type === 'conversation' ? handleCreateConvTag : handleCreateConfigTag;
-    const setIsCreating = type === 'conversation' ? setIsCreatingConvTag : setIsCreatingConfigTag;
 
     return (
       <div className="space-y-3">
+        {/* 顶部：搜索 + 新建按钮 */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={t('tags.search')}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-[var(--surface-warm)] border border-[var(--border)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/20"
+            />
+          </div>
+          <button
+            onClick={handleCreate}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm text-white rounded-xl transition-all duration-200 font-medium hover:opacity-90 active:scale-[0.98] shrink-0"
+            style={{ backgroundColor: accentColor }}
+          >
+            <Plus size={14} />
+            {t('tags.create')}
+          </button>
+        </div>
+
         {/* 标签列表 */}
-        <ScrollToTop className="max-h-64 overflow-y-auto scrollbar-thin">
+        <ScrollToTop className="max-h-96 overflow-y-auto scrollbar-thin">
           <div className="space-y-2">
-            {tags.length === 0 ? (
+            {filteredTags.length === 0 ? (
               <div className="text-center py-8 text-sm text-[var(--muted)]">
-                {t('tags.noTags')}
+                {search.trim() ? t('tags.noResults') : t('tags.noTags')}
               </div>
             ) : (
-              tags.map(tag => (
+              filteredTags.map(tag => (
                 <div
                   key={tag.id}
                   className="flex items-center justify-between p-3 rounded-xl bg-[var(--surface-warm-hover)] hover:bg-[var(--border)] transition-all duration-200"
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-4 h-4 rounded-full"
+                      className="w-4 h-4 rounded-full shrink-0"
                       style={{ backgroundColor: tag.color }}
                     />
                     <span className="text-sm text-[var(--fg)]">{tag.name}</span>
@@ -243,73 +373,11 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
             )}
           </div>
         </ScrollToTop>
-
-        {/* 新建按钮 */}
-        <button
-          onClick={handleCreate}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-xl transition-all duration-200 font-medium"
-        >
-          <Plus size={14} />
-          {t('tags.create')}
-        </button>
-
-        {/* 编辑/创建表单 */}
-        {editingTag && (
-          <div className="p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)] space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-[var(--fg)]">
-                {isCreating ? t('tags.create') : t('tags.edit')}
-              </span>
-              <button
-                onClick={() => {
-                  setEditingTag(null);
-                  setIsCreating(false);
-                }}
-                className="w-6 h-6 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-              >
-                <X size={14} />
-              </button>
-            </div>
-
-            <input
-              type="text"
-              value={editingTag.name || ''}
-              onChange={(e) => setEditingTag({ ...editingTag, name: e.target.value })}
-              placeholder={t('tags.namePlaceholder')}
-              maxLength={20}
-              className="w-full px-3 py-2 text-sm bg-[var(--surface-warm)] border border-[var(--border)] rounded-lg text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30"
-            />
-
-            <div>
-              <label className="block text-xs text-[var(--muted)] mb-2">{t('tags.color')}</label>
-              <div className="flex flex-wrap gap-2">
-                {PRESET_COLORS.map(color => (
-                  <button
-                    key={color.value}
-                    onClick={() => setEditingTag({ ...editingTag, color: color.value })}
-                    className={`w-7 h-7 rounded-full transition-all duration-200 ${
-                      editingTag.color === color.value
-                        ? 'ring-2 ring-offset-2 ring-[var(--accent-indigo)]'
-                        : 'hover:scale-110'
-                    }`}
-                    style={{ backgroundColor: color.value }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <button
-              onClick={handleSave}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200 font-medium"
-            >
-              <Check size={14} />
-              {isCreating ? t('common.create') : t('common.save')}
-            </button>
-          </div>
-        )}
       </div>
     );
   };
+
+  const hasModal = editingConvTag || editingConfigTag;
 
   return (
     <div className="h-full flex flex-col">
@@ -322,7 +390,10 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
               {t('tags.conversationTags')}
               <span className="text-[var(--muted)] font-normal">({conversationTags.length})</span>
             </h3>
-            {renderTagList(conversationTags, 'conversation')}
+            {renderTagSection(
+              conversationTags, filteredConvTags, 'conversation',
+              convSearch, setConvSearch, '#6366f1',
+            )}
           </div>
 
           {/* 配置标签 */}
@@ -332,10 +403,20 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
               {t('tags.configTags')}
               <span className="text-[var(--muted)] font-normal">({configTags.length})</span>
             </h3>
-            {renderTagList(configTags, 'config')}
+            {renderTagSection(
+              configTags, filteredConfigTags, 'config',
+              configSearch, setConfigSearch, '#06b6d4',
+            )}
           </div>
         </div>
       </div>
+
+      {/* 编辑/创建浮层 */}
+      {hasModal && (
+        editingConvTag
+          ? renderTagModal(editingConvTag, isCreatingConvTag, setEditingConvTag, setIsCreatingConvTag, handleSaveConvTag, '#6366f1')
+          : renderTagModal(editingConfigTag, isCreatingConfigTag, setEditingConfigTag, setIsCreatingConfigTag, handleSaveConfigTag, '#06b6d4')
+      )}
 
       {/* 删除确认对话框 */}
       <ConfirmDialog

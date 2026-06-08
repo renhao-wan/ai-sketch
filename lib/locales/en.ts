@@ -236,6 +236,9 @@ export const en: TranslationDict = {
   'tags.nameRequired': 'Tag name is required',
   'tags.nameTooLong': 'Tag name cannot exceed 20 characters',
   'tags.maxTagsReached': 'Maximum 10 tags allowed',
+  'tags.search': 'Search tags...',
+  'tags.duplicateName': 'A tag with this name already exists',
+  'tags.noResults': 'No matching tags found',
 
   // Floating AI Actions
   'aiAction.layout': 'AI Layout',
