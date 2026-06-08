@@ -67,7 +67,7 @@ export function LLMSettings() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅在挂载时加载配置
   useEffect(() => { loadConfigs(); }, []);
 
-  // 检测本地 Ollama 服务
+  // 检测本地 Ollama 服务（仅显示未配置的新模型）
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -75,15 +75,24 @@ export function LLMSettings() {
         const res = await fetch('/api/ollama/detect', { method: 'POST' });
         const data = await res.json();
         if (!cancelled && data.detected && data.models?.length > 0) {
-          setOllamaDetected(true);
-          setOllamaModels(data.models);
+          // 过滤掉已有配置的模型
+          const existingModels = new Set(
+            configs.filter(c => c.type === 'ollama').map(c => c.model),
+          );
+          const newModels = data.models.filter(
+            (m: { id: string; name: string }) => !existingModels.has(m.id),
+          );
+          if (newModels.length > 0) {
+            setOllamaDetected(true);
+            setOllamaModels(newModels);
+          }
         }
       } catch {
         // 静默忽略
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [configs]);
 
   /** 新建配置 */
   const handleCreateNew = () => {
