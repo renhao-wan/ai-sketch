@@ -75,10 +75,12 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
   // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅在挂载时加载配置
   useEffect(() => { loadConfigs(); }, []);
 
-  // 当组件变为不可见时，关闭标签选择器
+  // 当组件变为不可见时，关闭标签选择器和编辑器
   useEffect(() => {
     if (!isVisible) {
       setShowTagSelector(null);
+      setEditingConfig(null);
+      setIsCreating(false);
     }
   }, [isVisible]);
 
