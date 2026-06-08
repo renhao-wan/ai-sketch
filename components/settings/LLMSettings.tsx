@@ -44,6 +44,8 @@ export function LLMSettings() {
   const [error, setError] = useState('');
   const { showNotification } = useNotification();
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [ollamaDetected, setOllamaDetected] = useState(false);
+  const [ollamaModels, setOllamaModels] = useState<{ id: string; name: string }[]>([]);
 
   const { showBanner, handleDismissBanner } = useCountBanner({
     count: configs.length,
@@ -64,6 +66,24 @@ export function LLMSettings() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅在挂载时加载配置
   useEffect(() => { loadConfigs(); }, []);
+
+  // 检测本地 Ollama 服务
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/ollama/detect', { method: 'POST' });
+        const data = await res.json();
+        if (!cancelled && data.detected && data.models?.length > 0) {
+          setOllamaDetected(true);
+          setOllamaModels(data.models);
+        }
+      } catch {
+        // 静默忽略
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   /** 新建配置 */
   const handleCreateNew = () => {
@@ -197,6 +217,25 @@ export function LLMSettings() {
     input.click();
   };
 
+  /** 快速添加 Ollama 配置 */
+  const handleAddOllama = async () => {
+    try {
+      await api.createConfig({
+        name: 'Ollama (本地)',
+        type: 'ollama',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        model: ollamaModels[0]?.id || '',
+        description: '本地 Ollama 模型',
+      });
+      setOllamaDetected(false);
+      await loadConfigs();
+      showNotification(t('config.ollamaDetected'), t('config.ollamaDetectedDesc', { count: ollamaModels.length }), 'success');
+    } catch (err) {
+      setError(t('config.saveFailed') + (err as Error).message);
+    }
+  };
+
   /** 根据搜索关键词过滤配置，并将活跃配置置顶 */
   const filteredConfigs = useMemo(() => (searchQuery
     ? configs.filter(c =>
@@ -225,6 +264,25 @@ export function LLMSettings() {
           description={t('config.bannerDescription', { count: configs.length })}
           onDismiss={handleDismissBanner}
         />
+
+        {/* Ollama 检测 Banner */}
+        {ollamaDetected && (
+          <div className="px-4 py-3 bg-[var(--accent-indigo)]/10 rounded-xl flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-[var(--accent-indigo)]">{t('config.ollamaDetected')}</p>
+              <p className="text-xs text-[var(--muted)] mt-0.5">
+                {t('config.ollamaDetectedDesc', { count: ollamaModels.length })}
+              </p>
+            </div>
+            <button
+              onClick={handleAddOllama}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200 font-medium"
+            >
+              <Plus size={14} />
+              <span>{t('config.addOllamaConfig')}</span>
+            </button>
+          </div>
+        )}
 
         {/* 操作栏：新建 + 导入导出 */}
         <div className="flex flex-wrap gap-2">

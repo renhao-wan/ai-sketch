@@ -149,6 +149,11 @@ export const zh = {
   'config.validation.importFormatError': '导入数据格式错误',
   'config.notFound': '配置不存在',
   'config.defaultName': '新配置',
+  'config.ollamaDetected': '检测到 Ollama 服务',
+  'config.ollamaDetectedDesc': '发现 {count} 个可用模型，点击快速添加配置',
+  'config.addOllamaConfig': '添加 Ollama 配置',
+  'config.ollamaNoApiKey': 'Ollama 通常不需要 API Key',
+  'config.ollamaDefaultUrl': 'http://localhost:11434',
 
   // History
   'history.title': '历史记录',
