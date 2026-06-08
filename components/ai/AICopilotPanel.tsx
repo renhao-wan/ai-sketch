@@ -417,7 +417,7 @@ export default function AICopilotPanel({
 
           {/* Chart Type */}
           <div className="w-full">
-            <ChartTypeSelect value={chartType} onChange={setChartType} />
+            <ChartTypeSelect value={chartType} onChange={setChartType} format={currentFormat} />
           </div>
         </div>
       )}
@@ -428,7 +428,7 @@ export default function AICopilotPanel({
         {hasMessages && (
           <div className="px-4 pt-3 pb-1 space-y-2">
             <FormatSelector value={currentFormat} onChange={onFormatChange} className="w-full" />
-            <ChartTypeSelect value={chartType} onChange={setChartType} />
+            <ChartTypeSelect value={chartType} onChange={setChartType} format={currentFormat} />
           </div>
         )}
 

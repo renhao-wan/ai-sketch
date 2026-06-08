@@ -927,7 +927,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 15 | 中间轮次修改历史完全丢失 | 上下文管理 | ❌ |
 | 16 | 历史图片每次请求都重发 | 上下文管理 | ❌ |
 | 17 | 图片数据不入历史上下文 | 上下文管理 | ❌ |
-| 18 | Mermaid 14/21 种类型降级 | Mermaid 画布 | ❌ |
+| 18 | Mermaid 14/21 种类型降级 | Mermaid 画布 | ✅ |
 | 19 | Excalidraw 流式期间每个元素完整重绘 | Excalidraw 画布 | ❌ |
 | 20 | onMaximizeChange 监听器泄漏 | Electron | ✅ |
 | 21 | NSIS 卸载路径错误 | Electron | ✅ |
@@ -963,7 +963,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 > **图例**: ✅ 已完成 | ❌ 未开始
 > **严重度**: 🔴 严重 | 🟡 中等 | 🟢 轻微
 
-### ✅ 已完成（61 项）
+### ✅ 已完成（63 项）
 
 | # | 优化项 | 严重度 | 完成日期 | 备注 |
 |---|--------|--------|----------|------|
@@ -1028,8 +1028,10 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 59 | Draw.io 全局配置函数提取 | 🟢 | 2026-06-06 | configureMaxgraphStyles 提取为独立函数，仅执行一次 |
 | 60 | Draw.io TypeScript 类型完善 | 🟢 | 2026-06-06 | 添加函数返回值类型、参数类型注解 |
 | 61 | Draw.io 原生缩放功能实现 | 🟢 | 2026-06-06 | 使用 maxgraph 原生 API，支持滚轮缩放、按钮缩放、适应视图 |
+| 62 | Mermaid 类型映射优化 | 🔴 | 2026-06-06 | 更新 MERMAID_TYPE_MAP，使用 block-beta 实现架构图等，标记不支持的类型 |
+| 63 | Mermaid 不支持类型通知提示 | 🟡 | 2026-06-06 | 选择不支持的 Mermaid 类型时显示全局通知提示 |
 
-### ❌ 未完成 — 严重（6 项）
+### ❌ 未完成 — 严重（5 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
@@ -1037,7 +1039,6 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 15 | 中间轮次修改历史完全丢失 | 上下文管理 | 无摘要机制，超 20 轮直接丢弃 |
 | 16 | 历史图片每次请求都重发 | 上下文管理 | `toLLMMessage` 无条件附带所有 base64 图片 |
 | 17 | 图片数据不入历史上下文 | 上下文管理 | 只在当前轮次发送图片，历史保留描述文字 |
-| 18 | Mermaid 14/21 种类型降级为 flowchart | Mermaid 画布 | `MERMAID_TYPE_MAP` 未改 |
 | 19 | Excalidraw 流式每元素完整重绘 | Excalidraw 画布 | `feed()` 无 debounce，每元素调 `updateScene` |
 
 ### ❌ 未完成 — 中等（6 项）

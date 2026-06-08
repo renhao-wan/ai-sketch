@@ -319,6 +319,10 @@ export const zh = {
   'chart.matrix': '矩阵图',
   'chart.infographic': '信息图',
 
+  // Notifications
+  'notification.unsupportedType': '类型不支持',
+  'notification.mermaidUnsupported': '{type} 不是 Mermaid 原生支持的图表类型，将使用最接近的替代方案生成。',
+
   // 设置页
   'settings.title': '系统设置',
   'settings.appearance': '外观设置',

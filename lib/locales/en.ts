@@ -321,6 +321,10 @@ export const en: TranslationDict = {
   'chart.matrix': 'Matrix',
   'chart.infographic': 'Infographic',
 
+  // Notifications
+  'notification.unsupportedType': 'Type Not Supported',
+  'notification.mermaidUnsupported': '{type} is not natively supported by Mermaid. The closest alternative will be used.',
+
   // Settings page
   'settings.title': 'Settings',
   'settings.appearance': 'Appearance',
