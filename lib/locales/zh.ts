@@ -322,6 +322,8 @@ export const zh = {
   // Notifications
   'notification.unsupportedType': '类型不支持',
   'notification.mermaidUnsupported': '{type} 不是 Mermaid 原生支持的图表类型，将使用最接近的替代方案生成。',
+  'notification.partialGenerationFailed': '部分元素生成失败',
+  'notification.elementsFailed': '以下元素无法渲染：{elements}',
 
   // 设置页
   'settings.title': '系统设置',

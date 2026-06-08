@@ -149,6 +149,8 @@ export function useGeneration(options: UseGenerationOptions) {
     updateIsStreaming(true);
     setApiError(null);
     options.onJsonErrorUpdate(null);
+    // 清空渲染数据，确保显示"正在生成中"提示
+    options.onRenderDataUpdate(null);
 
     // 记录请求前的 conversationId，用于失败时回滚（新建会话失败后服务端会删除该会话）
     const previousConversationId = options.conversationId;

@@ -7,6 +7,8 @@ import type { ExcalidrawElement } from '@/lib/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { extractCompleteElements } from '@/lib/diagram/json-repair';
 import { getExcalidrawBackgroundColor } from '@/lib/utils/theme-utils';
+import { useNotification } from '@/lib/contexts/NotificationContext';
+import { useLocale } from '@/lib/locales';
 
 const Excalidraw = dynamic(
   async () => (await import('@excalidraw/excalidraw')).Excalidraw,
@@ -22,6 +24,14 @@ type ExcalidrawSceneElement = Record<string, any>;
 
 /** convertToExcalidrawElements 的函数签名 */
 type ConvertFn = (elements: ExcalidrawElement[], opts?: { regenerateIds: boolean }) => ExcalidrawSceneElement[];
+
+/** 流式渲染配置常量 */
+const STREAM_CONFIG = {
+  /** debounce 延迟时间（毫秒） */
+  UPDATE_DEBOUNCE_MS: 150,
+  /** 最大失败元素提示数量 */
+  MAX_FAILED_ELEMENTS_DISPLAY: 5,
+} as const;
 
 let _convertFn: ConvertFn | null = null;
 let _convertFnPromise: Promise<ConvertFn> | null = null;
@@ -135,6 +145,8 @@ interface Props {
 export default function ExcalidrawCanvas({ elements, isStreaming, streamRendererRef }: Props) {
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const [convertFn, setConvertFn] = useState<ConvertFn | null>(null);
+  const { showNotification } = useNotification();
+  const { t } = useLocale();
 
   // 计算 elements 内容哈希，用于检测变化
   const elementsHash = useMemo(() => {
@@ -147,6 +159,8 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
   const idMapRef = useRef(new Map<string, Record<string, unknown>>());
   const convertedIdsRef = useRef(new Set<string>());
   const sceneRef = useRef<ExcalidrawSceneElement[]>([]);
+  const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const failedElementsRef = useRef<Array<{ id: string; error: string }>>([]);
 
   /** 重置流式渲染状态 */
   const resetStreamRefs = useCallback(() => {
@@ -155,6 +169,22 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
     idMapRef.current = new Map();
     convertedIdsRef.current = new Set();
     sceneRef.current = [];
+    failedElementsRef.current = [];
+    if (updateTimerRef.current) {
+      clearTimeout(updateTimerRef.current);
+      updateTimerRef.current = null;
+    }
+  }, []);
+
+  /** 延迟更新场景（debounce） */
+  const scheduleSceneUpdate = useCallback(() => {
+    if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
+    updateTimerRef.current = setTimeout(() => {
+      if (apiRef.current && sceneRef.current.length > 0) {
+        apiRef.current.updateScene({ elements: [...sceneRef.current] as any });
+      }
+      updateTimerRef.current = null;
+    }, STREAM_CONFIG.UPDATE_DEBOUNCE_MS);
   }, []);
 
   useEffect(() => {
@@ -176,7 +206,7 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
     }
   }, [isStreaming, resetStreamRefs]);
 
-  // Streaming feed — 逐个元素更新
+  // Streaming feed — 逐个元素更新（使用 debounce 批量更新）
   useEffect(() => {
     if (!streamRendererRef) return;
 
@@ -188,10 +218,12 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
         if (newRaw.length === 0) return;
         consumedRef.current = consumed;
 
+        let hasNewElements = false;
+
         for (const el of newRaw) {
           const rec = el as Record<string, unknown>;
-          const t = rec.type as string;
-          if (!t || !VALID.has(t)) continue;
+          const elType = rec.type as string;
+          if (!elType || !VALID.has(elType)) continue;
           const id = rec.id as string;
           if (!id || convertedIdsRef.current.has(id)) continue;
 
@@ -199,7 +231,7 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
           idMapRef.current.set(id, rec);
 
           let prepared: ExcalidrawElement = el as ExcalidrawElement;
-          if (ARROW_TYPES.has(t)) {
+          if (ARROW_TYPES.has(elType)) {
             const result = positionArrow(rec, idMapRef.current);
             if (!result) continue; // 目标不全，跳过
             prepared = result as unknown as ExcalidrawElement;
@@ -209,21 +241,27 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
             const converted = convertFn([prepared], { regenerateIds: false });
             sceneRef.current.push(...converted);
             convertedIdsRef.current.add(id);
-          } catch { /* skip */ }
-
-          if (sceneRef.current.length > 0) {
-             
-            apiRef.current.updateScene({ elements: [...sceneRef.current] as any });
-             
-            apiRef.current.scrollToContent(sceneRef.current as any, { fitToContent: true, animate: false });
+            hasNewElements = true;
+          } catch (e) {
+            // 收集失败的元素，而不是静默跳过
+            failedElementsRef.current.push({
+              id,
+              error: (e as Error).message || '未知错误',
+            });
+            console.warn(`[ExcalidrawCanvas] 元素转换失败: ${id}`, e);
           }
+        }
+
+        // 使用 debounce 批量更新场景
+        if (hasNewElements && sceneRef.current.length > 0) {
+          scheduleSceneUpdate();
         }
       },
       reset: () => {
         resetStreamRefs();
       },
     };
-  }, [convertFn, streamRendererRef, resetStreamRefs]);
+  }, [convertFn, streamRendererRef, resetStreamRefs, scheduleSceneUpdate]);
 
   // Final render after stream ends
   useEffect(() => {
@@ -247,7 +285,15 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
       converted = [];
       for (const el of valid) {
         try { converted.push(...convertFn([el], { regenerateIds: true })); }
-        catch { /* skip */ }
+        catch (e) {
+          // 收集失败的元素
+          const id = (el as Record<string, unknown>).id as string || 'unknown';
+          failedElementsRef.current.push({
+            id,
+            error: (e as Error).message || '未知错误',
+          });
+          console.warn(`[ExcalidrawCanvas] 最终渲染元素转换失败: ${id}`, e);
+        }
       }
     }
 
@@ -257,17 +303,33 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
       // 使用 requestAnimationFrame 确保清空操作完成后再设置新元素
       requestAnimationFrame(() => {
         if (apiRef.current) {
-           
           apiRef.current.updateScene({ elements: converted as any });
-           
+          // 只在流结束后调用一次 scrollToContent
           apiRef.current.scrollToContent(converted as any, { fitToContent: true, animate: false });
         }
       });
     }
 
+    // 显示失败元素的警告提示
+    const failedCount = failedElementsRef.current.length;
+    if (failedCount > 0) {
+      const failedIds = failedElementsRef.current
+        .slice(0, STREAM_CONFIG.MAX_FAILED_ELEMENTS_DISPLAY)
+        .map(f => f.id)
+        .join('、');
+      const suffix = failedCount > STREAM_CONFIG.MAX_FAILED_ELEMENTS_DISPLAY
+        ? ` 等 ${failedCount} 个`
+        : ` ${failedCount} 个`;
+      showNotification(
+        t('notification.partialGenerationFailed'),
+        t('notification.elementsFailed', { elements: failedIds + suffix }),
+        'warning',
+      );
+    }
+
     resetStreamRefs();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elementsHash, isStreaming, convertFn, resetStreamRefs]);
+  }, [elementsHash, isStreaming, convertFn, resetStreamRefs, showNotification, t]);
 
   return (
     <div className="w-full h-full canvas-grid-bg">

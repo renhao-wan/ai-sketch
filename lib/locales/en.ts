@@ -324,6 +324,8 @@ export const en: TranslationDict = {
   // Notifications
   'notification.unsupportedType': 'Type Not Supported',
   'notification.mermaidUnsupported': '{type} is not natively supported by Mermaid. The closest alternative will be used.',
+  'notification.partialGenerationFailed': 'Partial Generation Failed',
+  'notification.elementsFailed': 'The following elements could not be rendered: {elements}',
 
   // Settings page
   'settings.title': 'Settings',

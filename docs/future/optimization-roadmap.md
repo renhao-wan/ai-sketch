@@ -928,7 +928,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 16 | 历史图片每次请求都重发 | 上下文管理 | ❌ |
 | 17 | 图片数据不入历史上下文 | 上下文管理 | ❌ |
 | 18 | Mermaid 14/21 种类型降级 | Mermaid 画布 | ✅ |
-| 19 | Excalidraw 流式期间每个元素完整重绘 | Excalidraw 画布 | ❌ |
+| 19 | Excalidraw 流式期间每个元素完整重绘 | Excalidraw 画布 | ✅ |
 | 20 | onMaximizeChange 监听器泄漏 | Electron | ✅ |
 | 21 | NSIS 卸载路径错误 | Electron | ✅ |
 | 35 | Draw.io 事件监听器内存泄漏 | Draw.io 画布 | ✅ |
@@ -937,19 +937,17 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 8 | Temperature 改为可配置参数 | LLM 客户端 | ✅ |
 | 10 | 代码预览展开/收起按钮 | 消息气泡 | ✅ |
 
-### 建议优先解决的 5 个未完成问题
+### 建议优先解决的 4 个未完成问题
 
 1. **上下文截断改为 token 预算机制** — "上下文控制不好"的根本原因
 2. **图片数据不入历史上下文** — 大幅降低 token 消耗
 3. **历史图片不再每次重发** — 与上条配合，减少请求体积
-4. **Excalidraw 流式 debounce** — 影响渲染性能和用户体验
-5. **截断通知 role 修正** — 破坏 user/assistant 交替规则
+4. **截断通知 role 修正** — 破坏 user/assistant 交替规则
 
-### 🟡 中等问题（6 项）
+### 🟡 中等问题（3 项）
 
 详见附录 A，主要集中在：
 - 上下文管理（截断通知 role、首条消息格式化、图片 base64 存储）
-- 画布（scrollToContent 跳动、元素转换失败静默吞没）
 - 输入策略（FileStrategy 编码/截断）
 
 ### 🟢 轻微问题（0 项）
@@ -963,7 +961,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 > **图例**: ✅ 已完成 | ❌ 未开始
 > **严重度**: 🔴 严重 | 🟡 中等 | 🟢 轻微
 
-### ✅ 已完成（63 项）
+### ✅ 已完成（66 项）
 
 | # | 优化项 | 严重度 | 完成日期 | 备注 |
 |---|--------|--------|----------|------|
@@ -1030,8 +1028,11 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 61 | Draw.io 原生缩放功能实现 | 🟢 | 2026-06-06 | 使用 maxgraph 原生 API，支持滚轮缩放、按钮缩放、适应视图 |
 | 62 | Mermaid 类型映射优化 | 🔴 | 2026-06-06 | 更新 MERMAID_TYPE_MAP，使用 block-beta 实现架构图等，标记不支持的类型 |
 | 63 | Mermaid 不支持类型通知提示 | 🟡 | 2026-06-06 | 选择不支持的 Mermaid 类型时显示全局通知提示 |
+| 64 | Excalidraw 流式 debounce 更新 | 🟡 | 2026-06-06 | 使用 150ms debounce 批量更新场景，减少 updateScene 调用 |
+| 65 | Excalidraw scrollToContent 延迟 | 🟡 | 2026-06-06 | 流式过程中不调用，只在流结束后调用一次 |
+| 66 | Excalidraw 失败元素提示 | 🟡 | 2026-06-06 | 收集转换失败的元素，流结束后显示警告通知 |
 
-### ❌ 未完成 — 严重（5 项）
+### ❌ 未完成 — 严重（4 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
@@ -1039,17 +1040,14 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 15 | 中间轮次修改历史完全丢失 | 上下文管理 | 无摘要机制，超 20 轮直接丢弃 |
 | 16 | 历史图片每次请求都重发 | 上下文管理 | `toLLMMessage` 无条件附带所有 base64 图片 |
 | 17 | 图片数据不入历史上下文 | 上下文管理 | 只在当前轮次发送图片，历史保留描述文字 |
-| 19 | Excalidraw 流式每元素完整重绘 | Excalidraw 画布 | `feed()` 无 debounce，每元素调 `updateScene` |
 
-### ❌ 未完成 — 中等（6 项）
+### ❌ 未完成 — 中等（3 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
 | 22 | 截断通知 role 为 assistant 应为 system | 上下文管理 | 破坏 user/assistant 交替规则 |
 | 23 | 首条消息未经 getUserPrompt 格式化 | 上下文管理 | 历史消息原始发送，与当前轮次格式不一致 |
 | 24 | 图片以 base64 TEXT 存储 | 上下文管理 | 单行数据量极大，影响查询性能 |
-| 25 | scrollToContent 流式期间每元素调用 | Excalidraw 画布 | 画布视角不断跳动 |
-| 26 | 元素转换失败静默吞没 | Excalidraw 画布 | `catch { /* skip */ }` 无日志无提示 |
 | 27 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
 
 ### ❌ 未完成 — 轻微（0 项）
