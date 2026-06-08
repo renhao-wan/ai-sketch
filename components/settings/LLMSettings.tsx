@@ -36,7 +36,7 @@ interface ConfigEditorProps {
  * - 导入/导出 JSON
  * - 配置数量提示 Banner
  */
-export function LLMSettings() {
+export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) {
   const { t } = useLocale();
   const [configs, setConfigs] = useState<LLMConfig[]>([]);
   const [activeConfigId, setActiveConfigId] = useState<string | null>(null);
@@ -74,6 +74,13 @@ export function LLMSettings() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅在挂载时加载配置
   useEffect(() => { loadConfigs(); }, []);
+
+  // 当组件变为不可见时，关闭标签选择器
+  useEffect(() => {
+    if (!isVisible) {
+      setShowTagSelector(null);
+    }
+  }, [isVisible]);
 
   // 检测本地 Ollama 服务（仅挂载时检测一次）
   useEffect(() => {

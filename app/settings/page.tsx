@@ -66,7 +66,7 @@ export default function SettingsPage() {
   /** Tab → 组件映射，所有 Tab 同时挂载，用 display 控制显隐避免切换时卸载/重挂导致闪烁 */
   const tabs: { key: SettingsTab; component: React.ReactNode }[] = [
     { key: 'appearance', component: <AppearanceSettings /> },
-    { key: 'llm', component: <LLMSettings /> },
+    { key: 'llm', component: <LLMSettings isVisible={activeTab === 'llm'} /> },
     { key: 'tags', component: <TagSettings /> },
     { key: 'network', component: <NetworkSettings /> },
     { key: 'conversations', component: <ConversationSettings /> },
