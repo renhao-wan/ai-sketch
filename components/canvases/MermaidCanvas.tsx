@@ -182,38 +182,62 @@ export default function MermaidCanvas({ code, isStreaming, exportRef }: MermaidC
         const svgEl = container.querySelector('svg');
         if (!svgEl) throw new Error('图表未渲染');
 
-        // 克隆 SVG 并确保包含完整的命名空间声明
+        const width = svgEl.clientWidth || parseInt(svgEl.getAttribute('width') || '800');
+        const height = svgEl.clientHeight || parseInt(svgEl.getAttribute('height') || '600');
+
+        // 克隆 SVG
         const clonedSvg = svgEl.cloneNode(true) as SVGSVGElement;
         clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
         clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-
-        // 确保 SVG 有正确的尺寸
-        const width = svgEl.clientWidth || parseInt(svgEl.getAttribute('width') || '800');
-        const height = svgEl.clientHeight || parseInt(svgEl.getAttribute('height') || '600');
         clonedSvg.setAttribute('width', String(width));
         clonedSvg.setAttribute('height', String(height));
 
-        // 清理 style 元素中的 @import 语句（保留其他样式）
-        const styleElements = clonedSvg.querySelectorAll('style');
-        styleElements.forEach(style => {
+        // 清理 @import 语句
+        clonedSvg.querySelectorAll('style').forEach(style => {
           if (style.textContent) {
-            // 只移除 @import 语句，保留其他样式
             style.textContent = style.textContent.replace(/@import[^;]+;/g, '');
           }
         });
 
-        // 移除可能导致跨域问题的属性
-        const allElements = clonedSvg.querySelectorAll('*');
-        allElements.forEach(el => {
-          // 移除外部引用
-          const href = el.getAttribute('href');
-          if (href && !href.startsWith('data:') && !href.startsWith('#')) {
-            el.removeAttribute('href');
+        // 将 foreignObject 中的文字转换为 SVG text 元素
+        const foreignObjects = clonedSvg.querySelectorAll('foreignObject');
+        foreignObjects.forEach(fo => {
+          const parent = fo.parentElement;
+          if (!parent) return;
+
+          // 获取 foreignObject 的位置
+          const x = fo.getAttribute('x') || '0';
+          const y = fo.getAttribute('y') || '0';
+          const w = fo.getAttribute('width') || '100';
+          const h = fo.getAttribute('height') || '30';
+
+          // 提取文字内容
+          const textContent = fo.textContent?.trim() || '';
+          if (!textContent) {
+            fo.remove();
+            return;
           }
-          const xlinkHref = el.getAttribute('xlink:href');
-          if (xlinkHref && !xlinkHref.startsWith('data:') && !xlinkHref.startsWith('#')) {
-            el.removeAttribute('xlink:href');
+
+          // 创建 SVG text 元素替代 foreignObject
+          const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          textEl.setAttribute('x', String(parseInt(x) + parseInt(w) / 2));
+          textEl.setAttribute('y', String(parseInt(y) + parseInt(h) / 2 + 5));
+          textEl.setAttribute('text-anchor', 'middle');
+          textEl.setAttribute('dominant-baseline', 'middle');
+          textEl.setAttribute('font-size', '14');
+          textEl.setAttribute('font-family', 'Inter, sans-serif');
+          textEl.setAttribute('fill', 'var(--fg, #1a1a1a)');
+          textEl.textContent = textContent;
+
+          // 从父元素的 class 判断样式
+          const parentClass = parent.getAttribute('class') || '';
+          if (parentClass.includes('node')) {
+            textEl.setAttribute('font-weight', '500');
           }
+
+          // 移除 foreignObject，添加 text 元素
+          fo.remove();
+          parent.appendChild(textEl);
         });
 
         const svgString = new XMLSerializer().serializeToString(clonedSvg);

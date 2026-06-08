@@ -833,9 +833,7 @@ export default function DrawioCanvas({ code, exportRef }: DrawioCanvasProps) {
         clonedSvg.querySelectorAll('image').forEach(img => img.remove());
         // 3. 移除所有 use 元素（可能引用外部资源）
         clonedSvg.querySelectorAll('use').forEach(use => use.remove());
-        // 4. 移除 foreignObject（可能导致跨域问题）
-        clonedSvg.querySelectorAll('foreignObject').forEach(fo => fo.remove());
-        // 5. 移除外部链接引用
+        // 4. 移除外部链接引用
         clonedSvg.querySelectorAll('*').forEach(el => {
           const href = el.getAttribute('href');
           if (href && !href.startsWith('#') && !href.startsWith('data:')) {
