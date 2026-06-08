@@ -127,6 +127,28 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     descriptionKey: 'shortcuts.selectAll',
     scope: 'global',
   },
+  // 格式切换
+  {
+    id: 'switch-excalidraw',
+    keys: ['Alt', '1'],
+    description: '切换到 Excalidraw',
+    descriptionKey: 'shortcuts.switchExcalidraw',
+    scope: 'editor',
+  },
+  {
+    id: 'switch-mermaid',
+    keys: ['Alt', '2'],
+    description: '切换到 Mermaid',
+    descriptionKey: 'shortcuts.switchMermaid',
+    scope: 'editor',
+  },
+  {
+    id: 'switch-drawio',
+    keys: ['Alt', '3'],
+    description: '切换到 Draw.io',
+    descriptionKey: 'shortcuts.switchDrawio',
+    scope: 'editor',
+  },
   // 窗口控制
   {
     id: 'window-minimize',
@@ -179,6 +201,7 @@ interface ShortcutActions {
   onNewConversation?: () => void;
   onOpenHistory?: () => void;
   onOpenSettings?: (tab?: string) => void;
+  onSwitchFormat?: (format: 'excalidraw' | 'mermaid' | 'drawio') => void;
 }
 
 export function useShortcuts(actions?: ShortcutActions) {
@@ -245,6 +268,22 @@ export function useShortcuts(actions?: ShortcutActions) {
         if (matchKeys(event, ['Alt', 'A'])) {
           event.preventDefault();
           actions.onOpenSettings?.('about');
+          return;
+        }
+        // 格式切换
+        if (matchKeys(event, ['Alt', '1'])) {
+          event.preventDefault();
+          actions.onSwitchFormat?.('excalidraw');
+          return;
+        }
+        if (matchKeys(event, ['Alt', '2'])) {
+          event.preventDefault();
+          actions.onSwitchFormat?.('mermaid');
+          return;
+        }
+        if (matchKeys(event, ['Alt', '3'])) {
+          event.preventDefault();
+          actions.onSwitchFormat?.('drawio');
           return;
         }
       }

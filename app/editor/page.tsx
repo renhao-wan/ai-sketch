@@ -259,6 +259,7 @@ function EditorContent() {
     onGoHome: () => router.push('/'),
     onNewConversation: conversation.newConversation,
     onOpenSettings: (tab) => router.push(tab ? `/settings?tab=${tab}` : '/settings'),
+    onSwitchFormat: (f) => { setFormat(f); dispatchGenResult({ type: 'CLEAR' }); },
   });
 
   const detectCodeFormat = (code: string): DiagramFormat => {

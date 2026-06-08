@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useLocale, type TranslationKey } from '@/lib/locales';
 import { useShortcuts, formatKeys } from '@/hooks/useShortcuts';
-import { Keyboard, Navigation, Settings, Edit3, AppWindow } from 'lucide-react';
+import { Keyboard, Navigation, Settings, Edit3, AppWindow, Monitor } from 'lucide-react';
 import type { Shortcut } from '@/lib/types/shortcuts';
 
 interface KeyboardShortcutsSettingsProps {
@@ -29,6 +29,12 @@ const SHORTCUT_CATEGORIES: { id: string; labelKey: TranslationKey; icon: typeof 
     labelKey: 'shortcuts.category.edit',
     icon: Edit3,
     shortcutIds: ['send-message', 'newline', 'undo', 'cut', 'copy', 'paste', 'select-all'],
+  },
+  {
+    id: 'format',
+    labelKey: 'shortcuts.category.format',
+    icon: Monitor,
+    shortcutIds: ['switch-excalidraw', 'switch-mermaid', 'switch-drawio'],
   },
   {
     id: 'window',

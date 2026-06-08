@@ -2,6 +2,7 @@ import { getDb, requestSave } from './index';
 import { withTransaction } from './transaction';
 import { generateId } from '@/lib/utils';
 import type { ConversationTag, ConfigTag, Conversation, LLMConfig } from '@/lib/types';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 /** 将数据库行转换为 ConversationTag */
 function rowToConversationTag(row: Record<string, unknown>): ConversationTag {
@@ -151,7 +152,7 @@ class TagManager {
           id: row.id as string,
           title: row.title as string,
           chartType: row.chart_type as string,
-          format: (row.format as string) || 'excalidraw',
+          format: ((row.format as string) || 'excalidraw') as DiagramFormat,
           configName: (row.config_name as string) || undefined,
           configModel: (row.config_model as string) || undefined,
           currentCode: row.current_code as string,
