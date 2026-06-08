@@ -158,14 +158,12 @@ async function initDb(): Promise<Database> {
   db.run('CREATE INDEX IF NOT EXISTS idx_conversation_tag_relations_tag ON conversation_tag_relations(tag_id)');
   db.run('CREATE INDEX IF NOT EXISTS idx_config_tag_relations_tag ON config_tag_relations(tag_id)');
 
-  // 仅在新建数据库时持久化，已有文件无需重复写盘
-  if (isNew) {
-    try {
-      const data = db.export();
-      fs.writeFileSync(DB_PATH, Buffer.from(data));
-    } catch (e) {
-      console.error('[DB] 初始持久化失败:', e);
-    }
+  // 持久化数据库（新建或有表结构变更时）
+  try {
+    const data = db.export();
+    fs.writeFileSync(DB_PATH, Buffer.from(data));
+  } catch (e) {
+    console.error('[DB] 初始持久化失败:', e);
   }
 
   return db;
