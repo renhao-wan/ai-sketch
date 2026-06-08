@@ -116,6 +116,48 @@ async function initDb(): Promise<Database> {
   db.run(`CREATE INDEX IF NOT EXISTS idx_response_cache_hash ON response_cache(prompt_hash, format, chart_type)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_response_cache_last_used ON response_cache(last_used_at DESC)`);
 
+  // 标签表
+  db.run(`
+    CREATE TABLE IF NOT EXISTS conversation_tags (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      color TEXT NOT NULL DEFAULT '#6366f1',
+      created_at INTEGER NOT NULL
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS config_tags (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      color TEXT NOT NULL DEFAULT '#6366f1',
+      created_at INTEGER NOT NULL
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS conversation_tag_relations (
+      conversation_id TEXT NOT NULL,
+      tag_id TEXT NOT NULL,
+      PRIMARY KEY (conversation_id, tag_id),
+      FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+      FOREIGN KEY (tag_id) REFERENCES conversation_tags(id) ON DELETE CASCADE
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS config_tag_relations (
+      config_id TEXT NOT NULL,
+      tag_id TEXT NOT NULL,
+      PRIMARY KEY (config_id, tag_id),
+      FOREIGN KEY (config_id) REFERENCES llm_configs(id) ON DELETE CASCADE,
+      FOREIGN KEY (tag_id) REFERENCES config_tags(id) ON DELETE CASCADE
+    )
+  `);
+
+  db.run('CREATE INDEX IF NOT EXISTS idx_conversation_tag_relations_tag ON conversation_tag_relations(tag_id)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_config_tag_relations_tag ON config_tag_relations(tag_id)');
+
   // 仅在新建数据库时持久化，已有文件无需重复写盘
   if (isNew) {
     try {
