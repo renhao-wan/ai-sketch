@@ -34,7 +34,6 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
         });
         const data = await res.json();
         if (data.value === 'zh' || data.value === 'en') {
-          // eslint-disable-next-line react-hooks/set-state-in-effect -- 从数据库同步语言设置，仅执行一次
           setLocaleState(data.value);
           document.documentElement.lang = data.value === 'zh' ? 'zh-CN' : 'en';
         }

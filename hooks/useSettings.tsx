@@ -51,7 +51,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           : DEFAULT_SETTINGS.theme;
         const glowEnabled = savedGlow === 'true';
 
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- 从数据库同步初始设置，仅执行一次
         setSettings(prev => {
           if (prev.theme === theme && prev.glowEnabled === glowEnabled) return prev;
           return { theme, glowEnabled };

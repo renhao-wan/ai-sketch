@@ -69,7 +69,6 @@ export function LLMSettings() {
   useEffect(() => { loadConfigs(); }, []);
 
   // 检测本地 Ollama 服务（仅挂载时检测一次）
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅挂载时检测
   useEffect(() => {
     let cancelled = false;
     (async () => {

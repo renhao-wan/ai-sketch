@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocale, type TranslationKey } from '@/lib/locales';
 import { AppIcon } from '@/components/layout/TopBar';
 import { User, Code2, FileText, Shield, ExternalLink, RefreshCw, Download, Check, ArrowUpCircle } from 'lucide-react';
@@ -33,30 +33,37 @@ const APP_INFO = {
   ],
 };
 
+/** 客户端挂载检测 Hook（避免 SSR hydration 不匹配） */
+function useMounted() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 客户端挂载后触发重渲染，解决 SSR/客户端差异
+    setMounted(true);
+  }, []);
+  return mounted;
+}
+
 export function AboutSettings() {
   const { t } = useLocale();
   const { isElectron, status, info, progress, error, checkForUpdates, downloadUpdate, installUpdate } = useUpdate();
-  const [localChecking, setLocalChecking] = useState(false);
   const { showNotification } = useNotification();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useMounted();
+  const checkingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [localChecking, setLocalChecking] = useState(false);
 
   const handleCheck = () => {
     setLocalChecking(true);
     checkForUpdates();
-    setTimeout(() => setLocalChecking(false), 3000);
+    if (checkingTimerRef.current) clearTimeout(checkingTimerRef.current);
+    checkingTimerRef.current = setTimeout(() => setLocalChecking(false), 3000);
   };
 
-  const isChecking = status === 'checking' || localChecking;
+  // 实际检查中（外部状态非 idle/checking 时自动停止）
+  const isChecking = (status === 'checking' || localChecking) && status !== 'available'
+    && status !== 'not-available' && status !== 'error' && status !== 'downloaded';
 
-  // 状态变化时重置本地 checking + 弹出通知
+  // 状态变化时弹出通知
   useEffect(() => {
-    if (status !== 'idle' && status !== 'checking') {
-      setLocalChecking(false);
-    }
     if (status === 'available' && info?.version) {
       showNotification(t('update.available'), `v${info.version}`, 'info');
     } else if (status === 'downloaded') {
@@ -67,7 +74,7 @@ export function AboutSettings() {
     } else if (status === 'not-available') {
       showNotification(t('about.upToDate'), '', 'success');
     }
-  }, [status, info, error, t]);
+  }, [status, info, error, t, showNotification]);
 
   return (
     <div className="space-y-8">
