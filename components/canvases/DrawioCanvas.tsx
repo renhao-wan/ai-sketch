@@ -822,23 +822,27 @@ export default function DrawioCanvas({ code, exportRef }: DrawioCanvasProps) {
           clonedSvg.setAttribute('viewBox', `${bounds.x} ${bounds.y} ${bounds.width / scale} ${bounds.height / scale}`);
         }
 
-        // 彻底清理可能导致跨域问题的内容
-        // 1. 移除所有 style 元素
-        clonedSvg.querySelectorAll('style').forEach(s => s.remove());
+        // 清理可能导致跨域问题的内容
+        // 1. 清理 style 元素中的 @import 语句（保留其他样式）
+        clonedSvg.querySelectorAll('style').forEach(s => {
+          if (s.textContent) {
+            s.textContent = s.textContent.replace(/@import[^;]+;/g, '');
+          }
+        });
         // 2. 移除所有 image 元素（可能引用外部资源）
         clonedSvg.querySelectorAll('image').forEach(img => img.remove());
         // 3. 移除所有 use 元素（可能引用外部资源）
         clonedSvg.querySelectorAll('use').forEach(use => use.remove());
-        // 4. 移除所有外部链接引用
+        // 4. 移除 foreignObject（可能导致跨域问题）
+        clonedSvg.querySelectorAll('foreignObject').forEach(fo => fo.remove());
+        // 5. 移除外部链接引用
         clonedSvg.querySelectorAll('*').forEach(el => {
-          // 移除 href 属性（除非是内部引用）
           const href = el.getAttribute('href');
-          if (href && !href.startsWith('#')) {
+          if (href && !href.startsWith('#') && !href.startsWith('data:')) {
             el.removeAttribute('href');
           }
-          // 移除 xlink:href 属性（除非是内部引用）
           const xlinkHref = el.getAttribute('xlink:href');
-          if (xlinkHref && !xlinkHref.startsWith('#')) {
+          if (xlinkHref && !xlinkHref.startsWith('#') && !xlinkHref.startsWith('data:')) {
             el.removeAttribute('xlink:href');
           }
           // 移除所有 on* 事件属性
@@ -848,8 +852,6 @@ export default function DrawioCanvas({ code, exportRef }: DrawioCanvasProps) {
             }
           });
         });
-        // 5. 移除 foreignObject（可能导致跨域问题）
-        clonedSvg.querySelectorAll('foreignObject').forEach(fo => fo.remove());
 
         const svgString = new XMLSerializer().serializeToString(clonedSvg);
 

@@ -32,7 +32,8 @@ function deepCleanSvg(svgEl: SVGSVGElement, width: number, height: number): SVGS
   }
 
   // 安全复制元素，跳过不安全的元素
-  const unsafeTags = new Set(['style', 'image', 'use', 'foreignObject', 'script', 'link']);
+  // 保留 style 元素（清理 @import），移除其他不安全标签
+  const unsafeTags = new Set(['image', 'use', 'foreignObject', 'script', 'link']);
   const unsafeAttrs = new Set(['href', 'xlink:href', 'src', 'data-src']);
 
   function cloneNodeSafe(source: Element, target: Element) {
@@ -52,12 +53,21 @@ function deepCleanSvg(svgEl: SVGSVGElement, width: number, height: number): SVGS
         // 跳过不安全的标签
         if (unsafeTags.has(tagName)) continue;
 
-        // 跳过包含外部引用的元素
-        const href = childEl.getAttribute('href') || childEl.getAttribute('xlink:href');
-        if (href && !href.startsWith('#') && !href.startsWith('data:')) continue;
+        // 跳过包含外部引用的元素（但保留 style）
+        if (tagName !== 'style') {
+          const href = childEl.getAttribute('href') || childEl.getAttribute('xlink:href');
+          if (href && !href.startsWith('#') && !href.startsWith('data:')) continue;
+        }
 
         const newChild = document.createElementNS('http://www.w3.org/2000/svg', tagName);
-        cloneNodeSafe(childEl, newChild);
+
+        // 对于 style 元素，清理 @import 语句但保留其他样式
+        if (tagName === 'style' && child.textContent) {
+          newChild.textContent = child.textContent.replace(/@import[^;]+;/g, '');
+        } else {
+          cloneNodeSafe(childEl, newChild);
+        }
+
         target.appendChild(newChild);
       } else if (child.nodeType === Node.TEXT_NODE) {
         target.appendChild(child.cloneNode(false));

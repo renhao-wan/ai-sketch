@@ -193,9 +193,14 @@ export default function MermaidCanvas({ code, isStreaming, exportRef }: MermaidC
         clonedSvg.setAttribute('width', String(width));
         clonedSvg.setAttribute('height', String(height));
 
-        // 移除所有 style 元素（包含外部字体引用）
+        // 清理 style 元素中的 @import 语句（保留其他样式）
         const styleElements = clonedSvg.querySelectorAll('style');
-        styleElements.forEach(style => style.remove());
+        styleElements.forEach(style => {
+          if (style.textContent) {
+            // 只移除 @import 语句，保留其他样式
+            style.textContent = style.textContent.replace(/@import[^;]+;/g, '');
+          }
+        });
 
         // 移除可能导致跨域问题的属性
         const allElements = clonedSvg.querySelectorAll('*');
