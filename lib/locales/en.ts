@@ -155,7 +155,7 @@ export const en: TranslationDict = {
   'config.ollamaDetectedDesc': 'Found {count} available models, click to add config',
   'config.addOllamaConfig': 'Add Ollama config',
   'config.detectOllama': 'Detect local models',
-  'config.ollamaDefaultName': 'Ollama (Local)',
+  'config.ollamaBatchCreated': 'Created {count} Ollama configs',
   'config.ollamaDefaultDesc': 'Local Ollama model',
 
   // History

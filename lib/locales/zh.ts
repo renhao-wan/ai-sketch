@@ -153,7 +153,7 @@ export const zh = {
   'config.ollamaDetectedDesc': '发现 {count} 个可用模型，点击快速添加配置',
   'config.addOllamaConfig': '添加 Ollama 配置',
   'config.detectOllama': '检测本地模型',
-  'config.ollamaDefaultName': 'Ollama (本地)',
+  'config.ollamaBatchCreated': '已创建 {count} 个 Ollama 配置',
   'config.ollamaDefaultDesc': '本地 Ollama 模型',
 
   // History

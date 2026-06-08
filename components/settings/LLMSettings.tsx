@@ -217,20 +217,39 @@ export function LLMSettings() {
     input.click();
   };
 
-  /** 快速添加 Ollama 配置 */
+  /** 快速添加 Ollama 配置（为每个发现的模型创建独立配置） */
   const handleAddOllama = async () => {
     try {
-      await api.createConfig({
-        name: t('config.ollamaDefaultName'),
-        type: 'ollama',
-        baseUrl: 'http://localhost:11434',
-        apiKey: '',
-        model: ollamaModels[0]?.id || '',
-        description: t('config.ollamaDefaultDesc'),
-      });
+      // 收集现有配置名称，避免重名
+      const existingNames = new Set(configs.map(c => c.name));
+
+      for (const model of ollamaModels) {
+        // 生成唯一名称：优先 "Ollama - modelname"，冲突时加编号
+        let name = `Ollama - ${model.name}`;
+        let counter = 1;
+        while (existingNames.has(name)) {
+          name = `Ollama - ${model.name} (${counter})`;
+          counter++;
+        }
+        existingNames.add(name);
+
+        await api.createConfig({
+          name,
+          type: 'ollama',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          model: model.id,
+          description: t('config.ollamaDefaultDesc'),
+        });
+      }
+
       setOllamaDetected(false);
       await loadConfigs();
-      showNotification(t('config.ollamaDetected'), t('config.ollamaDetectedDesc', { count: ollamaModels.length }), 'success');
+      showNotification(
+        t('config.ollamaDetected'),
+        t('config.ollamaBatchCreated', { count: ollamaModels.length }),
+        'success',
+      );
     } catch (err) {
       setError(t('config.saveFailed') + (err as Error).message);
     }
