@@ -423,20 +423,28 @@ class ConversationManager {
     order?: string;
     limit?: number;
     offset?: number;
+    tagId?: string;
   }): Promise<{
     conversations: Conversation[];
     total: number;
   }> {
     const db = await getDb();
-    const { query, sort = 'updated_at', order = 'desc', limit = 20, offset = 0 } = params;
+    const { query, sort = 'updated_at', order = 'desc', limit = 20, offset = 0, tagId } = params;
 
     // 构建 WHERE 子句
     const whereClauses: string[] = [];
     const queryParams: unknown[] = [];
 
     if (query && query.trim()) {
-      whereClauses.push('LOWER(title) LIKE ?');
+      whereClauses.push('LOWER(c.title) LIKE ?');
       queryParams.push(`%${query.toLowerCase()}%`);
+    }
+
+    // 标签筛选：通过 JOIN conversation_tag_relations 实现
+    let joinClause = '';
+    if (tagId) {
+      joinClause = 'INNER JOIN conversation_tag_relations r ON c.id = r.conversation_id AND r.tag_id = ?';
+      queryParams.unshift(tagId); // 将 tagId 放在参数最前面
     }
 
     const whereStr = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -448,12 +456,12 @@ class ConversationManager {
     const sortOrder = validOrders.includes(order) ? order : 'desc';
 
     // 获取总数
-    const countSql = `SELECT COUNT(*) as total FROM conversations ${whereStr}`;
+    const countSql = `SELECT COUNT(*) as total FROM conversations c ${joinClause} ${whereStr}`;
     const countResult = db.exec(countSql, queryParams);
     const total = countResult.length > 0 ? (countResult[0].values[0][0] as number) : 0;
 
     // 获取分页数据
-    const dataSql = `SELECT * FROM conversations ${whereStr} ORDER BY ${sortField} ${sortOrder} LIMIT ? OFFSET ?`;
+    const dataSql = `SELECT c.* FROM conversations c ${joinClause} ${whereStr} ORDER BY c.${sortField} ${sortOrder} LIMIT ? OFFSET ?`;
     const dataParams = [...queryParams, limit, offset];
     const stmt = db.prepare(dataSql);
     const conversations: Conversation[] = [];

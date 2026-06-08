@@ -5,7 +5,9 @@ import { MessageSquare, ChevronDown, Loader2, Search, X } from 'lucide-react';
 import * as api from '@/lib/api/client';
 import { useLocale } from '@/lib/locales';
 import { timeAgo } from '@/lib/utils/time-ago';
-import type { Conversation } from '@/lib/types';
+import TagBadge from '@/components/ui/TagBadge';
+import TagFilter from '@/components/ui/TagFilter';
+import type { Conversation, ConversationTag } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 interface ConversationListProps {
@@ -34,6 +36,11 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
   const searchInputRef = useRef<HTMLInputElement>(null);
   const offsetRef = useRef(0);
 
+  // 标签相关状态
+  const [tags, setTags] = useState<ConversationTag[]>([]);
+  const [conversationTagsMap, setConversationTagsMap] = useState<Record<string, ConversationTag[]>>({});
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+
   /** 加载会话（首次 or 加载更多） */
   const loadConversations = useCallback(async (reset: boolean) => {
     if (isLoading) return;
@@ -44,6 +51,7 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
         limit: PAGE_SIZE,
         offset,
         search: searchQuery || undefined,
+        tagId: selectedTagId || undefined,
       });
       setConversations(prev => reset ? result.conversations : [...prev, ...result.conversations]);
       setHasMore(result.hasMore);
@@ -53,7 +61,7 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, searchQuery]);
+  }, [isLoading, searchQuery, selectedTagId]);
 
   /** 打开下拉时重置加载 */
   useEffect(() => {
@@ -61,6 +69,7 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
       offsetRef.current = 0;
       setHasMore(true);
       setSearchQuery('');
+      setSelectedTagId(null);
       loadConversations(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- loadConversations 不应在依赖中，避免打开下拉时无限循环
@@ -77,6 +86,50 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- loadConversations 不应在依赖中
   }, [searchQuery]);
+
+  /** 标签筛选变化时重新加载 */
+  useEffect(() => {
+    if (!isOpen) return;
+    offsetRef.current = 0;
+    setHasMore(true);
+    loadConversations(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadConversations 不应在依赖中
+  }, [selectedTagId]);
+
+  /** 加载所有标签 */
+  useEffect(() => {
+    const loadTags = async () => {
+      try {
+        const convTags = await api.fetchConversationTags();
+        setTags(convTags);
+      } catch (err) {
+        console.error('Failed to load tags:', err);
+      }
+    };
+    loadTags();
+  }, []);
+
+  /** 加载当前可见对话的标签 */
+  useEffect(() => {
+    if (!isOpen || conversations.length === 0) return;
+
+    const loadConversationTags = async () => {
+      const tagsMap: Record<string, ConversationTag[]> = {};
+      await Promise.all(
+        conversations.map(async (conv) => {
+          try {
+            const convTags = await api.fetchConversationTagsByIds(conv.id);
+            tagsMap[conv.id] = convTags;
+          } catch {
+            // 静默忽略
+          }
+        }),
+      );
+      setConversationTagsMap(tagsMap);
+    };
+
+    loadConversationTags();
+  }, [isOpen, conversations]);
 
   /** 滚动到底部时加载更多 */
   const handleScroll = useCallback(() => {
@@ -138,6 +191,17 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
               </div>
             </div>
 
+            {/* Tag filter */}
+            {tags.length > 0 && (
+              <div className="px-3 py-2 border-b border-black/5">
+                <TagFilter
+                  tags={tags}
+                  selectedTagId={selectedTagId}
+                  onChange={setSelectedTagId}
+                />
+              </div>
+            )}
+
             {/* List */}
             <div
               ref={scrollContainerRef}
@@ -152,6 +216,7 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
                 <>
                   {conversations.map((conv) => {
                     const badge = FORMAT_BADGES[conv.format] || FORMAT_BADGES.excalidraw;
+                    const convTags = conversationTagsMap[conv.id] || [];
                     return (
                       <div
                         key={conv.id}
@@ -167,6 +232,17 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
                             </span>
                             <span className="text-sm text-[var(--fg)] truncate">{conv.title}</span>
                           </div>
+                          {/* 标签显示 */}
+                          {convTags.length > 0 && (
+                            <div className="flex items-center gap-1 mb-0.5 flex-wrap">
+                              {convTags.slice(0, 3).map(tag => (
+                                <TagBadge key={tag.id} name={tag.name} color={tag.color} size="sm" />
+                              ))}
+                              {convTags.length > 3 && (
+                                <span className="text-[10px] text-[var(--muted)]">+{convTags.length - 3}</span>
+                              )}
+                            </div>
+                          )}
                           <div className="flex items-center gap-2 text-[11px] text-[var(--muted)]">
                             <span>{conv.messageCount} {t('conversation.messages')}</span>
                             <span>{timeAgo(conv.updatedAt, t)}</span>

@@ -132,6 +132,7 @@ export async function fetchConversations(params?: {
   order?: string;
   limit?: number;
   offset?: number;
+  tagId?: string;
 }): Promise<{
   conversations: Conversation[];
   total: number;
@@ -144,6 +145,7 @@ export async function fetchConversations(params?: {
   if (params?.order) searchParams.set('order', params.order);
   if (params?.limit) searchParams.set('limit', String(params.limit));
   if (params?.offset) searchParams.set('offset', String(params.offset));
+  if (params?.tagId) searchParams.set('tagId', params.tagId);
 
   const url = `/api/conversations${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
   return request(url);

@@ -14,6 +14,7 @@ export const GET = withErrorHandling(async (request: Request) => {
   const order = searchParams.get('order') || 'desc';
   const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : 20;
   const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!, 10) : 0;
+  const tagId = searchParams.get('tagId') || undefined;
 
   const result = await conversationManager.search({
     query,
@@ -21,6 +22,7 @@ export const GET = withErrorHandling(async (request: Request) => {
     order,
     limit,
     offset,
+    tagId,
   });
 
   const hasMore = offset + limit < result.total;
