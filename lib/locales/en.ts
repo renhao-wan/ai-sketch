@@ -380,6 +380,8 @@ export const en: TranslationDict = {
   'settings.glowEffectDesc': 'Dynamic glow decoration on page background',
   'settings.llm': 'LLM',
   'settings.llmDesc': 'Manage AI model provider settings',
+  'settings.tags': 'Tag Management',
+  'settings.tagsDesc': 'Manage tags for conversations and configurations',
   'settings.conversationsTabDesc': 'Manage conversation history',
   'settings.data': 'Data',
   'settings.dataDesc': 'Storage statistics',

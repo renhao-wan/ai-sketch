@@ -378,6 +378,8 @@ export const zh = {
   'settings.glowEffectDesc': '页面背景的动态光晕装饰',
   'settings.llm': 'LLM 配置',
   'settings.llmDesc': '管理 AI 模型提供商配置',
+  'settings.tags': '标签管理',
+  'settings.tagsDesc': '管理对话和配置的标签',
   'settings.conversationsTabDesc': '管理会话历史记录',
   'settings.data': '数据管理',
   'settings.dataDesc': '存储统计',

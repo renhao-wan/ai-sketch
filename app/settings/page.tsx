@@ -12,6 +12,7 @@ import ConversationSettings from '@/components/settings/ConversationSettings';
 import DataSettings from '@/components/settings/DataSettings';
 import { KeyboardShortcutsSettings } from '@/components/settings/KeyboardShortcutsSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
+import { TagSettings } from '@/components/settings/TagSettings';
 import { Search } from 'lucide-react';
 import WindowControls from '@/components/layout/WindowControls';
 import { AppIcon } from '@/components/layout/TopBar';
@@ -20,11 +21,12 @@ import Tooltip from '@/components/ui/Tooltip';
 // 动态导入重型设置组件（按需加载）
 const LLMSettings = dynamic(() => import('@/components/settings/LLMSettings').then(mod => ({ default: mod.LLMSettings })), { ssr: false });
 
-const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'network', 'conversations', 'data', 'shortcuts', 'about'];
+const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'tags', 'network', 'conversations', 'data', 'shortcuts', 'about'];
 
 const tabDescriptions: Record<SettingsTab, TranslationKey> = {
   appearance: 'settings.appearanceDesc',
   llm: 'settings.llmDesc',
+  tags: 'settings.tagsDesc',
   network: 'settings.networkDesc',
   conversations: 'settings.conversationsTabDesc',
   data: 'settings.dataDesc',
@@ -65,6 +67,7 @@ export default function SettingsPage() {
   const tabs: { key: SettingsTab; component: React.ReactNode }[] = [
     { key: 'appearance', component: <AppearanceSettings /> },
     { key: 'llm', component: <LLMSettings /> },
+    { key: 'tags', component: <TagSettings /> },
     { key: 'network', component: <NetworkSettings /> },
     { key: 'conversations', component: <ConversationSettings /> },
     { key: 'data', component: <DataSettings /> },
