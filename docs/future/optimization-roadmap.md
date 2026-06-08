@@ -533,13 +533,246 @@ useEffect(() => {
 
 ---
 
-### 6.3 Draw.io 画布
+### 6.3 Draw.io 画布（已重构）
 
-| # | 问题 | 严重度 | 改进方案 |
-|---|------|--------|----------|
-| 依赖外部 embed.diagrams.net | 中等 | 考虑本地化 Draw.io 编辑器 |
-| 只读模式 | 中等 | 评估是否需要支持编辑 |
-| CSS transform 缩放 | 轻微 | 改用 Draw.io 原生缩放 API |
+#### 问题 1：事件监听器内存泄漏（严重）
+
+**位置**：`components/canvases/DrawioCanvas.tsx` 第 155-158 行、523-524 行、535-536 行
+
+**现状**：
+- `pointermove` 和 `pointerup` 注册在 `window` 上，但仅在 `pointerup` 事件中清理
+- 如果组件卸载时没有触发 `pointerup`（如用户切换页面），监听器会永久残留
+- `graph.addListener` 返回的监听器对象清理方式可能不正确
+
+**改进方案**：
+
+```typescript
+// 在 useEffect 的清理函数中统一处理
+useEffect(() => {
+  const moveHandlers: Array<(e: PointerEvent) => void> = [];
+  const upHandlers: Array<(e: PointerEvent) => void> = [];
+
+  // 注册监听器时保存引用
+  const handlePointerDown = (e: PointerEvent) => {
+    const handleMove = (ev: PointerEvent) => { /* ... */ };
+    const handleUp = (ev: PointerEvent) => {
+      // 清理
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+    };
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+    moveHandlers.push(handleMove);
+    upHandlers.push(handleUp);
+  };
+
+  container.addEventListener('pointerdown', handlePointerDown);
+
+  return () => {
+    // 组件卸载时清理所有监听器
+    container.removeEventListener('pointerdown', handlePointerDown);
+    moveHandlers.forEach(h => window.removeEventListener('pointermove', h));
+    upHandlers.forEach(h => window.removeEventListener('pointerup', h));
+  };
+}, []);
+```
+
+---
+
+#### 问题 2：selectionBox 可能残留（中等）
+
+**位置**：`DrawioCanvas.tsx` 第 295-302 行、404 行
+
+**现状**：
+- `selectionBox` 创建后附加到 `document.body`
+- 如果组件卸载时 selectionBox 仍然存在，它会残留在 DOM 中
+- 虽然 `onPointerUp` 中有移除逻辑，但组件卸载路径未覆盖
+
+**改进方案**：
+
+```typescript
+// useEffect 清理函数中添加
+return () => {
+  // 清理 selectionBox
+  if (drawState.current.selectionBox) {
+    drawState.current.selectionBox.remove();
+    drawState.current.selectionBox = null;
+  }
+  // 清理预览单元
+  if (drawState.current.previewCell && graphRef.current) {
+    graphRef.current.removeCells([drawState.current.previewCell]);
+  }
+};
+```
+
+---
+
+#### 问题 3：箭头端点未自动删除（中等）
+
+**位置**：`DrawioCanvas.tsx` 第 444-450 行、480-505 行
+
+**现状**：
+- 创建箭头时会生成透明的 2x2 端点顶点
+- 这些端点会永久保留在画布上，无法删除（删除会破坏边的连接）
+- 用户明确要求"端点自动消失"，当前实现不满足需求
+
+**影响**：
+- 画布上积累大量不可见的微小顶点
+- 用户无法通过常规方式清理这些残留物
+- 影响用户体验
+
+**改进方案**：
+
+```typescript
+// 方案 A：使用绝对坐标边（推荐）
+// 创建边时不使用端点顶点，而是设置绝对终端点
+const edge = graph.insertEdge({
+  parent,
+  value: '',
+  source: null,
+  target: null,
+  style: {
+    strokeColor: 'var(--primary)',
+    strokeWidth: 2,
+    endArrow: 'block',
+  },
+});
+// 设置绝对起点和终点
+edge.getGeometry().setTerminalPoint(new Point(startX, startY), true);
+edge.getGeometry().setTerminalPoint(new Point(endX, startY), false);
+
+// 方案 B：延迟删除端点
+// 在边创建后，延迟删除端点（需要处理几何变换）
+setTimeout(() => {
+  const dm = graph.getDataModel();
+  dm.beginUpdate();
+  try {
+    // 先断开端点连接
+    dm.setTerminal(edge, null, true);
+    dm.setTerminal(edge, null, false);
+    // 删除端点顶点
+    graph.removeCells([source!, target!]);
+  } finally {
+    dm.endUpdate();
+  }
+}, 0);
+```
+
+---
+
+#### 问题 4：硬编码魔法数字（轻微）
+
+**位置**：`DrawioCanvas.tsx` 多处
+
+**现状**：
+- `width: 2, height: 2` — 箭头端点尺寸
+- `5` — 最小拖拽距离阈值
+- `10000` — 框选框 z-index
+- `120, 60` — 默认形状尺寸
+- `150` — 箭头样式 strokeWidth
+
+**改进方案**：
+
+```typescript
+// 在文件顶部定义常量
+const DRAW_CONSTANTS = {
+  ARROW_ENDPOINT_SIZE: 2,
+  MIN_DRAG_DISTANCE: 5,
+  SELECTION_BOX_Z_INDEX: 10000,
+  DEFAULT_SHAPE_WIDTH: 120,
+  DEFAULT_SHAPE_HEIGHT: 60,
+} as const;
+
+// 使用时引用常量
+width: DRAW_CONSTANTS.ARROW_ENDPOINT_SIZE,
+height: DRAW_CONSTANTS.ARROW_ENDPOINT_SIZE,
+```
+
+---
+
+#### 问题 5：颜色值不一致（轻微）
+
+**位置**：`DrawioCanvas.tsx` 第 77-78 行、121 行
+
+**现状**：
+- `SHAPE_STYLES.arrow` 使用硬编码颜色 `#4A90D9`
+- 其他样式使用 CSS 变量 `var(--primary)`
+- `handleConfig` 和 `edgeHandleConfig` 使用硬编码颜色
+
+**改进方案**：
+
+```typescript
+// 统一使用 CSS 变量
+arrow: {
+  shape: 'edge',
+  strokeColor: 'var(--primary)',  // 改为 CSS 变量
+  strokeWidth: 2,
+  endArrow: 'block',
+  endFill: 1,
+},
+
+// handleConfig 需要在运行时获取实际颜色值
+const primaryColor = getComputedStyle(document.documentElement)
+  .getPropertyValue('--primary').trim();
+
+HandleConfig.fillColor = primaryColor;
+HandleConfig.strokeColor = primaryColor;
+```
+
+---
+
+#### 问题 6：框选框位置可能偏移（轻微）
+
+**位置**：`DrawioCanvas.tsx` 第 295-302 行
+
+**现状**：
+- `selectionBox` 使用 `position: fixed`，坐标基于视口
+- 如果页面有滚动，框选位置可能与实际鼠标位置不一致
+- `pointerEvents: 'none'` 阻止了鼠标事件穿透
+
+**改进方案**：
+
+```typescript
+// 使用 position: absolute 并相对于画布容器
+const containerRect = containerRef.current.getBoundingClientRect();
+const selectionBox = document.createElement('div');
+selectionBox.style.cssText = `
+  position: absolute;
+  left: ${containerRect.left}px;
+  top: ${containerRect.top}px;
+  width: 0;
+  height: 0;
+  border: 1px solid var(--primary);
+  background-color: rgba(74, 144, 217, 0.1);
+  z-index: ${DRAW_CONSTANTS.SELECTION_BOX_Z_INDEX};
+  pointer-events: none;
+`;
+// 附加到容器而非 body
+containerRef.current.appendChild(selectionBox);
+```
+
+---
+
+#### 问题 7：中英文注释混用（轻微）
+
+**位置**：`DrawioCanvas.tsx` 全文
+
+**现状**：
+- 大部分注释使用中文
+- 但有一些英文注释如 "// Move handlers reference for cleanup"、"// Handle pointer events"
+- 不符合项目规范
+
+**改进方案**：统一使用中文注释，删除或翻译英文注释。
+
+---
+
+#### 其他 Draw.io 问题
+
+| # | 问题 | 严重度 | 改进方案 | 状态 |
+|---|------|--------|----------|------|
+| 依赖外部 embed.diagrams.net | 中等 | 考虑本地化 Draw.io 编辑器 | ❌ 已移除外部依赖 |
+| 只读模式 | 中等 | 现已支持完整编辑功能 | ✅ 已实现 |
+| CSS transform 缩放 | 轻微 | 改用 maxgraph 原生缩放 API | ❌ |
 
 ---
 
@@ -698,6 +931,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 19 | Excalidraw 流式期间每个元素完整重绘 | Excalidraw 画布 | ❌ |
 | 20 | onMaximizeChange 监听器泄漏 | Electron | ✅ |
 | 21 | NSIS 卸载路径错误 | Electron | ✅ |
+| 35 | Draw.io 事件监听器内存泄漏 | Draw.io 画布 | ✅ |
 | 6 | 数据库写放大 → 防抖模式 | 数据库 | ✅ |
 | 7 | closeDb() 在 Electron 退出前调用 | 数据库/Electron | ✅ |
 | 8 | Temperature 改为可配置参数 | LLM 客户端 | ✅ |
@@ -711,18 +945,16 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 4. **Excalidraw 流式 debounce** — 影响渲染性能和用户体验
 5. **截断通知 role 修正** — 破坏 user/assistant 交替规则
 
-### 🟡 中等问题（7 项）
+### 🟡 中等问题（6 项）
 
 详见附录 A，主要集中在：
 - 上下文管理（截断通知 role、首条消息格式化、图片 base64 存储）
 - 画布（scrollToContent 跳动、元素转换失败静默吞没）
 - 输入策略（FileStrategy 编码/截断）
-- Draw.io（外部依赖）
 
-### 🟢 轻微问题（1 项）
+### 🟢 轻微问题（0 项）
 
-详见附录 A：
-- Draw.io（CSS transform 缩放）
+无
 
 ---
 
@@ -731,7 +963,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 > **图例**: ✅ 已完成 | ❌ 未开始
 > **严重度**: 🔴 严重 | 🟡 中等 | 🟢 轻微
 
-### ✅ 已完成（43 项）
+### ✅ 已完成（61 项）
 
 | # | 优化项 | 严重度 | 完成日期 | 备注 |
 |---|--------|--------|----------|------|
@@ -778,6 +1010,24 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 41 | ID 生成改用 crypto.randomUUID() | 🟢 | 2026-06-05 | 消除 Date.now+Math.random 碰撞风险 |
 | 42 | useState 碎片化 → useReducer | 🟡 | 2026-06-05 | config/result 状态改用 reducer，14→8 useState |
 | 43 | sessionStorage 类型约束 | 🟢 | 2026-06-05 | init-data.ts 已有 InitData 接口，类型安全 |
+| 44 | Draw.io 画布完全重写 | 🔴 | 2026-06-06 | 移除 embed.diagrams.net 外部依赖，使用 maxgraph 实现 |
+| 45 | Draw.io 拖拽创建形状 | 🟡 | 2026-06-06 | 矩形、椭圆、菱形、文本框支持拖拽创建 |
+| 46 | Draw.io 拖拽创建箭头 | 🟡 | 2026-06-06 | 支持拖拽创建箭头，带预览线和透明端点 |
+| 47 | Draw.io 框选功能 | 🟡 | 2026-06-06 | 选择工具支持拖拽框选多个元素 |
+| 48 | Draw.io 蓝色选中样式 | 🟢 | 2026-06-06 | 选中手柄和边框改为蓝色圆点样式 |
+| 49 | Draw.io 右键菜单 | 🟡 | 2026-06-06 | 支持编辑标签、复制、删除、粘贴等操作 |
+| 50 | Draw.io 快捷键支持 | 🟢 | 2026-06-06 | Delete/Backspace 删除，Escape 取消操作 |
+| 51 | Draw.io 事件监听器内存泄漏修复 | 🔴 | 2026-06-06 | 使用 addTrackedEventListener 统一管理，组件卸载时全部清理 |
+| 52 | Draw.io selectionBox 残留修复 | 🟡 | 2026-06-06 | 组件卸载时在 cleanupDrawState 中移除 |
+| 53 | Draw.io 箭头端点改为绝对坐标边 | 🟡 | 2026-06-06 | 不再创建临时端点顶点，使用 setTerminalPoint 设置绝对坐标 |
+| 54 | Draw.io 框选框位置修复 | 🟡 | 2026-06-06 | 使用 position: fixed + 视口坐标，不受页面滚动影响 |
+| 55 | Draw.io 颜色值统一 | 🟡 | 2026-06-06 | 提取 THEME_COLORS 常量，统一使用主题色 |
+| 56 | Draw.io 硬编码数字提取为常量 | 🟡 | 2026-06-06 | 提取 DRAW_CONSTANTS 对象，包含所有魔法数字 |
+| 57 | Draw.io 注释统一为中文 | 🟡 | 2026-06-06 | 所有英文注释翻译为中文，添加 JSDoc 注释 |
+| 58 | Draw.io Graph 初始化错误处理 | 🟢 | 2026-06-06 | 添加 waitForContainerSize + ResizeObserver，防止无限循环 |
+| 59 | Draw.io 全局配置函数提取 | 🟢 | 2026-06-06 | configureMaxgraphStyles 提取为独立函数，仅执行一次 |
+| 60 | Draw.io TypeScript 类型完善 | 🟢 | 2026-06-06 | 添加函数返回值类型、参数类型注解 |
+| 61 | Draw.io 原生缩放功能实现 | 🟢 | 2026-06-06 | 使用 maxgraph 原生 API，支持滚轮缩放、按钮缩放、适应视图 |
 
 ### ❌ 未完成 — 严重（6 项）
 
@@ -790,7 +1040,7 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 18 | Mermaid 14/21 种类型降级为 flowchart | Mermaid 画布 | `MERMAID_TYPE_MAP` 未改 |
 | 19 | Excalidraw 流式每元素完整重绘 | Excalidraw 画布 | `feed()` 无 debounce，每元素调 `updateScene` |
 
-### ❌ 未完成 — 中等（7 项）
+### ❌ 未完成 — 中等（6 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
@@ -800,13 +1050,10 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 25 | scrollToContent 流式期间每元素调用 | Excalidraw 画布 | 画布视角不断跳动 |
 | 26 | 元素转换失败静默吞没 | Excalidraw 画布 | `catch { /* skip */ }` 无日志无提示 |
 | 27 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
-| 28 | Draw.io 依赖外部 embed.diagrams.net | Draw.io 画布 | 需联网，考虑本地化 |
 
-### ❌ 未完成 — 轻微（1 项）
+### ❌ 未完成 — 轻微（0 项）
 
-| # | 优化项 | 模块 | 说明 |
-|---|--------|------|------|
-| 34 | Draw.io CSS transform 缩放 | Draw.io 画布 | 应改用原生缩放 API |
+无
 
 ---
 
@@ -827,6 +1074,8 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | Electron 主进程 | `electron/main.ts` |
 | Electron 预加载 | `electron/preload.ts` |
 | Excalidraw 画布 | `components/canvases/ExcalidrawCanvas.tsx` |
+| Draw.io 画布 | `components/canvases/DrawioCanvas.tsx` |
+| Draw.io 工具栏 | `components/canvases/DrawioToolbar.tsx` |
 | Mermaid 画布 | `components/canvases/MermaidCanvas.tsx` |
 | 消息气泡 | `components/ai/MessageBubble.tsx` |
 | 窗口控制 | `components/layout/WindowControls.tsx` |
