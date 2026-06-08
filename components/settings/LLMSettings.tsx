@@ -396,7 +396,7 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
 
   /** 从 API 加载可用模型列表 */
   const handleLoadModels = async () => {
-    if (!formData.type || !formData.baseUrl || !formData.apiKey) {
+    if (!formData.type || !formData.baseUrl || (formData.type !== 'ollama' && !formData.apiKey)) {
       setError(t('config.fillRequired'));
       return;
     }
@@ -422,7 +422,12 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
 
   /** 保存配置（校验必填字段） */
   const handleSave = () => {
-    if (!formData.name || !formData.type || !formData.baseUrl || !formData.apiKey || !formData.model) {
+    if (!formData.name || !formData.type || !formData.baseUrl || !formData.model) {
+      setError(t('config.fillAllRequired'));
+      return;
+    }
+    // Ollama 不需要 API Key
+    if (formData.type !== 'ollama' && !formData.apiKey) {
       setError(t('config.fillAllRequired'));
       return;
     }
@@ -483,9 +488,9 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
         <div>
           <label htmlFor="configProviderType" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.providerType')} <span className="text-red-500">*</span></label>
           <Dropdown
-            options={[{ value: 'openai', label: 'OpenAI' }, { value: 'anthropic', label: 'Anthropic' }]}
+            options={[{ value: 'openai', label: 'OpenAI' }, { value: 'anthropic', label: 'Anthropic' }, { value: 'ollama', label: 'Ollama' }]}
             value={formData.type || 'openai'}
-            onChange={(v) => setFormData({ ...formData, type: v as 'openai' | 'anthropic', model: '' })}
+            onChange={(v) => setFormData({ ...formData, type: v as 'openai' | 'anthropic' | 'ollama', model: '' })}
           />
         </div>
 
@@ -496,13 +501,13 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
             type="text"
             value={formData.baseUrl || ''}
             onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
-            placeholder={formData.type === 'openai' ? 'https://api.openai.com/v1' : 'https://api.anthropic.com/v1'}
+            placeholder={formData.type === 'openai' ? 'https://api.openai.com/v1' : formData.type === 'ollama' ? 'http://localhost:11434' : 'https://api.anthropic.com/v1'}
             className={inputClass}
           />
         </div>
 
         <div>
-          <label htmlFor="configApiKey" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.apiKey')} <span className="text-red-500">*</span></label>
+          <label htmlFor="configApiKey" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.apiKey')} {formData.type !== 'ollama' && <span className="text-red-500">*</span>}</label>
           <input
             id="configApiKey"
             type="password"

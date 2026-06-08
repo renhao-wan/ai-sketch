@@ -3,10 +3,11 @@ import { getProvider, getRegisteredTypes } from './registry';
 
 describe('registry', () => {
   describe('getRegisteredTypes', () => {
-    it('应包含 openai 和 anthropic', () => {
+    it('应包含 openai、anthropic 和 ollama', () => {
       const types = getRegisteredTypes();
       expect(types).toContain('openai');
       expect(types).toContain('anthropic');
+      expect(types).toContain('ollama');
     });
   });
 
@@ -19,6 +20,11 @@ describe('registry', () => {
     it('应返回 Anthropic provider', () => {
       const provider = getProvider('anthropic');
       expect(provider.type).toBe('anthropic');
+    });
+
+    it('应返回 Ollama provider', () => {
+      const provider = getProvider('ollama');
+      expect(provider.type).toBe('ollama');
     });
 
     it('不支持的类型应抛出错误', () => {

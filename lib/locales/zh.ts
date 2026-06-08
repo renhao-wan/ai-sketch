@@ -140,7 +140,7 @@ export const zh = {
   'config.bannerTitle': '配置较多，建议清理',
   'config.bannerDescription': '您已有 {count} 个配置，建议清理不常用的配置。',
   'config.validation.nameRequired': '配置名称不能为空',
-  'config.validation.invalidType': '配置类型必须是 openai 或 anthropic',
+  'config.validation.invalidType': '配置类型必须是 openai、anthropic 或 ollama',
   'config.validation.urlRequired': 'API地址不能为空',
   'config.validation.urlInvalid': 'API地址格式不正确',
   'config.validation.apiKeyRequired': 'API密钥不能为空',

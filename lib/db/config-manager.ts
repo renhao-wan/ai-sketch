@@ -37,7 +37,7 @@ function rowToConfig(row: Record<string, unknown>): LLMConfig {
   return {
     id: row.id as string,
     name: row.name as string,
-    type: row.type as 'openai' | 'anthropic',
+    type: row.type as 'openai' | 'anthropic' | 'ollama',
     baseUrl: row.base_url as string,
     apiKey,
     model: row.model as string,
@@ -243,8 +243,8 @@ class ConfigManager {
     if (!config.name || config.name.trim() === '') {
       errors.push('配置名称不能为空');
     }
-    if (!config.type || !['openai', 'anthropic'].includes(config.type)) {
-      errors.push('配置类型必须是 openai 或 anthropic');
+    if (!config.type || !['openai', 'anthropic', 'ollama'].includes(config.type)) {
+      errors.push('配置类型必须是 openai、anthropic 或 ollama');
     }
     if (!config.baseUrl || config.baseUrl.trim() === '') {
       errors.push('API地址不能为空');
@@ -255,7 +255,8 @@ class ConfigManager {
         errors.push('API地址格式不正确');
       }
     }
-    if (!config.apiKey || config.apiKey.trim() === '') {
+    // Ollama 不需要 API Key
+    if (config.type !== 'ollama' && (!config.apiKey || config.apiKey.trim() === '')) {
       errors.push('API密钥不能为空');
     }
     if (!config.model || config.model.trim() === '') {

@@ -12,7 +12,7 @@ interface OpenAIMessage {
 }
 
 export class OpenAIProvider implements LLMProvider {
-  readonly type = 'openai';
+  readonly type: string = 'openai';
 
   buildRequestHeaders(apiKey: string): Record<string, string> {
     return {

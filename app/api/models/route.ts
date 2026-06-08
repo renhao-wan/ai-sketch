@@ -31,17 +31,26 @@ export const GET = withErrorHandling(async (request: Request) => {
  * POST /api/models
  * 通过请求体传递配置获取模型（API Key 不走 URL）
  * Body: { type, baseUrl, apiKey }
+ * Ollama 不需要 apiKey
  */
 export const POST = withErrorHandling(async (request: Request) => {
   const { type, baseUrl, apiKey } = await request.json();
 
-  if (!type || !baseUrl || !apiKey) {
+  if (!type || !baseUrl) {
     return NextResponse.json(
-      { error: '缺少必要参数: type, baseUrl, apiKey' },
+      { error: '缺少必要参数: type, baseUrl' },
       { status: 400 },
     );
   }
 
-  const models = await fetchModels(type, baseUrl, apiKey);
+  // Ollama 不需要 API Key，其他 provider 必须提供
+  if (type !== 'ollama' && !apiKey) {
+    return NextResponse.json(
+      { error: '缺少必要参数: apiKey' },
+      { status: 400 },
+    );
+  }
+
+  const models = await fetchModels(type, baseUrl, apiKey || '');
   return NextResponse.json({ models });
 }, '/api/models POST');

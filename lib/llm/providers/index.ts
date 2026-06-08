@@ -6,4 +6,5 @@
 export type { LLMProvider, SSEExtractors } from './types';
 export { OpenAIProvider } from './openai';
 export { AnthropicProvider } from './anthropic';
+export { OllamaProvider } from './ollama';
 export { getProvider, getRegisteredTypes } from './registry';

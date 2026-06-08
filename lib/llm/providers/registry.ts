@@ -6,11 +6,13 @@
 import type { LLMProvider } from './types';
 import { OpenAIProvider } from './openai';
 import { AnthropicProvider } from './anthropic';
+import { OllamaProvider } from './ollama';
 
 /** Provider 注册表 */
 const providers: Record<string, LLMProvider> = {
   openai: new OpenAIProvider(),
   anthropic: new AnthropicProvider(),
+  ollama: new OllamaProvider(),
 };
 
 /**

@@ -142,7 +142,7 @@ export const en: TranslationDict = {
   'config.bannerTitle': 'Many configurations, consider cleanup',
   'config.bannerDescription': 'You have {count} configurations. Consider cleaning up unused ones.',
   'config.validation.nameRequired': 'Config name is required',
-  'config.validation.invalidType': 'Provider type must be openai or anthropic',
+  'config.validation.invalidType': 'Provider type must be openai, anthropic or ollama',
   'config.validation.urlRequired': 'API URL is required',
   'config.validation.urlInvalid': 'Invalid API URL format',
   'config.validation.apiKeyRequired': 'API key is required',
