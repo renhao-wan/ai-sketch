@@ -11,7 +11,10 @@ import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 import CountBanner from '@/components/ui/CountBanner';
 import { useCountBanner } from '@/hooks/useCountBanner';
-import type { LLMConfig, ModelInfo, ConfirmDialogState } from '@/lib/types';
+import TagBadge from '@/components/ui/TagBadge';
+import TagCloudSelector from '@/components/ui/TagCloudSelector';
+import TagFilter from '@/components/ui/TagFilter';
+import type { LLMConfig, ModelInfo, ConfirmDialogState, ConfigTag } from '@/lib/types';
 
 /** ConfigEditor 子组件的 Props */
 interface ConfigEditorProps {
@@ -47,6 +50,10 @@ export function LLMSettings() {
   const [ollamaDetected, setOllamaDetected] = useState(false);
   const [ollamaModels, setOllamaModels] = useState<{ id: string; name: string }[]>([]);
   const [ollamaCreating, setOllamaCreating] = useState(false);
+  const [tags, setTags] = useState<ConfigTag[]>([]);
+  const [configTagsMap, setConfigTagsMap] = useState<Record<string, ConfigTag[]>>({});
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const [showTagSelector, setShowTagSelector] = useState<string | null>(null); // configId
 
   const { showBanner, handleDismissBanner } = useCountBanner({
     count: configs.length,
@@ -104,6 +111,41 @@ export function LLMSettings() {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // 加载标签
+  useEffect(() => {
+    const loadTags = async () => {
+      try {
+        const cfgTags = await api.fetchConfigTags();
+        setTags(cfgTags);
+      } catch (err) {
+        console.error('Failed to load tags:', err);
+      }
+    };
+    loadTags();
+  }, []);
+
+  // 加载配置标签
+  useEffect(() => {
+    if (configs.length === 0) return;
+
+    const loadConfigTags = async () => {
+      const tagsMap: Record<string, ConfigTag[]> = {};
+      await Promise.all(
+        configs.map(async (config) => {
+          try {
+            const cfgTags = await api.fetchConfigTagsByIds(config.id!);
+            tagsMap[config.id!] = cfgTags;
+          } catch {
+            // 静默忽略
+          }
+        }),
+      );
+      setConfigTagsMap(tagsMap);
+    };
+
+    loadConfigTags();
+  }, [configs]);
 
   /** 新建配置 */
   const handleCreateNew = () => {
@@ -280,14 +322,25 @@ export function LLMSettings() {
   };
 
   /** 根据搜索关键词过滤配置，并将活跃配置置顶 */
-  const filteredConfigs = useMemo(() => (searchQuery
-    ? configs.filter(c =>
-        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (c.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.type.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : configs
-  ).sort((a, b) => (a.id === activeConfigId ? -1 : b.id === activeConfigId ? 1 : 0)), [configs, searchQuery, activeConfigId]);
+  const filteredConfigs = useMemo(() => {
+    let result = searchQuery
+      ? configs.filter(c =>
+          c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (c.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          c.type.toLowerCase().includes(searchQuery.toLowerCase()),
+        )
+      : configs;
+
+    // 按标签筛选
+    if (selectedTagId) {
+      result = result.filter(c => {
+        const cfgTags = configTagsMap[c.id!] || [];
+        return cfgTags.some(tag => tag.id === selectedTagId);
+      });
+    }
+
+    return result.sort((a, b) => (a.id === activeConfigId ? -1 : b.id === activeConfigId ? 1 : 0));
+  }, [configs, searchQuery, activeConfigId, selectedTagId, configTagsMap]);
 
   return (
     <div className="h-full flex flex-col">
@@ -363,6 +416,17 @@ export function LLMSettings() {
         />
       </div>
 
+      {/* Tag filter */}
+      {tags.length > 0 && (
+        <div className="mb-4">
+          <TagFilter
+            tags={tags}
+            selectedTagId={selectedTagId}
+            onChange={setSelectedTagId}
+          />
+        </div>
+      )}
+
       {/* 可滚动的配置列表 */}
       <ScrollToTop className="flex-1 overflow-y-auto scrollbar-thin pt-2">
         <div className="space-y-2">
@@ -371,8 +435,10 @@ export function LLMSettings() {
               {searchQuery ? t('config.noMatch') : t('config.noConfig')}
             </div>
           ) : (
-            filteredConfigs.map((config) => (
-              <div
+            filteredConfigs.map((config) => {
+              const cfgTags = configTagsMap[config.id!] || [];
+              return (
+                <div
                 key={config.id}
                 className={`group p-4 rounded-2xl border transition-all duration-200 ${
                   config.id === activeConfigId
@@ -392,6 +458,41 @@ export function LLMSettings() {
                       <span className="px-2 py-0.5 text-[11px] bg-[var(--surface-warm-hover)] text-[var(--muted)] rounded-lg flex-shrink-0">
                         {config.type}
                       </span>
+                    </div>
+                    {/* 标签显示 */}
+                    <div className="flex items-center gap-1 mb-1.5 flex-wrap relative">
+                      {cfgTags.slice(0, 3).map(tag => (
+                        <TagBadge key={tag.id} name={tag.name} color={tag.color} size="sm" />
+                      ))}
+                      {cfgTags.length > 3 && (
+                        <span className="text-[10px] text-[var(--muted)]">+{cfgTags.length - 3}</span>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowTagSelector(showTagSelector === config.id ? null : config.id!);
+                        }}
+                        className="w-5 h-5 flex items-center justify-center rounded-full text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+                      >
+                        <Plus size={12} />
+                      </button>
+                      {/* 标签选择器 */}
+                      {showTagSelector === config.id && (
+                        <TagCloudSelector
+                          tags={tags}
+                          selectedTagIds={cfgTags.map(t => t.id)}
+                          onChange={async (tagIds) => {
+                            try {
+                              await api.setConfigTags(config.id!, tagIds);
+                              const updatedTags = await api.fetchConfigTagsByIds(config.id!);
+                              setConfigTagsMap(prev => ({ ...prev, [config.id!]: updatedTags }));
+                            } catch (err) {
+                              console.error('Failed to update config tags:', err);
+                            }
+                          }}
+                          onClose={() => setShowTagSelector(null)}
+                        />
+                      )}
                     </div>
                     {config.description && (
                       <p className="text-xs text-[var(--muted)] mb-1.5 truncate">{config.description}</p>
@@ -450,8 +551,8 @@ export function LLMSettings() {
                   </div>
                 </div>
               </div>
-            ))
-          )}
+            );
+          }))}
         </div>
       </ScrollToTop>
 
