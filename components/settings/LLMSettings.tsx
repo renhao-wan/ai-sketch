@@ -454,22 +454,37 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
 
   /** 从 API 加载可用模型列表 */
   const handleLoadModels = async () => {
-    if (!formData.type || !formData.baseUrl || (formData.type !== 'ollama' && !formData.apiKey)) {
+    if (!formData.type || !formData.baseUrl) {
+      setError(t('config.fillRequired'));
+      return;
+    }
+    // 非 Ollama 需要 API Key
+    if (formData.type !== 'ollama' && !formData.apiKey) {
       setError(t('config.fillRequired'));
       return;
     }
     setLoading(true);
     setError('');
     try {
-      // 使用 POST 请求避免 API Key 出现在 URL 中
-      const response = await fetch('/api/models', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: formData.type, baseUrl: formData.baseUrl, apiKey: formData.apiKey }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || t('config.loadModelFailed'));
-      setModels(data.models);
+      let modelsData: ModelInfo[];
+      if (formData.type === 'ollama') {
+        // Ollama 使用专用检测端点
+        const res = await fetch('/api/ollama/detect', { method: 'POST' });
+        const data = await res.json();
+        if (!data.detected) throw new Error(data.error || '未检测到 Ollama 服务');
+        modelsData = data.models;
+      } else {
+        // 使用 POST 请求避免 API Key 出现在 URL 中
+        const response = await fetch('/api/models', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: formData.type, baseUrl: formData.baseUrl, apiKey: formData.apiKey }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || t('config.loadModelFailed'));
+        modelsData = data.models;
+      }
+      setModels(modelsData);
     } catch (err) {
       setError((err as Error).message);
       setModels([]);
@@ -548,7 +563,15 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
           <Dropdown
             options={[{ value: 'openai', label: 'OpenAI' }, { value: 'anthropic', label: 'Anthropic' }, { value: 'ollama', label: 'Ollama' }]}
             value={formData.type || 'openai'}
-            onChange={(v) => setFormData({ ...formData, type: v as 'openai' | 'anthropic' | 'ollama', model: '' })}
+            onChange={(v) => {
+              const newType = v as 'openai' | 'anthropic' | 'ollama';
+              const updates: Partial<LLMConfig> = { type: newType, model: '' };
+              // 切换到 Ollama 时自动填充默认 URL
+              if (newType === 'ollama' && !formData.baseUrl) {
+                updates.baseUrl = 'http://localhost:11434';
+              }
+              setFormData({ ...formData, ...updates });
+            }}
           />
         </div>
 
@@ -564,17 +587,23 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
           />
         </div>
 
-        <div>
-          <label htmlFor="configApiKey" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.apiKey')} {formData.type !== 'ollama' && <span className="text-red-500">*</span>}</label>
-          <input
-            id="configApiKey"
-            type="password"
-            value={formData.apiKey || ''}
-            onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-            placeholder="sk-..."
-            className={inputClass}
-          />
-        </div>
+        {formData.type !== 'ollama' ? (
+          <div>
+            <label htmlFor="configApiKey" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.apiKey')} <span className="text-red-500">*</span></label>
+            <input
+              id="configApiKey"
+              type="password"
+              value={formData.apiKey || ''}
+              onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+              placeholder="sk-..."
+              className={inputClass}
+            />
+          </div>
+        ) : (
+          <div className="px-4 py-3 bg-[var(--accent-indigo)]/5 rounded-xl">
+            <p className="text-sm text-[var(--muted)]">{t('config.ollamaNoApiKey')}</p>
+          </div>
+        )}
 
         <div>
           <button
@@ -582,7 +611,7 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
             disabled={loading}
             className="w-full px-4 py-2.5 text-sm text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-xl transition-all duration-200 font-medium disabled:opacity-50"
           >
-            {loading ? t('config.loadingModels') : t('config.loadModels')}
+            {loading ? t('config.loadingModels') : (formData.type === 'ollama' ? t('config.detectOllama') : t('config.loadModels'))}
           </button>
         </div>
 

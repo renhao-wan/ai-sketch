@@ -154,6 +154,7 @@ export const en: TranslationDict = {
   'config.ollamaDetected': 'Ollama service detected',
   'config.ollamaDetectedDesc': 'Found {count} available models, click to add config',
   'config.addOllamaConfig': 'Add Ollama config',
+  'config.detectOllama': 'Detect local models',
   'config.ollamaNoApiKey': 'Ollama usually doesn\'t need an API key',
   'config.ollamaDefaultUrl': 'http://localhost:11434',
 
