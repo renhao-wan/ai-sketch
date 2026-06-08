@@ -7,13 +7,13 @@
   "private": true,
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "electron:dev": "concurrently \"next dev --webpack\" \"wait-on http://localhost:3000 && node scripts/start-electron.js\"",
+    "electron:dev": "concurrently \"next dev\" \"wait-on http://localhost:3000 && node scripts/start-electron.js\"",
     "electron:build": "ts-node --project scripts/tsconfig.json --transpile-only scripts/build.ts",
     "pack": "electron-builder --dir",
     "dist": "electron-builder"
