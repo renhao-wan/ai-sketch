@@ -29,8 +29,18 @@ import Tooltip from '@/components/ui/Tooltip';
 import type { SourceType, ConversationMessage } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
+/** 从代码内容检测图表格式 */
+function detectCodeFormat(code: string): DiagramFormat {
+  const trimmed = code.trim();
+  if (trimmed.startsWith('<')) return 'drawio';
+  if (trimmed.startsWith('[')) return 'excalidraw';
+  if (trimmed.startsWith('{') && trimmed.includes('"elements"')) return 'excalidraw';
+  return 'mermaid';
+}
+
 /** 导出消息内容为文件 */
-function exportMessage(content: string, format: DiagramFormat) {
+function exportMessage(content: string) {
+  const format = detectCodeFormat(content);
   const ext = format === 'excalidraw' ? 'json' : format === 'mermaid' ? 'mmd' : 'drawio';
   const mime = format === 'excalidraw' ? 'application/json' : format === 'mermaid' ? 'text/plain' : 'application/xml';
   const blob = new Blob([content], { type: mime });
@@ -381,7 +391,7 @@ export default function AICopilotPanel({
                 isStreaming={isMsgStreaming}
                 onRegenerate={isLastAssistant && !isGenerating ? onRegenerate : undefined}
                 onCopy={isAssistant && !isMsgStreaming ? () => navigator.clipboard.writeText(msg.content) : undefined}
-                onExport={isAssistant && !isMsgStreaming ? () => exportMessage(msg.content, currentFormat) : undefined}
+                onExport={isAssistant && !isMsgStreaming ? () => exportMessage(msg.content) : undefined}
                 onShowDiagram={isAssistant && !isMsgStreaming ? () => onShowDiagram(msg.content) : undefined}
               />
             );

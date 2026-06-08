@@ -2,17 +2,20 @@
 
 import { useRef, useCallback, useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locales';
+import { svgToPng } from '@/lib/utils/export-diagram';
 import DrawioToolbar from './DrawioToolbar';
 import ZoomToolbar from './ZoomToolbar';
 import ContextMenu, { type ContextMenuItem } from './ContextMenu';
 import { Copy, ClipboardPaste, Square, Type, Trash2, Pencil } from 'lucide-react';
 import type { Cell, CellStyle, Graph, FitPlugin, ModelXmlSerializer } from '@maxgraph/core';
+import type { CanvasExportHandle } from './DiagramCanvas';
 
 // ── 类型定义 ──
 type DrawioTool = 'select' | 'rectangle' | 'ellipse' | 'diamond' | 'text' | 'arrow';
 
 interface DrawioCanvasProps {
   code: string;
+  exportRef?: React.MutableRefObject<CanvasExportHandle | null>;
 }
 
 interface MenuState {
@@ -181,7 +184,7 @@ configureMaxgraphStyles();
 
 // ── 主组件 ──
 
-export default function DrawioCanvas({ code }: DrawioCanvasProps) {
+export default function DrawioCanvas({ code, exportRef }: DrawioCanvasProps) {
   const { t } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<Graph | null>(null);
@@ -783,6 +786,120 @@ export default function DrawioCanvas({ code }: DrawioCanvasProps) {
       }
     });
   }, [code]);
+
+  // 注册导出函数（依赖 graph state，确保 graph 初始化完成）
+  useEffect(() => {
+    if (!exportRef || !graph) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    exportRef.current = {
+      exportAs: async (format) => {
+        // maxgraph 使用 SVG 渲染，需要正确获取 SVG 元素
+        const svgEl = container.querySelector('svg');
+        if (!svgEl) throw new Error('图表未渲染');
+
+        // 获取画布容器尺寸
+        const containerRect = container.getBoundingClientRect();
+        const width = containerRect.width || 800;
+        const height = containerRect.height || 600;
+
+        // 克隆 SVG
+        const clonedSvg = svgEl.cloneNode(true) as SVGSVGElement;
+
+        // 确保 SVG 有正确的命名空间
+        clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+
+        // 设置 SVG 尺寸
+        clonedSvg.setAttribute('width', String(width));
+        clonedSvg.setAttribute('height', String(height));
+
+        // 设置 viewBox
+        if (!clonedSvg.getAttribute('viewBox')) {
+          const bounds = graph.getGraphBounds();
+          const scale = graph.getView().getScale();
+          clonedSvg.setAttribute('viewBox', `${bounds.x} ${bounds.y} ${bounds.width / scale} ${bounds.height / scale}`);
+        }
+
+        // 彻底清理可能导致跨域问题的内容
+        // 1. 移除所有 style 元素
+        clonedSvg.querySelectorAll('style').forEach(s => s.remove());
+        // 2. 移除所有 image 元素（可能引用外部资源）
+        clonedSvg.querySelectorAll('image').forEach(img => img.remove());
+        // 3. 移除所有 use 元素（可能引用外部资源）
+        clonedSvg.querySelectorAll('use').forEach(use => use.remove());
+        // 4. 移除所有外部链接引用
+        clonedSvg.querySelectorAll('*').forEach(el => {
+          // 移除 href 属性（除非是内部引用）
+          const href = el.getAttribute('href');
+          if (href && !href.startsWith('#')) {
+            el.removeAttribute('href');
+          }
+          // 移除 xlink:href 属性（除非是内部引用）
+          const xlinkHref = el.getAttribute('xlink:href');
+          if (xlinkHref && !xlinkHref.startsWith('#')) {
+            el.removeAttribute('xlink:href');
+          }
+          // 移除所有 on* 事件属性
+          Array.from(el.attributes).forEach(attr => {
+            if (attr.name.startsWith('on')) {
+              el.removeAttribute(attr.name);
+            }
+          });
+        });
+        // 5. 移除 foreignObject（可能导致跨域问题）
+        clonedSvg.querySelectorAll('foreignObject').forEach(fo => fo.remove());
+
+        const svgString = new XMLSerializer().serializeToString(clonedSvg);
+
+        if (format === 'svg') {
+          return new Blob([svgString], { type: 'image/svg+xml' });
+        }
+
+        // PNG - 使用 Canvas API 直接绘制
+        return new Promise<Blob>((resolve, reject) => {
+          const scale = 2;
+          const canvas = document.createElement('canvas');
+          canvas.width = width * scale;
+          canvas.height = height * scale;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject(new Error('无法创建 Canvas 上下文'));
+
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.scale(scale, scale);
+
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+
+          img.onload = () => {
+            try {
+              ctx.drawImage(img, 0, 0, width, height);
+              canvas.toBlob(
+                (blob) => {
+                  if (blob) resolve(blob);
+                  else reject(new Error('Canvas 转换失败'));
+                },
+                'image/png'
+              );
+            } catch (e) {
+              reject(new Error('Canvas 导出失败: ' + (e as Error).message));
+            }
+          };
+
+          img.onerror = () => {
+            reject(new Error('SVG 图片加载失败'));
+          };
+
+          const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+          img.src = URL.createObjectURL(blob);
+        });
+      },
+    };
+
+    return () => { exportRef.current = null; };
+  }, [graph, exportRef]);
 
   // ── 删除选中单元 ──
   const deleteSelected = useCallback(() => {

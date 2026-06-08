@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import '@excalidraw/excalidraw/index.css';
 import type { ExcalidrawElement } from '@/lib/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
+import type { CanvasExportHandle } from './DiagramCanvas';
 import { extractCompleteElements } from '@/lib/diagram/json-repair';
 import { getExcalidrawBackgroundColor } from '@/lib/utils/theme-utils';
 import { useNotification } from '@/lib/contexts/NotificationContext';
@@ -140,9 +141,10 @@ interface Props {
   elements: ExcalidrawElement[];
   isStreaming?: boolean;
   streamRendererRef?: React.MutableRefObject<StreamRendererRef | null>;
+  exportRef?: React.MutableRefObject<CanvasExportHandle | null>;
 }
 
-export default function ExcalidrawCanvas({ elements, isStreaming, streamRendererRef }: Props) {
+export default function ExcalidrawCanvas({ elements, isStreaming, streamRendererRef, exportRef }: Props) {
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const [apiReady, setApiReady] = useState(false);
   const [convertFn, setConvertFn] = useState<ConvertFn | null>(null);
@@ -198,6 +200,47 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
     apiRef.current = api;
     setApiReady(true);
   }, []);
+
+  // 注册导出函数
+  useEffect(() => {
+    if (!exportRef || !apiReady || !apiRef.current) return;
+    const api = apiRef.current;
+
+    exportRef.current = {
+      exportAs: async (format) => {
+        const elements = api.getSceneElements();
+        if (!elements.length) throw new Error('画布为空');
+
+        if (format === 'svg') {
+          const { exportToSvg } = await import('@excalidraw/excalidraw');
+          const svg = await exportToSvg({
+            elements,
+            appState: {
+              viewBackgroundColor: '#ffffff',
+              exportWithDarkMode: false,
+            },
+            files: null,
+          });
+          return new Blob([svg.outerHTML], { type: 'image/svg+xml' });
+        }
+
+        // PNG
+        const { exportToBlob } = await import('@excalidraw/excalidraw');
+        const blob = await exportToBlob({
+          elements,
+          appState: {
+            viewBackgroundColor: '#ffffff',
+            exportWithDarkMode: false,
+          },
+          files: null,
+          mimeType: 'image/png',
+        });
+        return blob;
+      },
+    };
+
+    return () => { exportRef.current = null; };
+  }, [apiReady, exportRef]);
 
   const initialData = useMemo(() => ({
     elements: [],

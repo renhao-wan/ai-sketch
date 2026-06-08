@@ -4,11 +4,14 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocale } from '@/lib/locales';
 import { useZoomControls } from '@/hooks/useZoomControls';
 import { getMermaidThemeVariables, getCurrentTheme } from '@/lib/utils/theme-utils';
+import { svgToPng } from '@/lib/utils/export-diagram';
 import ZoomToolbar from './ZoomToolbar';
+import type { CanvasExportHandle } from './DiagramCanvas';
 
 interface MermaidCanvasProps {
   code: string;
   isStreaming?: boolean;
+  exportRef?: React.MutableRefObject<CanvasExportHandle | null>;
 }
 
 let mermaidInstance: typeof import('mermaid').default | null = null;
@@ -61,7 +64,7 @@ async function initMermaid() {
   }
 }
 
-export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps) {
+export default function MermaidCanvas({ code, isStreaming, exportRef }: MermaidCanvasProps) {
   const { t } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -167,6 +170,60 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- renderDiagram 是 useCallback 包裹的函数，不需要作为依赖
   }, [code, t]);
+
+  // 注册导出函数
+  useEffect(() => {
+    if (!exportRef) return;
+    const container = containerRef.current;
+    if (!container || error) return;
+
+    exportRef.current = {
+      exportAs: async (format) => {
+        const svgEl = container.querySelector('svg');
+        if (!svgEl) throw new Error('图表未渲染');
+
+        // 克隆 SVG 并确保包含完整的命名空间声明
+        const clonedSvg = svgEl.cloneNode(true) as SVGSVGElement;
+        clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+
+        // 确保 SVG 有正确的尺寸
+        const width = svgEl.clientWidth || parseInt(svgEl.getAttribute('width') || '800');
+        const height = svgEl.clientHeight || parseInt(svgEl.getAttribute('height') || '600');
+        clonedSvg.setAttribute('width', String(width));
+        clonedSvg.setAttribute('height', String(height));
+
+        // 移除所有 style 元素（包含外部字体引用）
+        const styleElements = clonedSvg.querySelectorAll('style');
+        styleElements.forEach(style => style.remove());
+
+        // 移除可能导致跨域问题的属性
+        const allElements = clonedSvg.querySelectorAll('*');
+        allElements.forEach(el => {
+          // 移除外部引用
+          const href = el.getAttribute('href');
+          if (href && !href.startsWith('data:') && !href.startsWith('#')) {
+            el.removeAttribute('href');
+          }
+          const xlinkHref = el.getAttribute('xlink:href');
+          if (xlinkHref && !xlinkHref.startsWith('data:') && !xlinkHref.startsWith('#')) {
+            el.removeAttribute('xlink:href');
+          }
+        });
+
+        const svgString = new XMLSerializer().serializeToString(clonedSvg);
+
+        if (format === 'svg') {
+          return new Blob([svgString], { type: 'image/svg+xml' });
+        }
+
+        // PNG
+        return svgToPng(svgString, width, height);
+      },
+    };
+
+    return () => { exportRef.current = null; };
+  }, [code, error, exportRef]);
 
   return (
     <div className="w-full h-full overflow-hidden canvas-grid-bg relative">

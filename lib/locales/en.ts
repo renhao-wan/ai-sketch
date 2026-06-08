@@ -82,6 +82,11 @@ export const en: TranslationDict = {
   'panel.expandPanel': 'Expand Context Panel',
   'panel.codeWillAppear': 'Generated code will appear here',
 
+  // Export
+  'export.png': 'Export as PNG',
+  'export.svg': 'Export as SVG',
+  'export.code': 'Export Code File',
+
   // Code Editor
 
   // Config Manager
@@ -326,6 +331,8 @@ export const en: TranslationDict = {
   'notification.mermaidUnsupported': '{type} is not natively supported by Mermaid. The closest alternative will be used.',
   'notification.partialGenerationFailed': 'Partial Generation Failed',
   'notification.elementsFailed': 'The following elements could not be rendered: {elements}',
+  'notification.exportFailed': 'Export Failed',
+  'notification.exportNotSupported': 'Current canvas does not support image export',
 
   // Settings page
   'settings.title': 'Settings',

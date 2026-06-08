@@ -5,10 +5,16 @@ import type { MutableRefObject } from 'react';
 import { useLocale } from '@/lib/locales';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 import type { StreamRendererRef } from './ExcalidrawCanvas';
+import type { ExportFormat } from '@/lib/utils/export-diagram';
 
 const ExcalidrawCanvas = dynamic(() => import('./ExcalidrawCanvas'), { ssr: false });
 const MermaidCanvas = dynamic(() => import('./MermaidCanvas'), { ssr: false });
 const DrawioCanvas = dynamic(() => import('./DrawioCanvas'), { ssr: false });
+
+/** 画布导出接口 */
+export interface CanvasExportHandle {
+  exportAs: (format: ExportFormat) => Promise<Blob>;
+}
 
 interface DiagramCanvasProps {
   format: DiagramFormat;
@@ -17,9 +23,10 @@ interface DiagramCanvasProps {
   streamBuffer?: string;
   streamVersion?: number;
   streamRendererRef?: MutableRefObject<StreamRendererRef | null>;
+  exportRef?: MutableRefObject<CanvasExportHandle | null>;
 }
 
-export default function DiagramCanvas({ format, data, isStreaming, streamBuffer, streamVersion, streamRendererRef }: DiagramCanvasProps) {
+export default function DiagramCanvas({ format, data, isStreaming, streamBuffer, streamVersion, streamRendererRef, exportRef }: DiagramCanvasProps) {
   const { t } = useLocale();
 
   // Normalize: extract array from wrapper objects
@@ -59,11 +66,11 @@ export default function DiagramCanvas({ format, data, isStreaming, streamBuffer,
 
       {/* 按需挂载：只渲染当前格式的 Canvas */}
       <div className="absolute inset-0">
-        {format === 'drawio' && <DrawioCanvas code={drawioCode} />}
+        {format === 'drawio' && <DrawioCanvas code={drawioCode} exportRef={exportRef} />}
         {format === 'excalidraw' && (
-          <ExcalidrawCanvas elements={excalidrawElements} isStreaming={isStreaming} streamRendererRef={streamRendererRef} />
+          <ExcalidrawCanvas elements={excalidrawElements} isStreaming={isStreaming} streamRendererRef={streamRendererRef} exportRef={exportRef} />
         )}
-        {format === 'mermaid' && <MermaidCanvas code={mermaidCode} isStreaming={isStreaming} />}
+        {format === 'mermaid' && <MermaidCanvas code={mermaidCode} isStreaming={isStreaming} exportRef={exportRef} />}
       </div>
     </div>
   );

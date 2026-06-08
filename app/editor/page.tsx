@@ -10,7 +10,9 @@ import FloatingAIActions from '@/components/ai/FloatingAIActions';
 import CodeEditor from '@/components/editor/CodeEditor';
 import { useNotification } from '@/lib/contexts/NotificationContext';
 import DiagramCanvas from '@/components/canvases/DiagramCanvas';
+import type { CanvasExportHandle } from '@/components/canvases/DiagramCanvas';
 import type { StreamRendererRef } from '@/components/canvases/ExcalidrawCanvas';
+import { downloadBlob, getFileExtension, getMimeType, type ExportFormat } from '@/lib/utils/export-diagram';
 import * as api from '@/lib/api/client';
 import { isConfigValid } from '@/lib/api/config-validator';
 import { getStrategy } from '@/lib/strategies/registry';
@@ -95,6 +97,7 @@ function EditorContent() {
   const pendingInitRef = useRef<import('@/lib/utils/init-data').InitData | null>(null);
   const pendingSourceRef = useRef<string>('text');
   const streamRendererRef = useRef<StreamRendererRef | null>(null);
+  const canvasExportRef = useRef<CanvasExportHandle | null>(null);
   const formatRef = useRef(format);
   useEffect(() => { formatRef.current = format; }, [format]);
   const isFirstFormatRef = useRef(true);
@@ -302,7 +305,7 @@ function EditorContent() {
     }
   };
 
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     const blob = strategy.createExportBlob(generatedCode);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -310,7 +313,32 @@ function EditorContent() {
     a.download = `diagram.${strategy.fileExtension}`;
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [strategy, generatedCode]);
+
+  /** 导出为 PNG/SVG/代码文件 */
+  const handleExportAs = useCallback(async (exportFormat: ExportFormat) => {
+    // 代码文件导出使用原有逻辑
+    if (exportFormat === 'code') {
+      handleExport();
+      return;
+    }
+
+    // PNG/SVG 导出需要画布支持
+    if (!canvasExportRef.current) {
+      showNotification(t('notification.exportFailed'), t('notification.exportNotSupported'), 'error');
+      return;
+    }
+
+    try {
+      const blob = await canvasExportRef.current.exportAs(exportFormat);
+      const ext = getFileExtension(exportFormat, format);
+      const mime = getMimeType(exportFormat);
+      const finalBlob = exportFormat === 'png' ? blob : new Blob([blob], { type: mime });
+      downloadBlob(finalBlob, `diagram.${ext}`);
+    } catch (e) {
+      showNotification(t('notification.exportFailed'), (e as Error).message, 'error');
+    }
+  }, [format, handleExport, showNotification, t]);
 
   return (
     <>
@@ -356,7 +384,7 @@ function EditorContent() {
 
           {/* Canvas */}
           <div className="flex-1 relative">
-            <DiagramCanvas format={format} data={renderData} isStreaming={generation.isStreaming} streamRendererRef={streamRendererRef} />
+            <DiagramCanvas format={format} data={renderData} isStreaming={generation.isStreaming} streamRendererRef={streamRendererRef} exportRef={canvasExportRef} />
           </div>
 
           {/* Bottom Context Panel */}
@@ -366,6 +394,7 @@ function EditorContent() {
             format={format}
             activeTab={bottomPanelTab}
             onTabChange={setBottomPanelTab}
+            onExportAs={handleExportAs}
           >
             <CodeEditor
               code={generatedCode}

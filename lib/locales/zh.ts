@@ -80,6 +80,11 @@ export const zh = {
   'panel.expandPanel': '展开上下文面板',
   'panel.codeWillAppear': '生成代码后将在此显示',
 
+  // Export
+  'export.png': '导出 PNG 图片',
+  'export.svg': '导出 SVG 矢量图',
+  'export.code': '导出代码文件',
+
   // Code Editor
 
   // Config Manager
@@ -324,6 +329,8 @@ export const zh = {
   'notification.mermaidUnsupported': '{type} 不是 Mermaid 原生支持的图表类型，将使用最接近的替代方案生成。',
   'notification.partialGenerationFailed': '部分元素生成失败',
   'notification.elementsFailed': '以下元素无法渲染：{elements}',
+  'notification.exportFailed': '导出失败',
+  'notification.exportNotSupported': '当前画布不支持图片导出',
 
   // 设置页
   'settings.title': '系统设置',
