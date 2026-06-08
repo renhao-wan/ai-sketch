@@ -221,12 +221,12 @@ export function LLMSettings() {
   const handleAddOllama = async () => {
     try {
       await api.createConfig({
-        name: 'Ollama (本地)',
+        name: t('config.ollamaDefaultName'),
         type: 'ollama',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
         model: ollamaModels[0]?.id || '',
-        description: '本地 Ollama 模型',
+        description: t('config.ollamaDefaultDesc'),
       });
       setOllamaDetected(false);
       await loadConfigs();
