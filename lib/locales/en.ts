@@ -51,6 +51,13 @@ export const en: TranslationDict = {
   'editor.requestFailed': 'Request failed',
   'editor.networkError': 'Network connection failed. Please check your connection.',
 
+  // API Error Messages
+  'api.requestError': 'Invalid request',
+  'api.apiKeyError': 'API key is invalid or has insufficient permissions',
+  'api.rateLimit': 'Too many requests. Please try again later.',
+  'api.serverError': 'Server error. Please try again later.',
+  'api.requestFailed': 'Request failed. Please try again later.',
+
   // AI Copilot Panel
   'copilot.expandPanel': 'Expand Panel',
   'copilot.export': 'Export',
@@ -68,11 +75,17 @@ export const en: TranslationDict = {
   'copilot.regenerate': 'Regenerate',
   'copilot.copy': 'Copy',
   'copilot.showDiagram': 'Show Diagram',
+  'copilot.scrollToBottom': 'Scroll to Bottom',
 
   // Bottom Context Panel
   'panel.generatedCode': 'Generated Code',
   'panel.expandPanel': 'Expand Context Panel',
   'panel.codeWillAppear': 'Generated code will appear here',
+
+  // Export
+  'export.png': 'Export as PNG',
+  'export.svg': 'Export as SVG',
+  'export.code': 'Export Code File',
 
   // Code Editor
 
@@ -106,7 +119,6 @@ export const en: TranslationDict = {
   'config.confirmDeleteMsg': 'Are you sure you want to delete this configuration? This action cannot be undone.',
   'config.deleteSuccess': 'Deleted',
   'config.deleteSuccessMsg': 'Configuration deleted successfully',
-  'config.cloneSuffix': ' (Copy)',
   'config.importSuccess': 'Import Successful',
   'config.imported': 'Successfully imported',
   'config.importedCount': 'configurations',
@@ -122,8 +134,29 @@ export const en: TranslationDict = {
   'config.fillRequired': 'Please fill in provider type, base URL, and API key first',
   'config.loadModelFailed': 'Failed to load models',
   'config.fillAllRequired': 'Please fill in all required fields',
+  'config.temperature': 'Temperature',
+  'config.temperatureHint': 'Controls output randomness, 0=deterministic, 2=max randomness, recommended 0.3-0.5',
+  'config.maxTokens': 'Max Output Tokens',
+  'config.maxTokensPlaceholder': 'Leave empty for default',
+  'config.maxTokensHint': 'Controls the maximum length of a single generation. Leave empty to use the default value of 16384',
   'config.bannerTitle': 'Many configurations, consider cleanup',
   'config.bannerDescription': 'You have {count} configurations. Consider cleaning up unused ones.',
+  'config.validation.nameRequired': 'Config name is required',
+  'config.validation.invalidType': 'Provider type must be openai, anthropic or ollama',
+  'config.validation.urlRequired': 'API URL is required',
+  'config.validation.urlInvalid': 'Invalid API URL format',
+  'config.validation.apiKeyRequired': 'API key is required',
+  'config.validation.modelRequired': 'Model name is required',
+  'config.validation.invalid': 'Invalid configuration',
+  'config.validation.importFormatError': 'Invalid import data format',
+  'config.notFound': 'Configuration not found',
+  'config.defaultName': 'New Config',
+  'config.ollamaDetected': 'New Ollama models detected',
+  'config.ollamaDetectedDesc': 'Found {count} unconfigured models, click to add',
+  'config.addOllamaConfig': 'Add Ollama config',
+  'config.detectOllama': 'Detect local models',
+  'config.ollamaBatchCreated': 'Created {count} Ollama configs',
+  'config.ollamaDefaultDesc': 'Local Ollama model',
 
   // History
   'history.title': 'History',
@@ -201,6 +234,7 @@ export const en: TranslationDict = {
   'toolbar.redo': 'Redo',
   'toolbar.zoomIn': 'Zoom In',
   'toolbar.zoomOut': 'Zoom Out',
+  'toolbar.fitToView': 'Fit to View',
 
   // Error Boundary
   'error.title': 'Something Went Wrong',
@@ -209,6 +243,8 @@ export const en: TranslationDict = {
   'error.refresh': 'Refresh Page',
 
   // Image Upload
+  'upload.processing': 'Processing...',
+  'upload.ready': 'Ready',
 
   // Diagram Canvas
   'canvas.emptyState': 'Describe a diagram and AI will generate it',
@@ -221,6 +257,22 @@ export const en: TranslationDict = {
   'drawio.renderError': 'Draw.io Render Error',
   'drawio.loadTimeout': 'Draw.io viewer failed to load. Please check your network connection.',
 
+  // Draw.io editor (mxGraph)
+  'drawio.tool.select': 'Select',
+  'drawio.tool.rectangle': 'Rectangle',
+  'drawio.tool.ellipse': 'Ellipse',
+  'drawio.tool.diamond': 'Diamond',
+  'drawio.tool.text': 'Text',
+  'drawio.tool.arrow': 'Arrow',
+  'drawio.action.delete': 'Delete',
+  'drawio.action.editLabel': 'Edit Label',
+  'drawio.action.addRect': 'Add Rectangle',
+  'drawio.action.addText': 'Add Text',
+  'drawio.action.copy': 'Copy',
+  'drawio.action.paste': 'Paste',
+  'drawio.error.loadFailed': 'Failed to load @maxgraph/core',
+  'drawio.error.xmlParse': 'XML parse error',
+
   // Mermaid Canvas
   'mermaid.renderFailed': 'Mermaid render failed',
   'mermaid.syntaxError': 'Mermaid Syntax Error',
@@ -228,6 +280,9 @@ export const en: TranslationDict = {
   // Message Bubble
   'message.generatedCode': 'Generated Code',
   'message.characters': 'characters',
+  'message.expandAll': 'Expand all',
+  'message.collapse': 'Collapse',
+  'message.clickToExpand': 'Click to view',
 
   // Scroll to top
   'scrollToTop': 'Back to Top',
@@ -243,6 +298,8 @@ export const en: TranslationDict = {
 
   // Language switcher
   'lang.label': 'Language',
+  'lang.zh': '简体中文',
+  'lang.en': 'English',
 
   // Time ago
   'time.justNow': 'just now',
@@ -275,6 +332,14 @@ export const en: TranslationDict = {
   'chart.matrix': 'Matrix',
   'chart.infographic': 'Infographic',
 
+  // Notifications
+  'notification.unsupportedType': 'Type Not Supported',
+  'notification.mermaidUnsupported': '{type} is not natively supported by Mermaid. The closest alternative will be used.',
+  'notification.partialGenerationFailed': 'Partial Generation Failed',
+  'notification.elementsFailed': 'The following elements could not be rendered: {elements}',
+  'notification.exportFailed': 'Export Failed',
+  'notification.exportNotSupported': 'Current canvas does not support image export',
+
   // Settings page
   'settings.title': 'Settings',
   'settings.appearance': 'Appearance',
@@ -300,18 +365,23 @@ export const en: TranslationDict = {
   'settings.configs': 'Configurations',
   'settings.dataCleanup': 'Data Cleanup',
   'settings.dataCleanupDesc': 'Clean up or reset app data',
-  'settings.resetPreferences': 'Reset Preferences',
+  'settings.resetPreferences': 'Reset',
   'settings.resetPreferencesDesc': 'Restore default theme and language settings',
   'settings.resetPreferencesConfirm': 'Are you sure you want to reset preferences? Theme and language will be restored to defaults.',
   'settings.resetPreferencesSuccess': 'Preferences have been reset',
-  'settings.clearConversations': 'Clear Conversations',
+  'settings.clearConversations': 'Clear',
   'settings.clearConversationsDesc': 'Delete all conversation records',
   'settings.clearConversationsConfirm': 'Are you sure you want to clear all conversations? This action cannot be undone.',
   'settings.clearConversationsSuccess': 'Conversations have been cleared',
-  'settings.clearConfigs': 'Clear LLM Configs',
+  'settings.clearConfigs': 'Clear',
   'settings.clearConfigsDesc': 'Delete all LLM provider configurations',
   'settings.clearConfigsConfirm': 'Are you sure you want to clear all LLM configs? This action cannot be undone.',
   'settings.clearConfigsSuccess': 'LLM configs have been cleared',
+  'settings.clearCache': 'Clear',
+  'settings.clearCacheDesc': 'Clear generated response cache',
+  'settings.clearCacheConfirm': 'Are you sure you want to clear all cache? Cached generation results will be lost.',
+  'settings.clearCacheSuccess': 'Cache cleared',
+  'settings.cacheEntries': 'Cache Entries',
   'settings.resetAll': 'Reset All',
   'settings.resetAllDesc': 'Reset all data and settings',
   'settings.resetAllConfirm': 'Are you sure you want to reset all data? This will clear all conversations, configs, and user preferences. This action cannot be undone.',
@@ -333,6 +403,11 @@ export const en: TranslationDict = {
   'proxy.saveSuccess': 'Proxy settings saved',
   'proxy.saveFailed': 'Save failed',
 
+  // Retry settings
+  'retries.title': 'Generation Retry',
+  'retries.description': 'Automatically retry when LLM generation fails, avoiding interruptions from temporary errors',
+  'retries.maxRetriesHint': '0=no retry, recommended 2. Only applies to non-user-cancelled failures. Each retry re-initiates the full LLM request',
+
   // About
   'about.defaultDescription': 'AI Sketch is an AI-powered diagram generation web app. Users describe their ideas in natural language, and the LLM generates renderable diagram code in three formats: Excalidraw JSON, Mermaid, and Draw.io XML.',
   'about.developer': 'Developer',
@@ -345,6 +420,21 @@ export const en: TranslationDict = {
   'about.thirdPartyServices': 'Third-Party Services',
   'about.thirdPartyServicesDesc': 'This app uses LLM providers configured by the user (such as OpenAI, Anthropic, etc.) for diagram generation. API requests are sent from the Next.js server to the respective service providers; this app does not proxy or store these requests.',
   'about.dependencies': 'Core Dependencies',
+  'about.dep.Next.js': 'React Framework',
+  'about.dep.React': 'UI Library',
+  'about.dep.TypeScript': 'Type Safety',
+  'about.dep.Tailwind CSS': 'CSS Framework',
+  'about.dep.Excalidraw': 'Whiteboard Drawing',
+  'about.dep.Mermaid': 'Diagram Rendering',
+  'about.dep.Monaco Editor': 'Code Editor',
+  'about.dep.sql.js': 'SQLite WASM',
+  'about.checkUpdate': 'Check for Updates',
+  'about.checking': 'Checking...',
+  'about.versionUpdate': 'Version Update',
+  'about.currentVersion': 'Current Version',
+  'about.upToDate': 'You are up to date',
+  'about.retry': 'Retry',
+  'about.desktopOnly': 'Auto-update is only available in the desktop app',
 
   // Keyboard shortcuts
   'shortcuts.search': 'Search shortcuts...',
@@ -361,6 +451,16 @@ export const en: TranslationDict = {
   'shortcuts.openNetwork': 'Network Settings',
   'shortcuts.openConversations': 'Conversations',
   'shortcuts.openAppearance': 'Appearance',
+  'shortcuts.openHistory': 'History',
+  'shortcuts.sendMessage': 'Send Message',
+  'shortcuts.newline': 'New Line',
+  'shortcuts.undo': 'Undo',
+  'shortcuts.cut': 'Cut',
+  'shortcuts.copy': 'Copy',
+  'shortcuts.paste': 'Paste',
+  'shortcuts.selectAll': 'Select All',
+  'shortcuts.noMatch': 'No matching shortcuts found',
+  'shortcuts.noShortcuts': 'No shortcuts',
   'shortcuts.windowMinimize': 'Minimize Window',
   'shortcuts.windowMaximize': 'Maximize/Restore Window',
   'shortcuts.windowClose': 'Close Window',
@@ -368,4 +468,14 @@ export const en: TranslationDict = {
   'window.maximize': 'Maximize',
   'window.restore': 'Restore',
   'window.close': 'Close',
+
+  // Update
+  'update.available': 'Update Available',
+  'update.availableHint': 'A new version is available',
+  'update.download': 'Download',
+  'update.downloading': 'Downloading...',
+  'update.downloaded': 'Ready to Install',
+  'update.downloadedHint': 'Download complete. Restart to apply.',
+  'update.install': 'Restart',
+  'update.error': 'Update Failed',
 };

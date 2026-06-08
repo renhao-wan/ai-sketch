@@ -14,7 +14,9 @@
  *   else showErrors(result.errors);
  */
 
-import type { InputStrategy, ProcessedItem, MessagePayload, InputSourceType } from '@/lib/types/input-strategy';
+import type { InputStrategy, ProcessedItem, MessagePayload } from '@/lib/types/input-strategy';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
+import { getStrategy } from '@/lib/strategies/registry';
 
 interface OrchestrationSuccess {
   success: true;
@@ -89,7 +91,7 @@ export class InputOrchestrator {
    * - If only images → single image or mixed payload
    * - If mixed → mixed payload with combined text + all images
    */
-  merge(items: ProcessedItem[], userPrompt: string, chartType: string): MessagePayload {
+  merge(items: ProcessedItem[], userPrompt: string, chartType: string, diagramFormat?: DiagramFormat): MessagePayload {
     if (items.length === 0) {
       return { type: 'text', content: userPrompt, sourceType: 'text' };
     }
@@ -115,10 +117,12 @@ export class InputOrchestrator {
     }
 
     // Has images → image payload (1 or more, same structure)
+    // 图片无描述时，使用策略生成默认 prompt
+    const imageText = combinedText || (diagramFormat ? getStrategy(diagramFormat).generateImagePrompt(chartType) : '');
     return {
       type: 'image',
       content: {
-        text: combinedText,
+        text: imageText,
         images: imageItems.map(i => (i.data as { imageObject: unknown }).imageObject),
       },
       sourceType: 'image',
@@ -133,6 +137,7 @@ export class InputOrchestrator {
     files: File[],
     userPrompt: string,
     chartType: string,
+    diagramFormat?: DiagramFormat,
   ): Promise<OrchestrationResult> {
     const validation = this.validateAll(files);
     if (!validation.valid) {
@@ -141,7 +146,7 @@ export class InputOrchestrator {
 
     try {
       const items = await this.processAll(files);
-      const payload = this.merge(items, userPrompt, chartType);
+      const payload = this.merge(items, userPrompt, chartType, diagramFormat);
       return { success: true, payload };
     } catch (e) {
       return { success: false, errors: [{ fileName: '', error: (e as Error).message }] };

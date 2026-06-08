@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import * as api from '@/lib/api/client';
-import Notification from '@/components/ui/Notification';
+import { useNotification } from '@/lib/contexts/NotificationContext';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
 import ScrollToTop from '@/components/ui/ScrollToTop';
 import { Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2 } from 'lucide-react';
@@ -11,7 +11,7 @@ import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 import CountBanner from '@/components/ui/CountBanner';
 import { useCountBanner } from '@/hooks/useCountBanner';
-import type { LLMConfig, ModelInfo, NotificationState, ConfirmDialogState } from '@/lib/types';
+import type { LLMConfig, ModelInfo, ConfirmDialogState } from '@/lib/types';
 
 /** ConfigEditor 子组件的 Props */
 interface ConfigEditorProps {
@@ -42,8 +42,11 @@ export function LLMSettings() {
   const [isCreating, setIsCreating] = useState(false);
   const [testingConfigId, setTestingConfigId] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [notification, setNotification] = useState<NotificationState>({ isOpen: false, title: '', message: '', type: 'info' });
+  const { showNotification } = useNotification();
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [ollamaDetected, setOllamaDetected] = useState(false);
+  const [ollamaModels, setOllamaModels] = useState<{ id: string; name: string }[]>([]);
+  const [ollamaCreating, setOllamaCreating] = useState(false);
 
   const { showBanner, handleDismissBanner } = useCountBanner({
     count: configs.length,
@@ -65,10 +68,47 @@ export function LLMSettings() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅在挂载时加载配置
   useEffect(() => { loadConfigs(); }, []);
 
+  // 检测本地 Ollama 服务（仅挂载时检测一次）
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // 读取当前配置，获取已有的 Ollama URL（支持远程 Ollama）
+        const currentConfigs = await api.fetchConfigs();
+        const ollamaConfig = currentConfigs.configs.find(c => c.type === 'ollama');
+        const body: Record<string, string> = {};
+        if (ollamaConfig?.baseUrl) body.baseUrl = ollamaConfig.baseUrl;
+
+        const res = await fetch('/api/ollama/detect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!cancelled && data.detected && data.models?.length > 0) {
+          // 过滤掉已有配置的模型
+          const existingModels = new Set(
+            currentConfigs.configs.filter(c => c.type === 'ollama').map(c => c.model),
+          );
+          const newModels = data.models.filter(
+            (m: { id: string; name: string }) => !existingModels.has(m.id),
+          );
+          if (newModels.length > 0) {
+            setOllamaDetected(true);
+            setOllamaModels(newModels);
+          }
+        }
+      } catch {
+        // 静默忽略
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   /** 新建配置 */
   const handleCreateNew = () => {
     setIsCreating(true);
-    setEditingConfig({ name: '', type: 'openai', baseUrl: '', apiKey: '', model: '', description: '' });
+    setEditingConfig({ name: '', type: 'openai', baseUrl: '', apiKey: '', model: '', description: '', temperature: 0.5 });
   };
 
   /** 编辑配置 */
@@ -88,7 +128,7 @@ export function LLMSettings() {
           await api.deleteConfig(configId);
           await loadConfigs();
           setError('');
-          setNotification({ isOpen: true, title: t('config.deleteSuccess'), message: t('config.deleteSuccessMsg'), type: 'success' });
+          showNotification(t('config.deleteSuccess'), t('config.deleteSuccessMsg'), 'success');
         } catch (err) {
           setError(t('config.deleteFailed') + (err as Error).message);
         }
@@ -99,7 +139,7 @@ export function LLMSettings() {
   /** 克隆配置 */
   const handleClone = async (config: LLMConfig) => {
     try {
-      await api.cloneConfig(config.id!, `${config.name} ${t('config.cloneSuffix')}`);
+      await api.cloneConfig(config.id!);
       await loadConfigs();
       setError('');
     } catch (err) {
@@ -124,14 +164,13 @@ export function LLMSettings() {
     setError('');
     try {
       const result = await api.testConnection(config);
-      setNotification({
-        isOpen: true,
-        title: result.success ? t('config.testSuccess') : t('config.testFailed'),
-        message: result.message,
-        type: result.success ? 'success' : 'error',
-      });
+      showNotification(
+        result.success ? t('config.testSuccess') : t('config.testFailed'),
+        result.message,
+        result.success ? 'success' : 'error',
+      );
     } catch (err) {
-      setNotification({ isOpen: true, title: t('config.testFailed'), message: (err as Error).message, type: 'error' });
+      showNotification(t('config.testFailed'), (err as Error).message, 'error');
     } finally {
       setTestingConfigId(null);
     }
@@ -182,12 +221,11 @@ export function LLMSettings() {
         const text = await file.text();
         const result = await api.importConfigs(text);
         if (result.success) {
-          setNotification({
-            isOpen: true,
-            title: t('config.importSuccess'),
-            message: `${t('config.imported')} ${result.count} ${t('config.importedCount')}`,
-            type: 'success',
-          });
+          showNotification(
+            t('config.importSuccess'),
+            `${t('config.imported')} ${result.count} ${t('config.importedCount')}`,
+            'success',
+          );
           await loadConfigs();
         } else {
           setError(t('config.importFailed') + result.message);
@@ -199,15 +237,57 @@ export function LLMSettings() {
     input.click();
   };
 
+  /** 快速添加 Ollama 配置（为每个发现的模型创建独立配置） */
+  const handleAddOllama = async () => {
+    if (ollamaCreating) return; // 防止重复点击
+    setOllamaCreating(true);
+    try {
+      // 收集现有配置名称，避免重名
+      const existingNames = new Set(configs.map(c => c.name));
+
+      for (const model of ollamaModels) {
+        // 生成唯一名称：优先 "Ollama - modelname"，冲突时加编号
+        let name = `Ollama - ${model.name}`;
+        let counter = 1;
+        while (existingNames.has(name)) {
+          name = `Ollama - ${model.name} (${counter})`;
+          counter++;
+        }
+        existingNames.add(name);
+
+        await api.createConfig({
+          name,
+          type: 'ollama',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          model: model.id,
+          description: t('config.ollamaDefaultDesc'),
+        });
+      }
+
+      setOllamaDetected(false);
+      await loadConfigs();
+      showNotification(
+        t('config.ollamaDetected'),
+        t('config.ollamaBatchCreated', { count: ollamaModels.length }),
+        'success',
+      );
+    } catch (err) {
+      setError(t('config.saveFailed') + (err as Error).message);
+    } finally {
+      setOllamaCreating(false);
+    }
+  };
+
   /** 根据搜索关键词过滤配置，并将活跃配置置顶 */
-  const filteredConfigs = (searchQuery
+  const filteredConfigs = useMemo(() => (searchQuery
     ? configs.filter(c =>
         c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (c.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.type.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : configs
-  ).sort((a, b) => (a.id === activeConfigId ? -1 : b.id === activeConfigId ? 1 : 0));
+  ).sort((a, b) => (a.id === activeConfigId ? -1 : b.id === activeConfigId ? 1 : 0)), [configs, searchQuery, activeConfigId]);
 
   return (
     <div className="h-full flex flex-col">
@@ -224,9 +304,29 @@ export function LLMSettings() {
         <CountBanner
           show={showBanner}
           title={t('config.bannerTitle')}
-          description={t('config.bannerDescription').replace('{count}', String(configs.length))}
+          description={t('config.bannerDescription', { count: configs.length })}
           onDismiss={handleDismissBanner}
         />
+
+        {/* Ollama 检测 Banner */}
+        {ollamaDetected && (
+          <div className="px-4 py-3 bg-[var(--accent-indigo)]/10 rounded-xl flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-[var(--accent-indigo)]">{t('config.ollamaDetected')}</p>
+              <p className="text-xs text-[var(--muted)] mt-0.5">
+                {t('config.ollamaDetectedDesc', { count: ollamaModels.length })}
+              </p>
+            </div>
+            <button
+              onClick={handleAddOllama}
+              disabled={ollamaCreating}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200 font-medium disabled:opacity-50"
+            >
+              {ollamaCreating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              <span>{ollamaCreating ? t('common.loading') : t('config.addOllamaConfig')}</span>
+            </button>
+          </div>
+        )}
 
         {/* 操作栏：新建 + 导入导出 */}
         <div className="flex flex-wrap gap-2">
@@ -365,15 +465,6 @@ export function LLMSettings() {
         />
       )}
 
-      {/* 通知 */}
-      <Notification
-        isOpen={notification.isOpen}
-        onClose={() => setNotification(prev => ({ ...prev, isOpen: false }))}
-        title={notification.title}
-        message={notification.message}
-        type={notification.type}
-      />
-
       {/* 删除确认对话框 */}
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
@@ -407,18 +498,37 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
 
   /** 从 API 加载可用模型列表 */
   const handleLoadModels = async () => {
-    if (!formData.type || !formData.baseUrl || !formData.apiKey) {
+    if (!formData.type || !formData.baseUrl) {
+      setError(t('config.fillRequired'));
+      return;
+    }
+    // 非 Ollama 需要 API Key
+    if (formData.type !== 'ollama' && !formData.apiKey) {
       setError(t('config.fillRequired'));
       return;
     }
     setLoading(true);
     setError('');
     try {
-      const params = new URLSearchParams({ type: formData.type, baseUrl: formData.baseUrl, apiKey: formData.apiKey });
-      const response = await fetch(`/api/models?${params}`);
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || t('config.loadModelFailed'));
-      setModels(data.models);
+      let modelsData: ModelInfo[];
+      if (formData.type === 'ollama') {
+        // Ollama 使用专用检测端点
+        const res = await fetch('/api/ollama/detect', { method: 'POST' });
+        const data = await res.json();
+        if (!data.detected) throw new Error(data.error || '未检测到 Ollama 服务');
+        modelsData = data.models;
+      } else {
+        // 使用 POST 请求避免 API Key 出现在 URL 中
+        const response = await fetch('/api/models', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: formData.type, baseUrl: formData.baseUrl, apiKey: formData.apiKey }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || t('config.loadModelFailed'));
+        modelsData = data.models;
+      }
+      setModels(modelsData);
     } catch (err) {
       setError((err as Error).message);
       setModels([]);
@@ -429,7 +539,12 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
 
   /** 保存配置（校验必填字段） */
   const handleSave = () => {
-    if (!formData.name || !formData.type || !formData.baseUrl || !formData.apiKey || !formData.model) {
+    if (!formData.name || !formData.type || !formData.baseUrl || !formData.model) {
+      setError(t('config.fillAllRequired'));
+      return;
+    }
+    // Ollama 不需要 API Key
+    if (formData.type !== 'ollama' && !formData.apiKey) {
       setError(t('config.fillAllRequired'));
       return;
     }
@@ -490,9 +605,20 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
         <div>
           <label htmlFor="configProviderType" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.providerType')} <span className="text-red-500">*</span></label>
           <Dropdown
-            options={[{ value: 'openai', label: 'OpenAI' }, { value: 'anthropic', label: 'Anthropic' }]}
+            options={[{ value: 'openai', label: 'OpenAI' }, { value: 'anthropic', label: 'Anthropic' }, { value: 'ollama', label: 'Ollama' }]}
             value={formData.type || 'openai'}
-            onChange={(v) => setFormData({ ...formData, type: v as 'openai' | 'anthropic', model: '' })}
+            onChange={(v) => {
+              const newType = v as 'openai' | 'anthropic' | 'ollama';
+              const updates: Partial<LLMConfig> = { type: newType, model: '' };
+              if (newType === 'ollama') {
+                // 切换到 Ollama：自动填充默认地址
+                updates.baseUrl = 'http://localhost:11434';
+              } else if (formData.baseUrl === 'http://localhost:11434') {
+                // 从 Ollama 切换到其他：清除 Ollama 地址
+                updates.baseUrl = '';
+              }
+              setFormData({ ...formData, ...updates });
+            }}
           />
         </div>
 
@@ -503,22 +629,24 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
             type="text"
             value={formData.baseUrl || ''}
             onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
-            placeholder={formData.type === 'openai' ? 'https://api.openai.com/v1' : 'https://api.anthropic.com/v1'}
+            placeholder={formData.type === 'openai' ? 'https://api.openai.com/v1' : formData.type === 'ollama' ? 'http://localhost:11434' : 'https://api.anthropic.com/v1'}
             className={inputClass}
           />
         </div>
 
-        <div>
-          <label htmlFor="configApiKey" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.apiKey')} <span className="text-red-500">*</span></label>
-          <input
-            id="configApiKey"
-            type="password"
-            value={formData.apiKey || ''}
-            onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-            placeholder="sk-..."
-            className={inputClass}
-          />
-        </div>
+        {formData.type !== 'ollama' && (
+          <div>
+            <label htmlFor="configApiKey" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.apiKey')} <span className="text-red-500">*</span></label>
+            <input
+              id="configApiKey"
+              type="password"
+              value={formData.apiKey || ''}
+              onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+              placeholder="sk-..."
+              className={inputClass}
+            />
+          </div>
+        )}
 
         <div>
           <button
@@ -526,7 +654,7 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
             disabled={loading}
             className="w-full px-4 py-2.5 text-sm text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-xl transition-all duration-200 font-medium disabled:opacity-50"
           >
-            {loading ? t('config.loadingModels') : t('config.loadModels')}
+            {loading ? t('config.loadingModels') : (formData.type === 'ollama' ? t('config.detectOllama') : t('config.loadModels'))}
           </button>
         </div>
 
@@ -571,6 +699,46 @@ function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProp
               className={inputClass}
             />
           )}
+        </div>
+
+        <div>
+          <label htmlFor="configTemperature" className="block text-sm font-medium text-[var(--fg)] mb-1.5">
+            {t('config.temperature')}
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              id="configTemperature"
+              type="range"
+              min="0"
+              max="2"
+              step="0.1"
+              value={formData.temperature ?? 0.5}
+              onChange={(e) => setFormData({ ...formData, temperature: parseFloat(e.target.value) })}
+              className="flex-1 h-2 bg-[var(--surface-warm-hover)] rounded-lg appearance-none cursor-pointer accent-[var(--accent-indigo)]"
+            />
+            <span className="text-sm font-mono text-[var(--fg)] w-10 text-right">
+              {(formData.temperature ?? 0.5).toFixed(1)}
+            </span>
+          </div>
+          <p className="text-xs text-[var(--muted)] mt-1">{t('config.temperatureHint')}</p>
+        </div>
+
+        <div>
+          <label htmlFor="configMaxTokens" className="block text-sm font-medium text-[var(--fg)] mb-1.5">
+            {t('config.maxTokens')}
+          </label>
+          <input
+            id="configMaxTokens"
+            type="number"
+            min="256"
+            max="200000"
+            step="256"
+            value={formData.maxTokens ?? ''}
+            onChange={(e) => setFormData({ ...formData, maxTokens: e.target.value ? parseInt(e.target.value, 10) : undefined })}
+            placeholder={t('config.maxTokensPlaceholder')}
+            className={inputClass}
+          />
+          <p className="text-xs text-[var(--muted)] mt-1">{t('config.maxTokensHint')}</p>
         </div>
         </div>
 

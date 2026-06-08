@@ -4,11 +4,14 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocale } from '@/lib/locales';
 import { useZoomControls } from '@/hooks/useZoomControls';
 import { getMermaidThemeVariables, getCurrentTheme } from '@/lib/utils/theme-utils';
+import { svgToPng } from '@/lib/utils/export-diagram';
 import ZoomToolbar from './ZoomToolbar';
+import type { CanvasExportHandle } from './DiagramCanvas';
 
 interface MermaidCanvasProps {
   code: string;
   isStreaming?: boolean;
+  exportRef?: React.MutableRefObject<CanvasExportHandle | null>;
 }
 
 let mermaidInstance: typeof import('mermaid').default | null = null;
@@ -32,7 +35,7 @@ async function initMermaid() {
     mermaid.initialize({
       startOnLoad: false,
       theme: 'neutral',
-      securityLevel: 'loose',
+      securityLevel: 'strict',
       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
       themeVariables: getMermaidThemeVariables(),
       flowchart: {
@@ -61,12 +64,13 @@ async function initMermaid() {
   }
 }
 
-export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps) {
+export default function MermaidCanvas({ code, isStreaming, exportRef }: MermaidCanvasProps) {
   const { t } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const renderIdRef = useRef(0);
+  const rafIdRef = useRef(0);
   const isStreamingRef = useRef(isStreaming);
 
   // Keep isStreamingRef in sync
@@ -97,7 +101,7 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
       if (!mermaidInstance || !containerRef.current) return;
       if (currentRenderId !== renderIdRef.current) return;
 
-      const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const id = `mermaid-${crypto.randomUUID()}`;
       const { svg, bindFunctions } = await mermaidInstance.render(id, code);
 
       if (currentRenderId !== renderIdRef.current) return;
@@ -107,7 +111,8 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
           bindFunctions(containerRef.current);
         }
         // 自动适应视图（75% 容器大小）
-        requestAnimationFrame(() => {
+        if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = requestAnimationFrame(() => {
           if (!containerRef.current || !wrapperRef.current) return;
           const svgEl = containerRef.current.querySelector('svg');
           if (!svgEl) return;
@@ -156,12 +161,98 @@ export default function MermaidCanvas({ code, isStreaming }: MermaidCanvasProps)
       if (error && currentRenderId === renderIdRef.current) {
         setError(error);
       }
-    });
+    }).catch(console.error);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- currentRenderId 已在 effect 内捕获，用于清理；renderDiagram 不需要作为依赖
-    return () => { renderIdRef.current++; };
+    return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- 故意在 cleanup 中递增 ref 以使进行中的渲染失效
+      renderIdRef.current++;
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- renderDiagram 是 useCallback 包裹的函数，不需要作为依赖
   }, [code, t]);
+
+  // 注册导出函数
+  useEffect(() => {
+    if (!exportRef) return;
+    const container = containerRef.current;
+    if (!container || error) return;
+
+    exportRef.current = {
+      exportAs: async (format) => {
+        const svgEl = container.querySelector('svg');
+        if (!svgEl) throw new Error('图表未渲染');
+
+        const width = svgEl.clientWidth || parseInt(svgEl.getAttribute('width') || '800');
+        const height = svgEl.clientHeight || parseInt(svgEl.getAttribute('height') || '600');
+
+        // 克隆 SVG
+        const clonedSvg = svgEl.cloneNode(true) as SVGSVGElement;
+        clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+        clonedSvg.setAttribute('width', String(width));
+        clonedSvg.setAttribute('height', String(height));
+
+        // 清理 @import 语句
+        clonedSvg.querySelectorAll('style').forEach(style => {
+          if (style.textContent) {
+            style.textContent = style.textContent.replace(/@import[^;]+;/g, '');
+          }
+        });
+
+        // 将 foreignObject 中的文字转换为 SVG text 元素
+        const foreignObjects = clonedSvg.querySelectorAll('foreignObject');
+        foreignObjects.forEach(fo => {
+          const parent = fo.parentElement;
+          if (!parent) return;
+
+          // 获取 foreignObject 的位置
+          const x = fo.getAttribute('x') || '0';
+          const y = fo.getAttribute('y') || '0';
+          const w = fo.getAttribute('width') || '100';
+          const h = fo.getAttribute('height') || '30';
+
+          // 提取文字内容
+          const textContent = fo.textContent?.trim() || '';
+          if (!textContent) {
+            fo.remove();
+            return;
+          }
+
+          // 创建 SVG text 元素替代 foreignObject
+          const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          textEl.setAttribute('x', String(parseInt(x) + parseInt(w) / 2));
+          textEl.setAttribute('y', String(parseInt(y) + parseInt(h) / 2 + 5));
+          textEl.setAttribute('text-anchor', 'middle');
+          textEl.setAttribute('dominant-baseline', 'middle');
+          textEl.setAttribute('font-size', '14');
+          textEl.setAttribute('font-family', 'Inter, sans-serif');
+          textEl.setAttribute('fill', 'var(--fg, #1a1a1a)');
+          textEl.textContent = textContent;
+
+          // 从父元素的 class 判断样式
+          const parentClass = parent.getAttribute('class') || '';
+          if (parentClass.includes('node')) {
+            textEl.setAttribute('font-weight', '500');
+          }
+
+          // 移除 foreignObject，添加 text 元素
+          fo.remove();
+          parent.appendChild(textEl);
+        });
+
+        const svgString = new XMLSerializer().serializeToString(clonedSvg);
+
+        if (format === 'svg') {
+          return new Blob([svgString], { type: 'image/svg+xml' });
+        }
+
+        // PNG
+        return svgToPng(svgString, width, height);
+      },
+    };
+
+    return () => { exportRef.current = null; };
+  }, [code, error, exportRef]);
 
   return (
     <div className="w-full h-full overflow-hidden canvas-grid-bg relative">

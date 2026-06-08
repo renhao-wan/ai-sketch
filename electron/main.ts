@@ -11,6 +11,8 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
 import path from 'path';
 import { startServer, stopServer } from './server';
+import { loadWindowState, saveWindowState } from './window-state';
+import { initAutoUpdater, checkForUpdates, downloadUpdate, quitAndInstall } from './updater';
 
 /** 主窗口实例 */
 let mainWindow: BrowserWindow | null = null;
@@ -34,14 +36,18 @@ const isDev = process.env.ELECTRON_DEV === 'true';
  * 创建主窗口
  *
  * 配置窗口属性：
- * - 默认尺寸 1400x900，最小尺寸 800x600
+ * - 默认尺寸 1200x800，最小尺寸 800x600
  * - 启用上下文隔离，禁用 Node.js 集成（安全最佳实践）
  * - 延迟显示（show: false + ready-to-show），避免启动时白屏闪烁
  */
 function createWindow(): void {
+  const savedState = loadWindowState();
+
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    x: savedState.x,
+    y: savedState.y,
+    width: savedState.width,
+    height: savedState.height,
     minWidth: 800,
     minHeight: 600,
     frame: false, // 完全无边框，不显示原生标题栏和按钮
@@ -63,11 +69,32 @@ function createWindow(): void {
     mainWindow.loadURL(`http://localhost:${port}`);
   }
 
-  // 页面加载完成后再显示窗口并最大化
+  // 页面加载完成后再显示窗口，恢复最大化状态
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
-    mainWindow?.maximize();
+    if (savedState.isMaximized) {
+      mainWindow?.maximize();
+    }
   });
+
+  // 窗口移动/调整大小时保存状态（最大化时跳过，避免覆盖恢复尺寸）
+  const saveCurrentState = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (mainWindow.isMaximized()) {
+      saveWindowState({ ...loadWindowState(), isMaximized: true });
+      return;
+    }
+    const bounds = mainWindow.getBounds();
+    saveWindowState({
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      isMaximized: false,
+    });
+  };
+  mainWindow.on('resize', saveCurrentState);
+  mainWindow.on('move', saveCurrentState);
 
   // 窗口最大化/还原时主动通知渲染进程（更新图标）
   mainWindow.on('maximize', () => {
@@ -75,6 +102,24 @@ function createWindow(): void {
   });
   mainWindow.on('unmaximize', () => {
     mainWindow?.webContents.send('window-maximize-changed', false);
+  });
+
+  // 崩溃恢复：渲染进程崩溃时提示用户重新加载
+  mainWindow.webContents.on('render-process-gone', async (_event, details) => {
+    console.error('[Electron] Render process gone:', details.reason);
+    const { response } = await dialog.showMessageBox({
+      type: 'error',
+      title: '页面崩溃',
+      message: '页面发生崩溃，是否重新加载？',
+      detail: `原因: ${details.reason}`,
+      buttons: ['重新加载', '关闭'],
+      defaultId: 0,
+    });
+    if (response === 0) {
+      mainWindow?.webContents.reload();
+    } else {
+      mainWindow?.close();
+    }
   });
 
   // 窗口关闭时清理引用
@@ -100,6 +145,9 @@ app.whenReady().then(async () => {
 
     // 创建窗口
     createWindow();
+
+    // 初始化自动更新
+    initAutoUpdater(mainWindow);
   } catch (error) {
     dialog.showErrorBox(
       '启动失败',
@@ -110,8 +158,11 @@ app.whenReady().then(async () => {
 });
 
 // 所有窗口关闭时退出应用（Windows/Linux）
-app.on('window-all-closed', () => {
-  stopServer();
+app.on('window-all-closed', async () => {
+  await stopServer();
+  // require 避免编译时 rootDir 限制（electron tsconfig 仅包含 electron/ 目录）
+  const { closeDb } = require('../lib/db/index');
+  closeDb();
   app.quit();
 });
 
@@ -165,4 +216,17 @@ ipcMain.handle('window-is-maximized', () => {
 
 ipcMain.handle('window-close', () => {
   mainWindow?.close();
+});
+
+// IPC 处理：自动更新
+ipcMain.handle('update-check', () => {
+  checkForUpdates(mainWindow);
+});
+
+ipcMain.handle('update-download', () => {
+  downloadUpdate(mainWindow);
+});
+
+ipcMain.handle('update-install', () => {
+  quitAndInstall();
 });

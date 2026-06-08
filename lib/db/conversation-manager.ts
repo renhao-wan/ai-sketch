@@ -1,4 +1,5 @@
-import { getDb, saveToDisk } from './index';
+import { getDb, requestSave } from './index';
+import { withTransaction } from './transaction';
 import { generateId, parseStoredImages } from '@/lib/utils';
 import type { Conversation, ConversationMessage, ConversationWithMessages, LLMMessage } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
@@ -16,17 +17,6 @@ interface ConversationRow {
   updated_at: number;
 }
 
-interface MessageRow {
-  id: string;
-  conversation_id: string;
-  role: string;
-  content: string;
-  image_data: string | null;
-  image_mime_type: string | null;
-  source_type: string | null;
-  created_at: number;
-}
-
 function rowToConversation(row: ConversationRow): Conversation {
   return {
     id: row.id,
@@ -42,32 +32,32 @@ function rowToConversation(row: ConversationRow): Conversation {
   };
 }
 
-/** 将数据库行数组解析为 Conversation 对象 */
-function parseConversationRow(row: unknown[]): Conversation {
+/** 将数据库行对象解析为 Conversation 对象 */
+function parseConversationRow(row: Record<string, unknown>): Conversation {
   return rowToConversation({
-    id: row[0] as string,
-    title: row[1] as string,
-    chart_type: row[2] as string,
-    format: row[3] as string,
-    config_name: row[4] as string | null,
-    config_model: row[5] as string | null,
-    current_code: row[6] as string,
-    message_count: row[7] as number,
-    created_at: row[8] as number,
-    updated_at: row[9] as number,
+    id: row.id as string,
+    title: row.title as string,
+    chart_type: row.chart_type as string,
+    format: row.format as string,
+    config_name: row.config_name as string | null,
+    config_model: row.config_model as string | null,
+    current_code: row.current_code as string,
+    message_count: row.message_count as number,
+    created_at: row.created_at as number,
+    updated_at: row.updated_at as number,
   });
 }
 
-function rowToMessage(row: MessageRow): ConversationMessage {
+function rowToMessage(row: Record<string, unknown>): ConversationMessage {
   return {
-    id: row.id,
-    conversationId: row.conversation_id,
+    id: row.id as string,
+    conversationId: row.conversation_id as string,
     role: row.role as 'user' | 'assistant',
-    content: row.content,
-    imageData: row.image_data || undefined,
-    imageMimeType: row.image_mime_type || undefined,
+    content: row.content as string,
+    imageData: (row.image_data as string) || undefined,
+    imageMimeType: (row.image_mime_type as string) || undefined,
     sourceType: (row.source_type as 'text' | 'file' | 'image') || 'text',
-    createdAt: row.created_at,
+    createdAt: row.created_at as number,
   };
 }
 
@@ -105,7 +95,7 @@ class ConversationManager {
        VALUES (?, ?, ?, ?, ?, ?, '', 0, ?, ?)`,
       [id, title, data.chartType, data.format, data.configName || null, data.configModel || null, now, now],
     );
-    saveToDisk();
+    requestSave();
 
     return {
       id,
@@ -126,21 +116,33 @@ class ConversationManager {
     const sql = limit
       ? 'SELECT * FROM conversations ORDER BY updated_at DESC LIMIT ?'
       : 'SELECT * FROM conversations ORDER BY updated_at DESC';
-    const result = limit ? db.exec(sql, [limit]) : db.exec(sql);
-    if (result.length === 0) return [];
-    return result[0].values.map((row: unknown[]) => parseConversationRow(row));
+    const stmt = db.prepare(sql);
+    if (limit !== undefined) stmt.bind([limit]);
+    const conversations: Conversation[] = [];
+    try {
+      while (stmt.step()) {
+        conversations.push(parseConversationRow(stmt.getAsObject() as Record<string, unknown>));
+      }
+    } finally {
+      stmt.free();
+    }
+    return conversations;
   }
 
   async getById(id: string): Promise<ConversationWithMessages | null> {
     const db = await getDb();
-    const convResult = db.exec('SELECT * FROM conversations WHERE id = ?', [id]);
-    if (convResult.length === 0 || convResult[0].values.length === 0) return null;
-
-    const row = convResult[0].values[0];
-    const conversation = parseConversationRow(row);
-
-    const messages = await this.getMessages(id);
-    return { ...conversation, messages };
+    const stmt = db.prepare('SELECT * FROM conversations WHERE id = ?');
+    try {
+      stmt.bind([id]);
+      if (!stmt.step()) {
+        return null;
+      }
+      const conversation = parseConversationRow(stmt.getAsObject() as Record<string, unknown>);
+      const messages = await this.getMessages(id);
+      return { ...conversation, messages };
+    } finally {
+      stmt.free();
+    }
   }
 
   async update(id: string, data: Partial<{
@@ -152,8 +154,18 @@ class ConversationManager {
     configModel: string;
   }>): Promise<Conversation | null> {
     const db = await getDb();
-    const existing = db.exec('SELECT * FROM conversations WHERE id = ?', [id]);
-    if (existing.length === 0 || existing[0].values.length === 0) return null;
+    // 检查是否存在并获取完整行数据
+    const stmt = db.prepare('SELECT * FROM conversations WHERE id = ?');
+    let existing: Record<string, unknown>;
+    try {
+      stmt.bind([id]);
+      if (!stmt.step()) {
+        return null;
+      }
+      existing = stmt.getAsObject() as Record<string, unknown>;
+    } finally {
+      stmt.free();
+    }
 
     const now = Date.now();
     const sets: string[] = ['updated_at = ?'];
@@ -168,35 +180,47 @@ class ConversationManager {
 
     params.push(id);
     db.run(`UPDATE conversations SET ${sets.join(', ')} WHERE id = ?`, params);
-    saveToDisk();
+    requestSave();
 
-    const result = db.exec('SELECT * FROM conversations WHERE id = ?', [id]);
-    if (result.length === 0 || result[0].values.length === 0) return null;
-    const row = result[0].values[0];
-    return parseConversationRow(row);
+    // 直接构造返回对象，无需再次 SELECT
+    return {
+      id,
+      title: data.title ?? (existing.title as string),
+      chartType: data.chartType ?? (existing.chart_type as string),
+      format: (data.format ?? (existing.format as string) ?? 'excalidraw') as DiagramFormat,
+      configName: data.configName ?? (existing.config_name as string | null) ?? undefined,
+      configModel: data.configModel ?? (existing.config_model as string | null) ?? undefined,
+      currentCode: data.currentCode ?? (existing.current_code as string),
+      messageCount: existing.message_count as number,
+      createdAt: existing.created_at as number,
+      updatedAt: now,
+    };
   }
 
   async delete(id: string): Promise<void> {
     const db = await getDb();
-    db.run('DELETE FROM messages WHERE conversation_id = ?', [id]);
-    db.run('DELETE FROM conversations WHERE id = ?', [id]);
-    saveToDisk();
+    withTransaction(db, () => {
+      db.run('DELETE FROM messages WHERE conversation_id = ?', [id]);
+      db.run('DELETE FROM conversations WHERE id = ?', [id]);
+    });
   }
 
   async deleteMany(ids: string[]): Promise<void> {
     if (ids.length === 0) return;
     const db = await getDb();
     const placeholders = ids.map(() => '?').join(',');
-    db.run(`DELETE FROM messages WHERE conversation_id IN (${placeholders})`, ids);
-    db.run(`DELETE FROM conversations WHERE id IN (${placeholders})`, ids);
-    saveToDisk();
+    withTransaction(db, () => {
+      db.run(`DELETE FROM messages WHERE conversation_id IN (${placeholders})`, ids);
+      db.run(`DELETE FROM conversations WHERE id IN (${placeholders})`, ids);
+    });
   }
 
   async clearAll(): Promise<void> {
     const db = await getDb();
-    db.run('DELETE FROM messages');
-    db.run('DELETE FROM conversations');
-    saveToDisk();
+    withTransaction(db, () => {
+      db.run('DELETE FROM messages');
+      db.run('DELETE FROM conversations');
+    });
   }
 
   async addMessage(data: {
@@ -211,17 +235,18 @@ class ConversationManager {
     const id = this.generateId();
     const now = Date.now();
 
-    db.run(
-      `INSERT INTO messages (id, conversation_id, role, content, image_data, image_mime_type, source_type, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, data.conversationId, data.role, data.content, data.imageData || null, data.imageMimeType || null, data.sourceType || 'text', now],
-    );
+    withTransaction(db, () => {
+      db.run(
+        `INSERT INTO messages (id, conversation_id, role, content, image_data, image_mime_type, source_type, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, data.conversationId, data.role, data.content, data.imageData || null, data.imageMimeType || null, data.sourceType || 'text', now],
+      );
 
-    db.run(
-      'UPDATE conversations SET message_count = message_count + 1, updated_at = ? WHERE id = ?',
-      [now, data.conversationId],
-    );
-    saveToDisk();
+      db.run(
+        'UPDATE conversations SET message_count = message_count + 1, updated_at = ? WHERE id = ?',
+        [now, data.conversationId],
+      );
+    });
 
     return {
       id,
@@ -247,36 +272,81 @@ class ConversationManager {
         params.push(offset);
       }
     }
-    const result = db.exec(sql, params);
-    if (result.length === 0) return [];
-    return result[0].values.map((row: unknown[]) =>
-      rowToMessage({
-        id: row[0] as string,
-        conversation_id: row[1] as string,
-        role: row[2] as string,
-        content: row[3] as string,
-        image_data: row[4] as string | null,
-        image_mime_type: row[5] as string | null,
-        source_type: row[6] as string | null,
-        created_at: row[7] as number,
-      }),
-    );
+    const stmt = db.prepare(sql);
+    const messages: ConversationMessage[] = [];
+    try {
+      stmt.bind(params);
+      while (stmt.step()) {
+        messages.push(rowToMessage(stmt.getAsObject() as Record<string, unknown>));
+      }
+    } finally {
+      stmt.free();
+    }
+    return messages;
   }
 
   async buildContextMessages(conversationId: string, maxMessages: number = MAX_CONTEXT_MESSAGES): Promise<LLMMessage[]> {
-    const messages = await this.getMessages(conversationId);
+    const db = await getDb();
 
-    if (messages.length <= maxMessages) {
+    // 先查总数，避免全量加载
+    const countResult = db.exec('SELECT COUNT(*) FROM messages WHERE conversation_id = ?', [conversationId]);
+    const totalCount = countResult.length > 0 ? (countResult[0].values[0][0] as number) : 0;
+
+    if (totalCount <= maxMessages) {
+      // 消息数未超限，全量返回
+      const messages = await this.getMessages(conversationId);
       return messages.map(toLLMMessage);
     }
 
-    const firstUserIdx = messages.findIndex(m => m.role === 'user');
-    const firstMessage = firstUserIdx >= 0 ? messages[firstUserIdx] : messages[0];
-    const recentMessages = messages.slice(-(maxMessages - 1));
+    // 获取第一条 user �消息
+    let firstMessage: ConversationMessage | null = null;
+    const firstUserStmt = db.prepare(
+      'SELECT * FROM messages WHERE conversation_id = ? AND role = ? ORDER BY created_at ASC LIMIT 1',
+    );
+    try {
+      firstUserStmt.bind([conversationId, 'user']);
+      if (firstUserStmt.step()) {
+        firstMessage = rowToMessage(firstUserStmt.getAsObject() as Record<string, unknown>);
+      }
+    } finally {
+      firstUserStmt.free();
+    }
+
+    // 如果没有 user 消息，获取第一条消息
+    if (!firstMessage) {
+      const firstStmt = db.prepare(
+        'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 1',
+      );
+      try {
+        firstStmt.bind([conversationId]);
+        if (firstStmt.step()) {
+          firstMessage = rowToMessage(firstStmt.getAsObject() as Record<string, unknown>);
+        }
+      } finally {
+        firstStmt.free();
+      }
+    }
+
+    if (!firstMessage) return [];
+
+    // 获取最近 N-1 条消息（倒序查询后反转）
+    const recentStmt = db.prepare(
+      'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT ?',
+    );
+    const recentMessages: ConversationMessage[] = [];
+    try {
+      recentStmt.bind([conversationId, maxMessages - 1]);
+      while (recentStmt.step()) {
+        recentMessages.push(rowToMessage(recentStmt.getAsObject() as Record<string, unknown>));
+      }
+    } finally {
+      recentStmt.free();
+    }
+    recentMessages.reverse();
 
     const contextMessages: ConversationMessage[] = [firstMessage];
 
-    if (firstMessage.id !== recentMessages[0].id) {
+    if (recentMessages.length > 0 && firstMessage.id !== recentMessages[0].id) {
       contextMessages.push({
         id: 'truncation-notice',
         conversationId,
@@ -304,25 +374,46 @@ class ConversationManager {
     );
     if (result.length === 0 || result[0].values.length === 0) return;
     const msgId = result[0].values[0][0] as string;
-    db.run('DELETE FROM messages WHERE id = ?', [msgId]);
-    db.run(
-      'UPDATE conversations SET message_count = MAX(message_count - 1, 0), updated_at = ? WHERE id = ?',
-      [Date.now(), conversationId],
+
+    withTransaction(db, () => {
+      db.run('DELETE FROM messages WHERE id = ?', [msgId]);
+      db.run(
+        'UPDATE conversations SET message_count = MAX(message_count - 1, 0), updated_at = ? WHERE id = ?',
+        [Date.now(), conversationId],
+      );
+    });
+  }
+
+  /** 删除最后一条消息（任意角色），用于生成失败时清理 */
+  async deleteLastMessage(conversationId: string): Promise<void> {
+    const db = await getDb();
+    const result = db.exec(
+      'SELECT id FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1',
+      [conversationId],
     );
-    saveToDisk();
+    if (result.length === 0 || result[0].values.length === 0) return;
+    const msgId = result[0].values[0][0] as string;
+
+    withTransaction(db, () => {
+      db.run('DELETE FROM messages WHERE id = ?', [msgId]);
+      db.run(
+        'UPDATE conversations SET message_count = MAX(message_count - 1, 0), updated_at = ? WHERE id = ?',
+        [Date.now(), conversationId],
+      );
+    });
   }
 
   async updateCurrentCode(conversationId: string, code: string): Promise<void> {
     const db = await getDb();
     const now = Date.now();
     db.run('UPDATE conversations SET current_code = ?, updated_at = ? WHERE id = ?', [code, now, conversationId]);
-    saveToDisk();
+    requestSave();
   }
 
   async updateTitle(conversationId: string, title: string): Promise<void> {
     const db = await getDb();
     db.run('UPDATE conversations SET title = ? WHERE id = ?', [title, conversationId]);
-    saveToDisk();
+    requestSave();
   }
 
   /** 搜索会话，支持标题模糊搜索、排序和分页 */
@@ -364,11 +455,16 @@ class ConversationManager {
     // 获取分页数据
     const dataSql = `SELECT * FROM conversations ${whereStr} ORDER BY ${sortField} ${sortOrder} LIMIT ? OFFSET ?`;
     const dataParams = [...queryParams, limit, offset];
-    const result = db.exec(dataSql, dataParams);
-
-    const conversations = result.length > 0
-      ? result[0].values.map((row: unknown[]) => parseConversationRow(row))
-      : [];
+    const stmt = db.prepare(dataSql);
+    const conversations: Conversation[] = [];
+    try {
+      stmt.bind(dataParams);
+      while (stmt.step()) {
+        conversations.push(parseConversationRow(stmt.getAsObject() as Record<string, unknown>));
+      }
+    } finally {
+      stmt.free();
+    }
 
     return { conversations, total };
   }

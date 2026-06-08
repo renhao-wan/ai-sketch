@@ -49,6 +49,13 @@ export const zh = {
   'editor.requestFailed': '请求失败',
   'editor.networkError': '网络连接失败，请检查网络连接',
 
+  // API Error Messages
+  'api.requestError': '请求参数错误',
+  'api.apiKeyError': 'API Key 无效或权限不足',
+  'api.rateLimit': '请求过于频繁，请稍后重试',
+  'api.serverError': '服务器错误，请稍后重试',
+  'api.requestFailed': '请求处理失败，请稍后重试',
+
   // AI Copilot Panel
   'copilot.expandPanel': '展开面板',
   'copilot.export': '导出',
@@ -66,11 +73,17 @@ export const zh = {
   'copilot.regenerate': '重新生成',
   'copilot.copy': '复制',
   'copilot.showDiagram': '展示图表',
+  'copilot.scrollToBottom': '回到底部',
 
   // Bottom Context Panel
   'panel.generatedCode': '生成代码',
   'panel.expandPanel': '展开上下文面板',
   'panel.codeWillAppear': '生成代码后将在此显示',
+
+  // Export
+  'export.png': '导出 PNG 图片',
+  'export.svg': '导出 SVG 矢量图',
+  'export.code': '导出代码文件',
 
   // Code Editor
 
@@ -104,7 +117,6 @@ export const zh = {
   'config.confirmDeleteMsg': '确定要删除这个配置吗？此操作不可恢复。',
   'config.deleteSuccess': '删除成功',
   'config.deleteSuccessMsg': '配置已成功删除',
-  'config.cloneSuffix': '（副本）',
   'config.importSuccess': '导入成功',
   'config.imported': '成功导入',
   'config.importedCount': '个配置',
@@ -120,8 +132,29 @@ export const zh = {
   'config.fillRequired': '请先填写提供商类型、基础 URL 和 API 密钥',
   'config.loadModelFailed': '加载模型失败',
   'config.fillAllRequired': '请填写所有必填字段',
+  'config.temperature': '温度',
+  'config.temperatureHint': '控制输出随机性，0=确定性，2=最大随机性，推荐 0.3-0.5',
+  'config.maxTokens': '最大输出 Token 数',
+  'config.maxTokensPlaceholder': '留空使用默认值',
+  'config.maxTokensHint': '控制单次生成的最大长度，留空则使用默认值 16384',
   'config.bannerTitle': '配置较多，建议清理',
   'config.bannerDescription': '您已有 {count} 个配置，建议清理不常用的配置。',
+  'config.validation.nameRequired': '配置名称不能为空',
+  'config.validation.invalidType': '配置类型必须是 openai、anthropic 或 ollama',
+  'config.validation.urlRequired': 'API地址不能为空',
+  'config.validation.urlInvalid': 'API地址格式不正确',
+  'config.validation.apiKeyRequired': 'API密钥不能为空',
+  'config.validation.modelRequired': '模型名称不能为空',
+  'config.validation.invalid': '配置无效',
+  'config.validation.importFormatError': '导入数据格式错误',
+  'config.notFound': '配置不存在',
+  'config.defaultName': '新配置',
+  'config.ollamaDetected': '检测到 Ollama 新模型',
+  'config.ollamaDetectedDesc': '发现 {count} 个未配置的模型，点击快速添加',
+  'config.addOllamaConfig': '添加 Ollama 配置',
+  'config.detectOllama': '检测本地模型',
+  'config.ollamaBatchCreated': '已创建 {count} 个 Ollama 配置',
+  'config.ollamaDefaultDesc': '本地 Ollama 模型',
 
   // History
   'history.title': '历史记录',
@@ -199,6 +232,7 @@ export const zh = {
   'toolbar.redo': '重做',
   'toolbar.zoomIn': '放大',
   'toolbar.zoomOut': '缩小',
+  'toolbar.fitToView': '适应视图',
 
   // Error Boundary
   'error.title': '出错了',
@@ -207,6 +241,8 @@ export const zh = {
   'error.refresh': '刷新页面',
 
   // Image Upload
+  'upload.processing': '处理中...',
+  'upload.ready': '就绪',
 
   // Diagram Canvas
   'canvas.emptyState': '描述图表内容，AI 将为你生成',
@@ -219,6 +255,22 @@ export const zh = {
   'drawio.renderError': 'Draw.io 渲染错误',
   'drawio.loadTimeout': 'Draw.io 查看器加载超时，请检查网络连接',
 
+  // Draw.io editor (mxGraph)
+  'drawio.tool.select': '选择',
+  'drawio.tool.rectangle': '矩形',
+  'drawio.tool.ellipse': '椭圆',
+  'drawio.tool.diamond': '菱形',
+  'drawio.tool.text': '文本',
+  'drawio.tool.arrow': '箭头',
+  'drawio.action.delete': '删除',
+  'drawio.action.editLabel': '编辑标签',
+  'drawio.action.addRect': '添加矩形',
+  'drawio.action.addText': '添加文本',
+  'drawio.action.copy': '复制',
+  'drawio.action.paste': '粘贴',
+  'drawio.error.loadFailed': '加载 @maxgraph/core 失败',
+  'drawio.error.xmlParse': 'XML 解析错误',
+
   // Mermaid Canvas
   'mermaid.renderFailed': 'Mermaid 渲染失败',
   'mermaid.syntaxError': 'Mermaid 语法错误',
@@ -226,6 +278,9 @@ export const zh = {
   // Message Bubble
   'message.generatedCode': '生成代码',
   'message.characters': '个字符',
+  'message.expandAll': '展开全部',
+  'message.collapse': '收起',
+  'message.clickToExpand': '点击查看',
 
   // Scroll to top
   'scrollToTop': '回到顶部',
@@ -241,6 +296,8 @@ export const zh = {
 
   // Language switcher
   'lang.label': '语言',
+  'lang.zh': '简体中文',
+  'lang.en': 'English',
 
   // Time ago
   'time.justNow': '刚刚',
@@ -273,6 +330,14 @@ export const zh = {
   'chart.matrix': '矩阵图',
   'chart.infographic': '信息图',
 
+  // Notifications
+  'notification.unsupportedType': '类型不支持',
+  'notification.mermaidUnsupported': '{type} 不是 Mermaid 原生支持的图表类型，将使用最接近的替代方案生成。',
+  'notification.partialGenerationFailed': '部分元素生成失败',
+  'notification.elementsFailed': '以下元素无法渲染：{elements}',
+  'notification.exportFailed': '导出失败',
+  'notification.exportNotSupported': '当前画布不支持图片导出',
+
   // 设置页
   'settings.title': '系统设置',
   'settings.appearance': '外观设置',
@@ -298,18 +363,23 @@ export const zh = {
   'settings.configs': '配置数量',
   'settings.dataCleanup': '数据清理',
   'settings.dataCleanupDesc': '清理或重置应用数据',
-  'settings.resetPreferences': '重置用户偏好',
+  'settings.resetPreferences': '重置',
   'settings.resetPreferencesDesc': '恢复默认主题和语言设置',
   'settings.resetPreferencesConfirm': '确定要重置用户偏好设置吗？主题和语言将恢复为默认值。',
   'settings.resetPreferencesSuccess': '用户偏好已重置',
-  'settings.clearConversations': '清理会话数据',
+  'settings.clearConversations': '清理',
   'settings.clearConversationsDesc': '删除所有会话记录',
   'settings.clearConversationsConfirm': '确定要清理所有会话数据吗？此操作不可撤销。',
   'settings.clearConversationsSuccess': '会话数据已清理',
-  'settings.clearConfigs': '清理 LLM 配置',
+  'settings.clearConfigs': '清理',
   'settings.clearConfigsDesc': '删除所有 LLM 提供商配置',
   'settings.clearConfigsConfirm': '确定要清理所有 LLM 配置吗？此操作不可撤销。',
   'settings.clearConfigsSuccess': 'LLM 配置已清理',
+  'settings.clearCache': '清理',
+  'settings.clearCacheDesc': '清除生成响应缓存',
+  'settings.clearCacheConfirm': '确定要清理所有缓存吗？已缓存的生成结果将丢失。',
+  'settings.clearCacheSuccess': '缓存已清理',
+  'settings.cacheEntries': '缓存条目',
   'settings.resetAll': '全部重置',
   'settings.resetAllDesc': '重置所有数据和设置',
   'settings.resetAllConfirm': '确定要重置所有数据吗？这将清除所有会话、配置和用户偏好设置。此操作不可撤销。',
@@ -331,6 +401,11 @@ export const zh = {
   'proxy.saveSuccess': '代理配置已保存',
   'proxy.saveFailed': '保存失败',
 
+  // 重试设置
+  'retries.title': '生成失败重试',
+  'retries.description': 'LLM 生成失败时自动重试，避免临时错误导致生成中断',
+  'retries.maxRetriesHint': '0=不重试，推荐 2 次。仅对非用户取消的失败生效，每次重试会重新发起完整 LLM 请求',
+
   // 关于应用
   'about.defaultDescription': 'AI Sketch 是一款 AI 驱动的图表生成 Web 应用。用户通过自然语言描述，由 LLM 生成可渲染的图表代码，支持 Excalidraw JSON、Mermaid、Draw.io XML 三种格式。',
   'about.developer': '开发者信息',
@@ -343,6 +418,21 @@ export const zh = {
   'about.thirdPartyServices': '第三方服务',
   'about.thirdPartyServicesDesc': '本应用通过用户自行配置的 LLM 提供商（如 OpenAI、Anthropic 等）进行图表生成。API 请求从 Next.js 服务端发送到对应服务商，本应用不代理或存储这些请求。',
   'about.dependencies': '核心依赖',
+  'about.dep.Next.js': 'React 框架',
+  'about.dep.React': 'UI 库',
+  'about.dep.TypeScript': '类型安全',
+  'about.dep.Tailwind CSS': 'CSS 框架',
+  'about.dep.Excalidraw': '白板绘图',
+  'about.dep.Mermaid': '图表渲染',
+  'about.dep.Monaco Editor': '代码编辑器',
+  'about.dep.sql.js': 'SQLite WASM',
+  'about.checkUpdate': '检查更新',
+  'about.checking': '检查中...',
+  'about.versionUpdate': '版本更新',
+  'about.currentVersion': '当前版本',
+  'about.upToDate': '已是最新版本',
+  'about.retry': '重试',
+  'about.desktopOnly': '自动更新仅在桌面端应用中可用',
 
   // 快捷键设置
   'shortcuts.search': '搜索快捷键...',
@@ -359,6 +449,16 @@ export const zh = {
   'shortcuts.openNetwork': '网络设置',
   'shortcuts.openConversations': '会话管理',
   'shortcuts.openAppearance': '外观设置',
+  'shortcuts.openHistory': '历史记录',
+  'shortcuts.sendMessage': '发送消息',
+  'shortcuts.newline': '换行',
+  'shortcuts.undo': '撤销',
+  'shortcuts.cut': '剪切',
+  'shortcuts.copy': '复制',
+  'shortcuts.paste': '粘贴',
+  'shortcuts.selectAll': '全选',
+  'shortcuts.noMatch': '没有找到匹配的快捷键',
+  'shortcuts.noShortcuts': '暂无快捷键',
   'shortcuts.windowMinimize': '最小化窗口',
   'shortcuts.windowMaximize': '最大化/还原窗口',
   'shortcuts.windowClose': '关闭窗口',
@@ -366,6 +466,16 @@ export const zh = {
   'window.maximize': '最大化',
   'window.restore': '还原',
   'window.close': '关闭',
+
+  // 更新
+  'update.available': '发现新版本',
+  'update.availableHint': '有新版本可用，建议更新',
+  'update.download': '下载',
+  'update.downloading': '正在下载...',
+  'update.downloaded': '更新已就绪',
+  'update.downloadedHint': '新版本下载完成，重启即可应用',
+  'update.install': '重启安装',
+  'update.error': '更新失败',
 } as const;
 
 export type TranslationKey = keyof typeof zh;

@@ -191,7 +191,7 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
             {!hasMore && items.length > 0 && totalCount > 0 && (
               <div className="px-4 py-2 text-center">
                 <span className="text-xs text-[var(--muted)]">
-                  {t('conversation.countTotal').replace('{count}', String(totalCount))}
+                  {t('conversation.countTotal', { count: totalCount })}
                 </span>
               </div>
             )}

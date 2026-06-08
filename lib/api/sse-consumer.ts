@@ -3,14 +3,20 @@
  * 从 /api/generate 的 SSE 响应中提取内容
  */
 
+import { parseSSEStream, parseSSEData } from './sse-parser';
+
 /** SSE 事件回调 */
 export interface SSECallbacks {
   /** 收到 meta 事件（包含 conversationId） */
   onMeta?: (conversationId: string) => void;
   /** 收到内容 chunk（已去除代码围栏） */
   onContent: (stripped: string, raw: string) => void;
+  /** 收到结果事件（最终处理后的内容） */
+  onResult?: (content: string) => void;
   /** 收到错误事件 */
   onError?: (error: string) => void;
+  /** 收到重试事件（服务端正在重试 LLM 调用） */
+  onRetry?: (attempt: number, maxRetries: number) => void;
 }
 
 /** SSE 消费结果 */
@@ -27,50 +33,64 @@ export async function consumeSSEStream(
   signal: AbortSignal,
   callbacks: SSECallbacks,
 ): Promise<SSEResult> {
-  const decoder = new TextDecoder();
   let accumulatedCode = '';
-  let buffer = '';
 
-  while (true) {
-    if (signal.aborted) {
-      reader.releaseLock();
-      break;
-    }
+  // 创建一个包装的 ReadableStream 来适配 parseSSEStream
+  const body = new ReadableStream({
+    start(controller) {
+      const pump = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              controller.close();
+              break;
+            }
+            controller.enqueue(value);
+          }
+        } catch (e) {
+          controller.error(e);
+        }
+      };
+      pump();
+    },
+  });
 
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-
-    for (const line of lines) {
-      if (line.trim() === '' || line.trim() === 'data: [DONE]') continue;
-      if (!line.startsWith('data: ')) continue;
-
+  await parseSSEStream({
+    body,
+    signal,
+    onLine: (data) => {
       try {
-        const data = JSON.parse(line.slice(6));
+        const parsed = parseSSEData(data);
 
-        if (data.type === 'meta' && data.conversationId) {
-          callbacks.onMeta?.(data.conversationId);
-        } else if (data.type === 'content' && data.content) {
-          accumulatedCode += data.content;
-          callbacks.onContent(accumulatedCode, data.content);
-        } else if (data.type === 'error') {
-          throw new Error(data.error);
-        } else if (data.content) {
+        if (parsed.type === 'meta' && parsed.conversationId) {
+          callbacks.onMeta?.(parsed.conversationId as string);
+        } else if (parsed.type === 'retry') {
+          // 重试时重置已累积的代码
+          accumulatedCode = '';
+          callbacks.onRetry?.(parsed.attempt as number, parsed.maxRetries as number);
+        } else if (parsed.type === 'content' && parsed.content) {
+          accumulatedCode += parsed.content as string;
+          callbacks.onContent(accumulatedCode, parsed.content as string);
+        } else if (parsed.type === 'result' && parsed.content) {
+          // 最终结果事件（服务端已处理，如去除代码围栏）
+          callbacks.onResult?.(parsed.content as string);
+        } else if (parsed.type === 'error') {
+          throw new Error(parsed.error as string);
+        } else if (parsed.content) {
           // Backward compatibility: old format without type field
-          accumulatedCode += data.content;
-          callbacks.onContent(accumulatedCode, data.content);
+          accumulatedCode += parsed.content as string;
+          callbacks.onContent(accumulatedCode, parsed.content as string);
         }
       } catch (e) {
         if (e instanceof SyntaxError) {
-          console.warn('[SSE] JSON parse error:', e.message, 'Raw:', line);
+          console.warn('[SSE] JSON parse error:', e.message);
         } else {
           throw e;
         }
       }
-    }
-  }
+    },
+  });
 
   return { accumulatedCode };
 }

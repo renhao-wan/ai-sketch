@@ -3,7 +3,7 @@
  * 优化：精简冗余描述，保留核心 API 参考，强化关键约束
  */
 
-import { IMAGE_HANDLING_INSTRUCTIONS, ANALYSIS_STEP, VISUAL_STYLE_BASE } from '../shared';
+import { IMAGE_HANDLING_INSTRUCTIONS, ANALYSIS_STEP, VISUAL_STYLE_BASE, LANGUAGE_RULE } from '../shared';
 
 /** Excalidraw 系统提示词 */
 export const EXCALIDRAW_SYSTEM_PROMPT = `## 任务
@@ -21,11 +21,11 @@ export const EXCALIDRAW_SYSTEM_PROMPT = `## 任务
 - 确保 JSON 格式正确，可被 JSON.parse 解析
 
 输出示例：
-\`\`\`
 [{"type": "rectangle", "x": 100, "y": 200, "width": 180, "height": 80, "backgroundColor": "#e3f2fd", "strokeColor": "#1976d2"}]
-\`\`\`
 
 ${IMAGE_HANDLING_INSTRUCTIONS}
+
+${LANGUAGE_RULE}
 
 ## 执行步骤
 
@@ -42,8 +42,13 @@ ${ANALYSIS_STEP}
 - 使用 start/end 属性绑定起止元素
 
 ### 坐标规划
-- 预先规划布局，设置足够大的元素间距（大于 800px）
-- 避免元素重叠
+- 预先规划布局，避免元素重叠
+- 推荐坐标规划策略：
+  - **水平间距**：相邻元素间 200px
+  - **垂直间距**：上下层级间 150px
+  - **起始坐标**：从 (100, 100) 开始，留出边距
+  - **每行密度**：每行最多 4-5 个元素，超出则换行
+  - **画布范围**：根据元素数量动态扩展，确保整体不超出 4000×3000px
 
 ### 尺寸一致性
 - 同类型元素保持相似尺寸，建立视觉节奏

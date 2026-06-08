@@ -43,7 +43,7 @@ class FileStrategy implements InputStrategy {
     });
   }
 
-  buildMessage(processedData: unknown, userPrompt: string, _chartType: string): MessagePayload {
+  buildMessage(processedData: unknown, userPrompt: string, _chartType: string, _diagramFormat?: unknown): MessagePayload {
     const fileContent = processedData as string;
     const combined = userPrompt.trim()
       ? `用户指令：\n${userPrompt.trim()}\n\n参考内容：\n${fileContent}`

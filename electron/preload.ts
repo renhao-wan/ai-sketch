@@ -27,6 +27,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppVersion: (): Promise<string> => ipcRenderer.invoke('get-app-version'),
 
   /**
+   * 自动更新 API
+   */
+  update: {
+    /** 手动检查更新 */
+    check: () => ipcRenderer.invoke('update-check'),
+    /** 下载更新 */
+    download: () => ipcRenderer.invoke('update-download'),
+    /** 安装更新并重启 */
+    install: () => ipcRenderer.invoke('update-install'),
+    /** 监听更新状态变化 */
+    onStatus: (callback: (data: { status: string; data?: unknown }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: { status: string; data?: unknown }) => callback(data);
+      ipcRenderer.on('update-status', handler);
+      return () => {
+        ipcRenderer.removeListener('update-status', handler);
+      };
+    },
+  },
+
+  /**
    * 窗口控制 API
    */
   window: {
@@ -38,9 +58,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     close: () => ipcRenderer.invoke('window-close'),
     /** 检查窗口是否最大化 */
     isMaximized: (): Promise<boolean> => ipcRenderer.invoke('window-is-maximized'),
-    /** 监听窗口最大化状态变化 */
+    /** 监听窗口最大化状态变化，返回清理函数用于移除监听器 */
     onMaximizeChange: (callback: (isMaximized: boolean) => void) => {
-      ipcRenderer.on('window-maximize-changed', (_event, value) => callback(value));
+      const handler = (_event: Electron.IpcRendererEvent, value: boolean) => callback(value);
+      ipcRenderer.on('window-maximize-changed', handler);
+      return () => {
+        ipcRenderer.removeListener('window-maximize-changed', handler);
+      };
     },
   },
 });

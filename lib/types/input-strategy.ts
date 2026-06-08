@@ -3,11 +3,8 @@
  * Each input type implements this interface, isolating its specific logic.
  */
 
-/** The type of input source — alias of SourceType from types/index.ts */
-export type InputSourceType = 'text' | 'file' | 'image';
-
-// Note: SourceType in types/index.ts has the same definition.
-// Both are kept for backward compatibility but should be unified.
+import type { SourceType } from './index';
+import type { DiagramFormat } from './diagram-strategy';
 
 /** Validation result */
 export type InputValidationResult =
@@ -16,14 +13,14 @@ export type InputValidationResult =
 
 /** A single processed file/image result from a strategy */
 export interface ProcessedItem {
-  sourceType: InputSourceType;
+  sourceType: SourceType;
   data: unknown;
   fileName: string;
 }
 
 /** Normalized message payload ready to be sent to onSendMessage */
 export type MessagePayload =
-  | { type: 'text'; content: string; sourceType: InputSourceType }
+  | { type: 'text'; content: string; sourceType: SourceType }
   | { type: 'image'; content: { text: string; images: unknown[] }; sourceType: 'image' };
 
 /**
@@ -32,7 +29,7 @@ export type MessagePayload =
  */
 export interface InputStrategy {
   /** Unique source type key */
-  readonly sourceType: InputSourceType;
+  readonly sourceType: SourceType;
 
   /** Whether this strategy can handle the given file (by MIME type, extension, etc.) */
   canHandle(file: File): boolean;
@@ -50,5 +47,5 @@ export interface InputStrategy {
    * Build a normalized message payload from the processed data and optional user prompt.
    * The payload is ready to be passed to onSendMessage.
    */
-  buildMessage(processedData: unknown, userPrompt: string, chartType: string): MessagePayload;
+  buildMessage(processedData: unknown, userPrompt: string, chartType: string, diagramFormat?: DiagramFormat): MessagePayload;
 }

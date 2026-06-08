@@ -2,9 +2,6 @@
  * 提示词模块类型定义
  */
 
-/** 图表格式 */
-export type DiagramFormat = 'excalidraw' | 'mermaid' | 'drawio';
-
 /** AI 操作类型 */
 export type AIActionType = 'layout' | 'beautify' | 'simplify' | 'explain';
 

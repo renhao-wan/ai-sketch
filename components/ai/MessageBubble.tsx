@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useCallback, useMemo } from 'react';
-import { User, Bot, RefreshCw, Copy, Download, Check, Play } from 'lucide-react';
+import React, { useState, useRef, useCallback } from 'react';
+import { User, Bot, RefreshCw, Copy, Download, Check, Play, ChevronDown, ChevronUp } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
 import { parseStoredImages } from '@/lib/utils';
 import Tooltip from '@/components/ui/Tooltip';
@@ -10,17 +10,39 @@ import type { ConversationMessage } from '@/lib/types';
 interface MessageBubbleProps {
   message: ConversationMessage;
   isStreaming?: boolean;
+  highlightQuery?: string;
   onRegenerate?: () => void;
   onCopy?: () => void;
   onExport?: () => void;
   onShowDiagram?: () => void;
 }
 
-export default function MessageBubble({ message, isStreaming, onRegenerate, onCopy, onExport, onShowDiagram }: MessageBubbleProps) {
+/** 将文本中匹配搜索关键词的子串用 <mark> 高亮 */
+function highlightText(text: string, query: string): React.ReactNode {
+  if (!query) return text;
+  const lower = text.toLowerCase();
+  const q = query.toLowerCase();
+  const parts: React.ReactNode[] = [];
+  let lastIdx = 0;
+  let idx = lower.indexOf(q);
+  while (idx !== -1) {
+    if (idx > lastIdx) parts.push(text.slice(lastIdx, idx));
+    parts.push(<mark key={idx} className="bg-yellow-200/60 text-inherit rounded-sm px-0.5">{text.slice(idx, idx + query.length)}</mark>);
+    lastIdx = idx + query.length;
+    idx = lower.indexOf(q, lastIdx);
+  }
+  if (lastIdx < text.length) parts.push(text.slice(lastIdx));
+  return parts.length > 0 ? parts : text;
+}
+
+const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, highlightQuery, onRegenerate, onCopy, onExport, onShowDiagram }: MessageBubbleProps) {
   const { t } = useLocale();
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const CODE_PREVIEW_LENGTH = 300;
+  const isLongCode = !isUser && message.content.length > CODE_PREVIEW_LENGTH;
 
   const handleCopy = useCallback(() => {
     if (!onCopy) return;
@@ -105,7 +127,7 @@ export default function MessageBubble({ message, isStreaming, onRegenerate, onCo
 
           {/* Text content */}
           {isUser ? (
-            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+            <p className="whitespace-pre-wrap break-words">{highlightText(message.content, highlightQuery || '')}</p>
           ) : (
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
@@ -114,13 +136,44 @@ export default function MessageBubble({ message, isStreaming, onRegenerate, onCo
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent-indigo)] animate-pulse" />
                 )}
               </div>
-              <pre className="text-xs font-mono bg-[var(--surface-warm-hover)] rounded-lg p-2.5 overflow-x-auto max-h-40 scrollbar-thin">
-                <code>{message.content.length > 300 ? message.content.substring(0, 300) + '...' : message.content}</code>
-              </pre>
+
+              {/* 收起状态：显示友好的提示卡片 */}
+              {!expanded ? (
+                <button
+                  onClick={() => setExpanded(true)}
+                  className="w-full flex items-center gap-2 px-3.5 py-2.5 bg-[var(--surface-warm-hover)] rounded-lg border border-dashed border-[var(--border)] hover:border-[var(--accent-indigo)]/30 hover:bg-[var(--accent-indigo)]/5 transition-all duration-200 group"
+                >
+                  <span className="text-xs text-[var(--muted)] group-hover:text-[var(--accent-indigo)] transition-colors">
+                    {t('message.clickToExpand')}
+                  </span>
+                  <span className="text-[11px] text-[var(--muted)]/70">
+                    {message.content.length} {t('message.characters')}
+                  </span>
+                  <ChevronDown size={14} className="text-[var(--muted)] group-hover:text-[var(--accent-indigo)] transition-colors ml-auto" />
+                </button>
+              ) : (
+                <>
+                  {/* 展开状态：显示代码预览 */}
+                  <pre className="text-xs font-mono bg-[var(--surface-warm-hover)] rounded-lg p-2.5 overflow-x-auto max-h-40 scrollbar-thin">
+                    <code>{highlightText(isLongCode ? message.content.substring(0, CODE_PREVIEW_LENGTH) + '...' : message.content, highlightQuery || '')}</code>
+                  </pre>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <button
+                      onClick={() => setExpanded(false)}
+                      className="flex items-center gap-1 text-[11px] text-[var(--accent-indigo)] hover:text-[var(--accent-indigo)]/80 transition-colors duration-200"
+                    >
+                      <ChevronUp size={12} />
+                      {t('message.collapse')}
+                    </button>
+                    <span className="text-[11px] text-[var(--muted)]/70">
+                      {message.content.length} {t('message.characters')}
+                    </span>
+                  </div>
+                </>
+              )}
+
               <div className="flex items-center justify-between mt-1">
-                <p className="text-[11px] text-[var(--muted)]">
-                  {message.content.length} {t('message.characters')}
-                </p>
+                <div />
                 {actionButtons}
               </div>
             </div>
@@ -129,4 +182,6 @@ export default function MessageBubble({ message, isStreaming, onRegenerate, onCo
       </div>
     </div>
   );
-}
+});
+
+export default MessageBubble;

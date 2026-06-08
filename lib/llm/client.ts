@@ -1,81 +1,46 @@
 /**
  * LLM Client for calling OpenAI and Anthropic APIs
+ * 使用策略模式支持多种 provider
  */
 
 import type { LLMConfig, LLMMessage, ModelInfo, TestConnectionResult } from '@/lib/types';
-import { ProxyAgent, fetch as undiciFetch } from 'undici';
+import { fetch as undiciFetch } from 'undici';
+import { proxyManager } from './proxy-manager';
+import { getProvider } from './providers';
+import { parseSSEStream, parseSSEData } from '@/lib/api/sse-parser';
 
-// ── Proxy support ──
-// 优先从 DB 读取代理配置（用户在设置中配置），回退到环境变量
-let cachedAgent: ProxyAgent | undefined;
-let cachedProxyUrl: string | null = null;
-let lastCheck = 0;
-const CACHE_TTL = 5000; // 5 秒缓存
+// ── URL validation ──
 
-/** 获取代理 Agent（带缓存，动态读取 DB 配置） */
-async function getProxyAgent(): Promise<ProxyAgent | undefined> {
-  const now = Date.now();
-  if (now - lastCheck < CACHE_TTL && cachedProxyUrl !== undefined) {
-    return cachedAgent;
-  }
-  lastCheck = now;
-
+/**
+ * 校验 baseUrl 格式是否合法
+ * 本应用为桌面端（Electron），用户显式配置 LLM 地址，SSRF 风险极低。
+ * 此处仅校验 URL 格式和协议，不拦截内网地址（用户可能使用 Ollama 等本地服务）。
+ */
+function validateBaseUrl(url: string): void {
+  let parsed: URL;
   try {
-    console.time('[LLM Client] Load Proxy Config');
-    const { configManager } = await import('@/lib/db/config-manager');
-    const { proxyUrl, proxyEnabled } = await configManager.getProxy();
-    console.timeEnd('[LLM Client] Load Proxy Config');
-
-    if (proxyEnabled && proxyUrl) {
-      if (proxyUrl !== cachedProxyUrl) {
-        cachedProxyUrl = proxyUrl;
-        cachedAgent = new ProxyAgent(proxyUrl);
-      }
-      return cachedAgent;
-    }
+    parsed = new URL(url);
   } catch {
-    // DB 不可用时回退到环境变量
+    throw new Error(`无效的 URL: ${url}`);
   }
-
-  // 回退：环境变量
-  const envProxy = process.env.HTTPS_PROXY || process.env.https_proxy
-    || process.env.HTTP_PROXY || process.env.http_proxy;
-  if (envProxy) {
-    if (envProxy !== cachedProxyUrl) {
-      cachedProxyUrl = envProxy;
-      cachedAgent = new ProxyAgent(envProxy);
-    }
-    return cachedAgent;
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error('API 地址必须使用 http 或 https 协议');
   }
-
-  cachedProxyUrl = null;
-  cachedAgent = undefined;
-  return undefined;
 }
 
 /**
  * 代理感知的 fetch 封装
  * 有代理时用 undici.fetch + ProxyAgent，无代理时用全局 fetch
+ * 注意: undici.fetch 的 dispatcher 参数未被标准 RequestInit 类型覆盖，
+ * 因此需要类型断言；返回值类型与全局 fetch 兼容但签名不同，需双重断言。
  */
 async function proxyFetch(url: string, options?: RequestInit): Promise<Response> {
-  const agent = await getProxyAgent();
+  const agent = await proxyManager.getAgent();
   if (agent) {
     return undiciFetch(url, { ...options, dispatcher: agent } as any) as unknown as Promise<Response>;
   }
   return fetch(url, options);
 }
-
-interface OpenAIMessage {
-  role: string;
-  content: string | Array<{ type: string; text?: string; image_url?: { url: string; detail: string } }>;
-}
-
-interface AnthropicMessage {
-  role: string;
-  content: Array<{ type: string; text?: string; source?: { type: string; media_type: string; data: string } }>;
-}
-
-const MAX_PARSE_ERRORS = 10;
 
 interface SSEProcessorOptions {
   body: ReadableStream<Uint8Array>;
@@ -88,65 +53,30 @@ interface SSEProcessorOptions {
 
 /**
  * Unified SSE stream processor for both OpenAI and Anthropic
+ * 使用共享的 parseSSEStream 解析器
  */
 async function processSSEStream(options: SSEProcessorOptions): Promise<string> {
   const { body, onChunk, signal, extractContent, checkStop, skipLine } = options;
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
   let fullText = '';
-  let buffer = '';
-  let consecutiveParseErrors = 0;
 
-  try {
-    while (true) {
-      if (signal?.aborted) {
-        reader.releaseLock();
-        throw new DOMException('The operation was aborted.', 'AbortError');
+  await parseSSEStream({
+    body,
+    signal,
+    onLine: (data) => {
+      const json = parseSSEData(data);
+
+      const truncationMsg = checkStop?.(json);
+      if (truncationMsg) {
+        throw new Error(truncationMsg);
       }
 
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        if (skipLine?.(trimmed)) continue;
-
-        if (trimmed.startsWith('data: ')) {
-          try {
-            const json = JSON.parse(trimmed.slice(6)) as Record<string, unknown>;
-            consecutiveParseErrors = 0;
-
-            const truncationMsg = checkStop?.(json);
-            if (truncationMsg) {
-              throw new Error(truncationMsg);
-            }
-
-            const content = extractContent(json);
-            if (content) {
-              fullText += content;
-              if (onChunk) onChunk(content);
-            }
-          } catch (e) {
-            if (e instanceof SyntaxError) {
-              consecutiveParseErrors++;
-              if (consecutiveParseErrors >= MAX_PARSE_ERRORS) {
-                throw new Error('Too many consecutive SSE parse failures — stream may be corrupted');
-              }
-            } else {
-              throw e;
-            }
-          }
-        }
+      const content = extractContent(json);
+      if (content) {
+        fullText += content;
+        if (onChunk) onChunk(content);
       }
-    }
-  } finally {
-    reader.releaseLock();
-  }
+    },
+  });
 
   return fullText;
 }
@@ -205,6 +135,7 @@ async function fetchWithRetry(
 
 /**
  * Call LLM API with streaming support
+ * 使用策略模式，通过 provider 类型分发到对应的实现
  */
 export async function callLLM(
   config: LLMConfig,
@@ -212,52 +143,28 @@ export async function callLLM(
   onChunk?: (chunk: string) => void,
   signal?: AbortSignal,
 ): Promise<string> {
-  const { type, baseUrl, apiKey, model } = config;
+  const { type, baseUrl, apiKey, model, temperature, maxTokens } = config;
 
-  console.log(`[LLM Client] Calling ${type} API, model: ${model}, baseUrl: ${baseUrl}`);
+  console.log(`[LLM Client] Calling ${type} API, model: ${model}, baseUrl: ${baseUrl}, temperature: ${temperature ?? 0.5}, maxTokens: ${maxTokens ?? 'default'}`);
 
-  if (type === 'openai') {
-    return callOpenAI(baseUrl, apiKey, model, messages, onChunk, signal);
-  } else if (type === 'anthropic') {
-    return callAnthropic(baseUrl, apiKey, model, messages, onChunk, signal);
-  } else {
-    throw new Error(`Unsupported provider type: ${type}`);
-  }
-}
+  validateBaseUrl(baseUrl);
 
-/**
- * Call OpenAI-compatible API
- */
-async function callOpenAI(
-  baseUrl: string,
-  apiKey: string,
-  model: string,
-  messages: LLMMessage[],
-  onChunk?: (chunk: string) => void,
-  signal?: AbortSignal,
-): Promise<string> {
-  const url = `${baseUrl}/chat/completions`;
-
-  const processedMessages = messages.map(processMessageForOpenAI);
+  const provider = getProvider(type);
+  const url = provider.getEndpoint(baseUrl);
+  const headers = provider.buildRequestHeaders(apiKey);
+  const body = provider.buildRequestBody(model, messages, temperature, maxTokens);
+  const extractors = provider.getSSEExtractors();
 
   const response = await fetchWithRetry(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: processedMessages,
-      stream: true,
-      max_tokens: 16384,
-    }),
+    headers,
+    body: JSON.stringify(body),
     signal,
   });
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`OpenAI API error: ${response.status} ${error}`);
+    throw new Error(`${type} API error: ${response.status} ${error}`);
   }
 
   if (!response.body) {
@@ -268,147 +175,8 @@ async function callOpenAI(
     body: response.body,
     onChunk,
     signal,
-    extractContent: (json) => {
-      const choices = json.choices as Array<Record<string, unknown>> | undefined;
-      const delta = choices?.[0]?.delta as Record<string, unknown> | undefined;
-      return delta?.content as string | undefined;
-    },
-    checkStop: (json) => {
-      const choices = json.choices as Array<Record<string, unknown>> | undefined;
-      const finishReason = choices?.[0]?.finish_reason;
-      if (finishReason === 'length') {
-        return 'TRUNCATED: Output was truncated due to max_tokens limit';
-      }
-      return undefined;
-    },
-    skipLine: (trimmed) => trimmed === 'data: [DONE]',
+    ...extractors,
   });
-}
-
-/**
- * Call Anthropic API
- */
-async function callAnthropic(
-  baseUrl: string,
-  apiKey: string,
-  model: string,
-  messages: LLMMessage[],
-  onChunk?: (chunk: string) => void,
-  signal?: AbortSignal,
-): Promise<string> {
-  const url = `${baseUrl}/messages`;
-
-  const systemMessage = messages.find(m => m.role === 'system');
-  const chatMessages = messages.filter(m => m.role !== 'system');
-  const processedMessages = chatMessages.map(processMessageForAnthropic);
-
-  const response = await fetchWithRetry(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      messages: processedMessages,
-      system: systemMessage ? [{ type: 'text', text: systemMessage.content }] : undefined,
-      max_tokens: 64000,
-      stream: true,
-      temperature: 1,
-    }),
-    signal,
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Anthropic API error: ${response.status} ${error}`);
-  }
-
-  if (!response.body) {
-    throw new Error('Response body is null — stream not available');
-  }
-
-  return processSSEStream({
-    body: response.body,
-    onChunk,
-    signal,
-    extractContent: (json) => {
-      if (json.type === 'content_block_delta') {
-        const delta = json.delta as Record<string, unknown> | undefined;
-        return delta?.text as string | undefined;
-      }
-      return undefined;
-    },
-    checkStop: (json) => {
-      if (json.type === 'message_delta') {
-        const delta = json.delta as Record<string, unknown> | undefined;
-        if (delta?.stop_reason === 'max_tokens') {
-          return 'TRUNCATED: Output was truncated due to max_tokens limit';
-        }
-      }
-      return undefined;
-    },
-  });
-}
-
-/**
- * Process message for OpenAI API with multimodal support
- */
-function processMessageForOpenAI(message: LLMMessage): OpenAIMessage {
-  const images = message.images;
-  if (!images || images.length === 0) {
-    return message;
-  }
-
-  const contentParts: Array<{ type: string; text?: string; image_url?: { url: string; detail: string } }> = [
-    { type: 'text', text: message.content },
-  ];
-
-  for (const img of images) {
-    contentParts.push({
-      type: 'image_url',
-      image_url: {
-        url: `data:${img.mimeType};base64,${img.data}`,
-        detail: 'high',
-      },
-    });
-  }
-
-  return {
-    role: message.role,
-    content: contentParts,
-  };
-}
-
-/**
- * Process message for Anthropic API with multimodal support
- */
-function processMessageForAnthropic(message: LLMMessage): AnthropicMessage {
-  const images = message.images;
-  if (!images || images.length === 0) {
-    return message as unknown as AnthropicMessage;
-  }
-
-  const contentParts: Array<{ type: string; text?: string; source?: { type: string; media_type: string; data: string } }> = [
-    { type: 'text', text: message.content },
-  ];
-
-  for (const img of images) {
-    contentParts.push({
-      type: 'image',
-      source: {
-        type: 'base64',
-        media_type: img.mimeType,
-        data: img.data,
-      },
-    });
-  }
-
-  return {
-    role: message.role === 'assistant' ? 'assistant' : 'user',
-    content: contentParts,
-  };
 }
 
 /**
@@ -440,50 +208,37 @@ export async function testConnection(config: LLMConfig): Promise<TestConnectionR
   }
 }
 
+/** 解析模型列表响应（OpenAI 和 Anthropic 格式统一处理） */
+function parseModelsResponse(data: unknown): ModelInfo[] {
+  const obj = data as Record<string, unknown> | null;
+  const raw = Array.isArray(obj?.data) ? obj.data
+    : Array.isArray(obj?.models) ? obj.models
+    : Array.isArray(data) ? data
+    : [];
+  return raw
+    .map((model: Record<string, unknown> | string) => ({
+      id: typeof model === 'string' ? model : (model.id || model.name || model.model || model.slug) as string,
+      name: typeof model === 'string' ? model : (model.name || model.id || model.model || model.slug) as string,
+    }))
+    .filter((m: ModelInfo) => m.id);
+}
+
 /**
  * Fetch available models from provider
+ * 使用策略模式，通过 provider 类型分发到对应的实现
  */
 export async function fetchModels(type: string, baseUrl: string, apiKey: string): Promise<ModelInfo[]> {
-  if (type === 'openai') {
-    const url = `${baseUrl}/models`;
-    const response = await proxyFetch(url, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-      },
-    });
+  validateBaseUrl(baseUrl);
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch models: ${response.status}`);
-    }
+  const provider = getProvider(type);
+  const url = provider.getModelsEndpoint(baseUrl);
+  const headers = provider.buildModelsRequestHeaders(apiKey);
 
-    const data = await response.json();
-    return (Array.isArray(data?.data) ? data.data : Array.isArray(data?.models) ? data.models : Array.isArray(data) ? data : [])
-      .map((model: Record<string, unknown> | string) => ({
-        id: typeof model === 'string' ? model : (model.id || model.name || model.model || model.slug) as string,
-        name: typeof model === 'string' ? model : (model.name || model.id || model.model || model.slug) as string,
-      }))
-      .filter((m: ModelInfo) => m.id);
-  } else if (type === 'anthropic') {
-    const url = `${baseUrl}/models`;
-    const response = await proxyFetch(url, {
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-    });
+  const response = await proxyFetch(url, { headers });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch models: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return (Array.isArray(data?.data) ? data.data : Array.isArray(data?.models) ? data.models : Array.isArray(data) ? data : [])
-      .map((model: Record<string, unknown> | string) => ({
-        id: typeof model === 'string' ? model : (model.id || model.name || model.model || model.slug) as string,
-        name: typeof model === 'string' ? model : (model.name || model.id || model.model || model.slug) as string,
-      }))
-      .filter((m: ModelInfo) => m.id);
-  } else {
-    throw new Error(`Unsupported provider type: ${type}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch models: ${response.status}`);
   }
+
+  return parseModelsResponse(await response.json());
 }

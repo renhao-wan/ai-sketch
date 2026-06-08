@@ -3,39 +3,29 @@
  */
 
 export { MERMAID_SYSTEM_PROMPT } from './system';
-export { MERMAID_CHART_SPECS, MERMAID_TYPE_MAP, MERMAID_AUTO_MODE_GUIDE } from './chart-specs';
+export {
+  MERMAID_CHART_SPECS,
+  MERMAID_TYPE_MAP,
+  MERMAID_AUTO_MODE_GUIDE,
+  UNSUPPORTED_MERMAID_TYPES,
+} from './chart-specs';
 
 import { MERMAID_SYSTEM_PROMPT } from './system';
-import { MERMAID_CHART_SPECS, MERMAID_TYPE_MAP, MERMAID_AUTO_MODE_GUIDE } from './chart-specs';
+import {
+  MERMAID_CHART_SPECS,
+  MERMAID_TYPE_MAP,
+  MERMAID_AUTO_MODE_GUIDE,
+  UNSUPPORTED_MERMAID_TYPES,
+} from './chart-specs';
+import { getChartTypeName } from '@/lib/diagram/constants';
 
-/** 图表类型显示名称映射 */
-const CHART_TYPE_NAMES: Record<string, string> = {
-  flowchart: '流程图',
-  mindmap: '思维导图',
-  orgchart: '组织架构图',
-  sequence: '时序图',
-  class: 'UML类图',
-  er: 'ER图',
-  gantt: '甘特图',
-  timeline: '时间线',
-  tree: '树形图',
-  network: '网络拓扑图',
-  architecture: '架构图',
-  dataflow: '数据流图',
-  state: '状态图',
-  swimlane: '泳道图',
-  concept: '概念图',
-  fishbone: '鱼骨图',
-  swot: 'SWOT分析图',
-  pyramid: '金字塔图',
-  funnel: '漏斗图',
-  venn: '韦恩图',
-  matrix: '矩阵图',
-  infographic: '信息图',
-};
-
-function getChartTypeName(type: string): string {
-  return CHART_TYPE_NAMES[type] || type;
+/**
+ * 检查图表类型是否被 Mermaid 支持
+ * @param chartType 图表类型
+ * @returns 是否支持
+ */
+export function isMermaidTypeSupported(chartType: string): boolean {
+  return !(UNSUPPORTED_MERMAID_TYPES as readonly string[]).includes(chartType);
 }
 
 /**
@@ -49,6 +39,14 @@ export function buildMermaidUserPrompt(userInput: string, chartType: string = 'a
   if (chartType && chartType !== 'auto') {
     const mermaidType = MERMAID_TYPE_MAP[chartType];
     const chartName = getChartTypeName(chartType);
+
+    // 检查是否是不支持的类型
+    if (!isMermaidTypeSupported(chartType)) {
+      promptParts.push(
+        `注意：${chartName || chartType} 不是 Mermaid 原生支持的图表类型。`,
+        `请使用最接近的 Mermaid 图表类型（如 flowchart 或 mindmap）来表达用户的需求。`,
+      );
+    }
 
     if (mermaidType) {
       promptParts.push(`请创建一个${chartName || chartType}类型的 Mermaid 图表，使用 \`${mermaidType}\` 语法。`);

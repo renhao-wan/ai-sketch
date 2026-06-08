@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, type ReactNode, type MouseEvent } from 'react';
-import { ChevronDown, ChevronUp, Code2, Sparkles, Copy, Download, Check } from 'lucide-react';
+import { ChevronDown, ChevronUp, Code2, Sparkles, Copy, Download, Check, Image, FileCode } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
@@ -11,6 +11,7 @@ import rehypeHighlight from 'rehype-highlight';
 import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 import type { TranslationKey } from '@/lib/locales';
+import type { ExportFormat } from '@/lib/utils/export-diagram';
 
 import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github-dark.min.css';
@@ -27,6 +28,7 @@ interface BottomContextPanelProps {
   format?: string;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
+  onExportAs?: (format: ExportFormat) => void;
 }
 
 export default function BottomContextPanel({
@@ -36,6 +38,7 @@ export default function BottomContextPanel({
   format,
   activeTab: controlledTab,
   onTabChange,
+  onExportAs,
 }: BottomContextPanelProps) {
   const { t } = useLocale();
   const [isCollapsed, setIsCollapsed] = useState(true);
@@ -43,7 +46,9 @@ export default function BottomContextPanel({
   const [height, setHeight] = useState(180);
   const [isResizing, setIsResizing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   const handleCopy = useCallback(() => {
     if (!generatedCode) return;
@@ -64,6 +69,18 @@ export default function BottomContextPanel({
     a.click();
     URL.revokeObjectURL(url);
   }, [generatedCode, format]);
+
+  // 点击外部关闭导出菜单
+  useEffect(() => {
+    if (!showExportMenu) return;
+    const handleClickOutside = (e: globalThis.MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showExportMenu]);
 
   const activeTab = controlledTab ?? internalTab;
 
@@ -113,7 +130,7 @@ export default function BottomContextPanel({
 
   return (
     <div
-      className="flex-shrink-0 border-t border-black/[0.06] bg-[var(--bg-glass)] backdrop-blur-xl flex flex-col"
+      className="flex-shrink-0 border-t border-black/[0.06] bg-[var(--bg-glass)] backdrop-blur-xl flex flex-col relative z-20"
       style={{ height: `${height}px` }}
     >
       {/* Resize Handle */}
@@ -153,14 +170,42 @@ export default function BottomContextPanel({
                   {copied ? <Check size={13} className="text-[var(--accent-indigo)]" /> : <Copy size={13} />}
                 </button>
               </Tooltip>
-              <Tooltip content={t('copilot.export')} side="top">
-                <button
-                  onClick={handleExport}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-                >
-                  <Download size={13} />
-                </button>
-              </Tooltip>
+              <div className="relative" ref={exportMenuRef}>
+                <Tooltip content={t('copilot.export')} side="top">
+                  <button
+                    onClick={() => setShowExportMenu(!showExportMenu)}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+                  >
+                    <Download size={13} />
+                  </button>
+                </Tooltip>
+                {showExportMenu && (
+                  <div className="absolute bottom-full right-0 mb-1 w-44 bg-[var(--surface-warm)] backdrop-blur-xl rounded-xl border border-[var(--border)] shadow-[0_10px_40px_rgba(28,25,23,0.10)] overflow-hidden animate-slide-up" style={{ zIndex: 9999 }}>
+                    <button
+                      onClick={() => { onExportAs?.('png'); setShowExportMenu(false); }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-[var(--fg)] hover:bg-[var(--accent-indigo)]/5 transition-colors"
+                    >
+                      {/* eslint-disable-next-line jsx-a11y/alt-text -- lucide Image 是 SVG 图标，不是 <img> */}
+                      <Image size={14} className="text-[var(--muted)]" />
+                      {t('export.png')}
+                    </button>
+                    <button
+                      onClick={() => { onExportAs?.('svg'); setShowExportMenu(false); }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-[var(--fg)] hover:bg-[var(--accent-indigo)]/5 transition-colors"
+                    >
+                      <FileCode size={14} className="text-[var(--muted)]" />
+                      {t('export.svg')}
+                    </button>
+                    <button
+                      onClick={() => { onExportAs?.('code'); setShowExportMenu(false); }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-[var(--fg)] hover:bg-[var(--accent-indigo)]/5 transition-colors border-t border-[var(--border)]"
+                    >
+                      <Code2 size={14} className="text-[var(--muted)]" />
+                      {t('export.code')}
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           )}
           <button

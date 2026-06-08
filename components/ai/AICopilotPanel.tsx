@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, type KeyboardEvent, type MouseEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, type KeyboardEvent, type MouseEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Send,
@@ -8,6 +8,7 @@ import {
   Image,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Sparkles,
   Wand2,
   Loader2,
@@ -28,8 +29,18 @@ import Tooltip from '@/components/ui/Tooltip';
 import type { SourceType, ConversationMessage } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
+/** 从代码内容检测图表格式 */
+function detectCodeFormat(code: string): DiagramFormat {
+  const trimmed = code.trim();
+  if (trimmed.startsWith('<')) return 'drawio';
+  if (trimmed.startsWith('[')) return 'excalidraw';
+  if (trimmed.startsWith('{') && trimmed.includes('"elements"')) return 'excalidraw';
+  return 'mermaid';
+}
+
 /** 导出消息内容为文件 */
-function exportMessage(content: string, format: DiagramFormat) {
+function exportMessage(content: string) {
+  const format = detectCodeFormat(content);
   const ext = format === 'excalidraw' ? 'json' : format === 'mermaid' ? 'mmd' : 'drawio';
   const mime = format === 'excalidraw' ? 'application/json' : format === 'mermaid' ? 'text/plain' : 'application/xml';
   const blob = new Blob([content], { type: mime });
@@ -106,9 +117,56 @@ export default function AICopilotPanel({
   const { isDragging, dragHandlers } = useDragAndDrop(handleFiles);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  // 为图片附件创建 blob URL，并在 cleanup 中释放
+  // NOTE: URL.createObjectURL 是副作用，理论上不应在 useMemo 中调用。
+  // 但 useEffect + useState 会导致额外渲染周期，此处选择 useMemo 以保持同步初始化。
+  // StrictMode 下可能创建重复 URL，但 cleanup 仍能正确释放；生产构建无此问题。
+  const imageBlobUrls = useMemo(() => {
+    const urls = new Map<File, string>();
+    for (const file of attachments) {
+      if (file.type.startsWith('image/')) {
+        urls.set(file, URL.createObjectURL(file));
+      }
+    }
+    return urls;
+  }, [attachments]);
+
+  useEffect(() => {
+    return () => {
+      imageBlobUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [imageBlobUrls]);
+
   // Auto-scroll to bottom when messages change
   const prevCountRef = useRef(0);
   const prevConvRef = useRef(conversationId);
+  const prevCollapsedRef = useRef(isCollapsed);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+
+  // 滑底判断辅助函数：是否在底部附近（阈值为容器高度的 20%）
+  const isNearBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    const threshold = container.clientHeight * 0.2;
+    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+  }, []);
+
+  // 监听滚动事件，控制"回到底部"按钮显示
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+    setShowScrollToBottom(!atBottom && messages.length > 0);
+  }, [messages.length]);
+
+  // 执行滑底
+  const scrollToBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+  }, []);
+
+  // 消息变化 / 对话切换时的自动滑底
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -120,20 +178,38 @@ export default function AICopilotPanel({
     prevCountRef.current = messages.length;
 
     if (convChanged || isNewMessage) {
-      // Conversation switch or new message: always scroll to bottom
+      // 对话切换或新消息：无条件滑底
       requestAnimationFrame(() => {
         container.scrollTop = container.scrollHeight;
       });
     } else {
-      // Streaming content update: only scroll if near bottom
-      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
-      if (isNearBottom) {
+      // 流式内容更新：仅在底部附近时滑底（阈值为容器高度的 20%）
+      if (isNearBottom()) {
         requestAnimationFrame(() => {
           container.scrollTop = container.scrollHeight;
         });
       }
     }
-  }, [messages, conversationId]);
+  }, [messages, conversationId, isNearBottom]);
+
+  // 折叠/展开时的滑底处理
+  useEffect(() => {
+    const wasCollapsed = prevCollapsedRef.current;
+    prevCollapsedRef.current = isCollapsed;
+
+    // 从折叠状态展开时，强制滑到底部
+    if (wasCollapsed && !isCollapsed && messages.length > 0) {
+      const container = messagesContainerRef.current;
+      if (!container) return;
+
+      // 使用双层 rAF 确保 DOM 布局稳定后再滑底
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          container.scrollTop = container.scrollHeight;
+        });
+      });
+    }
+  }, [isCollapsed, messages.length]);
 
   // 从 props 同步到 state（合理用例，避免级联渲染）
   useEffect(() => {
@@ -303,7 +379,7 @@ export default function AICopilotPanel({
 
       {/* Message List or Empty State */}
       {hasMessages ? (
-        <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 scrollbar-subtle bg-[var(--surface-warm)]/30">
+        <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 scrollbar-subtle bg-[var(--surface-warm)]/30">
           {messages.map((msg, idx) => {
             const isLastAssistant = msg.role === 'assistant' && idx === messages.length - 1;
             const isAssistant = msg.role === 'assistant';
@@ -315,12 +391,23 @@ export default function AICopilotPanel({
                 isStreaming={isMsgStreaming}
                 onRegenerate={isLastAssistant && !isGenerating ? onRegenerate : undefined}
                 onCopy={isAssistant && !isMsgStreaming ? () => navigator.clipboard.writeText(msg.content) : undefined}
-                onExport={isAssistant && !isMsgStreaming ? () => exportMessage(msg.content, currentFormat) : undefined}
+                onExport={isAssistant && !isMsgStreaming ? () => exportMessage(msg.content) : undefined}
                 onShowDiagram={isAssistant && !isMsgStreaming ? () => onShowDiagram(msg.content) : undefined}
               />
             );
           })}
           <div ref={messagesEndRef} />
+
+          {/* 回到底部浮动按钮 */}
+          {showScrollToBottom && (
+            <button
+              onClick={scrollToBottom}
+              className="sticky bottom-3 left-1/2 -translate-x-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface-warm)] border border-[var(--border)] shadow-lg hover:bg-[var(--surface-warm-hover)] transition-all duration-200 z-10"
+              title={t('copilot.scrollToBottom')}
+            >
+              <ChevronDown size={16} className="text-[var(--muted)]" />
+            </button>
+          )}
         </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center px-6 overflow-auto">
@@ -340,7 +427,7 @@ export default function AICopilotPanel({
 
           {/* Chart Type */}
           <div className="w-full">
-            <ChartTypeSelect value={chartType} onChange={setChartType} />
+            <ChartTypeSelect value={chartType} onChange={setChartType} format={currentFormat} />
           </div>
         </div>
       )}
@@ -351,7 +438,7 @@ export default function AICopilotPanel({
         {hasMessages && (
           <div className="px-4 pt-3 pb-1 space-y-2">
             <FormatSelector value={currentFormat} onChange={onFormatChange} className="w-full" />
-            <ChartTypeSelect value={chartType} onChange={setChartType} />
+            <ChartTypeSelect value={chartType} onChange={setChartType} format={currentFormat} />
           </div>
         )}
 
@@ -385,7 +472,7 @@ export default function AICopilotPanel({
                   <div key={`${file.name}-${i}`} className="relative flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] group">
                     {isImage ? (
                       // eslint-disable-next-line @next/next/no-img-element -- blob URL 不支持 next/image
-                      <img src={URL.createObjectURL(file)} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                      <img src={imageBlobUrls.get(file)} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
                     ) : (
                       <div className="w-8 h-8 rounded bg-[var(--surface-warm)] flex items-center justify-center flex-shrink-0">
                         <Paperclip size={13} className="text-[var(--muted)]" />
@@ -393,8 +480,8 @@ export default function AICopilotPanel({
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] text-[var(--fg)] truncate">{file.name}</p>
-                      {attachStatus === 'processing' && <p className="text-[10px] text-[var(--muted)]">处理中...</p>}
-                      {attachStatus === 'success' && <p className="text-[10px] text-[var(--accent-indigo)]">就绪</p>}
+                      {attachStatus === 'processing' && <p className="text-[10px] text-[var(--muted)]">{t('upload.processing')}</p>}
+                      {attachStatus === 'success' && <p className="text-[10px] text-[var(--accent-indigo)]">{t('upload.ready')}</p>}
                       {attachStatus === 'error' && <p className="text-[10px] text-red-500">{attachError}</p>}
                     </div>
                     <button onClick={() => removeAttachment(i)} className="opacity-0 group-hover:opacity-100 text-[var(--muted)] hover:text-[var(--fg)] transition-all flex-shrink-0">

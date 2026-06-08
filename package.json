@@ -11,6 +11,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "electron:dev": "concurrently \"next dev --webpack\" \"wait-on http://localhost:3000 && node scripts/start-electron.js\"",
     "electron:build": "ts-node --project scripts/tsconfig.json --transpile-only scripts/build.ts",
     "pack": "electron-builder --dir",
@@ -18,10 +20,12 @@
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",
+    "@maxgraph/core": "^0.23.0",
     "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/typography": "^0.5.19",
     "@types/dompurify": "^3.2.0",
     "dompurify": "^3.4.7",
+    "electron-updater": "^6.8.3",
     "lucide-react": "^1.16.0",
     "mermaid": "^11.15.0",
     "monaco-editor": "^0.55.1",
@@ -50,6 +54,7 @@
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
+    "vitest": "^4.1.8",
     "wait-on": "^7.2.0"
   }
 }

@@ -1,35 +1,47 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Globe, Loader2 } from 'lucide-react';
+import { Globe, Loader2, RefreshCw } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
-import Notification from '@/components/ui/Notification';
-import type { NotificationState } from '@/lib/types';
+import { useNotification } from '@/lib/contexts/NotificationContext';
 
-/** 网络代理设置 */
+/** 网络代理与全局 LLM 设置 */
 export function NetworkSettings() {
   const { t } = useLocale();
   const [proxyEnabled, setProxyEnabled] = useState(false);
   const [proxyUrl, setProxyUrl] = useState('http://127.0.0.1:7890');
+  const [maxRetries, setMaxRetries] = useState(2);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [notification, setNotification] = useState<NotificationState>({ isOpen: false, title: '', message: '', type: 'info' });
+  const { showNotification } = useNotification();
 
-  /** 加载代理配置 */
+  /** 加载代理和重试配置 */
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/configs/actions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'get-proxy' }),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (data.proxyUrl !== undefined) setProxyUrl(data.proxyUrl);
-        if (data.proxyEnabled !== undefined) setProxyEnabled(data.proxyEnabled);
+        const [proxyRes, retriesRes] = await Promise.all([
+          fetch('/api/configs/actions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'get-proxy' }),
+          }),
+          fetch('/api/configs/actions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'get-retries' }),
+          }),
+        ]);
+        if (proxyRes.ok) {
+          const data = await proxyRes.json();
+          if (data.proxyUrl !== undefined) setProxyUrl(data.proxyUrl);
+          if (data.proxyEnabled !== undefined) setProxyEnabled(data.proxyEnabled);
+        }
+        if (retriesRes.ok) {
+          const data = await retriesRes.json();
+          if (data.maxRetries !== undefined) setMaxRetries(data.maxRetries);
+        }
       } catch (err) {
-        console.error('Failed to load proxy settings:', err);
+        console.error('Failed to load settings:', err);
       } finally {
         setLoading(false);
       }
@@ -67,11 +79,28 @@ export function NetworkSettings() {
         const text = await res.text().catch(() => '');
         throw new Error(text || `HTTP ${res.status}`);
       }
-      setNotification({ isOpen: true, title: t('proxy.saveSuccess'), message: '', type: 'success' });
+      showNotification(t('proxy.saveSuccess'), '', 'success');
     } catch (err) {
-      setNotification({ isOpen: true, title: t('proxy.saveFailed'), message: (err as Error).message, type: 'error' });
+      showNotification(t('proxy.saveFailed'), (err as Error).message, 'error');
     } finally {
       setSaving(false);
+    }
+  };
+
+  /** 切换重试次数（点击即保存） */
+  const handleRetryChange = async (value: number) => {
+    const prev = maxRetries;
+    setMaxRetries(value);
+    try {
+      const res = await fetch('/api/configs/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'set-retries', maxRetries: value }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      console.error('Failed to save retry setting:', err);
+      setMaxRetries(prev);
     }
   };
 
@@ -136,13 +165,39 @@ export function NetworkSettings() {
         </button>
       </div>
 
-      <Notification
-        isOpen={notification.isOpen}
-        onClose={() => setNotification({ ...notification, isOpen: false })}
-        title={notification.title}
-        message={notification.message}
-        type={notification.type}
-      />
+      {/* 分隔线 */}
+      <div className="border-t border-[var(--border)]" />
+
+      {/* LLM 失败重试 */}
+      <section>
+        <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[var(--accent-indigo)]/10 flex items-center justify-center">
+              <RefreshCw size={18} className="text-[var(--accent-indigo)]" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[var(--fg)]">{t('retries.title')}</p>
+              <p className="text-xs text-[var(--muted)]">{t('retries.description')}</p>
+            </div>
+          </div>
+          <div className="flex items-center rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--border)] p-0.5">
+            {[0, 1, 2, 3, 4, 5].map((v) => (
+              <button
+                key={v}
+                onClick={() => handleRetryChange(v)}
+                className={`w-8 h-7 text-xs font-medium rounded-md transition-all duration-150 ${
+                  maxRetries === v
+                    ? 'bg-[var(--accent-indigo)] text-white shadow-sm'
+                    : 'text-[var(--muted)] hover:text-[var(--fg)]'
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-[var(--muted)]">{t('retries.maxRetriesHint')}</p>
+      </section>
     </div>
   );
 }

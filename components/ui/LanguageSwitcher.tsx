@@ -7,7 +7,7 @@ import { useLocale, type Locale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 
 const LANGUAGES: { value: Locale; label: string }[] = [
-  { value: 'zh', label: '中文' },
+  { value: 'zh', label: '简体中文' },
   { value: 'en', label: 'English' },
 ];
 

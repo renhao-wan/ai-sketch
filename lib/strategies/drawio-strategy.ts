@@ -28,30 +28,28 @@ class DrawioStrategy implements DiagramStrategy {
     return buildDrawioUserPrompt(userInput, chartType);
   }
 
+  /**
+   * 从原始代码中提取 Draw.io XML。
+   *
+   * 设计说明（服务端/客户端职责）：
+   * - 服务端（generate route）调用 postProcess 做初步清洗（去代码围栏、提取 XML 片段）
+   * - 客户端（useGeneration / editor）调用 postProcess 做最终清洗
+   * - 本方法使用纯字符串匹配提取 XML，不依赖 DOMParser，确保服务端和客户端行为一致
+   * - validate() 负责 XML 合法性校验（客户端可用 DOMParser 做深度校验）
+   */
   postProcess(rawCode: string): string {
     if (!rawCode || typeof rawCode !== 'string') return rawCode;
     let processed = stripCodeFences(rawCode);
 
-    // Try DOMParser-based extraction first (handles nested/attributed tags correctly)
-    if (typeof DOMParser !== 'undefined') {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(processed, 'text/xml');
-      if (!doc.querySelector('parsererror')) {
-        const mxfile = doc.querySelector('mxfile');
-        if (mxfile) return new XMLSerializer().serializeToString(mxfile);
-        const mxGraphModel = doc.querySelector('mxGraphModel');
-        if (mxGraphModel) return new XMLSerializer().serializeToString(mxGraphModel);
-      }
-    }
-
-    // Fallback to regex (non-greedy)
+    // 优先提取 mxfile 标签（完整 Draw.io 文件格式）
     const mxfileMatch = processed.match(/<mxfile[\s\S]*?<\/mxfile>/);
     if (mxfileMatch) return mxfileMatch[0];
 
+    // 其次提取 mxGraphModel 标签（纯图表格式）
     const mxGraphMatch = processed.match(/<mxGraphModel[\s\S]*?<\/mxGraphModel>/);
     if (mxGraphMatch) return mxGraphMatch[0];
 
-    // No valid XML structure found — return empty so validate() gets a clean signal
+    // 未找到有效 XML 结构，返回空字符串让 validate() 得到明确信号
     return '';
   }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, type ChangeEvent, type DragEvent, type KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, useMemo, type ChangeEvent, type DragEvent, type KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Paperclip,
@@ -35,6 +35,25 @@ export default function AIPromptBox() {
   const { attachments, payload, attachStatus, attachError, notification, closeNotification, handleFiles: handleFilesRaw, clearAttachments, removeAttachment, getSourceType, setAttachError, setAttachStatus } = useFileUpload({
     diagramFormat: activeFormat as DiagramFormat,
   });
+
+  // 为图片附件创建 blob URL，并在 cleanup 中释放
+  // NOTE: URL.createObjectURL 是副作用，理论上不应在 useMemo 中调用。
+  // 但 useEffect + useState 会导致额外渲染周期，此处选择 useMemo 以保持同步初始化。
+  const imageBlobUrls = useMemo(() => {
+    const urls = new Map<File, string>();
+    for (const file of attachments) {
+      if (file.type.startsWith('image/')) {
+        urls.set(file, URL.createObjectURL(file));
+      }
+    }
+    return urls;
+  }, [attachments]);
+
+  useEffect(() => {
+    return () => {
+      imageBlobUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [imageBlobUrls]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -113,7 +132,7 @@ export default function AIPromptBox() {
               <div key={`${file.name}-${i}`} className="relative flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] group">
                 {isImage ? (
                   // eslint-disable-next-line @next/next/no-img-element -- blob URL 不支持 next/image
-                  <img src={URL.createObjectURL(file)} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                  <img src={imageBlobUrls.get(file)} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
                 ) : (
                   <div className="w-8 h-8 rounded bg-[var(--surface-warm)] flex items-center justify-center flex-shrink-0">
                     <Paperclip size={13} className="text-[var(--muted)]" />
@@ -121,8 +140,8 @@ export default function AIPromptBox() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-[var(--fg)] truncate">{file.name}</p>
-                  {attachStatus === 'processing' && <p className="text-[10px] text-[var(--muted)]">处理中...</p>}
-                  {attachStatus === 'success' && <p className="text-[10px] text-[var(--accent-indigo)]">就绪</p>}
+                  {attachStatus === 'processing' && <p className="text-[10px] text-[var(--muted)]">{t('upload.processing')}</p>}
+                  {attachStatus === 'success' && <p className="text-[10px] text-[var(--accent-indigo)]">{t('upload.ready')}</p>}
                   {attachStatus === 'error' && <p className="text-[10px] text-red-500">{attachError}</p>}
                 </div>
                 <button onClick={() => removeAttachment(i)} className="opacity-0 group-hover:opacity-100 text-[var(--muted)] hover:text-[var(--fg)] transition-all flex-shrink-0">

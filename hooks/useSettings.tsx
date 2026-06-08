@@ -5,68 +5,63 @@ import { useState, useEffect, useCallback, useContext, createContext } from 'rea
 export type Theme = 'dark' | 'light' | 'ocean' | 'sakura' | 'emerald' | 'sunset';
 
 export interface Settings {
-  locale: 'zh' | 'en';
   theme: Theme;
   glowEnabled: boolean;
 }
 
 const DEFAULT_SETTINGS: Settings = {
-  locale: 'zh',
   theme: 'light',
   glowEnabled: false,
 };
 
-const STORAGE_KEYS = {
-  locale: 'ai-sketch-locale',
-  theme: 'ai-sketch-theme',
-  glowEnabled: 'ai-sketch-glow-enabled',
-} as const;
-
-function getStoredValue<T>(key: string, defaultValue: T, validator?: (v: unknown) => v is T): T {
-  if (typeof window === 'undefined') return defaultValue;
-  try {
-    const stored = localStorage.getItem(key);
-    if (stored === null) return defaultValue;
-    const parsed = JSON.parse(stored);
-    if (validator && !validator(parsed)) return defaultValue;
-    return parsed;
-  } catch {
-    return defaultValue;
-  }
-}
-
-function isValidTheme(v: unknown): v is Theme {
-  return typeof v === 'string' && ['dark', 'light', 'ocean', 'sakura', 'emerald', 'sunset'].includes(v);
-}
-
-function isValidLocale(v: unknown): v is 'zh' | 'en' {
-  return v === 'zh' || v === 'en';
-}
-
-function isValidGlowEnabled(v: unknown): v is boolean {
-  return typeof v === 'boolean';
-}
+const VALID_THEMES: Theme[] = ['dark', 'light', 'ocean', 'sakura', 'emerald', 'sunset'];
 
 interface SettingsContextValue {
   settings: Settings;
+  isLoaded: boolean;
   updateSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
+  resetPreferences: () => void;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // 从 localStorage 读取已保存的设置（仅客户端）
+  // 从数据库加载设置（仅客户端）
   useEffect(() => {
-    const locale = getStoredValue(STORAGE_KEYS.locale, DEFAULT_SETTINGS.locale, isValidLocale);
-    const theme = getStoredValue(STORAGE_KEYS.theme, DEFAULT_SETTINGS.theme, isValidTheme);
-    const glowEnabled = getStoredValue(STORAGE_KEYS.glowEnabled, DEFAULT_SETTINGS.glowEnabled, isValidGlowEnabled);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 从 localStorage 同步初始设置，仅执行一次
-    setSettings(prev => {
-      if (prev.locale === locale && prev.theme === theme && prev.glowEnabled === glowEnabled) return prev;
-      return { locale, theme, glowEnabled };
-    });
+    const loadSettings = async () => {
+      try {
+        const res = await fetch('/api/configs/actions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'get-all-preferences',
+            keys: ['preference_theme', 'preference_glow_enabled'],
+          }),
+        });
+        const data = await res.json();
+
+        const savedTheme = data.preference_theme;
+        const savedGlow = data.preference_glow_enabled;
+
+        const theme = (savedTheme && VALID_THEMES.includes(savedTheme as Theme))
+          ? savedTheme as Theme
+          : DEFAULT_SETTINGS.theme;
+        const glowEnabled = savedGlow === 'true';
+
+        setSettings(prev => {
+          if (prev.theme === theme && prev.glowEnabled === glowEnabled) return prev;
+          return { theme, glowEnabled };
+        });
+      } catch {
+        // 加载失败使用默认值
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+    loadSettings();
   }, []);
 
   // Apply theme to document
@@ -75,15 +70,35 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, [settings.theme]);
 
   const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
-    setSettings(prev => {
-      const next = { ...prev, [key]: value };
-      localStorage.setItem(STORAGE_KEYS[key], JSON.stringify(value));
-      return next;
-    });
+    setSettings(prev => ({ ...prev, [key]: value }));
+    // 异步保存到数据库
+    const metaKey = key === 'theme' ? 'preference_theme' : 'preference_glow_enabled';
+    const metaValue = String(value);
+    fetch('/api/configs/actions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'set-preference', key: metaKey, value: metaValue }),
+    }).catch(() => { /* 忽略保存失败 */ });
+  }, []);
+
+  const resetPreferences = useCallback(() => {
+    setSettings(DEFAULT_SETTINGS);
+    document.documentElement.dataset.theme = DEFAULT_SETTINGS.theme;
+    // 重置数据库中的偏好设置
+    fetch('/api/configs/actions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'set-preference', key: 'preference_theme', value: 'light' }),
+    }).catch(() => {});
+    fetch('/api/configs/actions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'set-preference', key: 'preference_glow_enabled', value: 'false' }),
+    }).catch(() => {});
   }, []);
 
   return (
-    <SettingsContext.Provider value={{ settings, updateSetting }}>
+    <SettingsContext.Provider value={{ settings, isLoaded, updateSetting, resetPreferences }}>
       {children}
     </SettingsContext.Provider>
   );

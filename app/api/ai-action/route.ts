@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { callLLM } from '@/lib/llm/client';
 import { configManager } from '@/lib/db/config-manager';
 import { getActionSystemPrompt, getActionUserPrompt } from '@/lib/prompts/ai-actions';
-import type { AIActionType, DiagramFormat } from '@/lib/prompts/types';
+import type { AIActionType } from '@/lib/prompts/types';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 import { stripCodeFences } from '@/lib/diagram/json-repair';
 
 interface AIActionRequest {
@@ -45,8 +46,9 @@ export async function POST(request: Request) {
     const timeoutController = new AbortController();
     const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
     const combinedController = new AbortController();
-    request.signal?.addEventListener('abort', () => combinedController.abort());
-    timeoutController.signal.addEventListener('abort', () => combinedController.abort());
+    const onAbort = () => combinedController.abort();
+    request.signal?.addEventListener('abort', onAbort, { once: true });
+    timeoutController.signal.addEventListener('abort', onAbort, { once: true });
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -67,7 +69,9 @@ export async function POST(request: Request) {
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
         } catch (error) {
           const isAbort = error instanceof DOMException && error.name === 'AbortError';
-          const errorMessage = isAbort ? 'Request timeout' : (error as Error).message;
+          const errorMessage = isAbort
+            ? 'Request timeout'
+            : (process.env.NODE_ENV === 'development' ? (error as Error).message : 'AI 操作失败，请稍后重试');
           const errorData = `data: ${JSON.stringify({ type: 'error', error: errorMessage })}\n\n`;
           controller.enqueue(encoder.encode(errorData));
         } finally {
@@ -86,6 +90,9 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('AI action error:', error);
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return NextResponse.json(
+      { error: process.env.NODE_ENV === 'development' ? (error as Error).message : 'AI 操作失败，请稍后重试' },
+      { status: 500 },
+    );
   }
 }

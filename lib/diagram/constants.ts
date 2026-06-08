@@ -3,7 +3,6 @@
 import type { TranslationKey } from '@/lib/locales';
 
 // Chart type options
-// Must match CHART_TYPE_NAMES in lib/prompts.ts
 export const CHART_TYPES = {
   auto: '自动',
   flowchart: '流程图',

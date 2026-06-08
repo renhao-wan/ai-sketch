@@ -18,7 +18,40 @@ interface EdgePair {
 }
 
 /**
- * Determine the optimal edge pairs for two elements based on their relative positions
+ * 检测两个元素的包围盒是否重叠
+ */
+function isOverlapping(startEle: ExcalidrawElement, endEle: ExcalidrawElement): boolean {
+  const sx = startEle.x ?? 0, sy = startEle.y ?? 0;
+  const sw = startEle.width ?? 100, sh = startEle.height ?? 100;
+  const ex = endEle.x ?? 0, ey = endEle.y ?? 0;
+  const ew = endEle.width ?? 100, eh = endEle.height ?? 100;
+
+  return sx < ex + ew && sx + sw > ex && sy < ey + eh && sy + sh > ey;
+}
+
+/**
+ * 基于方向向量选择边缘（用于重叠元素的回退策略）
+ * 纯粹根据中心点方向决定箭头从哪边进出
+ */
+function determineEdgesByDirection(dx: number, dy: number): EdgePair {
+  const absDx = Math.abs(dx);
+  const absDy = Math.abs(dy);
+
+  // 对角线方向：选择差距更大的轴
+  if (absDx > absDy) {
+    return dx > 0
+      ? { startEdge: 'left', endEdge: 'right' }
+      : { startEdge: 'right', endEdge: 'left' };
+  } else {
+    return dy > 0
+      ? { startEdge: 'top', endEdge: 'bottom' }
+      : { startEdge: 'bottom', endEdge: 'top' };
+  }
+}
+
+/**
+ * Determine the optimal edge pairs for two elements based on their relative positions.
+ * When elements overlap, falls back to direction-based edge selection.
  */
 function determineEdges(startEle: ExcalidrawElement, endEle: ExcalidrawElement): EdgePair {
   const startX = startEle.x ?? 0;
@@ -38,6 +71,11 @@ function determineEdges(startEle: ExcalidrawElement, endEle: ExcalidrawElement):
 
   const dx = startCenterX - endCenterX;
   const dy = startCenterY - endCenterY;
+
+  // 重叠元素：基于方向向量选择边缘，避免负距离导致不可预测的结果
+  if (isOverlapping(startEle, endEle)) {
+    return determineEdgesByDirection(dx, dy);
+  }
 
   const leftToRightDistance = (startX - (endX + endWidth));
   const rightToLeftDistance = -((startX + startWidth) - endX);
@@ -86,7 +124,22 @@ function determineEdges(startEle: ExcalidrawElement, endEle: ExcalidrawElement):
 }
 
 /**
- * Get the center point of a specified edge for an element
+ * 对点 (px, py) 绕中心 (cx, cy) 应用旋转
+ */
+function rotatePoint(px: number, py: number, cx: number, cy: number, angle: number): EdgeCenter {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const dx = px - cx;
+  const dy = py - cy;
+  return {
+    x: cx + dx * cos - dy * sin,
+    y: cy + dx * sin + dy * cos,
+  };
+}
+
+/**
+ * Get the center point of a specified edge for an element.
+ * If the element has a rotation, the edge center is rotated accordingly.
  */
 function getEdgeCenter(element: ExcalidrawElement, edge: Edge): EdgeCenter {
   const x = element.x ?? 0;
@@ -94,18 +147,33 @@ function getEdgeCenter(element: ExcalidrawElement, edge: Edge): EdgeCenter {
   const width = element.width ?? 100;
   const height = element.height ?? 100;
 
+  let point: EdgeCenter;
   switch (edge) {
     case 'left':
-      return { x: x, y: y + height / 2 };
+      point = { x: x, y: y + height / 2 };
+      break;
     case 'right':
-      return { x: x + width, y: y + height / 2 };
+      point = { x: x + width, y: y + height / 2 };
+      break;
     case 'top':
-      return { x: x + width / 2, y: y };
+      point = { x: x + width / 2, y: y };
+      break;
     case 'bottom':
-      return { x: x + width / 2, y: y + height };
+      point = { x: x + width / 2, y: y + height };
+      break;
     default:
-      return { x: x + width, y: y + height / 2 };
+      point = { x: x + width, y: y + height / 2 };
   }
+
+  // 应用旋转：绕元素中心旋转 edge center 点
+  const rotation = element.rotation;
+  if (rotation && rotation !== 0) {
+    const cx = x + width / 2;
+    const cy = y + height / 2;
+    return rotatePoint(point.x, point.y, cx, cy, rotation);
+  }
+
+  return point;
 }
 
 /**

@@ -20,7 +20,7 @@ interface CountBannerProps {
  * <CountBanner
  *   show={showBanner}
  *   title={t('conversation.bannerTitle')}
- *   description={t('conversation.bannerDescription').replace('{count}', String(count))}
+ *   description={t('conversation.bannerDescription', { count })}
  *   onDismiss={handleDismissBanner}
  * />
  * ```

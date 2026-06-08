@@ -5,24 +5,26 @@ import * as api from '@/lib/api/client';
 import { useLocale } from '@/lib/locales';
 import { useSettings } from '@/hooks/useSettings';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
-import Notification from '@/components/ui/Notification';
-import { HardDrive, RotateCcw, Trash2, Database, Settings, AlertTriangle } from 'lucide-react';
-import type { ConfirmDialogState, NotificationState } from '@/lib/types';
+import { useNotification } from '@/lib/contexts/NotificationContext';
+import { HardDrive, RotateCcw, Trash2, Database, Settings, AlertTriangle, Zap } from 'lucide-react';
+import type { ConfirmDialogState } from '@/lib/types';
 
 /** 数据管理组件 — 存储统计、数据清理与重置 */
 export default function DataSettings() {
-  const { t } = useLocale();
+  const { t, setLocale } = useLocale();
   const { updateSetting } = useSettings();
 
   // ── Storage statistics ──
   const [conversationCount, setConversationCount] = useState(0);
   const [configCount, setConfigCount] = useState(0);
+  const [cacheCount, setCacheCount] = useState(0);
   const [statsLoading, setStatsLoading] = useState(true);
 
   // ── Operation states ──
   const [isResettingPreferences, setIsResettingPreferences] = useState(false);
   const [isClearingConversations, setIsClearingConversations] = useState(false);
   const [isClearingConfigs, setIsClearingConfigs] = useState(false);
+  const [isClearingCache, setIsClearingCache] = useState(false);
   const [isResettingAll, setIsResettingAll] = useState(false);
 
   // ── Confirm dialog ──
@@ -34,22 +36,19 @@ export default function DataSettings() {
   });
 
   // ── Notification ──
-  const [notification, setNotification] = useState<NotificationState>({
-    isOpen: false,
-    title: '',
-    message: '',
-    type: 'info',
-  });
+  const { showNotification } = useNotification();
 
   /** Load storage statistics */
   const loadStats = useCallback(async () => {
     try {
-      const [convResult, configResult] = await Promise.all([
+      const [convResult, configResult, cacheResult] = await Promise.all([
         api.fetchConversationCount(),
         api.fetchConfigs(),
+        api.fetchCacheStats(),
       ]);
       setConversationCount(convResult.count);
       setConfigCount(configResult.configs.length);
+      setCacheCount(cacheResult.total);
     } catch (err) {
       console.error('Failed to load storage stats:', err);
     } finally {
@@ -62,10 +61,7 @@ export default function DataSettings() {
     loadStats();
   }, [loadStats]);
 
-  /** Show a notification toast */
-  const showNotification = useCallback((type: NotificationState['type'], message: string) => {
-    setNotification({ isOpen: true, title: '', message, type });
-  }, []);
+  // showNotification 从全局 NotificationContext 获取
 
   /** Reset user preferences (theme and language) */
   const handleResetPreferences = () => {
@@ -79,11 +75,11 @@ export default function DataSettings() {
           // Reset theme to light
           updateSetting('theme', 'light');
           // Reset locale to zh
-          updateSetting('locale', 'zh');
-          showNotification('success', t('settings.resetPreferencesSuccess'));
+          setLocale('zh');
+          showNotification('', t('settings.resetPreferencesSuccess'), 'success');
         } catch (err) {
           console.error('Reset preferences failed:', err);
-          showNotification('error', t('settings.operationFailed'));
+          showNotification('', t('settings.operationFailed'), 'error');
         } finally {
           setIsResettingPreferences(false);
         }
@@ -102,10 +98,10 @@ export default function DataSettings() {
         try {
           await api.clearAllConversations();
           setConversationCount(0);
-          showNotification('success', t('settings.clearConversationsSuccess'));
+          showNotification('', t('settings.clearConversationsSuccess'), 'success');
         } catch (err) {
           console.error('Clear conversations failed:', err);
-          showNotification('error', t('settings.operationFailed'));
+          showNotification('', t('settings.operationFailed'), 'error');
         } finally {
           setIsClearingConversations(false);
         }
@@ -130,12 +126,34 @@ export default function DataSettings() {
             }
           }
           setConfigCount(0);
-          showNotification('success', t('settings.clearConfigsSuccess'));
+          showNotification('', t('settings.clearConfigsSuccess'), 'success');
         } catch (err) {
           console.error('Clear configs failed:', err);
-          showNotification('error', t('settings.operationFailed'));
+          showNotification('', t('settings.operationFailed'), 'error');
         } finally {
           setIsClearingConfigs(false);
+        }
+      },
+    });
+  };
+
+  /** Clear all response cache */
+  const handleClearCache = () => {
+    setConfirmDialog({
+      isOpen: true,
+      title: t('settings.clearCache'),
+      message: t('settings.clearCacheConfirm'),
+      onConfirm: async () => {
+        setIsClearingCache(true);
+        try {
+          await api.clearCache();
+          setCacheCount(0);
+          showNotification('', t('settings.clearCacheSuccess'), 'success');
+        } catch (err) {
+          console.error('Clear cache failed:', err);
+          showNotification('', t('settings.operationFailed'), 'error');
+        } finally {
+          setIsClearingCache(false);
         }
       },
     });
@@ -152,7 +170,7 @@ export default function DataSettings() {
         try {
           // Reset preferences
           updateSetting('theme', 'light');
-          updateSetting('locale', 'zh');
+          setLocale('zh');
 
           // Clear conversations
           await api.clearAllConversations();
@@ -165,14 +183,28 @@ export default function DataSettings() {
             }
           }
 
+          // Clear cache
+          await api.clearCache();
+
+          // Reset global settings (proxy, retries, etc.)
+          await api.resetMeta();
+
+          // Reset window state
+          await fetch('/api/configs/actions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'reset-window-state' }),
+          });
+
           // Update local counts
           setConversationCount(0);
           setConfigCount(0);
+          setCacheCount(0);
 
-          showNotification('success', t('settings.resetAllSuccess'));
+          showNotification('', t('settings.resetAllSuccess'), 'success');
         } catch (err) {
           console.error('Reset all failed:', err);
-          showNotification('error', t('settings.operationFailed'));
+          showNotification('', t('settings.operationFailed'), 'error');
         } finally {
           setIsResettingAll(false);
         }
@@ -181,7 +213,7 @@ export default function DataSettings() {
   };
 
   /** Check if any operation is in progress */
-  const isAnyOperationInProgress = isResettingPreferences || isClearingConversations || isClearingConfigs || isResettingAll;
+  const isAnyOperationInProgress = isResettingPreferences || isClearingConversations || isClearingConfigs || isClearingCache || isResettingAll;
 
   return (
     <div className="space-y-6">
@@ -191,7 +223,7 @@ export default function DataSettings() {
           <HardDrive size={18} className="text-[var(--accent-indigo)]" />
           <h3 className="text-lg font-semibold text-[var(--fg)]">{t('settings.storageStats')}</h3>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)]">
             <p className="text-sm text-[var(--muted)] mb-1">{t('settings.conversations')}</p>
             <p className="text-2xl font-semibold text-[var(--fg)]">
@@ -202,6 +234,12 @@ export default function DataSettings() {
             <p className="text-sm text-[var(--muted)] mb-1">{t('settings.configs')}</p>
             <p className="text-2xl font-semibold text-[var(--fg)]">
               {statsLoading ? '...' : configCount}
+            </p>
+          </div>
+          <div className="p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)]">
+            <p className="text-sm text-[var(--muted)] mb-1">{t('settings.cacheEntries')}</p>
+            <p className="text-2xl font-semibold text-[var(--fg)]">
+              {statsLoading ? '...' : cacheCount}
             </p>
           </div>
         </div>
@@ -230,7 +268,7 @@ export default function DataSettings() {
             <button
               onClick={handleResetPreferences}
               disabled={isAnyOperationInProgress}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1.5 w-24 py-2 text-sm font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RotateCcw size={14} className={isResettingPreferences ? 'animate-spin' : ''} />
               <span>{isResettingPreferences ? t('common.loading') : t('settings.resetPreferences')}</span>
@@ -251,7 +289,7 @@ export default function DataSettings() {
             <button
               onClick={handleClearConversations}
               disabled={isAnyOperationInProgress || conversationCount === 0}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1.5 w-24 py-2 text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Trash2 size={14} className={isClearingConversations ? 'animate-pulse' : ''} />
               <span>{isClearingConversations ? t('common.loading') : t('settings.clearConversations')}</span>
@@ -272,10 +310,31 @@ export default function DataSettings() {
             <button
               onClick={handleClearConfigs}
               disabled={isAnyOperationInProgress || configCount === 0}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1.5 w-24 py-2 text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Trash2 size={14} className={isClearingConfigs ? 'animate-pulse' : ''} />
               <span>{isClearingConfigs ? t('common.loading') : t('settings.clearConfigs')}</span>
+            </button>
+          </div>
+
+          {/* Clear Cache */}
+          <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <Zap size={18} className="text-amber-500" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--fg)]">{t('settings.clearCache')}</p>
+                <p className="text-xs text-[var(--muted)]">{t('settings.clearCacheDesc')}</p>
+              </div>
+            </div>
+            <button
+              onClick={handleClearCache}
+              disabled={isAnyOperationInProgress || cacheCount === 0}
+              className="flex items-center justify-center gap-1.5 w-24 py-2 text-sm font-medium text-amber-500 bg-amber-500/10 hover:bg-amber-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Zap size={14} className={isClearingCache ? 'animate-pulse' : ''} />
+              <span>{isClearingCache ? t('common.loading') : t('settings.clearCache')}</span>
             </button>
           </div>
 
@@ -293,7 +352,7 @@ export default function DataSettings() {
             <button
               onClick={handleResetAll}
               disabled={isAnyOperationInProgress}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1.5 w-24 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RotateCcw size={14} className={isResettingAll ? 'animate-spin' : ''} />
               <span>{isResettingAll ? t('common.loading') : t('settings.resetAll')}</span>
@@ -313,15 +372,6 @@ export default function DataSettings() {
         title={confirmDialog.title}
         message={confirmDialog.message}
         type="danger"
-      />
-
-      {/* Notification Toast */}
-      <Notification
-        isOpen={notification.isOpen}
-        onClose={() => setNotification({ ...notification, isOpen: false })}
-        title={notification.title || undefined}
-        message={notification.message}
-        type={notification.type}
       />
     </div>
   );

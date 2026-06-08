@@ -2,14 +2,18 @@
 export interface LLMConfig {
   id?: string;
   name: string;
-  type: 'openai' | 'anthropic';
+  type: 'openai' | 'anthropic' | 'ollama';
   baseUrl: string;
   apiKey: string;
   model: string;
   description?: string;
   isActive?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  /** 生成温度，控制输出随机性，范围 0-2，默认 0.5 */
+  temperature?: number;
+  /** 最大输出 token 数，控制生成长度，默认值取决于 provider 类型 */
+  maxTokens?: number;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 /** LLM chat message */
@@ -68,6 +72,8 @@ export interface ExcalidrawElement {
   width?: number;
   height?: number;
   id?: string;
+  /** 旋转角度（弧度） */
+  rotation?: number;
   start?: { id: string };
   end?: { id: string };
   [key: string]: unknown;
