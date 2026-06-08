@@ -67,7 +67,7 @@ export default function SettingsPage() {
   const tabs: { key: SettingsTab; component: React.ReactNode }[] = [
     { key: 'appearance', component: <AppearanceSettings /> },
     { key: 'llm', component: <LLMSettings isVisible={activeTab === 'llm'} /> },
-    { key: 'tags', component: <TagSettings /> },
+    { key: 'tags', component: <TagSettings isVisible={activeTab === 'tags'} /> },
     { key: 'network', component: <NetworkSettings /> },
     { key: 'conversations', component: <ConversationSettings /> },
     { key: 'data', component: <DataSettings /> },

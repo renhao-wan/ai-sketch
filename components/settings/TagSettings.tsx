@@ -22,7 +22,7 @@ const PRESET_COLORS = [
 ];
 
 /** 标签管理组件 */
-export function TagSettings() {
+export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) {
   const { t } = useLocale();
   const { showNotification } = useNotification();
 
@@ -60,6 +60,17 @@ export function TagSettings() {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- 仅在挂载时加载标签
   useEffect(() => { loadTags(); }, []);
+
+  // 当组件变为不可见时，关闭所有编辑状态
+  useEffect(() => {
+    if (!isVisible) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 组件不可见时重置状态是合理的
+      setEditingConvTag(null);
+      setIsCreatingConvTag(false);
+      setEditingConfigTag(null);
+      setIsCreatingConfigTag(false);
+    }
+  }, [isVisible]);
 
   // ==================== 对话标签操作 ====================
 
