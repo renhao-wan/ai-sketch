@@ -11,6 +11,7 @@
 - [三、大型模块（2-4 周+）](#三大型模块24-周)
 - [四、功能依赖关系](#四功能依赖关系)
 - [五、推荐实施顺序](#五推荐实施顺序)
+- [附录：功能实施进度跟踪](#附录功能实施进度跟踪)
 
 ---
 
@@ -98,70 +99,7 @@
 
 ---
 
-### 1.6 画布全屏模式
-
-**描述**：支持将画布区域全屏展示，隐藏 AI 面板和代码编辑器。
-
-**实现思路**：
-- 在 `DiagramCanvas` 旁添加全屏按钮
-- 全屏时隐藏左侧面板和底部面板，画布占满整个窗口
-- `Esc` 退出全屏
-
-**价值**：演示或查看大图表时需要更多画布空间。
-
-**工作量**：1 天
-
----
-
-### 1.7 消息气泡代码预览改进
-
-**描述**：将 300 字符硬截断改为可折叠的代码块。
-
-**实现思路**：
-```tsx
-const [expanded, setExpanded] = useState(false);
-const isLong = message.content.length > 300;
-const displayContent = expanded ? message.content : message.content.substring(0, 300);
-
-<pre>
-  <code>{displayContent}{isLong && !expanded && '...'}</code>
-  {isLong && (
-    <button onClick={() => setExpanded(!expanded)}>
-      {expanded ? '收起' : `展开全部 (${message.content.length} 字符)`}
-    </button>
-  )}
-</pre>
-```
-
-**价值**：当前用户完全无法在消息气泡中预览 AI 生成的代码。
-
-**工作量**：0.5 天
-
----
-
-### 1.8 面板尺寸持久化
-
-**描述**：将左侧面板宽度和底部面板高度保存到 localStorage。
-
-**实现思路**：
-```typescript
-const [panelWidth, setPanelWidth] = useState(() => {
-  const saved = localStorage.getItem('editor-panel-width');
-  return saved ? parseInt(saved) : 360;
-});
-
-useEffect(() => {
-  localStorage.setItem('editor-panel-width', panelWidth.toString());
-}, [panelWidth]);
-```
-
-**价值**：用户每次刷新页面都需要重新调整面板宽度。
-
-**工作量**：0.5 天
-
----
-
-### 1.9 模板收藏夹
+### 1.6 模板收藏夹
 
 **描述**：允许用户收藏常用模板，并在首页快速访问。
 
@@ -176,7 +114,7 @@ useEffect(() => {
 
 ---
 
-### 1.10 图表代码片段库
+### 1.7 图表代码片段库
 
 **描述**：用户可以保存常用的图表代码片段（如自定义的样式配置、常用节点模板），在生成时作为参考注入上下文。
 
@@ -623,13 +561,12 @@ Final Optimizer（优化阶段）
 
 | 序号 | 功能 | 工作量 | 价值 |
 |------|------|--------|------|
-| 1 | 消息气泡代码预览改进 | 0.5 天 | 🔴 高 |
-| 2 | 面板尺寸持久化 | 0.5 天 | 🟡 中 |
-| 3 | 图表版本历史 | 1-2 天 | 🔴 高 |
-| 4 | 画布全屏模式 | 1 天 | 🟡 中 |
-| 5 | 快捷键增强 | 1 天 | 🟡 中 |
-| 6 | 图表导出为图片/PDF | 2-3 天 | 🔴 高 |
-| 7 | 模板收藏夹 | 1 天 | 🟡 中 |
+| 1 | 图表版本历史 | 1-2 天 | 🔴 高 |
+| 2 | 快捷键增强 | 1 天 | 🟡 中 |
+| 3 | 图表导出为图片/PDF | 2-3 天 | 🔴 高 |
+| 4 | 对话搜索增强 | 1-2 天 | 🟡 中 |
+| 5 | 模板收藏夹 | 1 天 | 🟡 中 |
+| 6 | 消息置顶/书签 | 1 天 | 🟡 中 |
 
 ### 第二阶段：核心增强（4 周）
 
@@ -677,3 +614,71 @@ Final Optimizer（优化阶段）
 | **tldraw + AI** | 画布 + AI | 画布交互体验 |
 | **Mermaid Live** | Mermaid 实时预览 | 实时渲染体验 |
 | **PlantUML** | UML 图表即代码 | 丰富的图表类型支持 |
+
+---
+
+## 附录：功能实施进度跟踪
+
+> **图例**: ✅ 已完成 | 🔄 进行中 | ❌ 未开始
+> **规模**: 小型（1-3 天） | 中型（1-2 周） | 大型（2-4 周+）
+
+### 小型功能（1-3 天）
+
+| # | 功能 | 工作量 | 价值 | 状态 | 完成日期 | 备注 |
+|---|------|--------|------|------|----------|------|
+| 1.1 | 图表版本历史 | 1-2 天 | 🔴 高 | ❌ | - | UI 层添加版本切换 |
+| 1.2 | 图表导出为图片/PDF | 2-3 天 | 🔴 高 | ❌ | - | 利用现有 API |
+| 1.3 | 快捷键增强 | 1 天 | 🟡 中 | ❌ | - | 添加 keydown 事件监听 |
+| 1.4 | 对话搜索增强 | 1 天 | 🟡 中 | ✅ | 2026-06-08 | ConversationList 下拉搜索对话标题 |
+| 1.5 | 消息置顶/书签 | 1 天 | 🟡 中 | ❌ | - | messages 表加字段 |
+| 1.6 | 模板收藏夹 | 1 天 | 🟡 中 | ❌ | - | meta 表存储收藏列表 |
+| 1.7 | 图表代码片段库 | 2 天 | 🟡 中 | ❌ | - | 新建 snippets 表 |
+
+### 中型模块（1-2 周）
+
+| # | 功能 | 工作量 | 价值 | 状态 | 完成日期 | 备注 |
+|---|------|--------|------|------|----------|------|
+| 2.1 | 图表模板市场 | 1 周 | 🔴 高 | ❌ | - | 含模板制作 |
+| 2.2 | 代码编辑器双向同步 | 1-2 周 | 🔴 高 | ❌ | - | 需处理循环更新 |
+| 2.3 | 图表对比视图 | 1 周 | 🟡 中 | ❌ | - | 依赖版本历史 |
+| 2.4 | 批量生成 | 1 周 | 🟡 中 | ❌ | - | Promise.all 并行调用 |
+| 2.5 | 自定义 AI 操作 | 1-2 周 | 🟡 中 | ❌ | - | 新建 custom_actions 表 |
+| 2.6 | 多模型协作 | 1-2 周 | 🟡 中 | ❌ | - | 模型选择器 + 对比模式 |
+| 2.7 | 图表注释与标注 | 1 周 | 🟡 中 | ❌ | - | Excalidraw 原生支持 |
+| 2.8 | 导出为代码片段 | 1 周 | 🟡 中 | ❌ | - | React/HTML/Markdown/Vue |
+| 2.9 | 快速编辑（选中元素修改） | 1-2 周 | 🟡 中 | ❌ | - | Excalidraw getSelectedElements |
+
+### 大型模块（2-4 周+）
+
+| # | 功能 | 工作量 | 价值 | 状态 | 完成日期 | 备注 |
+|---|------|--------|------|------|----------|------|
+| 3.1 | Agent 多步生成 | 3-4 周 | 🔴🔴 极高 | ❌ | - | 核心差异化竞争力 |
+| 3.2 | 代码仓库图表生成 | 2-3 周 | 🔴 高 | ❌ | - | AST 解析 + LLM |
+| 3.3 | 实时协作 | 3-4 周 | 🟡 中 | ❌ | - | WebSocket + CRDT |
+| 3.4 | 图表知识库 | 2-3 周 | 🟡 中 | ❌ | - | 向量化嵌入 + 语义搜索 |
+| 3.5 | 图表自动更新 | 3-4 周 | 🟡 中 | ❌ | - | Webhook + 数据源 |
+| 3.6 | 多图表联动 | 2-3 周 | 🟢 低 | ❌ | - | 无限画布 + 子页面 |
+| 3.7 | 图表动画 | 2-3 周 | 🟡 中 | ❌ | - | requestAnimationFrame |
+| 3.8 | 本地模型支持 | 1-2 周 | 🟡 中 | ❌ | - | Ollama 集成 |
+
+---
+
+## 附录 B：关键依赖文件索引
+
+| 用途 | 路径 |
+|------|------|
+| 对话管理 | `lib/db/conversation-manager.ts` |
+| 数据库初始化 | `lib/db/index.ts` |
+| LLM 客户端 | `lib/llm/client.ts` |
+| 生成路由 | `app/api/generate/route.ts` |
+| Editor 页面 | `app/editor/page.tsx` |
+| Excalidraw 策略 | `lib/strategies/excalidraw-strategy.ts` |
+| Mermaid 策略 | `lib/strategies/mermaid-strategy.ts` |
+| Draw.io 策略 | `lib/strategies/drawio-strategy.ts` |
+| Excalidraw 画布 | `components/canvases/ExcalidrawCanvas.tsx` |
+| Draw.io 画布 | `components/canvases/DrawioCanvas.tsx` |
+| Mermaid 画布 | `components/canvases/MermaidCanvas.tsx` |
+| AI Copilot 面板 | `components/ai/AICopilotPanel.tsx` |
+| 消息气泡 | `components/ai/MessageBubble.tsx` |
+| 浮动工具栏 | `components/toolbar/FloatingToolbar.tsx` |
+| 模板系统 | `lib/templates/` |

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, ChevronDown, Loader2 } from 'lucide-react';
+import { MessageSquare, ChevronDown, Loader2, Search, X } from 'lucide-react';
 import * as api from '@/lib/api/client';
 import { useLocale } from '@/lib/locales';
 import { timeAgo } from '@/lib/utils/time-ago';
@@ -29,7 +29,9 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const offsetRef = useRef(0);
 
   /** 加载会话（首次 or 加载更多） */
@@ -38,7 +40,11 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
     setIsLoading(true);
     try {
       const offset = reset ? 0 : offsetRef.current;
-      const result = await api.fetchConversations({ limit: PAGE_SIZE, offset });
+      const result = await api.fetchConversations({
+        limit: PAGE_SIZE,
+        offset,
+        search: searchQuery || undefined,
+      });
       setConversations(prev => reset ? result.conversations : [...prev, ...result.conversations]);
       setHasMore(result.hasMore);
       offsetRef.current = offset + result.conversations.length;
@@ -47,17 +53,30 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading]);
+  }, [isLoading, searchQuery]);
 
   /** 打开下拉时重置加载 */
   useEffect(() => {
     if (isOpen) {
       offsetRef.current = 0;
       setHasMore(true);
+      setSearchQuery('');
       loadConversations(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- loadConversations 不应在依赖中，避免打开下拉时无限循环
   }, [isOpen]);
+
+  /** 搜索防抖 */
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      offsetRef.current = 0;
+      setHasMore(true);
+      loadConversations(true);
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadConversations 不应在依赖中
+  }, [searchQuery]);
 
   /** 滚动到底部时加载更多 */
   const handleScroll = useCallback(() => {
@@ -95,6 +114,30 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
               {t('conversation.new')}
             </button>
 
+            {/* Search input */}
+            <div className="px-3 py-2 border-b border-black/5">
+              <div className="relative flex items-center">
+                <Search size={14} className="absolute left-2.5 text-[var(--muted)]/50" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  placeholder={t('conversation.search')}
+                  className="w-full pl-8 pr-7 py-1.5 text-sm bg-[var(--surface-warm-hover)] rounded-lg text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--accent-indigo)]/20"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 text-[var(--muted)] hover:text-[var(--fg)]"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* List */}
             <div
               ref={scrollContainerRef}
@@ -102,7 +145,9 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
               className="max-h-64 overflow-y-auto scrollbar-thin"
             >
               {conversations.length === 0 && !isLoading ? (
-                <div className="px-4 py-6 text-center text-sm text-[var(--muted)]">{t('conversation.empty')}</div>
+                <div className="px-4 py-6 text-center text-sm text-[var(--muted)]">
+                  {searchQuery ? t('conversation.noResults') : t('conversation.empty')}
+                </div>
               ) : (
                 <>
                   {conversations.map((conv) => {

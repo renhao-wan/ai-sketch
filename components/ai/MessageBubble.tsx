@@ -10,13 +10,32 @@ import type { ConversationMessage } from '@/lib/types';
 interface MessageBubbleProps {
   message: ConversationMessage;
   isStreaming?: boolean;
+  highlightQuery?: string;
   onRegenerate?: () => void;
   onCopy?: () => void;
   onExport?: () => void;
   onShowDiagram?: () => void;
 }
 
-const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, onRegenerate, onCopy, onExport, onShowDiagram }: MessageBubbleProps) {
+/** 将文本中匹配搜索关键词的子串用 <mark> 高亮 */
+function highlightText(text: string, query: string): React.ReactNode {
+  if (!query) return text;
+  const lower = text.toLowerCase();
+  const q = query.toLowerCase();
+  const parts: React.ReactNode[] = [];
+  let lastIdx = 0;
+  let idx = lower.indexOf(q);
+  while (idx !== -1) {
+    if (idx > lastIdx) parts.push(text.slice(lastIdx, idx));
+    parts.push(<mark key={idx} className="bg-yellow-200/60 text-inherit rounded-sm px-0.5">{text.slice(idx, idx + query.length)}</mark>);
+    lastIdx = idx + query.length;
+    idx = lower.indexOf(q, lastIdx);
+  }
+  if (lastIdx < text.length) parts.push(text.slice(lastIdx));
+  return parts.length > 0 ? parts : text;
+}
+
+const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, highlightQuery, onRegenerate, onCopy, onExport, onShowDiagram }: MessageBubbleProps) {
   const { t } = useLocale();
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
@@ -108,7 +127,7 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, 
 
           {/* Text content */}
           {isUser ? (
-            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+            <p className="whitespace-pre-wrap break-words">{highlightText(message.content, highlightQuery || '')}</p>
           ) : (
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
@@ -136,7 +155,7 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, 
                 <>
                   {/* 展开状态：显示代码预览 */}
                   <pre className="text-xs font-mono bg-[var(--surface-warm-hover)] rounded-lg p-2.5 overflow-x-auto max-h-40 scrollbar-thin">
-                    <code>{isLongCode ? message.content.substring(0, CODE_PREVIEW_LENGTH) + '...' : message.content}</code>
+                    <code>{highlightText(isLongCode ? message.content.substring(0, CODE_PREVIEW_LENGTH) + '...' : message.content, highlightQuery || '')}</code>
                   </pre>
                   <div className="flex items-center gap-2 mt-1.5">
                     <button
