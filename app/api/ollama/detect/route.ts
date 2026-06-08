@@ -14,13 +14,18 @@ interface OllamaTagResponse {
 /**
  * POST /api/ollama/detect
  * 检测本地 Ollama 服务是否运行，并获取可用模型列表
+ * 支持传入自定义 baseUrl（如远程 Ollama 服务）
  */
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    // 支持客户端传入自定义 URL
+    const { baseUrl } = await request.json().catch(() => ({}));
+    const ollamaUrl = baseUrl || OLLAMA_DEFAULT_URL;
 
-    const response = await fetch(`${OLLAMA_DEFAULT_URL}/api/tags`, {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(`${ollamaUrl}/api/tags`, {
       signal: controller.signal,
     });
     clearTimeout(timeoutId);

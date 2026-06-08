@@ -2,6 +2,10 @@
  * Ollama Provider 实现
  * 支持本地 Ollama 模型运行时
  * Ollama 使用 OpenAI 兼容的 API，但模型列表使用独立的 /api/tags 端点，且不需要 API Key
+ *
+ * 设计说明：选择继承 OpenAIProvider 而非独立实现，因为两者共享完全相同的
+ * SSE 解析、消息处理和请求体构建逻辑。继承避免了代码重复，且 Ollama 的
+ * 差异仅在端点路径和请求头（无需 API Key），通过 override 方法处理。
  */
 
 import type { LLMProvider } from './types';

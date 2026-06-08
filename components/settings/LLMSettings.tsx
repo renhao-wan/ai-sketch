@@ -46,6 +46,7 @@ export function LLMSettings() {
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({ isOpen: false, title: '', message: '', onConfirm: null });
   const [ollamaDetected, setOllamaDetected] = useState(false);
   const [ollamaModels, setOllamaModels] = useState<{ id: string; name: string }[]>([]);
+  const [ollamaCreating, setOllamaCreating] = useState(false);
 
   const { showBanner, handleDismissBanner } = useCountBanner({
     count: configs.length,
@@ -67,17 +68,28 @@ export function LLMSettings() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅在挂载时加载配置
   useEffect(() => { loadConfigs(); }, []);
 
-  // 检测本地 Ollama 服务（仅显示未配置的新模型）
+  // 检测本地 Ollama 服务（仅挂载时检测一次）
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅挂载时检测
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/ollama/detect', { method: 'POST' });
+        // 读取当前配置，获取已有的 Ollama URL（支持远程 Ollama）
+        const currentConfigs = await api.fetchConfigs();
+        const ollamaConfig = currentConfigs.configs.find(c => c.type === 'ollama');
+        const body: Record<string, string> = {};
+        if (ollamaConfig?.baseUrl) body.baseUrl = ollamaConfig.baseUrl;
+
+        const res = await fetch('/api/ollama/detect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
         const data = await res.json();
         if (!cancelled && data.detected && data.models?.length > 0) {
           // 过滤掉已有配置的模型
           const existingModels = new Set(
-            configs.filter(c => c.type === 'ollama').map(c => c.model),
+            currentConfigs.configs.filter(c => c.type === 'ollama').map(c => c.model),
           );
           const newModels = data.models.filter(
             (m: { id: string; name: string }) => !existingModels.has(m.id),
@@ -92,7 +104,7 @@ export function LLMSettings() {
       }
     })();
     return () => { cancelled = true; };
-  }, [configs]);
+  }, []);
 
   /** 新建配置 */
   const handleCreateNew = () => {
@@ -228,6 +240,8 @@ export function LLMSettings() {
 
   /** 快速添加 Ollama 配置（为每个发现的模型创建独立配置） */
   const handleAddOllama = async () => {
+    if (ollamaCreating) return; // 防止重复点击
+    setOllamaCreating(true);
     try {
       // 收集现有配置名称，避免重名
       const existingNames = new Set(configs.map(c => c.name));
@@ -261,6 +275,8 @@ export function LLMSettings() {
       );
     } catch (err) {
       setError(t('config.saveFailed') + (err as Error).message);
+    } finally {
+      setOllamaCreating(false);
     }
   };
 
@@ -304,10 +320,11 @@ export function LLMSettings() {
             </div>
             <button
               onClick={handleAddOllama}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200 font-medium"
+              disabled={ollamaCreating}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200 font-medium disabled:opacity-50"
             >
-              <Plus size={14} />
-              <span>{t('config.addOllamaConfig')}</span>
+              {ollamaCreating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              <span>{ollamaCreating ? t('common.loading') : t('config.addOllamaConfig')}</span>
             </button>
           </div>
         )}
