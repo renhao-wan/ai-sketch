@@ -1,4 +1,4 @@
-import type { LLMConfig, TestConnectionResult, Conversation, ConversationWithMessages } from '@/lib/types';
+import type { LLMConfig, TestConnectionResult, Conversation, ConversationWithMessages, ConversationTag, ConfigTag } from '@/lib/types';
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -182,4 +182,94 @@ export async function deleteConversations(ids: string[]): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ids }),
   });
+}
+
+// ── Tag operations ──
+
+/** 获取所有对话标签 */
+export async function fetchConversationTags(): Promise<ConversationTag[]> {
+  const data = await request<{ tags: ConversationTag[] }>('/api/conversation-tags');
+  return data.tags;
+}
+
+/** 创建对话标签 */
+export async function createConversationTag(data: { name: string; color: string }): Promise<ConversationTag> {
+  return request('/api/conversation-tags', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+/** 更新对话标签 */
+export async function updateConversationTag(id: string, data: { name?: string; color?: string }): Promise<ConversationTag> {
+  return request(`/api/conversation-tags/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+/** 删除对话标签 */
+export async function deleteConversationTag(id: string): Promise<void> {
+  await request<{ success: boolean }>(`/api/conversation-tags/${id}`, { method: 'DELETE' });
+}
+
+/** 设置对话标签 */
+export async function setConversationTags(conversationId: string, tagIds: string[]): Promise<{ tags: ConversationTag[] }> {
+  return request(`/api/conversations/${conversationId}/tags`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tagIds }),
+  });
+}
+
+/** 获取对话标签 */
+export async function fetchConversationTagsByIds(conversationId: string): Promise<ConversationTag[]> {
+  const data = await request<{ tags: ConversationTag[] }>(`/api/conversations/${conversationId}/tags`);
+  return data.tags;
+}
+
+/** 获取所有配置标签 */
+export async function fetchConfigTags(): Promise<ConfigTag[]> {
+  const data = await request<{ tags: ConfigTag[] }>('/api/config-tags');
+  return data.tags;
+}
+
+/** 创建配置标签 */
+export async function createConfigTag(data: { name: string; color: string }): Promise<ConfigTag> {
+  return request('/api/config-tags', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+/** 更新配置标签 */
+export async function updateConfigTag(id: string, data: { name?: string; color?: string }): Promise<ConfigTag> {
+  return request(`/api/config-tags/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+/** 删除配置标签 */
+export async function deleteConfigTag(id: string): Promise<void> {
+  await request<{ success: boolean }>(`/api/config-tags/${id}`, { method: 'DELETE' });
+}
+
+/** 设置配置标签 */
+export async function setConfigTags(configId: string, tagIds: string[]): Promise<{ tags: ConfigTag[] }> {
+  return request(`/api/configs/${configId}/tags`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tagIds }),
+  });
+}
+
+/** 获取配置标签 */
+export async function fetchConfigTagsByIds(configId: string): Promise<ConfigTag[]> {
+  const data = await request<{ tags: ConfigTag[] }>(`/api/configs/${configId}/tags`);
+  return data.tags;
 }
