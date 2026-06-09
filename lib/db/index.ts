@@ -108,6 +108,8 @@ async function initDb(): Promise<Database> {
       prompt_hash TEXT NOT NULL,
       format TEXT NOT NULL,
       chart_type TEXT NOT NULL,
+      config_name TEXT NOT NULL DEFAULT '',
+      model TEXT NOT NULL DEFAULT '',
       response TEXT NOT NULL,
       created_at INTEGER NOT NULL,
       last_used_at INTEGER NOT NULL,
@@ -116,6 +118,19 @@ async function initDb(): Promise<Database> {
   `);
   db.run(`CREATE INDEX IF NOT EXISTS idx_response_cache_hash ON response_cache(prompt_hash, format, chart_type)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_response_cache_last_used ON response_cache(last_used_at DESC)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_response_cache_config ON response_cache(config_name, model)`);
+
+  // 兼容旧数据库：新增 config_name 和 model 列
+  try {
+    db.run("ALTER TABLE response_cache ADD COLUMN config_name TEXT NOT NULL DEFAULT ''");
+  } catch {
+    // 列已存在，忽略
+  }
+  try {
+    db.run("ALTER TABLE response_cache ADD COLUMN model TEXT NOT NULL DEFAULT ''");
+  } catch {
+    // 列已存在，忽略
+  }
 
   // 标签表
   db.run(`
