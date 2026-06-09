@@ -71,6 +71,13 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     scope: 'global',
   },
   {
+    id: 'open-shortcuts',
+    keys: ['Alt', 'B'],
+    description: '快捷键设置',
+    descriptionKey: 'shortcuts.openShortcuts',
+    scope: 'global',
+  },
+  {
     id: 'open-network',
     keys: ['Alt', 'K'],
     description: '网络设置',
@@ -275,6 +282,11 @@ export function useShortcuts(actions?: ShortcutActions) {
         if (matchKeys(event, ['Alt', 'D'])) {
           event.preventDefault();
           actions.onOpenSettings?.('data');
+          return;
+        }
+        if (matchKeys(event, ['Alt', 'B'])) {
+          event.preventDefault();
+          actions.onOpenSettings?.('shortcuts');
           return;
         }
         if (matchKeys(event, ['Alt', 'A'])) {
