@@ -291,11 +291,10 @@ export default function AICopilotPanel({
   const handleTagChange = async (tagIds: string[]) => {
     if (!conversationId) return;
     try {
-      await api.setConversationTags(conversationId, tagIds);
-      const updated = await api.fetchConversationTagsByIds(conversationId);
-      setConversationTags(updated);
-    } catch {
-      // 静默忽略
+      const result = await api.setConversationTags(conversationId, tagIds);
+      setConversationTags(result.tags);
+    } catch (err) {
+      console.error('Failed to update conversation tags:', err);
     }
   };
 

@@ -21,6 +21,10 @@ export const PUT = withErrorHandling(
       return NextResponse.json({ error: '每个对话最多 10 个标签' }, { status: 400 });
     }
 
+    if (!tagIds.every((id: unknown) => typeof id === 'string' && id.length > 0)) {
+      return NextResponse.json({ error: 'tagIds 的每个元素必须是非空字符串' }, { status: 400 });
+    }
+
     await tagManager.setConversationTags(id, tagIds);
     const tags = await tagManager.getConversationTagsByIds(id);
     return NextResponse.json({ tags });

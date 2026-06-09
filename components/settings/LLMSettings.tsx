@@ -551,9 +551,8 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
             selectedTagIds={cfgTags.map(t => t.id)}
             onChange={async (tagIds) => {
               try {
-                await api.setConfigTags(config.id!, tagIds);
-                const updatedTags = await api.fetchConfigTagsByIds(config.id!);
-                setConfigTagsMap(prev => ({ ...prev, [config.id!]: updatedTags }));
+                const result = await api.setConfigTags(config.id!, tagIds);
+                setConfigTagsMap(prev => ({ ...prev, [config.id!]: result.tags }));
               } catch (err) {
                 console.error('Failed to update config tags:', err);
               }

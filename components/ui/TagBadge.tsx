@@ -62,11 +62,11 @@ export default function TagBadge({
     ${className}
   `;
 
-  const style = {
+  const style: React.CSSProperties = {
     backgroundColor: `${color}20`,
     color: color,
     borderColor: `${color}40`,
-    ...(selected ? { ringColor: color } : {}),
+    ...(selected ? { '--tw-ring-color': color } as React.CSSProperties : {}),
   };
 
   return (

@@ -639,9 +639,8 @@ export default function ConversationSettings() {
             selectedTagIds={convTags.map(t => t.id)}
             onChange={async (tagIds) => {
               try {
-                await api.setConversationTags(item.id, tagIds);
-                const updatedTags = await api.fetchConversationTagsByIds(item.id);
-                setConversationTagsMap(prev => ({ ...prev, [item.id]: updatedTags }));
+                const result = await api.setConversationTags(item.id, tagIds);
+                setConversationTagsMap(prev => ({ ...prev, [item.id]: result.tags }));
               } catch (err) {
                 console.error('Failed to update conversation tags:', err);
               }

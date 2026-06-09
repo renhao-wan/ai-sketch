@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Tag } from 'lucide-react';
+import { useLocale } from '@/lib/locales';
 import type { ConversationTag, ConfigTag } from '@/lib/types';
 
 interface TagFilterProps {
@@ -17,6 +18,7 @@ export default function TagFilter({
   selectedTagId,
   onChange,
 }: TagFilterProps) {
+  const { t } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -78,7 +80,7 @@ export default function TagFilter({
         }`}
       >
         <span className="w-2.5 h-2.5 rounded-full bg-[var(--muted)]/30" />
-        <span className="flex-1 text-left">全部</span>
+        <span className="flex-1 text-left">{t('tags.all')}</span>
         {selectedTagId === null && <span className="text-[10px] text-[var(--accent-indigo)]">✓</span>}
       </button>
 

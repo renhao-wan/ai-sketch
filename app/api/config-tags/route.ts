@@ -24,8 +24,16 @@ export const POST = withErrorHandling(async (request: Request) => {
     return NextResponse.json({ error: '缺少必填参数: name, color' }, { status: 400 });
   }
 
-  if (name.length > 20) {
+  if (typeof name !== 'string' || name.trim().length === 0) {
+    return NextResponse.json({ error: 'name 必须是非空字符串' }, { status: 400 });
+  }
+
+  if (name.trim().length > 20) {
     return NextResponse.json({ error: '标签名称不能超过 20 个字符' }, { status: 400 });
+  }
+
+  if (typeof color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(color)) {
+    return NextResponse.json({ error: 'color 必须是有效的十六进制颜色值' }, { status: 400 });
   }
 
   // 检查同名标签
