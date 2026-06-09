@@ -295,7 +295,7 @@ export default function CacheSettings({ isVisible = true }: CacheSettingsProps) 
             <button
               type="button"
               onClick={() => setIsConfigDropdownOpen(!isConfigDropdownOpen)}
-              className="w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] hover:border-[var(--accent-indigo)]/30 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/20 transition-all duration-200"
+              className="w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] hover:border-[var(--accent-indigo)]/30 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/20 transition-all duration-200"
             >
               <span className={selectedConfigId ? 'text-[var(--fg)]' : 'text-[var(--muted)]'}>
                 {selectedConfigId
@@ -358,7 +358,7 @@ export default function CacheSettings({ isVisible = true }: CacheSettingsProps) 
               max={365}
               value={ttlInput}
               onChange={(e) => setTtlInput(Math.max(1, Math.min(365, Number(e.target.value))))}
-              className="w-20 px-3 py-2 text-sm rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] text-center focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)]"
+              className="w-20 px-3 py-2 text-sm rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] text-center focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)]"
             />
             <span className="text-sm text-[var(--muted)]">{t('cache.days')}</span>
           </div>
