@@ -12,6 +12,7 @@ export class MemoryCache<T = string> {
   private cache = new Map<string, CacheEntry<T>>();
   private readonly maxEntries: number;
   private readonly maxSizeBytes: number;
+  private currentSize = 0;
 
   /**
    * @param maxEntries 最大条目数（默认 50）
@@ -34,25 +35,39 @@ export class MemoryCache<T = string> {
 
   /** 设置缓存值，超限时淘汰最旧条目 */
   set(key: string, value: T, size?: number): void {
-    // 如果已存在，先删除旧的
+    const entrySize = size ?? this.estimateSize(value);
+
+    // 条目过大，跳过写入
+    if (entrySize > this.maxSizeBytes) {
+      return;
+    }
+
+    // 如果已存在，先删除旧的并减去旧大小
     if (this.cache.has(key)) {
+      const oldEntry = this.cache.get(key)!;
+      this.currentSize -= oldEntry.size;
       this.cache.delete(key);
     }
 
-    const entrySize = size ?? this.estimateSize(value);
-
     // 淘汰直到有空间
-    while (this.cache.size >= this.maxEntries || this.totalSize() + entrySize > this.maxSizeBytes) {
+    while (this.cache.size >= this.maxEntries || this.currentSize + entrySize > this.maxSizeBytes) {
       const oldest = this.cache.keys().next().value;
       if (oldest === undefined) break;
+      const evicted = this.cache.get(oldest)!;
+      this.currentSize -= evicted.size;
       this.cache.delete(oldest);
     }
 
+    this.currentSize += entrySize;
     this.cache.set(key, { value, size: entrySize });
   }
 
   /** 删除缓存条目 */
   delete(key: string): boolean {
+    const entry = this.cache.get(key);
+    if (entry) {
+      this.currentSize -= entry.size;
+    }
     return this.cache.delete(key);
   }
 
@@ -64,6 +79,7 @@ export class MemoryCache<T = string> {
   /** 清空所有缓存 */
   clear(): void {
     this.cache.clear();
+    this.currentSize = 0;
   }
 
   /** 当前条目数 */
@@ -85,12 +101,4 @@ export class MemoryCache<T = string> {
     }
   }
 
-  /** 计算当前总占用体积 */
-  private totalSize(): number {
-    let total = 0;
-    for (const entry of this.cache.values()) {
-      total += entry.size;
-    }
-    return total;
-  }
 }
