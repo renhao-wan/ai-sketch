@@ -6,7 +6,9 @@ import ScrollToTop from '@/components/ui/ScrollToTop';
 import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/lib/locales';
 import { Clock, ArrowRight, Search } from 'lucide-react';
-import type { Conversation } from '@/lib/types';
+import TagBadge from '@/components/ui/TagBadge';
+import TagFilter from '@/components/ui/TagFilter';
+import type { Conversation, ConversationTag } from '@/lib/types';
 
 interface HistoryModalProps {
   isOpen: boolean;
@@ -30,6 +32,11 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
   const [totalCount, setTotalCount] = useState(0);
   const pageRef = useRef(0);
 
+  // Tag state
+  const [tags, setTags] = useState<ConversationTag[]>([]);
+  const [conversationTagsMap, setConversationTagsMap] = useState<Record<string, ConversationTag[]>>({});
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+
   /** Load conversations with search/sort/pagination support */
   const loadConversations = async (reset = false, pageNum = 0) => {
     try {
@@ -40,6 +47,7 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
         order: sortOrder,
         limit: PAGE_SIZE,
         offset,
+        tagId: selectedTagId || undefined,
       });
 
       if (reset) {
@@ -55,7 +63,17 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
     }
   };
 
-  // Debounced load on open/search/sort changes
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSearchQuery('');
+      setSortBy('updated_at');
+      setSortOrder('desc');
+      setSelectedTagId(null);
+    }
+  }, [isOpen]);
+
+  // Debounced load on open/search/sort/tag changes
   useEffect(() => {
     if (!isOpen) return;
     const timer = setTimeout(() => {
@@ -65,7 +83,41 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, searchQuery, sortBy, sortOrder]);
+  }, [isOpen, searchQuery, sortBy, sortOrder, selectedTagId]);
+
+  /** Load all conversation tags */
+  useEffect(() => {
+    if (!isOpen) return;
+    const loadTags = async () => {
+      try {
+        const convTags = await api.fetchConversationTags();
+        setTags(convTags);
+      } catch (err) {
+        console.error('Failed to load tags:', err);
+      }
+    };
+    loadTags();
+  }, [isOpen]);
+
+  /** Load tags for visible conversations */
+  useEffect(() => {
+    if (!isOpen || items.length === 0) return;
+    const loadConversationTags = async () => {
+      const tagsMap: Record<string, ConversationTag[]> = {};
+      await Promise.all(
+        items.map(async (conv) => {
+          try {
+            const convTags = await api.fetchConversationTagsByIds(conv.id);
+            tagsMap[conv.id] = convTags;
+          } catch {
+            // 静默忽略
+          }
+        }),
+      );
+      setConversationTagsMap(tagsMap);
+    };
+    loadConversationTags();
+  }, [isOpen, items]);
 
   /** Infinite scroll: load next page when near bottom */
   const loadMore = useCallback(async () => {
@@ -112,15 +164,22 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
 
         {/* Search and Sort Controls */}
         <div className="px-7 pb-3 flex-shrink-0">
-          {/* Search Input */}
-          <div className="relative mb-3">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]/50" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('conversation.search')}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200"
+          {/* Search Input + Tag Filter */}
+          <div className="flex items-center gap-2 mb-3">
+            <div className="relative flex-1">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]/50" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('conversation.search')}
+                className="w-full pl-9 pr-3 py-2 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200"
+              />
+            </div>
+            <TagFilter
+              tags={tags}
+              selectedTagId={selectedTagId}
+              onChange={setSelectedTagId}
             />
           </div>
 
@@ -164,6 +223,13 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
                         <span className="text-[11px] text-[var(--muted)] flex-shrink-0">
                           {new Date(item.updatedAt).toLocaleString()}
                         </span>
+                        {(conversationTagsMap[item.id] || []).length > 0 && (
+                          <span className="flex items-center gap-0.5 flex-shrink-0">
+                            {(conversationTagsMap[item.id] || []).slice(0, 5).map(tag => (
+                              <TagBadge key={tag.id} name={tag.name} color={tag.color} variant="dot" />
+                            ))}
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-[var(--fg)] mb-1 truncate">{item.title}</p>
                       {item.configName && <p className="text-[11px] text-[var(--muted)] truncate">{t('history.modelPrefix')} {item.configName} - {item.configModel}</p>}

@@ -5,7 +5,7 @@ import * as api from '@/lib/api/client';
 import { useNotification } from '@/lib/contexts/NotificationContext';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
 import ScrollToTop from '@/components/ui/ScrollToTop';
-import { Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2 } from 'lucide-react';
+import { Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2, Tag } from 'lucide-react';
 import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
@@ -413,28 +413,24 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
         </div>
       </div>
 
-      {/* 搜索框 */}
-      <div className="relative">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)]/50" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t('config.search')}
-          className="w-full pl-10 pr-4 py-2.5 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200"
-        />
-      </div>
-
-      {/* Tag filter */}
-      {tags.length > 0 && (
-        <div className="mb-4">
-          <TagFilter
-            tags={tags}
-            selectedTagId={selectedTagId}
-            onChange={setSelectedTagId}
+      {/* 搜索框 + 标签筛选 */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)]/50" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('config.search')}
+            className="w-full pl-10 pr-4 py-2.5 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all duration-200"
           />
         </div>
-      )}
+        <TagFilter
+          tags={tags}
+          selectedTagId={selectedTagId}
+          onChange={setSelectedTagId}
+        />
+      </div>
 
       {/* 可滚动的配置列表 */}
       <ScrollToTop className="flex-1 overflow-y-auto scrollbar-thin pt-2">
@@ -467,40 +463,12 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
                       <span className="px-2 py-0.5 text-[11px] bg-[var(--surface-warm-hover)] text-[var(--muted)] rounded-lg flex-shrink-0">
                         {config.type}
                       </span>
-                    </div>
-                    {/* 标签显示 */}
-                    <div className="flex items-center gap-1 mb-1.5 flex-wrap relative">
-                      {cfgTags.slice(0, 3).map(tag => (
-                        <TagBadge key={tag.id} name={tag.name} color={tag.color} size="sm" />
-                      ))}
-                      {cfgTags.length > 3 && (
-                        <span className="text-[10px] text-[var(--muted)]">+{cfgTags.length - 3}</span>
-                      )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowTagSelector(showTagSelector === config.id ? null : config.id!);
-                        }}
-                        className="w-5 h-5 flex items-center justify-center rounded-full text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-                      >
-                        <Plus size={12} />
-                      </button>
-                      {/* 标签选择器 */}
-                      {showTagSelector === config.id && (
-                        <TagCloudSelector
-                          tags={tags}
-                          selectedTagIds={cfgTags.map(t => t.id)}
-                          onChange={async (tagIds) => {
-                            try {
-                              await api.setConfigTags(config.id!, tagIds);
-                              const updatedTags = await api.fetchConfigTagsByIds(config.id!);
-                              setConfigTagsMap(prev => ({ ...prev, [config.id!]: updatedTags }));
-                            } catch (err) {
-                              console.error('Failed to update config tags:', err);
-                            }
-                          }}
-                          onClose={() => setShowTagSelector(null)}
-                        />
+                      {cfgTags.length > 0 && (
+                        <span className="flex items-center gap-0.5 flex-shrink-0">
+                          {cfgTags.slice(0, 5).map(tag => (
+                            <TagBadge key={tag.id} name={tag.name} color={tag.color} variant="dot" />
+                          ))}
+                        </span>
                       )}
                     </div>
                     {config.description && (
@@ -546,6 +514,44 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
                       >
                         <Copy size={14} />
                       </button>
+                    </Tooltip>
+                    <Tooltip content={t('tags.selectTags')} side="top">
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowTagSelector(showTagSelector === config.id ? null : config.id!);
+                          }}
+                          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
+                            cfgTags.length > 0
+                              ? 'text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10'
+                              : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                          }`}
+                        >
+                          <Tag size={14} />
+                          {cfgTags.length > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 flex items-center justify-center text-[8px] font-bold text-white bg-[var(--accent-indigo)] rounded-full">
+                              {cfgTags.length}
+                            </span>
+                          )}
+                        </button>
+                        {showTagSelector === config.id && (
+                          <TagCloudSelector
+                            tags={tags}
+                            selectedTagIds={cfgTags.map(t => t.id)}
+                            onChange={async (tagIds) => {
+                              try {
+                                await api.setConfigTags(config.id!, tagIds);
+                                const updatedTags = await api.fetchConfigTagsByIds(config.id!);
+                                setConfigTagsMap(prev => ({ ...prev, [config.id!]: updatedTags }));
+                              } catch (err) {
+                                console.error('Failed to update config tags:', err);
+                              }
+                            }}
+                            onClose={() => setShowTagSelector(null)}
+                          />
+                        )}
+                      </div>
                     </Tooltip>
                     {configs.length > 1 && (
                       <Tooltip content={t('common.delete')} side="top">

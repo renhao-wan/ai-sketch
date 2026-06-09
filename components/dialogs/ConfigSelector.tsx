@@ -6,7 +6,9 @@ import ScrollToTop from '@/components/ui/ScrollToTop';
 import { Search, Check, ExternalLink } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
-import type { LLMConfig } from '@/lib/types';
+import TagBadge from '@/components/ui/TagBadge';
+import TagFilter from '@/components/ui/TagFilter';
+import type { LLMConfig, ConfigTag } from '@/lib/types';
 
 interface ConfigSelectorProps {
   isOpen: boolean;
@@ -22,7 +24,18 @@ export default function ConfigSelector({ isOpen, onClose, onConfigSelect }: Conf
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => { if (isOpen) loadConfigs(); }, [isOpen]);
+  // Tag state
+  const [tags, setTags] = useState<ConfigTag[]>([]);
+  const [configTagsMap, setConfigTagsMap] = useState<Record<string, ConfigTag[]>>({});
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadConfigs();
+      loadTags();
+      setSelectedTagId(null);
+    }
+  }, [isOpen]);
 
   const loadConfigs = async () => {
     try {
@@ -37,6 +50,35 @@ export default function ConfigSelector({ isOpen, onClose, onConfigSelect }: Conf
     }
   };
 
+  const loadTags = async () => {
+    try {
+      const cfgTags = await api.fetchConfigTags();
+      setTags(cfgTags);
+    } catch (err) {
+      console.error('Failed to load tags:', err);
+    }
+  };
+
+  /** Load tags for visible configs */
+  useEffect(() => {
+    if (!isOpen || configs.length === 0) return;
+    const loadConfigTags = async () => {
+      const tagsMap: Record<string, ConfigTag[]> = {};
+      await Promise.all(
+        configs.map(async (cfg) => {
+          try {
+            const cfgTags = await api.fetchConfigTagsByIds(cfg.id!);
+            tagsMap[cfg.id!] = cfgTags;
+          } catch {
+            // 静默忽略
+          }
+        }),
+      );
+      setConfigTagsMap(tagsMap);
+    };
+    loadConfigTags();
+  }, [isOpen, configs]);
+
   const handleSetActive = async (config: LLMConfig) => {
     if (!config.id || config.id === activeConfigId) return;
     try {
@@ -48,10 +90,14 @@ export default function ConfigSelector({ isOpen, onClose, onConfigSelect }: Conf
     }
   };
 
-  const filteredConfigs = configs.filter(config =>
-    config.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    config.model.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredConfigs = configs.filter(config => {
+    const matchesSearch = !searchQuery ||
+      config.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      config.model.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTag = !selectedTagId ||
+      (configTagsMap[config.id!] || []).some(tag => tag.id === selectedTagId);
+    return matchesSearch && matchesTag;
+  });
 
   if (!isOpen) return null;
 
@@ -70,16 +116,23 @@ export default function ConfigSelector({ isOpen, onClose, onConfigSelect }: Conf
           </button>
         </div>
 
-        {/* Search */}
+        {/* Search + Tag Filter */}
         <div className="p-3 border-b border-[var(--border)]">
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('config.search')}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-[var(--surface-warm-hover)] border border-transparent rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30"
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('config.search')}
+                className="w-full pl-9 pr-3 py-2 text-sm bg-[var(--surface-warm-hover)] border border-transparent rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30"
+              />
+            </div>
+            <TagFilter
+              tags={tags}
+              selectedTagId={selectedTagId}
+              onChange={setSelectedTagId}
             />
           </div>
         </div>
@@ -113,6 +166,13 @@ export default function ConfigSelector({ isOpen, onClose, onConfigSelect }: Conf
                         {config.id === activeConfigId && (
                           <span className="flex-shrink-0 px-2 py-0.5 text-[10px] font-medium bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] rounded-full">
                             {t('config.active')}
+                          </span>
+                        )}
+                        {(configTagsMap[config.id!] || []).length > 0 && (
+                          <span className="flex items-center gap-0.5 flex-shrink-0">
+                            {(configTagsMap[config.id!] || []).slice(0, 5).map(tag => (
+                              <TagBadge key={tag.id} name={tag.name} color={tag.color} variant="dot" />
+                            ))}
                           </span>
                         )}
                       </div>

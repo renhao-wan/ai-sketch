@@ -8,10 +8,13 @@ import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 import { useNotification } from '@/lib/contexts/NotificationContext';
-import { Trash2, Search, Edit3, Check, X, ChevronDown, ChevronUp, ListChecks } from 'lucide-react';
+import { Trash2, Search, Edit3, Check, X, ChevronDown, ChevronUp, ListChecks, Tag } from 'lucide-react';
 import CountBanner from '@/components/ui/CountBanner';
 import { useCountBanner } from '@/hooks/useCountBanner';
-import type { Conversation, ConfirmDialogState } from '@/lib/types';
+import TagBadge from '@/components/ui/TagBadge';
+import TagFilter from '@/components/ui/TagFilter';
+import TagCloudSelector from '@/components/ui/TagCloudSelector';
+import type { Conversation, ConversationTag, ConfirmDialogState } from '@/lib/types';
 
 const PAGE_SIZE = 20;
 
@@ -47,6 +50,12 @@ export default function ConversationSettings() {
   const [editingTitle, setEditingTitle] = useState('');
   const editInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Tag state ──
+  const [tags, setTags] = useState<ConversationTag[]>([]);
+  const [conversationTagsMap, setConversationTagsMap] = useState<Record<string, ConversationTag[]>>({});
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const [showTagSelector, setShowTagSelector] = useState<string | null>(null);
+
   // ── Confirm dialog ──
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({
     isOpen: false,
@@ -58,7 +67,7 @@ export default function ConversationSettings() {
   // ── Notification ──
   const { showNotification } = useNotification();
 
-  /** Load conversations with search/sort/pagination support */
+  /** Load conversations with search/sort/pagination/tag support */
   const loadConversations = useCallback(async (reset = false, pageNum = 0) => {
     try {
       const offset = pageNum * PAGE_SIZE;
@@ -68,6 +77,7 @@ export default function ConversationSettings() {
         order: sortOrder,
         limit: PAGE_SIZE,
         offset,
+        tagId: selectedTagId || undefined,
       });
 
       if (reset) {
@@ -81,9 +91,9 @@ export default function ConversationSettings() {
     } catch (err) {
       console.error('Failed to load conversations:', err);
     }
-  }, [searchQuery, sortBy, sortOrder]);
+  }, [searchQuery, sortBy, sortOrder, selectedTagId]);
 
-  // Debounced load on search/sort changes
+  // Debounced load on search/sort/tag changes
   useEffect(() => {
     const timer = setTimeout(() => {
       pageRef.current = 0;
@@ -92,6 +102,39 @@ export default function ConversationSettings() {
     }, 300);
     return () => clearTimeout(timer);
   }, [loadConversations]);
+
+  /** Load all conversation tags */
+  useEffect(() => {
+    const loadTags = async () => {
+      try {
+        const convTags = await api.fetchConversationTags();
+        setTags(convTags);
+      } catch (err) {
+        console.error('Failed to load tags:', err);
+      }
+    };
+    loadTags();
+  }, []);
+
+  /** Load tags for visible conversations */
+  useEffect(() => {
+    if (items.length === 0) return;
+    const loadConversationTags = async () => {
+      const tagsMap: Record<string, ConversationTag[]> = {};
+      await Promise.all(
+        items.map(async (conv) => {
+          try {
+            const convTags = await api.fetchConversationTagsByIds(conv.id);
+            tagsMap[conv.id] = convTags;
+          } catch {
+            // 静默忽略
+          }
+        }),
+      );
+      setConversationTagsMap(tagsMap);
+    };
+    loadConversationTags();
+  }, [items]);
 
   /** Infinite scroll: load next page when near bottom */
   const loadMore = useCallback(async () => {
@@ -420,7 +463,7 @@ export default function ConversationSettings() {
         )}
 
         {/* 搜索和排序 */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]/50" />
             <input
@@ -431,6 +474,11 @@ export default function ConversationSettings() {
               className="w-full pl-9 pr-3 py-2 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 hover:border-[var(--accent-indigo)]/20 transition-all duration-200"
             />
           </div>
+          <TagFilter
+            tags={tags}
+            selectedTagId={selectedTagId}
+            onChange={setSelectedTagId}
+          />
           <Dropdown
             options={[
               { value: 'updated_at-desc', label: t('conversation.recentlyUpdated') },
@@ -489,6 +537,13 @@ export default function ConversationSettings() {
                       <span className="text-[11px] text-[var(--muted)] flex-shrink-0">
                         {new Date(item.updatedAt).toLocaleString()}
                       </span>
+                      {(conversationTagsMap[item.id] || []).length > 0 && (
+                        <span className="flex items-center gap-0.5 flex-shrink-0">
+                          {(conversationTagsMap[item.id] || []).slice(0, 5).map(tag => (
+                            <TagBadge key={tag.id} name={tag.name} color={tag.color} variant="dot" />
+                          ))}
+                        </span>
+                      )}
                     </div>
                     {editingId === item.id ? (
                       <div className="flex items-center gap-2">
@@ -537,6 +592,44 @@ export default function ConversationSettings() {
                         >
                           <Edit3 size={14} />
                         </button>
+                      </Tooltip>
+                      <Tooltip content={t('tags.selectTags')} side="top">
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowTagSelector(showTagSelector === item.id ? null : item.id);
+                            }}
+                            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
+                              (conversationTagsMap[item.id] || []).length > 0
+                                ? 'text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10'
+                                : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                            }`}
+                          >
+                            <Tag size={14} />
+                            {(conversationTagsMap[item.id] || []).length > 0 && (
+                              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 flex items-center justify-center text-[8px] font-bold text-white bg-[var(--accent-indigo)] rounded-full">
+                                {(conversationTagsMap[item.id] || []).length}
+                              </span>
+                            )}
+                          </button>
+                          {showTagSelector === item.id && (
+                            <TagCloudSelector
+                              tags={tags}
+                              selectedTagIds={(conversationTagsMap[item.id] || []).map(t => t.id)}
+                              onChange={async (tagIds) => {
+                                try {
+                                  await api.setConversationTags(item.id, tagIds);
+                                  const updatedTags = await api.fetchConversationTagsByIds(item.id);
+                                  setConversationTagsMap(prev => ({ ...prev, [item.id]: updatedTags }));
+                                } catch (err) {
+                                  console.error('Failed to update conversation tags:', err);
+                                }
+                              }}
+                              onClose={() => setShowTagSelector(null)}
+                            />
+                          )}
+                        </div>
                       </Tooltip>
                       <Tooltip content={t('common.delete')} side="top">
                         <button

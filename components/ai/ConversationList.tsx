@@ -167,40 +167,36 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
               {t('conversation.new')}
             </button>
 
-            {/* Search input */}
+            {/* Search input + tag filter */}
             <div className="px-3 py-2 border-b border-black/5">
-              <div className="relative flex items-center">
-                <Search size={14} className="absolute left-2.5 text-[var(--muted)]/50" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.stopPropagation()}
-                  placeholder={t('conversation.search')}
-                  className="w-full pl-8 pr-7 py-1.5 text-sm bg-[var(--surface-warm-hover)] rounded-lg text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--accent-indigo)]/20"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2 text-[var(--muted)] hover:text-[var(--fg)]"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Tag filter */}
-            {tags.length > 0 && (
-              <div className="px-3 py-2 border-b border-black/5">
+              <div className="flex items-center gap-1.5">
+                <div className="relative flex-1 flex items-center">
+                  <Search size={14} className="absolute left-2.5 text-[var(--muted)]/50" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    placeholder={t('conversation.search')}
+                    className="w-full pl-8 pr-7 py-1.5 text-sm bg-[var(--surface-warm-hover)] rounded-lg text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--accent-indigo)]/20"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 text-[var(--muted)] hover:text-[var(--fg)]"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
                 <TagFilter
                   tags={tags}
                   selectedTagId={selectedTagId}
                   onChange={setSelectedTagId}
                 />
               </div>
-            )}
+            </div>
 
             {/* List */}
             <div
@@ -232,20 +228,17 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
                             </span>
                             <span className="text-sm text-[var(--fg)] truncate">{conv.title}</span>
                           </div>
-                          {/* 标签显示 */}
-                          {convTags.length > 0 && (
-                            <div className="flex items-center gap-1 mb-0.5 flex-wrap">
-                              {convTags.slice(0, 3).map(tag => (
-                                <TagBadge key={tag.id} name={tag.name} color={tag.color} size="sm" />
-                              ))}
-                              {convTags.length > 3 && (
-                                <span className="text-[10px] text-[var(--muted)]">+{convTags.length - 3}</span>
-                              )}
-                            </div>
-                          )}
                           <div className="flex items-center gap-2 text-[11px] text-[var(--muted)]">
                             <span>{conv.messageCount} {t('conversation.messages')}</span>
                             <span>{timeAgo(conv.updatedAt, t)}</span>
+                            {/* 标签圆点 */}
+                            {convTags.length > 0 && (
+                              <span className="flex items-center gap-0.5">
+                                {convTags.slice(0, 4).map(tag => (
+                                  <TagBadge key={tag.id} name={tag.name} color={tag.color} variant="dot" />
+                                ))}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
