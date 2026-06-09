@@ -66,9 +66,11 @@ export default function TagCloudSelector({
     searchInputRef.current?.focus();
   }, []);
 
-  // 点击外部关闭
+  // 点击外部关闭（跳过挂载后的第一次 mousedown，避免触发按钮的 mouseup 被误判）
+  const skipFirstClose = useRef(true);
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      if (skipFirstClose.current) { skipFirstClose.current = false; return; }
       const target = e.target as Node;
       if (menuRef.current?.contains(target)) return;
       if (triggerRef?.current?.contains(target)) return;
