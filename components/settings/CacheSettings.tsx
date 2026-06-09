@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import * as api from '@/lib/api/client';
 import { useLocale } from '@/lib/locales';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
 import { useNotification } from '@/lib/contexts/NotificationContext';
-import { Database, Trash2, Zap, Clock, BarChart3, Settings } from 'lucide-react';
+import { Database, Trash2, Zap, Clock, BarChart3, Settings, ChevronDown, Check } from 'lucide-react';
 import type { ConfirmDialogState, LLMConfig } from '@/lib/types';
 
 /** 格式化字节数为可读字符串 */
@@ -48,6 +48,20 @@ export default function CacheSettings() {
   // ── Config list for clear-by-config ──
   const [configs, setConfigs] = useState<LLMConfig[]>([]);
   const [selectedConfigId, setSelectedConfigId] = useState('');
+  const [isConfigDropdownOpen, setIsConfigDropdownOpen] = useState(false);
+  const configDropdownRef = useRef<HTMLDivElement>(null);
+
+  // 点击外部关闭下拉列表
+  useEffect(() => {
+    if (!isConfigDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (configDropdownRef.current && !configDropdownRef.current.contains(e.target as Node)) {
+        setIsConfigDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isConfigDropdownOpen]);
 
   // ── Confirm dialog ──
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({
@@ -263,23 +277,49 @@ export default function CacheSettings() {
           <Settings size={18} className="text-[var(--accent-indigo)]" />
           <h3 className="text-lg font-semibold text-[var(--fg)]">{t('cache.clearByConfig')}</h3>
         </div>
-        <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)]">
-          <select
-            value={selectedConfigId}
-            onChange={(e) => setSelectedConfigId(e.target.value)}
-            className="flex-1 mr-4 px-3 py-2 text-sm rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)]"
-          >
-            <option value="">{t('cache.selectConfig')}</option>
-            {configs.map((config) => (
-              <option key={config.id} value={config.id}>
-                {config.name} — {config.model}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-3">
+          {/* 自定义下拉选择器 */}
+          <div ref={configDropdownRef} className="relative flex-1">
+            <button
+              type="button"
+              onClick={() => setIsConfigDropdownOpen(!isConfigDropdownOpen)}
+              className="w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] hover:border-[var(--accent-indigo)]/30 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/20 transition-all duration-200"
+            >
+              <span className={selectedConfigId ? 'text-[var(--fg)]' : 'text-[var(--muted)]'}>
+                {selectedConfigId
+                  ? (() => { const c = configs.find(c => c.id === selectedConfigId); return c ? `${c.name} — ${c.model}` : ''; })()
+                  : t('cache.selectConfig')
+                }
+              </span>
+              <ChevronDown size={14} className={`text-[var(--muted)] transition-transform duration-200 ${isConfigDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isConfigDropdownOpen && configs.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 z-50 py-1 rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] shadow-lg shadow-black/10 overflow-hidden">
+                {configs.map((config) => (
+                  <button
+                    key={config.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedConfigId(config.id ?? '');
+                      setIsConfigDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 text-sm text-[var(--fg)] hover:bg-[var(--accent-indigo)]/10 transition-colors duration-150"
+                  >
+                    <span className="truncate">{config.name} — {config.model}</span>
+                    {selectedConfigId === config.id && (
+                      <Check size={14} className="text-[var(--accent-indigo)] flex-shrink-0 ml-2" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button
             onClick={handleClearByConfig}
             disabled={isAnyOperationInProgress || !selectedConfigId}
-            className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-amber-500 bg-amber-500/10 hover:bg-amber-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-amber-500 bg-amber-500/10 hover:bg-amber-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Trash2 size={14} className={isClearingByConfig ? 'animate-pulse' : ''} />
             <span>{isClearingByConfig ? t('common.loading') : t('cache.clear')}</span>
