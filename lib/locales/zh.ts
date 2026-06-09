@@ -477,6 +477,7 @@ export const zh = {
   'shortcuts.openLLM': 'LLM 配置',
   'shortcuts.openNetwork': '网络设置',
   'shortcuts.openConversations': '会话管理',
+  'shortcuts.openTags': '标签管理',
   'shortcuts.openAppearance': '外观设置',
   'shortcuts.openHistory': '历史记录',
   'shortcuts.sendMessage': '发送消息',

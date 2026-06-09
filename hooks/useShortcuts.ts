@@ -57,6 +57,13 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     scope: 'global',
   },
   {
+    id: 'open-tags',
+    keys: ['Alt', 'T'],
+    description: '标签管理',
+    descriptionKey: 'shortcuts.openTags',
+    scope: 'global',
+  },
+  {
     id: 'open-data',
     keys: ['Alt', 'D'],
     description: '数据管理',
@@ -258,6 +265,11 @@ export function useShortcuts(actions?: ShortcutActions) {
         if (matchKeys(event, ['Alt', 'C'])) {
           event.preventDefault();
           actions.onOpenSettings?.('conversations');
+          return;
+        }
+        if (matchKeys(event, ['Alt', 'T'])) {
+          event.preventDefault();
+          actions.onOpenSettings?.('tags');
           return;
         }
         if (matchKeys(event, ['Alt', 'D'])) {

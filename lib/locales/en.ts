@@ -215,7 +215,7 @@ export const en: TranslationDict = {
   'conversation.keepCountNoChange': 'Keep count is greater than or equal to total, no action needed',
 
   // Tags
-  'tags.title': 'Tag Management',
+  'tags.title': 'Tags',
   'tags.conversationTags': 'Conversation Tags',
   'tags.configTags': 'Config Tags',
   'tags.create': 'Create Tag',
@@ -479,6 +479,7 @@ export const en: TranslationDict = {
   'shortcuts.openLLM': 'LLM Config',
   'shortcuts.openNetwork': 'Network Settings',
   'shortcuts.openConversations': 'Conversations',
+  'shortcuts.openTags': 'Tags',
   'shortcuts.openAppearance': 'Appearance',
   'shortcuts.openHistory': 'History',
   'shortcuts.sendMessage': 'Send Message',
