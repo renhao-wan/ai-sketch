@@ -65,19 +65,29 @@ export default function CacheSettings({ isVisible = true }: CacheSettingsProps) 
     }
   }, [isVisible]);
 
-  // 点击外部关闭下拉列表和缓存说明
+  // 点击外部关闭下拉列表
   useEffect(() => {
+    if (!isConfigDropdownOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (isConfigDropdownOpen && configDropdownRef.current && !configDropdownRef.current.contains(e.target as Node)) {
+      if (configDropdownRef.current && !configDropdownRef.current.contains(e.target as Node)) {
         setIsConfigDropdownOpen(false);
       }
-      if (isCacheInfoOpen && cacheInfoRef.current && !cacheInfoRef.current.contains(e.target as Node)) {
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isConfigDropdownOpen]);
+
+  // 点击外部关闭缓存说明
+  useEffect(() => {
+    if (!isCacheInfoOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (cacheInfoRef.current && !cacheInfoRef.current.contains(e.target as Node)) {
         setIsCacheInfoOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isConfigDropdownOpen, isCacheInfoOpen]);
+  }, [isCacheInfoOpen]);
 
   // ── Confirm dialog ──
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({
