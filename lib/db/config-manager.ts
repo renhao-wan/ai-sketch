@@ -152,6 +152,13 @@ class ConfigManager {
     const existing = await this.getConfig(id);
     if (!existing) throw new Error('配置不存在');
 
+    // 如果 model 或 name 变更，清除旧配置的缓存
+    if ((updateData.model && updateData.model !== existing.model) ||
+        (updateData.name && updateData.name !== existing.name)) {
+      const { cacheInvalidator } = await import('@/lib/cache/cache-invalidator');
+      await cacheInvalidator.invalidateByConfig(existing.name || existing.type, existing.model);
+    }
+
     const now = Date.now();
     const merged = { ...existing, ...updateData, id, updatedAt: now };
 
@@ -181,6 +188,10 @@ class ConfigManager {
     const db = await getDb();
     const existing = await this.getConfig(id);
     if (!existing) throw new Error('配置不存在');
+
+    // 清除该配置相关的缓存
+    const { cacheInvalidator } = await import('@/lib/cache/cache-invalidator');
+    await cacheInvalidator.invalidateByConfig(existing.name || existing.type, existing.model);
 
     // 在事务外查询活跃配置 ID，避免 BEGIN 后 await（为未来异步数据库驱动兼容）
     const activeId = await this.getActiveConfigId();
