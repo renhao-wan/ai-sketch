@@ -1,17 +1,44 @@
+/**
+ * L1/L2 分层缓存协调器
+ *
+ * L1：内存缓存（MemoryCache），50 条目 / 1MB，LRU 淘汰
+ * L2：SQLite 持久化缓存（response_cache 表），100MB 上限，7 天 TTL
+ *
+ * 额外特性：
+ * - Inflight 请求去重（防止并发重复请求穿透到 LLM）
+ * - 命中/未命中统计持久化到 meta 表
+ * - TTL 可通过 meta 表动态配置
+ */
+
+import { MemoryCache } from '@/lib/cache/memory-cache';
 import { getDb, requestSave } from './index';
-import { generateId } from '@/lib/utils';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
+
+// ── 接口定义 ──
 
 interface CacheEntry {
   id: string;
   promptHash: string;
   format: DiagramFormat;
   chartType: string;
+  configName: string;
+  model: string;
   response: string;
   createdAt: number;
   lastUsedAt: number;
   useCount: number;
 }
+
+interface CacheStats {
+  entries: number;
+  totalSizeBytes: number;
+  hits: number;
+  misses: number;
+  hitRate: number;
+  ttlDays: number;
+}
+
+// ── 辅助函数 ──
 
 /** 将数据库行对象解析为 CacheEntry */
 function rowToCacheEntry(row: Record<string, unknown>): CacheEntry {
@@ -20,6 +47,8 @@ function rowToCacheEntry(row: Record<string, unknown>): CacheEntry {
     promptHash: row.prompt_hash as string,
     format: row.format as DiagramFormat,
     chartType: row.chart_type as string,
+    configName: row.config_name as string,
+    model: row.model as string,
     response: row.response as string,
     createdAt: row.created_at as number,
     lastUsedAt: row.last_used_at as number,
@@ -27,32 +56,53 @@ function rowToCacheEntry(row: Record<string, unknown>): CacheEntry {
   };
 }
 
-/** 计算字符串的 SHA-256 哈希值 */
-async function hashPrompt(str: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(str);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
-}
+// ── 常量 ──
 
-/** 缓存管理器 */
+/** 默认 TTL（天） */
+const DEFAULT_TTL_DAYS = 7;
+
+/** L2 最大体积（字节）：100MB */
+const MAX_SIZE_BYTES = 100 * 1024 * 1024;
+
+/** 高水位阈值：触发淘汰 */
+const SIZE_RATIO_HIGH = 0.9;
+
+/** 低水位阈值：淘汰目标 */
+const SIZE_RATIO_LOW = 0.8;
+
+// ── CacheManager ──
+
 class CacheManager {
-  /** 缓存 TTL（毫秒），默认 7 天 */
-  private readonly TTL = 7 * 24 * 60 * 60 * 1000;
+  /** L1 内存缓存 */
+  private readonly l1 = new MemoryCache<string>(50, 1024 * 1024);
 
-  /** 最大缓存条目数 */
-  private readonly MAX_ENTRIES = 1000;
+  /** Inflight 请求去重映射 */
+  private readonly inflight = new Map<string, Promise<string | null>>();
 
-  /** 获取缓存 */
-  async get(prompt: string, format: DiagramFormat, chartType: string): Promise<string | null> {
+  /** 缓存命中次数 */
+  private hits = 0;
+
+  /** 缓存未命中次数 */
+  private misses = 0;
+
+  // ── 公开 API ──
+
+  /**
+   * 获取缓存（L1 → L2 查找）
+   * 命中时更新统计和 L2 使用时间；L2 命中时回填 L1
+   */
+  async get(cacheKey: string): Promise<string | null> {
+    // L1 查找
+    const l1Value = this.l1.get(cacheKey);
+    if (l1Value !== undefined) {
+      this.hits++;
+      return l1Value;
+    }
+
+    // L2 查找
     const db = await getDb();
-    const promptHash = await hashPrompt(prompt);
-
-    const stmt = db.prepare(
-      'SELECT * FROM response_cache WHERE prompt_hash = ? AND format = ? AND chart_type = ?',
-    );
-    stmt.bind([promptHash, format, chartType]);
+    const stmt = db.prepare('SELECT * FROM response_cache WHERE id = ?');
+    stmt.bind([cacheKey]);
 
     let entry: CacheEntry | null = null;
     if (stmt.step()) {
@@ -60,119 +110,268 @@ class CacheManager {
     }
     stmt.free();
 
-    if (!entry) return null;
-
-    // 检查是否过期
-    const now = Date.now();
-    if (now - entry.createdAt > this.TTL) {
-      // 过期，删除并返回 null
-      await this.delete(entry.id);
+    if (!entry) {
+      this.misses++;
       return null;
     }
 
-    // 更新使用时间和次数
+    // 检查是否过期
+    const now = Date.now();
+    const ttlMs = (await this.getTtl()) * 24 * 60 * 60 * 1000;
+    if (now - entry.createdAt > ttlMs) {
+      db.run('DELETE FROM response_cache WHERE id = ?', [cacheKey]);
+      requestSave();
+      this.misses++;
+      return null;
+    }
+
+    // 更新 L2 使用时间和次数
     db.run(
       'UPDATE response_cache SET last_used_at = ?, use_count = use_count + 1 WHERE id = ?',
-      [now, entry.id],
+      [now, cacheKey],
     );
     requestSave();
 
+    // 回填 L1
+    this.l1.set(cacheKey, entry.response);
+
+    this.hits++;
     return entry.response;
   }
 
-  /** 设置缓存 */
-  async set(prompt: string, format: DiagramFormat, chartType: string, response: string): Promise<void> {
+  /**
+   * 写入缓存（同时写入 L1 和 L2）
+   * 如果已存在则更新，否则插入
+   */
+  async set(
+    cacheKey: string,
+    response: string,
+    metadata: { configName: string; model: string },
+  ): Promise<void> {
+    // 写入 L1
+    this.l1.set(cacheKey, response);
+
+    // 写入 L2
     const db = await getDb();
-    const promptHash = await hashPrompt(prompt);
     const now = Date.now();
-    const id = generateId();
 
     // 检查是否已存在
-    const existingStmt = db.prepare(
-      'SELECT id FROM response_cache WHERE prompt_hash = ? AND format = ? AND chart_type = ?',
-    );
-    existingStmt.bind([promptHash, format, chartType]);
-    const exists = existingStmt.step();
-    existingStmt.free();
+    const checkStmt = db.prepare('SELECT id FROM response_cache WHERE id = ?');
+    checkStmt.bind([cacheKey]);
+    const exists = checkStmt.step();
+    checkStmt.free();
 
     if (exists) {
-      // 已存在，更新
       db.run(
-        'UPDATE response_cache SET response = ?, last_used_at = ?, use_count = use_count + 1 WHERE prompt_hash = ? AND format = ? AND chart_type = ?',
-        [response, now, promptHash, format, chartType],
+        'UPDATE response_cache SET response = ?, config_name = ?, model = ?, last_used_at = ?, use_count = use_count + 1 WHERE id = ?',
+        [response, metadata.configName, metadata.model, now, cacheKey],
       );
     } else {
-      // 不存在，插入
       db.run(
-        'INSERT INTO response_cache (id, prompt_hash, format, chart_type, response, created_at, last_used_at, use_count) VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
-        [id, promptHash, format, chartType, response, now, now],
+        'INSERT INTO response_cache (id, prompt_hash, format, chart_type, config_name, model, response, created_at, last_used_at, use_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
+        [cacheKey, cacheKey, '', '', metadata.configName, metadata.model, response, now, now],
       );
     }
 
-    // 清理过期和多余的缓存（cleanup 末尾统一 requestSave）
+    // 清理过期和超限条目（内部会 requestSave）
     await this.cleanup();
   }
 
-  /** 删除缓存条目 */
-  private async delete(id: string): Promise<void> {
-    const db = await getDb();
-    db.run('DELETE FROM response_cache WHERE id = ?', [id]);
-    requestSave();
-  }
-
-  /** 清理过期和多余的缓存 */
-  private async cleanup(): Promise<void> {
-    const db = await getDb();
-    const now = Date.now();
-
-    // 删除过期的缓存
-    db.run('DELETE FROM response_cache WHERE created_at < ?', [now - this.TTL]);
-
-    // 检查总条目数
-    const countStmt = db.prepare('SELECT COUNT(*) FROM response_cache');
-    let count = 0;
-    if (countStmt.step()) {
-      count = (countStmt.getAsObject() as Record<string, unknown>)['COUNT(*)'] as number;
-    }
-    countStmt.free();
-
-    // 如果超过最大条目数，删除最久未使用的
-    if (count > this.MAX_ENTRIES) {
-      const excess = count - this.MAX_ENTRIES;
-      db.run(
-        'DELETE FROM response_cache WHERE id IN (SELECT id FROM response_cache ORDER BY last_used_at ASC LIMIT ?)',
-        [excess],
-      );
+  /**
+   * 获取缓存或执行 fetcher（Inflight 去重）
+   * 多个并发请求同一个 cacheKey 时，只执行一次 fetcher
+   */
+  async getOrFetch(
+    cacheKey: string,
+    fetcher: () => Promise<string | null>,
+    metadata: { configName: string; model: string },
+  ): Promise<string | null> {
+    // 检查是否有进行中的请求
+    const existing = this.inflight.get(cacheKey);
+    if (existing) {
+      return existing;
     }
 
-    requestSave();
+    // 创建新请求
+    const promise = (async () => {
+      try {
+        // 先查缓存
+        const cached = await this.get(cacheKey);
+        if (cached !== null) {
+          return cached;
+        }
+
+        // 缓存未命中，执行 fetcher
+        const result = await fetcher();
+        if (result !== null) {
+          await this.set(cacheKey, result, metadata);
+        }
+        return result;
+      } finally {
+        this.inflight.delete(cacheKey);
+      }
+    })();
+
+    this.inflight.set(cacheKey, promise);
+    return promise;
   }
 
-  /** 清空所有缓存 */
+  /** 清空所有缓存（L1 + L2） */
   async clearAll(): Promise<void> {
+    this.l1.clear();
     const db = await getDb();
     db.run('DELETE FROM response_cache');
     requestSave();
   }
 
+  /**
+   * 按配置清除缓存
+   * @returns 删除的条目数
+   */
+  async clearByConfig(configName: string, model: string): Promise<number> {
+    const db = await getDb();
+    db.run('DELETE FROM response_cache WHERE config_name = ? AND model = ?', [configName, model]);
+    const result = db.exec('SELECT changes() as count');
+    const count = result.length > 0 ? (result[0].values[0][0] as number) : 0;
+
+    // L1 无法按配置过滤，整体清除
+    this.l1.clear();
+
+    requestSave();
+    return count;
+  }
+
+  /**
+   * 清除过期条目
+   * @returns 删除的条目数
+   */
+  async clearExpired(): Promise<number> {
+    const db = await getDb();
+    const now = Date.now();
+    const ttlDays = await this.getTtl();
+    const ttlMs = ttlDays * 24 * 60 * 60 * 1000;
+
+    db.run('DELETE FROM response_cache WHERE created_at < ?', [now - ttlMs]);
+    const result = db.exec('SELECT changes() as count');
+    const count = result.length > 0 ? (result[0].values[0][0] as number) : 0;
+
+    requestSave();
+    return count;
+  }
+
   /** 获取缓存统计信息 */
-  async getStats(): Promise<{ total: number; avgUseCount: number }> {
+  async getStats(): Promise<CacheStats> {
     const db = await getDb();
 
-    const countStmt = db.prepare('SELECT COUNT(*) as total, SUM(use_count) as total_uses FROM response_cache');
-    let total = 0;
-    let totalUses = 0;
-    if (countStmt.step()) {
-      const row = countStmt.getAsObject() as Record<string, unknown>;
-      total = row.total as number;
-      totalUses = (row.total_uses as number) || 0;
+    const stmt = db.prepare(
+      'SELECT COUNT(*) as entries, COALESCE(SUM(LENGTH(response)), 0) as total_size FROM response_cache',
+    );
+    let entries = 0;
+    let totalSizeBytes = 0;
+    if (stmt.step()) {
+      const row = stmt.getAsObject() as Record<string, unknown>;
+      entries = row.entries as number;
+      totalSizeBytes = row.total_size as number;
     }
-    countStmt.free();
+    stmt.free();
 
-    // 平均使用次数：总使用次数 / 总条目数
-    const avgUseCount = total > 0 ? totalUses / total : 0;
+    const total = this.hits + this.misses;
+    const hitRate = total > 0 ? this.hits / total : 0;
+    const ttlDays = await this.getTtl();
 
-    return { total, avgUseCount };
+    return { entries, totalSizeBytes, hits: this.hits, misses: this.misses, hitRate, ttlDays };
+  }
+
+  /** 获取缓存 TTL（天） */
+  async getTtl(): Promise<number> {
+    const db = await getDb();
+    const stmt = db.prepare("SELECT value FROM meta WHERE key = 'cache_ttl_days'");
+    let ttlDays = DEFAULT_TTL_DAYS;
+    if (stmt.step()) {
+      const row = stmt.getAsObject() as Record<string, unknown>;
+      ttlDays = parseInt(row.value as string, 10) || DEFAULT_TTL_DAYS;
+    }
+    stmt.free();
+    return ttlDays;
+  }
+
+  /** 设置缓存 TTL（天） */
+  async setTtl(days: number): Promise<void> {
+    const db = await getDb();
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('cache_ttl_days', ?)", [String(days)]);
+    requestSave();
+  }
+
+  /** 从 meta 表加载历史命中/未命中统计 */
+  async loadStats(): Promise<void> {
+    const db = await getDb();
+
+    const hitsStmt = db.prepare("SELECT value FROM meta WHERE key = 'cache_hits'");
+    if (hitsStmt.step()) {
+      this.hits = parseInt((hitsStmt.getAsObject() as Record<string, unknown>).value as string, 10) || 0;
+    }
+    hitsStmt.free();
+
+    const missesStmt = db.prepare("SELECT value FROM meta WHERE key = 'cache_misses'");
+    if (missesStmt.step()) {
+      this.misses = parseInt((missesStmt.getAsObject() as Record<string, unknown>).value as string, 10) || 0;
+    }
+    missesStmt.free();
+  }
+
+  // ── 内部方法 ──
+
+  /**
+   * 清理逻辑：
+   * 1. 删除过期条目
+   * 2. 检查总体积，超过 90% 高水位时按 LRU 淘汰至 80% 以下
+   * 3. 持久化命中/未命中统计到 meta 表
+   */
+  private async cleanup(): Promise<void> {
+    const db = await getDb();
+    const now = Date.now();
+    const ttlDays = await this.getTtl();
+    const ttlMs = ttlDays * 24 * 60 * 60 * 1000;
+
+    // 1. 删除过期条目
+    db.run('DELETE FROM response_cache WHERE created_at < ?', [now - ttlMs]);
+
+    // 2. 检查总体积
+    const sizeStmt = db.prepare('SELECT COALESCE(SUM(LENGTH(response)), 0) as total_size FROM response_cache');
+    let totalSize = 0;
+    if (sizeStmt.step()) {
+      totalSize = (sizeStmt.getAsObject() as Record<string, unknown>).total_size as number;
+    }
+    sizeStmt.free();
+
+    // 超过高水位时，按 last_used_at 升序淘汰至低水位以下
+    const highThreshold = MAX_SIZE_BYTES * SIZE_RATIO_HIGH;
+    const lowThreshold = MAX_SIZE_BYTES * SIZE_RATIO_LOW;
+
+    if (totalSize > highThreshold) {
+      while (totalSize > lowThreshold) {
+        const oldestStmt = db.prepare(
+          'SELECT id, LENGTH(response) as resp_size FROM response_cache ORDER BY last_used_at ASC LIMIT 1',
+        );
+        if (!oldestStmt.step()) {
+          oldestStmt.free();
+          break;
+        }
+        const row = oldestStmt.getAsObject() as Record<string, unknown>;
+        const oldestId = row.id as string;
+        const oldestSize = row.resp_size as number;
+        oldestStmt.free();
+
+        db.run('DELETE FROM response_cache WHERE id = ?', [oldestId]);
+        totalSize -= oldestSize;
+      }
+    }
+
+    // 3. 持久化统计
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('cache_hits', ?)", [String(this.hits)]);
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('cache_misses', ?)", [String(this.misses)]);
+
+    requestSave();
   }
 }
 
