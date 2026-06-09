@@ -12,15 +12,11 @@
 
 import { MemoryCache } from '@/lib/cache/memory-cache';
 import { getDb, requestSave } from './index';
-import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 // ── 接口定义 ──
 
 interface CacheEntry {
   id: string;
-  promptHash: string;
-  format: DiagramFormat;
-  chartType: string;
   configName: string;
   model: string;
   response: string;
@@ -44,9 +40,6 @@ interface CacheStats {
 function rowToCacheEntry(row: Record<string, unknown>): CacheEntry {
   return {
     id: row.id as string,
-    promptHash: row.prompt_hash as string,
-    format: row.format as DiagramFormat,
-    chartType: row.chart_type as string,
     configName: row.config_name as string,
     model: row.model as string,
     response: row.response as string,
@@ -174,8 +167,8 @@ class CacheManager {
       );
     } else {
       db.run(
-        'INSERT INTO response_cache (id, prompt_hash, format, chart_type, config_name, model, response, created_at, last_used_at, use_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
-        [cacheKey, cacheKey, '', '', metadata.configName, metadata.model, response, now, now],
+        'INSERT INTO response_cache (id, config_name, model, response, created_at, last_used_at, use_count) VALUES (?, ?, ?, ?, ?, ?, 1)',
+        [cacheKey, metadata.configName, metadata.model, response, now, now],
       );
     }
 
