@@ -200,6 +200,7 @@ class ConversationManager {
   async delete(id: string): Promise<void> {
     const db = await getDb();
     withTransaction(db, () => {
+      db.run('DELETE FROM conversation_tag_relations WHERE conversation_id = ?', [id]);
       db.run('DELETE FROM messages WHERE conversation_id = ?', [id]);
       db.run('DELETE FROM conversations WHERE id = ?', [id]);
     });
@@ -210,6 +211,7 @@ class ConversationManager {
     const db = await getDb();
     const placeholders = ids.map(() => '?').join(',');
     withTransaction(db, () => {
+      db.run(`DELETE FROM conversation_tag_relations WHERE conversation_id IN (${placeholders})`, ids);
       db.run(`DELETE FROM messages WHERE conversation_id IN (${placeholders})`, ids);
       db.run(`DELETE FROM conversations WHERE id IN (${placeholders})`, ids);
     });
@@ -218,6 +220,7 @@ class ConversationManager {
   async clearAll(): Promise<void> {
     const db = await getDb();
     withTransaction(db, () => {
+      db.run('DELETE FROM conversation_tag_relations');
       db.run('DELETE FROM messages');
       db.run('DELETE FROM conversations');
     });

@@ -195,6 +195,7 @@ class ConfigManager {
         }
       }
 
+      db.run('DELETE FROM config_tag_relations WHERE config_id = ?', [id]);
       db.run('DELETE FROM llm_configs WHERE id = ?', [id]);
     });
   }
