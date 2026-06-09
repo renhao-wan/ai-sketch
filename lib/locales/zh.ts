@@ -442,6 +442,7 @@ export const zh = {
   'cache.clearExpired': '清除过期缓存',
   'cache.clearExpiredDesc': '仅删除已超过有效期的缓存条目',
   'cache.clearByConfig': '按配置清除',
+  'cache.clear': '清除',
   'cache.selectConfig': '选择配置...',
   'cache.clearSuccess': '缓存已清除',
   'cache.ttlSettings': '有效期设置',

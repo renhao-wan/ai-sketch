@@ -444,6 +444,7 @@ export const en: TranslationDict = {
   'cache.clearExpired': 'Clear Expired',
   'cache.clearExpiredDesc': 'Only delete cache entries that have exceeded their TTL',
   'cache.clearByConfig': 'Clear by Config',
+  'cache.clear': 'Clear',
   'cache.selectConfig': 'Select config...',
   'cache.clearSuccess': 'Cache cleared',
   'cache.ttlSettings': 'TTL Settings',

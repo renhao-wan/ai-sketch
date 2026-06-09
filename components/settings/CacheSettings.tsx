@@ -230,7 +230,7 @@ export default function CacheSettings() {
               className="flex items-center justify-center gap-1.5 w-24 py-2 text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Trash2 size={14} className={isClearingAll ? 'animate-pulse' : ''} />
-              <span>{isClearingAll ? t('common.loading') : t('cache.clearAll')}</span>
+              <span>{isClearingAll ? t('common.loading') : t('cache.clear')}</span>
             </button>
           </div>
 
@@ -251,7 +251,7 @@ export default function CacheSettings() {
               className="flex items-center justify-center gap-1.5 w-24 py-2 text-sm font-medium text-amber-500 bg-amber-500/10 hover:bg-amber-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Zap size={14} className={isClearingExpired ? 'animate-pulse' : ''} />
-              <span>{isClearingExpired ? t('common.loading') : t('cache.clearExpired')}</span>
+              <span>{isClearingExpired ? t('common.loading') : t('cache.clear')}</span>
             </button>
           </div>
         </div>
@@ -282,7 +282,7 @@ export default function CacheSettings() {
             className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-amber-500 bg-amber-500/10 hover:bg-amber-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Trash2 size={14} className={isClearingByConfig ? 'animate-pulse' : ''} />
-            <span>{isClearingByConfig ? t('common.loading') : t('cache.clearAll')}</span>
+            <span>{isClearingByConfig ? t('common.loading') : t('cache.clear')}</span>
           </button>
         </div>
       </section>
