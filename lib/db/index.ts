@@ -41,6 +41,7 @@ async function initDb(): Promise<Database> {
   }
 
   db.run('PRAGMA journal_mode = WAL');
+  db.run('PRAGMA foreign_keys = ON');
 
   db.run(`
     CREATE TABLE IF NOT EXISTS llm_configs (
@@ -125,6 +126,7 @@ async function initDb(): Promise<Database> {
       created_at INTEGER NOT NULL
     )
   `);
+  db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_conversation_tags_name ON conversation_tags(name)');
 
   db.run(`
     CREATE TABLE IF NOT EXISTS config_tags (
@@ -134,6 +136,7 @@ async function initDb(): Promise<Database> {
       created_at INTEGER NOT NULL
     )
   `);
+  db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_config_tags_name ON config_tags(name)');
 
   db.run(`
     CREATE TABLE IF NOT EXISTS conversation_tag_relations (

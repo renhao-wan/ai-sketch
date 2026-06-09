@@ -117,24 +117,11 @@ export default function ConversationSettings() {
     loadTags();
   }, []);
 
-  /** Load tags for visible conversations */
+  /** 批量加载当前可见对话的标签 */
   useEffect(() => {
     if (items.length === 0) return;
-    const loadConversationTags = async () => {
-      const tagsMap: Record<string, ConversationTag[]> = {};
-      await Promise.all(
-        items.map(async (conv) => {
-          try {
-            const convTags = await api.fetchConversationTagsByIds(conv.id);
-            tagsMap[conv.id] = convTags;
-          } catch {
-            // 静默忽略
-          }
-        }),
-      );
-      setConversationTagsMap(tagsMap);
-    };
-    loadConversationTags();
+    const ids = items.map(c => c.id);
+    api.fetchConversationTagsBatch(ids).then(setConversationTagsMap).catch(() => {});
   }, [items]);
 
   /** Infinite scroll: load next page when near bottom */

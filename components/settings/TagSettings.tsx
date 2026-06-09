@@ -96,18 +96,18 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
 
   const handleSaveConvTag = async () => {
     if (!editingConvTag?.name?.trim()) {
-      showNotification(t('tags.createSuccess'), t('tags.nameRequired'), 'error');
+      showNotification(t('error.title'), t('tags.nameRequired'), 'error');
       return;
     }
 
     if (editingConvTag.name.length > 20) {
-      showNotification(t('tags.createSuccess'), t('tags.nameTooLong'), 'error');
+      showNotification(t('error.title'), t('tags.nameTooLong'), 'error');
       return;
     }
 
     // 前端同名检查
     if (isCreatingConvTag && conversationTags.some(t => t.name === editingConvTag.name!.trim())) {
-      showNotification(t('tags.createSuccess'), t('tags.duplicateName'), 'error');
+      showNotification(t('error.title'), t('tags.duplicateName'), 'error');
       return;
     }
 
@@ -129,7 +129,7 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
       setIsCreatingConvTag(false);
       await loadTags();
     } catch (err) {
-      showNotification(t('tags.createSuccess'), (err as Error).message, 'error');
+      showNotification(t('error.title'), (err as Error).message, 'error');
     }
   };
 
@@ -146,7 +146,7 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
           await loadTags();
         } catch (err) {
           setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-          showNotification(t('tags.deleteSuccess'), (err as Error).message, 'error');
+          showNotification(t('error.title'), (err as Error).message, 'error');
         }
       },
     });
@@ -161,18 +161,18 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
 
   const handleSaveConfigTag = async () => {
     if (!editingConfigTag?.name?.trim()) {
-      showNotification(t('tags.createSuccess'), t('tags.nameRequired'), 'error');
+      showNotification(t('error.title'), t('tags.nameRequired'), 'error');
       return;
     }
 
     if (editingConfigTag.name.length > 20) {
-      showNotification(t('tags.createSuccess'), t('tags.nameTooLong'), 'error');
+      showNotification(t('error.title'), t('tags.nameTooLong'), 'error');
       return;
     }
 
     // 前端同名检查
     if (isCreatingConfigTag && configTags.some(t => t.name === editingConfigTag.name!.trim())) {
-      showNotification(t('tags.createSuccess'), t('tags.duplicateName'), 'error');
+      showNotification(t('error.title'), t('tags.duplicateName'), 'error');
       return;
     }
 
@@ -194,7 +194,7 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
       setIsCreatingConfigTag(false);
       await loadTags();
     } catch (err) {
-      showNotification(t('tags.createSuccess'), (err as Error).message, 'error');
+      showNotification(t('error.title'), (err as Error).message, 'error');
     }
   };
 
@@ -211,7 +211,7 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
           await loadTags();
         } catch (err) {
           setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-          showNotification(t('tags.deleteSuccess'), (err as Error).message, 'error');
+          showNotification(t('error.title'), (err as Error).message, 'error');
         }
       },
     });

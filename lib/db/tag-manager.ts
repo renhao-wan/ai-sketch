@@ -113,6 +113,32 @@ class TagManager {
     });
   }
 
+  /** 批量获取多个对话的标签 */
+  async getConversationTagsBatch(conversationIds: string[]): Promise<Record<string, ConversationTag[]>> {
+    const db = await getDb();
+    const result: Record<string, ConversationTag[]> = {};
+    if (conversationIds.length === 0) return result;
+    conversationIds.forEach(id => { result[id] = []; });
+    const placeholders = conversationIds.map(() => '?').join(',');
+    const stmt = db.prepare(`
+      SELECT r.conversation_id, t.* FROM conversation_tags t
+      INNER JOIN conversation_tag_relations r ON t.id = r.tag_id
+      WHERE r.conversation_id IN (${placeholders})
+      ORDER BY t.created_at DESC
+    `);
+    try {
+      stmt.bind(conversationIds);
+      while (stmt.step()) {
+        const row = stmt.getAsObject() as Record<string, unknown>;
+        const convId = row.conversation_id as string;
+        result[convId].push(rowToConversationTag(row));
+      }
+    } finally {
+      stmt.free();
+    }
+    return result;
+  }
+
   /** 获取对话的标签 */
   async getConversationTagsByIds(conversationId: string): Promise<ConversationTag[]> {
     const db = await getDb();
@@ -251,6 +277,32 @@ class TagManager {
         );
       }
     });
+  }
+
+  /** 批量获取多个配置的标签 */
+  async getConfigTagsBatch(configIds: string[]): Promise<Record<string, ConfigTag[]>> {
+    const db = await getDb();
+    const result: Record<string, ConfigTag[]> = {};
+    if (configIds.length === 0) return result;
+    configIds.forEach(id => { result[id] = []; });
+    const placeholders = configIds.map(() => '?').join(',');
+    const stmt = db.prepare(`
+      SELECT r.config_id, t.* FROM config_tags t
+      INNER JOIN config_tag_relations r ON t.id = r.tag_id
+      WHERE r.config_id IN (${placeholders})
+      ORDER BY t.created_at DESC
+    `);
+    try {
+      stmt.bind(configIds);
+      while (stmt.step()) {
+        const row = stmt.getAsObject() as Record<string, unknown>;
+        const cfgId = row.config_id as string;
+        result[cfgId].push(rowToConfigTag(row));
+      }
+    } finally {
+      stmt.free();
+    }
+    return result;
   }
 
   /** 获取配置的标签 */

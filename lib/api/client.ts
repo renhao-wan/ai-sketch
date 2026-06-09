@@ -232,6 +232,16 @@ export async function fetchConversationTagsByIds(conversationId: string): Promis
   return data.tags;
 }
 
+/** 批量获取多个对话的标签 */
+export async function fetchConversationTagsBatch(ids: string[]): Promise<Record<string, ConversationTag[]>> {
+  const data = await request<{ tagsMap: Record<string, ConversationTag[]> }>('/api/conversations/tags/batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+  return data.tagsMap;
+}
+
 /** 获取所有配置标签 */
 export async function fetchConfigTags(): Promise<ConfigTag[]> {
   const data = await request<{ tags: ConfigTag[] }>('/api/config-tags');
@@ -274,4 +284,14 @@ export async function setConfigTags(configId: string, tagIds: string[]): Promise
 export async function fetchConfigTagsByIds(configId: string): Promise<ConfigTag[]> {
   const data = await request<{ tags: ConfigTag[] }>(`/api/configs/${configId}/tags`);
   return data.tags;
+}
+
+/** 批量获取多个配置的标签 */
+export async function fetchConfigTagsBatch(ids: string[]): Promise<Record<string, ConfigTag[]>> {
+  const data = await request<{ tagsMap: Record<string, ConfigTag[]> }>('/api/configs/tags/batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+  return data.tagsMap;
 }

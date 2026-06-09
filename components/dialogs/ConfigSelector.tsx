@@ -59,24 +59,11 @@ export default function ConfigSelector({ isOpen, onClose, onConfigSelect }: Conf
     }
   };
 
-  /** Load tags for visible configs */
+  /** 批量加载当前可见配置的标签 */
   useEffect(() => {
     if (!isOpen || configs.length === 0) return;
-    const loadConfigTags = async () => {
-      const tagsMap: Record<string, ConfigTag[]> = {};
-      await Promise.all(
-        configs.map(async (cfg) => {
-          try {
-            const cfgTags = await api.fetchConfigTagsByIds(cfg.id!);
-            tagsMap[cfg.id!] = cfgTags;
-          } catch {
-            // 静默忽略
-          }
-        }),
-      );
-      setConfigTagsMap(tagsMap);
-    };
-    loadConfigTags();
+    const ids = configs.map(c => c.id!).filter(Boolean);
+    api.fetchConfigTagsBatch(ids).then(setConfigTagsMap).catch(() => {});
   }, [isOpen, configs]);
 
   const handleSetActive = async (config: LLMConfig) => {

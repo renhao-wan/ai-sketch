@@ -99,26 +99,11 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
     loadTags();
   }, []);
 
-  /** 加载当前可见对话的标签 */
+  /** 批量加载当前可见对话的标签 */
   useEffect(() => {
     if (!isOpen || conversations.length === 0) return;
-
-    const loadConversationTags = async () => {
-      const tagsMap: Record<string, ConversationTag[]> = {};
-      await Promise.all(
-        conversations.map(async (conv) => {
-          try {
-            const convTags = await api.fetchConversationTagsByIds(conv.id);
-            tagsMap[conv.id] = convTags;
-          } catch {
-            // 静默忽略
-          }
-        }),
-      );
-      setConversationTagsMap(tagsMap);
-    };
-
-    loadConversationTags();
+    const ids = conversations.map(c => c.id);
+    api.fetchConversationTagsBatch(ids).then(setConversationTagsMap).catch(() => {});
   }, [isOpen, conversations]);
 
   /** 滚动到底部时加载更多 */

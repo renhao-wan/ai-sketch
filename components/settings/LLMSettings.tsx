@@ -135,26 +135,11 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
     loadTags();
   }, []);
 
-  // 加载配置标签
+  // 批量加载配置标签
   useEffect(() => {
     if (configs.length === 0) return;
-
-    const loadConfigTags = async () => {
-      const tagsMap: Record<string, ConfigTag[]> = {};
-      await Promise.all(
-        configs.map(async (config) => {
-          try {
-            const cfgTags = await api.fetchConfigTagsByIds(config.id!);
-            tagsMap[config.id!] = cfgTags;
-          } catch {
-            // 静默忽略
-          }
-        }),
-      );
-      setConfigTagsMap(tagsMap);
-    };
-
-    loadConfigTags();
+    const ids = configs.map(c => c.id!).filter(Boolean);
+    api.fetchConfigTagsBatch(ids).then(setConfigTagsMap).catch(() => {});
   }, [configs]);
 
   /** 新建配置 */
