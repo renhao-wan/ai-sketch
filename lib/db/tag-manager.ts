@@ -64,7 +64,7 @@ class TagManager {
     const db = await getDb();
     const existing = db.exec('SELECT * FROM conversation_tags WHERE id = ?', [id]);
     if (existing.length === 0 || existing[0].values.length === 0) {
-      throw new Error('标签不存在');
+      throw new Error('Tag not found');
     }
 
     const row = existing[0].values[0];
@@ -230,7 +230,7 @@ class TagManager {
     const db = await getDb();
     const existing = db.exec('SELECT * FROM config_tags WHERE id = ?', [id]);
     if (existing.length === 0 || existing[0].values.length === 0) {
-      throw new Error('标签不存在');
+      throw new Error('Tag not found');
     }
 
     const row = existing[0].values[0];

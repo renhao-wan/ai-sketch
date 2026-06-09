@@ -34,14 +34,19 @@ export default function TagFilter({
     });
   }, []);
 
-  // 打开时计算位置 & 监听滚动/resize
+  // 打开时计算位置 & 监听滚动/resize（节流）
   useEffect(() => {
     if (!isOpen) return;
     updateMenuPos();
-    const handleUpdate = () => updateMenuPos();
+    let raf = 0;
+    const handleUpdate = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(updateMenuPos);
+    };
     window.addEventListener('scroll', handleUpdate, true);
     window.addEventListener('resize', handleUpdate);
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener('scroll', handleUpdate, true);
       window.removeEventListener('resize', handleUpdate);
     };

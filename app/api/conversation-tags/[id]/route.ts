@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { tagManager } from '@/lib/db/tag-manager';
 import { withErrorHandling } from '@/lib/api/with-error-handling';
+import { validateTagName, validateTagColor } from '@/app/api/_lib/tag-validation';
 
 /**
  * PUT /api/conversation-tags/:id
@@ -15,14 +16,20 @@ export const PUT = withErrorHandling(async (
   const body = await request.json();
   const { name, color } = body;
 
-  if (name !== undefined && name.length > 20) {
-    return NextResponse.json({ error: '标签名称不能超过 20 个字符' }, { status: 400 });
+  if (name !== undefined) {
+    const nameError = validateTagName(name);
+    if (nameError) return nameError;
+  }
+
+  if (color !== undefined) {
+    const colorError = validateTagColor(color);
+    if (colorError) return colorError;
   }
 
   // 检查同名标签（排除自身）
   if (name !== undefined) {
     const existing = await tagManager.getConversationTags();
-    if (existing.some(t => t.name === name.trim() && t.id !== id)) {
+    if (existing.some(t => t.name === (name as string).trim() && t.id !== id)) {
       return NextResponse.json({ error: '同名标签已存在' }, { status: 409 });
     }
   }

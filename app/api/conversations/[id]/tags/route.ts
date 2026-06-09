@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { tagManager } from '@/lib/db/tag-manager';
 import { withErrorHandling } from '@/lib/api/with-error-handling';
+import { validateTagIds } from '@/app/api/_lib/tag-validation';
 
 /**
  * PUT /api/conversations/:id/tags
@@ -13,17 +14,8 @@ export const PUT = withErrorHandling(
     const body = await request.json();
     const { tagIds } = body;
 
-    if (!Array.isArray(tagIds)) {
-      return NextResponse.json({ error: 'tagIds 必须是数组' }, { status: 400 });
-    }
-
-    if (tagIds.length > 10) {
-      return NextResponse.json({ error: '每个对话最多 10 个标签' }, { status: 400 });
-    }
-
-    if (!tagIds.every((id: unknown) => typeof id === 'string' && id.length > 0)) {
-      return NextResponse.json({ error: 'tagIds 的每个元素必须是非空字符串' }, { status: 400 });
-    }
+    const error = validateTagIds(tagIds);
+    if (error) return error;
 
     await tagManager.setConversationTags(id, tagIds);
     const tags = await tagManager.getConversationTagsByIds(id);

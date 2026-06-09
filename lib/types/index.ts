@@ -126,18 +126,16 @@ export interface ConversationWithMessages extends Conversation {
   messages: ConversationMessage[];
 }
 
-/** 对话标签 */
-export interface ConversationTag {
+/** 标签基础类型 */
+export interface Tag {
   id: string;
   name: string;
   color: string;
   createdAt: number;
 }
 
+/** 对话标签 */
+export type ConversationTag = Tag;
+
 /** 配置标签 */
-export interface ConfigTag {
-  id: string;
-  name: string;
-  color: string;
-  createdAt: number;
-}
+export type ConfigTag = Tag;

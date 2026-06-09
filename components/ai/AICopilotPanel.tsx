@@ -489,11 +489,11 @@ export default function AICopilotPanel({
                               name={tag.name}
                               color={tag.color}
                               size="md"
-                              selected={conversationTags.some(t => t.id === tag.id)}
+                              selected={conversationTags.some(ct => ct.id === tag.id)}
                               onClick={() => {
-                                const ids = conversationTags.some(t => t.id === tag.id)
-                                  ? conversationTags.filter(t => t.id !== tag.id).map(t => t.id)
-                                  : [...conversationTags.map(t => t.id), tag.id];
+                                const ids = conversationTags.some(ct => ct.id === tag.id)
+                                  ? conversationTags.filter(ct => ct.id !== tag.id).map(ct => ct.id)
+                                  : [...conversationTags.map(ct => ct.id), tag.id];
                                 handleTagChange(ids);
                               }}
                             />

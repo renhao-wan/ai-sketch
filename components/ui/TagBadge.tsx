@@ -85,6 +85,7 @@ export default function TagBadge({
             e.stopPropagation();
             onRemove();
           }}
+          aria-label={`${name} 标签`}
           className="ml-0.5 hover:opacity-70 transition-opacity"
         >
           <X size={size === 'sm' ? 10 : 12} />

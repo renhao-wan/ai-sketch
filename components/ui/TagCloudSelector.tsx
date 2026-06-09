@@ -48,14 +48,19 @@ export default function TagCloudSelector({
     });
   }, [triggerRef]);
 
-  // 初始化位置 & 监听滚动/resize
+  // 初始化位置 & 监听滚动/resize（节流）
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 初始化菜单位置
     updateMenuPos();
-    const handleUpdate = () => updateMenuPos();
+    let raf = 0;
+    const handleUpdate = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(updateMenuPos);
+    };
     window.addEventListener('scroll', handleUpdate, true);
     window.addEventListener('resize', handleUpdate);
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener('scroll', handleUpdate, true);
       window.removeEventListener('resize', handleUpdate);
     };
