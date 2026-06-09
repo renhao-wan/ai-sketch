@@ -85,6 +85,12 @@ class CacheManager {
   /** 缓存未命中次数 */
   private misses = 0;
 
+  /** TTL 内存缓存（毫秒），避免每次 L2 查询都访问 DB */
+  private ttlCacheMs: number | null = null;
+
+  /** loadStats 是否已执行 */
+  private statsLoaded = false;
+
   // ── 公开 API ──
 
   /**
@@ -255,12 +261,20 @@ class CacheManager {
     const result = db.exec('SELECT changes() as count');
     const count = result.length > 0 ? (result[0].values[0][0] as number) : 0;
 
+    // 清除 L1 避免命中原已过期的条目
+    this.l1.clear();
+
     requestSave();
     return count;
   }
 
-  /** 获取缓存统计信息 */
+  /** 获取缓存统计信息（首次调用时自动从 DB 加载历史统计） */
   async getStats(): Promise<CacheStats> {
+    if (!this.statsLoaded) {
+      await this.loadStats();
+      this.statsLoaded = true;
+    }
+
     const db = await getDb();
 
     const stmt = db.prepare(
@@ -282,8 +296,11 @@ class CacheManager {
     return { entries, totalSizeBytes, hits: this.hits, misses: this.misses, hitRate, ttlDays };
   }
 
-  /** 获取缓存 TTL（天） */
+  /** 获取缓存 TTL（天），优先使用内存缓存 */
   async getTtl(): Promise<number> {
+    if (this.ttlCacheMs !== null) {
+      return this.ttlCacheMs / (24 * 60 * 60 * 1000);
+    }
     const db = await getDb();
     const stmt = db.prepare("SELECT value FROM meta WHERE key = 'cache_ttl_days'");
     let ttlDays = DEFAULT_TTL_DAYS;
@@ -292,13 +309,15 @@ class CacheManager {
       ttlDays = parseInt(row.value as string, 10) || DEFAULT_TTL_DAYS;
     }
     stmt.free();
+    this.ttlCacheMs = ttlDays * 24 * 60 * 60 * 1000;
     return ttlDays;
   }
 
-  /** 设置缓存 TTL（天） */
+  /** 设置缓存 TTL（天），同步更新内存缓存 */
   async setTtl(days: number): Promise<void> {
     const db = await getDb();
     db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('cache_ttl_days', ?)", [String(days)]);
+    this.ttlCacheMs = days * 24 * 60 * 60 * 1000;
     requestSave();
   }
 
@@ -344,26 +363,24 @@ class CacheManager {
     }
     sizeStmt.free();
 
-    // 超过高水位时，按 last_used_at 升序淘汰至低水位以下
+    // 超过高水位时，按 last_used_at 升序批量淘汰至低水位以下
     const highThreshold = MAX_SIZE_BYTES * SIZE_RATIO_HIGH;
     const lowThreshold = MAX_SIZE_BYTES * SIZE_RATIO_LOW;
 
     if (totalSize > highThreshold) {
       while (totalSize > lowThreshold) {
-        const oldestStmt = db.prepare(
-          'SELECT id, LENGTH(response) as resp_size FROM response_cache ORDER BY last_used_at ASC LIMIT 1',
-        );
-        if (!oldestStmt.step()) {
-          oldestStmt.free();
-          break;
+        db.run(`
+          DELETE FROM response_cache WHERE id IN (
+            SELECT id FROM response_cache ORDER BY last_used_at ASC LIMIT 10
+          )
+        `);
+        // 重新计算总体积
+        const recheckStmt = db.prepare('SELECT COALESCE(SUM(LENGTH(response)), 0) as total_size FROM response_cache');
+        if (recheckStmt.step()) {
+          totalSize = (recheckStmt.getAsObject() as Record<string, unknown>).total_size as number;
         }
-        const row = oldestStmt.getAsObject() as Record<string, unknown>;
-        const oldestId = row.id as string;
-        const oldestSize = row.resp_size as number;
-        oldestStmt.free();
-
-        db.run('DELETE FROM response_cache WHERE id = ?', [oldestId]);
-        totalSize -= oldestSize;
+        recheckStmt.free();
+        if (totalSize <= lowThreshold) break;
       }
     }
 
@@ -375,5 +392,11 @@ class CacheManager {
   }
 }
 
+/**
+ * 全局缓存管理器单例
+ *
+ * 注意：loadStats() 会在应用启动时由统计 API 端点自动调用，
+ * 无需手动调用；getStats() 内部也会做懒加载保障。
+ */
 export const cacheManager = new CacheManager();
 export default CacheManager;
