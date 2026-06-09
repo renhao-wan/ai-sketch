@@ -100,7 +100,7 @@ class CacheManager {
 
     // L2 查找
     const db = await getDb();
-    const stmt = db.prepare('SELECT * FROM response_cache WHERE id = ?');
+    const stmt = db.prepare('SELECT id, response, created_at FROM response_cache WHERE id = ?');
     stmt.bind([cacheKey]);
 
     let entry: CacheEntry | null = null;
@@ -271,7 +271,7 @@ class CacheManager {
     const db = await getDb();
 
     const stmt = db.prepare(
-      'SELECT COUNT(*) as entries, COALESCE(SUM(LENGTH(response)), 0) as total_size FROM response_cache',
+      'SELECT COUNT(*) as entries, COALESCE(SUM(LENGTH(CAST(response AS BLOB))), 0) as total_size FROM response_cache',
     );
     let entries = 0;
     let totalSizeBytes = 0;
@@ -349,7 +349,7 @@ class CacheManager {
     db.run('DELETE FROM response_cache WHERE created_at < ?', [now - ttlMs]);
 
     // 2. 检查总体积
-    const sizeStmt = db.prepare('SELECT COALESCE(SUM(LENGTH(response)), 0) as total_size FROM response_cache');
+    const sizeStmt = db.prepare('SELECT COALESCE(SUM(LENGTH(CAST(response AS BLOB))), 0) as total_size FROM response_cache');
     let totalSize = 0;
     if (sizeStmt.step()) {
       totalSize = (sizeStmt.getAsObject() as Record<string, unknown>).total_size as number;
@@ -362,18 +362,24 @@ class CacheManager {
 
     if (totalSize > highThreshold) {
       while (totalSize > lowThreshold) {
+        // 查询本批最旧条目的体积
+        const batchStmt = db.prepare(
+          'SELECT COALESCE(SUM(LENGTH(CAST(response AS BLOB))), 0) as batch_size FROM (SELECT response FROM response_cache ORDER BY last_used_at ASC LIMIT 10)',
+        );
+        let batchSize = 0;
+        if (batchStmt.step()) {
+          batchSize = (batchStmt.getAsObject() as Record<string, unknown>).batch_size as number;
+        }
+        batchStmt.free();
+
+        if (batchSize === 0) break;
+
         db.run(`
           DELETE FROM response_cache WHERE id IN (
             SELECT id FROM response_cache ORDER BY last_used_at ASC LIMIT 10
           )
         `);
-        // 重新计算总体积
-        const recheckStmt = db.prepare('SELECT COALESCE(SUM(LENGTH(response)), 0) as total_size FROM response_cache');
-        if (recheckStmt.step()) {
-          totalSize = (recheckStmt.getAsObject() as Record<string, unknown>).total_size as number;
-        }
-        recheckStmt.free();
-        if (totalSize <= lowThreshold) break;
+        totalSize -= batchSize;
       }
     }
 

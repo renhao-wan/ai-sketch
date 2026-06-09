@@ -222,7 +222,7 @@ export default function CacheSettings({ isVisible = true }: CacheSettingsProps) 
             )}
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <div className="p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)]">
             <p className="text-sm text-[var(--muted)] mb-1">{t('cache.entries')}</p>
             <p className="text-2xl font-semibold text-[var(--fg)]">
