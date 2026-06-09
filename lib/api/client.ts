@@ -88,10 +88,10 @@ export async function searchConfigs(query: string): Promise<LLMConfig[]> {
 }
 
 export async function clearCache(): Promise<{ success: boolean }> {
-  return request('/api/configs/actions', {
+  return request('/api/cache/clear', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'clear-cache' }),
+    body: JSON.stringify({ type: 'all' }),
   });
 }
 
@@ -103,11 +103,46 @@ export async function resetMeta(): Promise<{ success: boolean }> {
   });
 }
 
-export async function fetchCacheStats(): Promise<{ total: number; avgUseCount: number }> {
-  return request('/api/configs/actions', {
+export async function fetchCacheStats(): Promise<{
+  entries: number;
+  totalSizeBytes: number;
+  hits: number;
+  misses: number;
+  hitRate: number;
+  ttlDays: number;
+}> {
+  return request('/api/cache/stats');
+}
+
+/** 按配置清除缓存 */
+export async function clearCacheByConfig(configName: string, model: string): Promise<{ success: boolean; count: number }> {
+  return request('/api/cache/clear', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'cache-stats' }),
+    body: JSON.stringify({ type: 'byConfig', configName, model }),
+  });
+}
+
+/** 清除过期缓存 */
+export async function clearExpiredCache(): Promise<{ success: boolean; count: number }> {
+  return request('/api/cache/clear', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'expired' }),
+  });
+}
+
+/** 获取缓存 TTL */
+export async function fetchCacheTtl(): Promise<{ ttlDays: number }> {
+  return request('/api/cache/ttl');
+}
+
+/** 设置缓存 TTL */
+export async function setCacheTtl(ttlDays: number): Promise<{ success: boolean; ttlDays: number }> {
+  return request('/api/cache/ttl', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ttlDays }),
   });
 }
 

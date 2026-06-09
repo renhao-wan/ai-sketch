@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { configManager } from '@/lib/db/config-manager';
-import { cacheManager } from '@/lib/db/cache-manager';
 
 /** Action 处理函数类型 */
 type ActionHandler = (body: Record<string, unknown>) => Promise<unknown>;
@@ -79,15 +78,6 @@ const actionHandlers: Record<string, ActionHandler> = {
       result[key] = await configManager.getPreference(key);
     }
     return result;
-  },
-
-  'clear-cache': async () => {
-    await cacheManager.clearAll();
-    return { success: true };
-  },
-
-  'cache-stats': async () => {
-    return cacheManager.getStats();
   },
 
   'reset-window-state': async () => {

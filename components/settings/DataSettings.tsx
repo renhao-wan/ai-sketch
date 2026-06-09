@@ -48,7 +48,7 @@ export default function DataSettings() {
       ]);
       setConversationCount(convResult.count);
       setConfigCount(configResult.configs.length);
-      setCacheCount(cacheResult.total);
+      setCacheCount(cacheResult.entries);
     } catch (err) {
       console.error('Failed to load storage stats:', err);
     } finally {
