@@ -318,7 +318,7 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder={t('tags.search')}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-[var(--surface-warm)] border border-[var(--border)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/20"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-[var(--surface-warm)] border border-[var(--border)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/20"
             />
           </div>
           <button
