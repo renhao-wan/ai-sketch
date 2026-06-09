@@ -41,7 +41,7 @@
 | `meta` | 全局设置键值对 | `active_config_id`、`proxy_url`、`proxy_enabled`、`llm_max_retries`、`preference_locale`、`preference_theme`、`preference_glow_enabled` |
 | `conversations` | 对话记录 | — |
 | `messages` | 对话消息 | — |
-| `response_cache` | AI 响应缓存（7 天 TTL，上限 1000 条） | — |
+| `response_cache` | AI 响应缓存（L2 持久层，100MB 上限，可配置 TTL） | — |
 
 ## 设置页面清理操作
 
