@@ -126,7 +126,11 @@ async function initDb(): Promise<Database> {
       created_at INTEGER NOT NULL
     )
   `);
-  db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_conversation_tags_name ON conversation_tags(name)');
+  try {
+    db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_conversation_tags_name ON conversation_tags(name)');
+  } catch {
+    console.warn('[DB] conversation_tags name 唯一索引创建失败（可能已有重复数据）');
+  }
 
   db.run(`
     CREATE TABLE IF NOT EXISTS config_tags (
@@ -136,7 +140,11 @@ async function initDb(): Promise<Database> {
       created_at INTEGER NOT NULL
     )
   `);
-  db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_config_tags_name ON config_tags(name)');
+  try {
+    db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_config_tags_name ON config_tags(name)');
+  } catch {
+    console.warn('[DB] config_tags name 唯一索引创建失败（可能已有重复数据）');
+  }
 
   db.run(`
     CREATE TABLE IF NOT EXISTS conversation_tag_relations (

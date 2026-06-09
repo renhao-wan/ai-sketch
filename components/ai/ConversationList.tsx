@@ -71,7 +71,6 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
       setSearchQuery('');
       setSelectedTagId(null);
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 仅在打开时重置状态
   }, [isOpen]);
 
   /** 搜索防抖（含标签筛选变化） */
