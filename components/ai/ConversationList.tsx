@@ -63,19 +63,18 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
     }
   }, [isLoading, searchQuery, selectedTagId]);
 
-  /** 打开下拉时重置加载 */
+  /** 打开下拉时重置状态，搜索由下方 effect 统一触发 */
   useEffect(() => {
     if (isOpen) {
       offsetRef.current = 0;
       setHasMore(true);
       setSearchQuery('');
       setSelectedTagId(null);
-      loadConversations(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadConversations 不应在依赖中，避免打开下拉时无限循环
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 仅在打开时重置状态
   }, [isOpen]);
 
-  /** 搜索防抖 */
+  /** 搜索防抖（含标签筛选变化） */
   useEffect(() => {
     if (!isOpen) return;
     const timer = setTimeout(() => {
@@ -85,16 +84,7 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- loadConversations 不应在依赖中
-  }, [searchQuery]);
-
-  /** 标签筛选变化时重新加载 */
-  useEffect(() => {
-    if (!isOpen) return;
-    offsetRef.current = 0;
-    setHasMore(true);
-    loadConversations(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadConversations 不应在依赖中
-  }, [selectedTagId]);
+  }, [isOpen, searchQuery, selectedTagId]);
 
   /** 加载所有标签 */
   useEffect(() => {

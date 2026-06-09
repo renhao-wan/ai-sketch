@@ -28,7 +28,7 @@ export default function TagBadge({
   if (variant === 'dot') {
     return (
       <span
-        className={`relative group inline-flex items-center ${onClick ? 'cursor-pointer' : ''} ${className}`}
+        className={`relative group/dot inline-flex items-center ${onClick ? 'cursor-pointer' : ''} ${className}`}
         onClick={onClick}
         role={onClick ? 'button' : undefined}
         tabIndex={onClick ? 0 : undefined}
@@ -39,7 +39,7 @@ export default function TagBadge({
           style={{ backgroundColor: color }}
         />
         {/* hover 提示 */}
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 text-[10px] text-white bg-[var(--fg)] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 text-[10px] text-[var(--fg)] bg-[var(--surface-warm)] border border-[var(--border)] rounded whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity pointer-events-none shadow-sm">
           {name}
         </span>
       </span>

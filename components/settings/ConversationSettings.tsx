@@ -55,6 +55,7 @@ export default function ConversationSettings() {
   const [conversationTagsMap, setConversationTagsMap] = useState<Record<string, ConversationTag[]>>({});
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [showTagSelector, setShowTagSelector] = useState<string | null>(null);
+  const tagTriggerRef = useRef<HTMLButtonElement>(null);
 
   // ── Confirm dialog ──
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({
@@ -594,42 +595,25 @@ export default function ConversationSettings() {
                         </button>
                       </Tooltip>
                       <Tooltip content={t('tags.selectTags')} side="top">
-                        <div className="relative">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowTagSelector(showTagSelector === item.id ? null : item.id);
-                            }}
-                            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
-                              (conversationTagsMap[item.id] || []).length > 0
-                                ? 'text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10'
-                                : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-                            }`}
-                          >
-                            <Tag size={14} />
-                            {(conversationTagsMap[item.id] || []).length > 0 && (
-                              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 flex items-center justify-center text-[8px] font-bold text-white bg-[var(--accent-indigo)] rounded-full">
-                                {(conversationTagsMap[item.id] || []).length}
-                              </span>
-                            )}
-                          </button>
-                          {showTagSelector === item.id && (
-                            <TagCloudSelector
-                              tags={tags}
-                              selectedTagIds={(conversationTagsMap[item.id] || []).map(t => t.id)}
-                              onChange={async (tagIds) => {
-                                try {
-                                  await api.setConversationTags(item.id, tagIds);
-                                  const updatedTags = await api.fetchConversationTagsByIds(item.id);
-                                  setConversationTagsMap(prev => ({ ...prev, [item.id]: updatedTags }));
-                                } catch (err) {
-                                  console.error('Failed to update conversation tags:', err);
-                                }
-                              }}
-                              onClose={() => setShowTagSelector(null)}
-                            />
+                        <button
+                          ref={showTagSelector === item.id ? tagTriggerRef : undefined}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowTagSelector(showTagSelector === item.id ? null : item.id);
+                          }}
+                          className={`relative w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
+                            (conversationTagsMap[item.id] || []).length > 0
+                              ? 'text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10'
+                              : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                          }`}
+                        >
+                          <Tag size={14} />
+                          {(conversationTagsMap[item.id] || []).length > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 flex items-center justify-center text-[8px] font-bold text-white bg-[var(--accent-indigo)] rounded-full">
+                              {(conversationTagsMap[item.id] || []).length}
+                            </span>
                           )}
-                        </div>
+                        </button>
                       </Tooltip>
                       <Tooltip content={t('common.delete')} side="top">
                         <button
@@ -656,6 +640,30 @@ export default function ConversationSettings() {
           )}
         </div>
       </ScrollToTop>
+
+      {/* 标签选择器（portal 渲染） */}
+      {showTagSelector && (() => {
+        const item = items.find(i => i.id === showTagSelector);
+        if (!item) return null;
+        const convTags = conversationTagsMap[item.id] || [];
+        return (
+          <TagCloudSelector
+            tags={tags}
+            selectedTagIds={convTags.map(t => t.id)}
+            onChange={async (tagIds) => {
+              try {
+                await api.setConversationTags(item.id, tagIds);
+                const updatedTags = await api.fetchConversationTagsByIds(item.id);
+                setConversationTagsMap(prev => ({ ...prev, [item.id]: updatedTags }));
+              } catch (err) {
+                console.error('Failed to update conversation tags:', err);
+              }
+            }}
+            onClose={() => setShowTagSelector(null)}
+            triggerRef={tagTriggerRef}
+          />
+        );
+      })()}
 
       {/* Confirm Dialog */}
       <ConfirmDialog

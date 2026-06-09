@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import * as api from '@/lib/api/client';
 import { useNotification } from '@/lib/contexts/NotificationContext';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
@@ -54,6 +54,7 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
   const [configTagsMap, setConfigTagsMap] = useState<Record<string, ConfigTag[]>>({});
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [showTagSelector, setShowTagSelector] = useState<string | null>(null); // configId
+  const tagTriggerRef = useRef<HTMLButtonElement>(null);
 
   const { showBanner, handleDismissBanner } = useCountBanner({
     count: configs.length,
@@ -516,42 +517,25 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
                       </button>
                     </Tooltip>
                     <Tooltip content={t('tags.selectTags')} side="top">
-                      <div className="relative">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowTagSelector(showTagSelector === config.id ? null : config.id!);
-                          }}
-                          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
-                            cfgTags.length > 0
-                              ? 'text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10'
-                              : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-                          }`}
-                        >
-                          <Tag size={14} />
-                          {cfgTags.length > 0 && (
-                            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 flex items-center justify-center text-[8px] font-bold text-white bg-[var(--accent-indigo)] rounded-full">
-                              {cfgTags.length}
-                            </span>
-                          )}
-                        </button>
-                        {showTagSelector === config.id && (
-                          <TagCloudSelector
-                            tags={tags}
-                            selectedTagIds={cfgTags.map(t => t.id)}
-                            onChange={async (tagIds) => {
-                              try {
-                                await api.setConfigTags(config.id!, tagIds);
-                                const updatedTags = await api.fetchConfigTagsByIds(config.id!);
-                                setConfigTagsMap(prev => ({ ...prev, [config.id!]: updatedTags }));
-                              } catch (err) {
-                                console.error('Failed to update config tags:', err);
-                              }
-                            }}
-                            onClose={() => setShowTagSelector(null)}
-                          />
+                      <button
+                        ref={showTagSelector === config.id ? tagTriggerRef : undefined}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowTagSelector(showTagSelector === config.id ? null : config.id!);
+                        }}
+                        className={`relative w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
+                          cfgTags.length > 0
+                            ? 'text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10'
+                            : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                        }`}
+                      >
+                        <Tag size={14} />
+                        {cfgTags.length > 0 && (
+                          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 flex items-center justify-center text-[8px] font-bold text-white bg-[var(--accent-indigo)] rounded-full">
+                            {cfgTags.length}
+                          </span>
                         )}
-                      </div>
+                      </button>
                     </Tooltip>
                     {configs.length > 1 && (
                       <Tooltip content={t('common.delete')} side="top">
@@ -570,6 +554,30 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
           }))}
         </div>
       </ScrollToTop>
+
+      {/* 标签选择器（portal 渲染） */}
+      {showTagSelector && (() => {
+        const config = configs.find(c => c.id === showTagSelector);
+        if (!config) return null;
+        const cfgTags = configTagsMap[config.id!] || [];
+        return (
+          <TagCloudSelector
+            tags={tags}
+            selectedTagIds={cfgTags.map(t => t.id)}
+            onChange={async (tagIds) => {
+              try {
+                await api.setConfigTags(config.id!, tagIds);
+                const updatedTags = await api.fetchConfigTagsByIds(config.id!);
+                setConfigTagsMap(prev => ({ ...prev, [config.id!]: updatedTags }));
+              } catch (err) {
+                console.error('Failed to update config tags:', err);
+              }
+            }}
+            onClose={() => setShowTagSelector(null)}
+            triggerRef={tagTriggerRef}
+          />
+        );
+      })()}
 
       {/* 配置编辑器弹窗 */}
       {editingConfig && (

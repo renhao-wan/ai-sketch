@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, X } from 'lucide-react';
 import TagBadge from './TagBadge';
 import { useLocale } from '@/lib/locales';
@@ -12,20 +13,53 @@ interface TagCloudSelectorProps {
   onChange: (tagIds: string[]) => void;
   onClose: () => void;
   maxTags?: number;
+  triggerRef?: React.RefObject<HTMLElement | null>;
 }
 
-/** 标签云选择器组件 */
+/** 标签云选择器组件（portal 渲染，不受父容器裁剪） */
 export default function TagCloudSelector({
   tags,
   selectedTagIds,
   onChange,
   onClose,
   maxTags = 10,
+  triggerRef,
 }: TagCloudSelectorProps) {
   const { t } = useLocale();
   const [searchQuery, setSearchQuery] = useState('');
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const menuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // 计算菜单位置
+  const updateMenuPos = useCallback(() => {
+    const el = triggerRef?.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    // 优先向下展开，空间不足时向上
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const menuHeight = 320; // 预估菜单高度
+    const top = spaceBelow > menuHeight + 8
+      ? rect.bottom + 4
+      : rect.top - menuHeight - 4;
+    setMenuPos({
+      top,
+      left: Math.min(rect.left, window.innerWidth - 272), // 272 = w-64 + padding
+    });
+  }, [triggerRef]);
+
+  // 初始化位置 & 监听滚动/resize
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 初始化菜单位置
+    updateMenuPos();
+    const handleUpdate = () => updateMenuPos();
+    window.addEventListener('scroll', handleUpdate, true);
+    window.addEventListener('resize', handleUpdate);
+    return () => {
+      window.removeEventListener('scroll', handleUpdate, true);
+      window.removeEventListener('resize', handleUpdate);
+    };
+  }, [updateMenuPos]);
 
   // 自动聚焦搜索框
   useEffect(() => {
@@ -35,13 +69,14 @@ export default function TagCloudSelector({
   // 点击外部关闭
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        onClose();
-      }
+      const target = e.target as Node;
+      if (menuRef.current?.contains(target)) return;
+      if (triggerRef?.current?.contains(target)) return;
+      onClose();
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose]);
+  }, [onClose, triggerRef]);
 
   // 过滤标签
   const filteredTags = searchQuery
@@ -57,10 +92,11 @@ export default function TagCloudSelector({
     }
   };
 
-  return (
+  const menuContent = (
     <div
-      ref={containerRef}
-      className="absolute top-full left-0 mt-1 z-50 w-64 bg-[var(--surface-warm)] backdrop-blur-xl rounded-2xl border border-[var(--border)] shadow-[0_10px_40px_rgba(28,25,23,0.10)] overflow-hidden animate-slide-up"
+      ref={menuRef}
+      className="fixed z-[200] w-64 bg-[var(--surface-warm)] backdrop-blur-xl rounded-2xl border border-[var(--border)] shadow-[0_10px_40px_rgba(28,25,23,0.10)] overflow-hidden animate-slide-up"
+      style={{ top: menuPos.top, left: menuPos.left }}
     >
       {/* 头部 */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-black/5">
@@ -119,4 +155,6 @@ export default function TagCloudSelector({
       )}
     </div>
   );
+
+  return createPortal(menuContent, document.body);
 }
