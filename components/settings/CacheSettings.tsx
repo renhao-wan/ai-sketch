@@ -22,8 +22,12 @@ function formatPercent(value: number): string {
   return (value * 100).toFixed(1) + '%';
 }
 
+interface CacheSettingsProps {
+  isVisible?: boolean;
+}
+
 /** 缓存管理组件 — 缓存统计、清理与 TTL 设置 */
-export default function CacheSettings() {
+export default function CacheSettings({ isVisible = true }: CacheSettingsProps) {
   const { t } = useLocale();
   const { showNotification } = useNotification();
 
@@ -50,6 +54,14 @@ export default function CacheSettings() {
   const [selectedConfigId, setSelectedConfigId] = useState('');
   const [isConfigDropdownOpen, setIsConfigDropdownOpen] = useState(false);
   const configDropdownRef = useRef<HTMLDivElement>(null);
+
+  // 切换到此 tab 时重置选中状态
+  useEffect(() => {
+    if (isVisible) {
+      setSelectedConfigId('');
+      setIsConfigDropdownOpen(false);
+    }
+  }, [isVisible]);
 
   // 点击外部关闭下拉列表
   useEffect(() => {
@@ -295,13 +307,14 @@ export default function CacheSettings() {
             </button>
 
             {isConfigDropdownOpen && configs.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 z-50 py-1 rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] shadow-lg shadow-black/10 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-1 z-50 py-1 rounded-xl border border-[var(--border)] bg-[var(--bg)] shadow-xl overflow-hidden">
                 {configs.map((config) => (
                   <button
                     key={config.id}
                     type="button"
                     onClick={() => {
-                      setSelectedConfigId(config.id ?? '');
+                      // 点击已选中的项则取消选中
+                      setSelectedConfigId(selectedConfigId === config.id ? '' : (config.id ?? ''));
                       setIsConfigDropdownOpen(false);
                     }}
                     className="w-full flex items-center justify-between px-3 py-2 text-sm text-[var(--fg)] hover:bg-[var(--accent-indigo)]/10 transition-colors duration-150"

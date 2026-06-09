@@ -73,7 +73,7 @@ export default function SettingsPage() {
     { key: 'network', component: <NetworkSettings /> },
     { key: 'conversations', component: <ConversationSettings /> },
     { key: 'data', component: <DataSettings /> },
-    { key: 'cache', component: <CacheSettings /> },
+    { key: 'cache', component: <CacheSettings isVisible={activeTab === 'cache'} /> },
     { key: 'shortcuts', component: <KeyboardShortcutsSettings searchQuery={shortcutsSearchQuery} /> },
     { key: 'about', component: <AboutSettings /> },
   ];
