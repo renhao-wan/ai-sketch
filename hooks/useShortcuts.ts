@@ -71,6 +71,13 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     scope: 'global',
   },
   {
+    id: 'open-cache',
+    keys: ['Alt', 'G'],
+    description: '缓存管理',
+    descriptionKey: 'shortcuts.openCache',
+    scope: 'global',
+  },
+  {
     id: 'open-shortcuts',
     keys: ['Alt', 'B'],
     description: '快捷键设置',
@@ -282,6 +289,11 @@ export function useShortcuts(actions?: ShortcutActions) {
         if (matchKeys(event, ['Alt', 'D'])) {
           event.preventDefault();
           actions.onOpenSettings?.('data');
+          return;
+        }
+        if (matchKeys(event, ['Alt', 'G'])) {
+          event.preventDefault();
+          actions.onOpenSettings?.('cache');
           return;
         }
         if (matchKeys(event, ['Alt', 'B'])) {

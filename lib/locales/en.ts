@@ -504,6 +504,7 @@ export const en: TranslationDict = {
   'shortcuts.newConversation': 'New Conversation',
   'shortcuts.openAbout': 'About',
   'shortcuts.openData': 'Data Management',
+  'shortcuts.openCache': 'Cache Management',
   'shortcuts.openShortcuts': 'Keyboard Shortcuts',
   'shortcuts.openLLM': 'LLM Config',
   'shortcuts.openNetwork': 'Network Settings',

@@ -502,6 +502,7 @@ export const zh = {
   'shortcuts.newConversation': '新建对话',
   'shortcuts.openAbout': '关于应用',
   'shortcuts.openData': '数据管理',
+  'shortcuts.openCache': '缓存管理',
   'shortcuts.openShortcuts': '快捷键设置',
   'shortcuts.openLLM': 'LLM 配置',
   'shortcuts.openNetwork': '网络设置',

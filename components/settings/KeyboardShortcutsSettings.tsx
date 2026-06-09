@@ -22,7 +22,7 @@ const SHORTCUT_CATEGORIES: { id: string; labelKey: TranslationKey; icon: typeof 
     id: 'settings',
     labelKey: 'shortcuts.category.settings',
     icon: Settings,
-    shortcutIds: ['open-settings', 'open-appearance', 'open-llm', 'open-conversations', 'open-tags', 'open-data', 'open-shortcuts', 'open-network', 'open-about'],
+    shortcutIds: ['open-settings', 'open-appearance', 'open-llm', 'open-conversations', 'open-tags', 'open-data', 'open-cache', 'open-shortcuts', 'open-network', 'open-about'],
   },
   {
     id: 'edit',
