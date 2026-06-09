@@ -448,6 +448,9 @@ export const zh = {
   'cache.ttlSettings': '有效期设置',
   'cache.ttlLabel': '缓存有效期',
   'cache.ttlSaved': '有效期已更新',
+  'cache.howItWorks': '相同输入和配置的图表生成请求会自动命中缓存，无需等待 AI 重新生成。',
+  'cache.whenHit': '命中条件：相同的描述文本、图表格式、图表类型、AI 模型和配置。',
+  'cache.whenNoHit': '不缓存的情况：上传图片、点击重新生成、更换模型或配置。',
 
   // 代理设置
   'proxy.enable': '使用代理',

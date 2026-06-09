@@ -5,7 +5,7 @@ import * as api from '@/lib/api/client';
 import { useLocale } from '@/lib/locales';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
 import { useNotification } from '@/lib/contexts/NotificationContext';
-import { Database, Trash2, Zap, Clock, BarChart3, Settings, ChevronDown, Check } from 'lucide-react';
+import { Database, Trash2, Zap, Clock, BarChart3, Settings, ChevronDown, Check, Info } from 'lucide-react';
 import type { ConfirmDialogState, LLMConfig } from '@/lib/types';
 
 /** 格式化字节数为可读字符串 */
@@ -186,6 +186,16 @@ export default function CacheSettings({ isVisible = true }: CacheSettingsProps) 
 
   return (
     <div className="space-y-6">
+      {/* 缓存说明 */}
+      <div className="flex gap-3 p-4 rounded-xl bg-[var(--accent-indigo)]/5 border border-[var(--accent-indigo)]/15">
+        <Info size={16} className="text-[var(--accent-indigo)] flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-[var(--muted)] space-y-1">
+          <p>{t('cache.howItWorks')}</p>
+          <p>{t('cache.whenHit')}</p>
+          <p>{t('cache.whenNoHit')}</p>
+        </div>
+      </div>
+
       {/* 缓存统计 */}
       <section>
         <div className="flex items-center gap-2 mb-4">

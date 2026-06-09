@@ -450,6 +450,9 @@ export const en: TranslationDict = {
   'cache.ttlSettings': 'TTL Settings',
   'cache.ttlLabel': 'Cache TTL',
   'cache.ttlSaved': 'TTL updated',
+  'cache.howItWorks': 'Chart generation requests with identical input and configuration are automatically cached.',
+  'cache.whenHit': 'Cache hits when: same description, chart format, chart type, AI model, and config.',
+  'cache.whenNoHit': 'Not cached: image uploads, regenerate clicks, or model/config changes.',
 
   // Proxy settings
   'proxy.enable': 'Use Proxy',
