@@ -54,6 +54,8 @@ export default function CacheSettings({ isVisible = true }: CacheSettingsProps) 
   const [selectedConfigId, setSelectedConfigId] = useState('');
   const [isConfigDropdownOpen, setIsConfigDropdownOpen] = useState(false);
   const configDropdownRef = useRef<HTMLDivElement>(null);
+  const [isCacheInfoOpen, setIsCacheInfoOpen] = useState(false);
+  const cacheInfoRef = useRef<HTMLDivElement>(null);
 
   // 切换到此 tab 时重置选中状态
   useEffect(() => {
@@ -63,17 +65,19 @@ export default function CacheSettings({ isVisible = true }: CacheSettingsProps) 
     }
   }, [isVisible]);
 
-  // 点击外部关闭下拉列表
+  // 点击外部关闭下拉列表和缓存说明
   useEffect(() => {
-    if (!isConfigDropdownOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (configDropdownRef.current && !configDropdownRef.current.contains(e.target as Node)) {
+      if (isConfigDropdownOpen && configDropdownRef.current && !configDropdownRef.current.contains(e.target as Node)) {
         setIsConfigDropdownOpen(false);
+      }
+      if (isCacheInfoOpen && cacheInfoRef.current && !cacheInfoRef.current.contains(e.target as Node)) {
+        setIsCacheInfoOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isConfigDropdownOpen]);
+  }, [isConfigDropdownOpen, isCacheInfoOpen]);
 
   // ── Confirm dialog ──
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({
@@ -186,21 +190,27 @@ export default function CacheSettings({ isVisible = true }: CacheSettingsProps) 
 
   return (
     <div className="space-y-6">
-      {/* 缓存说明 */}
-      <div className="flex gap-3 p-4 rounded-xl bg-[var(--accent-indigo)]/5 border border-[var(--accent-indigo)]/15">
-        <Info size={16} className="text-[var(--accent-indigo)] flex-shrink-0 mt-0.5" />
-        <div className="text-sm text-[var(--muted)] space-y-1">
-          <p>{t('cache.howItWorks')}</p>
-          <p>{t('cache.whenHit')}</p>
-          <p>{t('cache.whenNoHit')}</p>
-        </div>
-      </div>
-
       {/* 缓存统计 */}
       <section>
         <div className="flex items-center gap-2 mb-4">
           <BarChart3 size={18} className="text-[var(--accent-indigo)]" />
           <h3 className="text-lg font-semibold text-[var(--fg)]">{t('cache.stats')}</h3>
+          <div className="relative" ref={cacheInfoRef}>
+            <button
+              type="button"
+              onClick={() => setIsCacheInfoOpen(!isCacheInfoOpen)}
+              className="w-5 h-5 flex items-center justify-center rounded-full text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:bg-[var(--accent-indigo)]/10 transition-colors"
+            >
+              <Info size={14} />
+            </button>
+            {isCacheInfoOpen && (
+              <div className="absolute top-full left-0 mt-2 z-50 w-72 p-3 rounded-xl border border-[var(--border)] bg-[var(--bg)] shadow-xl text-xs text-[var(--muted)] space-y-1.5 leading-relaxed">
+                <p>{t('cache.howItWorks')}</p>
+                <p>{t('cache.whenHit')}</p>
+                <p>{t('cache.whenNoHit')}</p>
+              </div>
+            )}
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div className="p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)]">
