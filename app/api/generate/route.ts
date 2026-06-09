@@ -3,6 +3,7 @@ import { callLLM } from '@/lib/llm/client';
 import { configManager } from '@/lib/db/config-manager';
 import { conversationManager } from '@/lib/db/conversation-manager';
 import { cacheManager } from '@/lib/db/cache-manager';
+import { buildCacheKey, buildContextHash } from '@/lib/cache/cache-key';
 import { getStrategy } from '@/lib/strategies/registry';
 import type { LLMConfig, LLMMessage, ImageData } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
@@ -182,16 +183,29 @@ export async function POST(request: Request) {
 
     console.log(`[Generate] Messages count: ${fullMessages.length}, System prompt length: ${systemPrompt.length}`);
 
-    // ── 检查缓存（仅对非图片输入、非重新生成、单轮对话生效）──
-    // 缓存键包含 prompt + model + format + chartType，确保不同配置不会混淆
-    const cacheKey = allImages.length === 0 && !regenerate && contextMessages.length <= 2
-      ? `${strategy.getUserPrompt(userContent, chartType)}|${config.model}|${config.name || config.type}`
-      : null;
+    // ── 检查缓存（仅对非图片输入、非重新生成的请求生效）──
+    const shouldCache = allImages.length === 0 && !regenerate;
+    let cacheKeyValue: string | null = null;
+
+    if (shouldCache) {
+      const contextHash = contextMessages.length > 1
+        ? await buildContextHash(contextMessages)
+        : undefined;
+
+      cacheKeyValue = await buildCacheKey({
+        prompt: strategy.getUserPrompt(userContent, chartType),
+        format: diagramFormat,
+        chartType,
+        model: config.model,
+        configName: config.name || config.type,
+        contextHash,
+      });
+    }
     let cachedResponse: string | null = null;
 
-    if (cacheKey) {
+    if (cacheKeyValue) {
       perfMark('Cache Lookup');
-      cachedResponse = await cacheManager.get(cacheKey, diagramFormat, chartType);
+      cachedResponse = await cacheManager.get(cacheKeyValue);
       perfEnd('Cache Lookup');
 
       if (cachedResponse) {
@@ -228,12 +242,14 @@ export async function POST(request: Request) {
             // 使用缓存的响应（已经是处理过的最终代码）
             optimizedCode = cachedResponse;
 
-            // 模拟流式输出（分块发送）
-            const chunkSize = 50;
+            // 模拟流式输出（更自然的节奏）
+            const chunkSize = 100;
+            const delayMs = 10;
             for (let i = 0; i < optimizedCode.length; i += chunkSize) {
               const chunk = optimizedCode.substring(i, i + chunkSize);
               const data = `data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`;
               controller.enqueue(encoder.encode(data));
+              await new Promise(r => setTimeout(r, delayMs));
             }
           } else {
             // 获取全局重试配置
@@ -288,9 +304,12 @@ export async function POST(request: Request) {
             const processedCode = strategy.postProcess(accumulatedCode);
             optimizedCode = strategy.optimize(processedCode);
 
-            // 保存到缓存（如果有缓存 key）
-            if (cacheKey) {
-              await cacheManager.set(cacheKey, diagramFormat, chartType, optimizedCode);
+            // 保存到缓存
+            if (cacheKeyValue) {
+              await cacheManager.set(cacheKeyValue, optimizedCode, {
+                configName: config.name || config.type,
+                model: config.model,
+              });
             }
             perfEnd('Post Process');
           }
