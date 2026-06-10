@@ -23,7 +23,7 @@ export default function VersionThumbnail({ svg, loading, versionNumber }: Versio
   if (svg) {
     return (
       <div
-        className="w-full aspect-[16/10] rounded-lg overflow-hidden bg-white border border-[var(--border)] [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+        className="version-thumbnail w-full aspect-[16/10] rounded-lg overflow-hidden bg-white border border-[var(--border)] flex items-center justify-center p-1"
         dangerouslySetInnerHTML={{ __html: svg }}
       />
     );

@@ -114,9 +114,11 @@ class MermaidStrategy implements DiagramStrategy {
       });
       const id = `preview-${crypto.randomUUID()}`;
       const { svg } = await mermaid.render(id, code.trim());
-      return svg;
-    } catch (e) {
-      console.error('[MermaidPreview] 渲染失败:', e);
+      // 移除固定宽高，确保 SVG 能缩放适配容器
+      return svg
+        .replace(/<svg([^>]*)width="[^"]*"/, '<svg$1')
+        .replace(/<svg([^>]*)height="[^"]*"/, '<svg$1');
+    } catch {
       return null;
     }
   }

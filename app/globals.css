@@ -666,3 +666,12 @@ div.mxRubberband {
   rx: 50%;
   ry: 50%;
 }
+
+/* 版本历史预览 — SVG 缩放适配 */
+.version-thumbnail svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
