@@ -11,7 +11,6 @@ import { NetworkSettings } from '@/components/settings/NetworkSettings';
 import ConversationSettings from '@/components/settings/ConversationSettings';
 import DataSettings from '@/components/settings/DataSettings';
 import CacheSettings from '@/components/settings/CacheSettings';
-import VisionSettings from '@/components/settings/VisionSettings';
 import { KeyboardShortcutsSettings } from '@/components/settings/KeyboardShortcutsSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
 import { TagSettings } from '@/components/settings/TagSettings';
@@ -23,7 +22,7 @@ import Tooltip from '@/components/ui/Tooltip';
 // 动态导入重型设置组件（按需加载）
 const LLMSettings = dynamic(() => import('@/components/settings/LLMSettings').then(mod => ({ default: mod.LLMSettings })), { ssr: false });
 
-const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'tags', 'network', 'conversations', 'data', 'cache', 'vision', 'shortcuts', 'about'];
+const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'tags', 'network', 'conversations', 'data', 'cache', 'shortcuts', 'about'];
 
 const tabDescriptions: Record<SettingsTab, TranslationKey> = {
   appearance: 'settings.appearanceDesc',
@@ -33,7 +32,6 @@ const tabDescriptions: Record<SettingsTab, TranslationKey> = {
   conversations: 'settings.conversationsTabDesc',
   data: 'settings.dataDesc',
   cache: 'settings.cacheDesc',
-  vision: 'settings.visionDesc',
   shortcuts: 'settings.shortcutsDesc',
   about: 'settings.aboutDesc',
 };
@@ -76,7 +74,6 @@ export default function SettingsPage() {
     { key: 'conversations', component: <ConversationSettings /> },
     { key: 'data', component: <DataSettings /> },
     { key: 'cache', component: <CacheSettings isVisible={activeTab === 'cache'} /> },
-    { key: 'vision', component: <VisionSettings isVisible={activeTab === 'vision'} /> },
     { key: 'shortcuts', component: <KeyboardShortcutsSettings searchQuery={shortcutsSearchQuery} /> },
     { key: 'about', component: <AboutSettings /> },
   ];

@@ -73,7 +73,7 @@ function toLLMMessage(msg: ConversationMessage): LLMMessage {
   return llmMsg;
 }
 
-const MAX_CONTEXT_MESSAGES = 20;
+const MAX_CONTEXT_MESSAGES = 10;
 
 class ConversationManager {
   private generateId = generateId;
