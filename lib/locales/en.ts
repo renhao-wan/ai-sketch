@@ -520,6 +520,7 @@ export const en: TranslationDict = {
   'shortcuts.openTags': 'Tags',
   'shortcuts.openAppearance': 'Appearance',
   'shortcuts.openHistory': 'History',
+  'shortcuts.openVersionHistory': 'Version History',
   'shortcuts.sendMessage': 'Send Message',
   'shortcuts.newline': 'New Line',
   'shortcuts.undo': 'Undo',
@@ -535,6 +536,15 @@ export const en: TranslationDict = {
   'shortcuts.windowMinimize': 'Minimize Window',
   'shortcuts.windowMaximize': 'Maximize/Restore Window',
   'shortcuts.windowClose': 'Close Window',
+
+  // Version History
+  'versionHistory.title': 'Version History',
+  'versionHistory.version': 'Version',
+  'versionHistory.current': 'Current',
+  'versionHistory.noThumbnail': 'Click to load',
+  'versionHistory.empty': 'No versions yet',
+  'versionHistory.emptyDesc': 'Version history will appear here after generating diagrams',
+
   'window.minimize': 'Minimize',
   'window.maximize': 'Maximize',
   'window.restore': 'Restore',

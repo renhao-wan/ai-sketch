@@ -518,6 +518,7 @@ export const zh = {
   'shortcuts.openTags': '标签管理',
   'shortcuts.openAppearance': '外观设置',
   'shortcuts.openHistory': '历史记录',
+  'shortcuts.openVersionHistory': '版本历史',
   'shortcuts.sendMessage': '发送消息',
   'shortcuts.newline': '换行',
   'shortcuts.undo': '撤销',
@@ -533,6 +534,15 @@ export const zh = {
   'shortcuts.windowMinimize': '最小化窗口',
   'shortcuts.windowMaximize': '最大化/还原窗口',
   'shortcuts.windowClose': '关闭窗口',
+
+  // 版本历史
+  'versionHistory.title': '版本历史',
+  'versionHistory.version': '版本',
+  'versionHistory.current': '当前',
+  'versionHistory.noThumbnail': '点击加载',
+  'versionHistory.empty': '暂无版本',
+  'versionHistory.emptyDesc': '生成图表后将在此显示历史',
+
   'window.minimize': '最小化',
   'window.maximize': '最大化',
   'window.restore': '还原',
