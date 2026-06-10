@@ -39,6 +39,7 @@
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "sql.js": "^1.14.1",
+    "tesseract.js": "^7.0.0",
     "undici": "^6.26.0"
   },
   "devDependencies": {
