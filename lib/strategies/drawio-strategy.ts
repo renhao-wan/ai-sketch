@@ -86,10 +86,64 @@ class DrawioStrategy implements DiagramStrategy {
     return createExportBlob(code, this.mimeType);
   }
 
-  async generatePreview(_code: string): Promise<string | null> {
-    // Draw.io 需要完整的 maxgraph 实例渲染，离屏方案开销大且不稳定
-    // 暂不支持预览，返回 null 显示占位符
-    return null;
+  async generatePreview(code: string): Promise<string | null> {
+    try {
+      const { Graph, ModelXmlSerializer, getDefaultPlugins } = await import('@maxgraph/core');
+
+      // 创建离屏容器 — 必须有明确的非零尺寸且参与布局
+      const container = document.createElement('div');
+      container.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:800px;height:600px;display:block;';
+      document.body.appendChild(container);
+
+      try {
+        const graph = new Graph(container, undefined, getDefaultPlugins());
+
+        // 提取 mxGraphModel
+        let cleanXml = code.trim();
+        const match = cleanXml.match(/<mxGraphModel[\s\S]*?<\/mxGraphModel>/);
+        if (match) cleanXml = match[0];
+
+        // 按照 DrawioCanvas 的 loadXml 流程：关闭渲染 → 导入 → fit → 居中 → 恢复 → refresh
+        const view = graph.getView();
+        const wasRendering = (view as any).rendering;
+        (view as any).rendering = false;
+
+        const serializer = new ModelXmlSerializer(graph.getDataModel());
+        serializer.import(cleanXml);
+
+        const fitPlugin = graph.getPlugin('fit') as any;
+        if (fitPlugin) {
+          fitPlugin.fit();
+          fitPlugin.fitCenter();
+        }
+
+        (view as any).rendering = wasRendering;
+        graph.refresh();
+
+        // 提取 SVG
+        const svgEl = container.querySelector('svg');
+        if (!svgEl) return null;
+
+        const cloned = svgEl.cloneNode(true) as SVGSVGElement;
+        cloned.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        cloned.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+        cloned.removeAttribute('width');
+        cloned.removeAttribute('height');
+
+        // 清理 @import 和外部引用
+        cloned.querySelectorAll('style').forEach(s => {
+          if (s.textContent) s.textContent = s.textContent.replace(/@import[^;]+;/g, '');
+        });
+        cloned.querySelectorAll('image').forEach(img => img.remove());
+        cloned.querySelectorAll('use').forEach(u => u.remove());
+
+        return new XMLSerializer().serializeToString(cloned);
+      } finally {
+        document.body.removeChild(container);
+      }
+    } catch {
+      return null;
+    }
   }
 
   generateImagePrompt(chartType: string): string {
