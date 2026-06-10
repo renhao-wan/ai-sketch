@@ -106,17 +106,30 @@ class DrawioStrategy implements DiagramStrategy {
 
         serializer.import(cleanXml);
 
+        // 等待渲染完成
+        await new Promise(r => setTimeout(r, 50));
+
         // 提取 SVG
         const svgEl = container.querySelector('svg');
         if (!svgEl) return null;
 
         const cloned = svgEl.cloneNode(true) as SVGSVGElement;
         cloned.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        // 移除固定宽高，让 SVG 自适应容器
+        cloned.removeAttribute('width');
+        cloned.removeAttribute('height');
+        // 确保有 viewBox
+        if (!cloned.getAttribute('viewBox')) {
+          const bbox = graph.getGraphBounds();
+          const scale = graph.getView().getScale();
+          cloned.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width / scale} ${bbox.height / scale}`);
+        }
         return new XMLSerializer().serializeToString(cloned);
       } finally {
         document.body.removeChild(container);
       }
-    } catch {
+    } catch (e) {
+      console.error('[DrawioPreview]', e);
       return null;
     }
   }
