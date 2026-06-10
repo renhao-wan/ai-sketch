@@ -285,10 +285,6 @@ export function useGeneration(options: UseGenerationOptions) {
       content: userContent,
       sourceType: sourceType as 'text' | 'file' | 'image',
       createdAt: Date.now(),
-      ...(sourceType === 'image' && typeof userMessage === 'object' && userMessage.images?.length ? {
-        imageData: (userMessage.images[0] as { data?: string })?.data,
-        imageMimeType: (userMessage.images[0] as { mimeType?: string })?.mimeType,
-      } : {}),
     };
 
     const optimisticAssistantMsg: ConversationMessage = {

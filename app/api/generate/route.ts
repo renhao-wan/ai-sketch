@@ -116,37 +116,14 @@ export async function POST(request: Request) {
       activeConversationId = conv.id;
     }
 
-    // Normalize image/images into a single array
     const userContent = typeof userInput === 'string' ? userInput : (userInput.text || '');
     const allImages: ImageData[] = [];
     if (typeof userInput === 'object') {
       if (userInput.image) allImages.push(userInput.image);
       if (userInput.images) allImages.push(...userInput.images);
     }
-    const sourceType = frontendSourceType || (allImages.length > 0 ? 'image' : 'text');
 
-    if (regenerate) {
-      // 重新生成：删除最后一条 assistant 消息，不添加新的 user 消息
-      await conversationManager.deleteLastAssistantMessage(activeConversationId!);
-    } else {
-      // 正常生成：保存 user 消息
-      const imageDataStr = allImages.length > 0
-        ? (allImages.length === 1 ? allImages[0].data : JSON.stringify(allImages.map(img => ({ data: img.data, mimeType: img.mimeType }))))
-        : undefined;
-      const imageMimeTypeStr = allImages.length > 0
-        ? (allImages.length === 1 ? allImages[0].mimeType : 'application/json')
-        : undefined;
-      await conversationManager.addMessage({
-        conversationId: activeConversationId,
-        role: 'user',
-        content: userContent,
-        imageData: imageDataStr,
-        imageMimeType: imageMimeTypeStr,
-        sourceType,
-      });
-    }
-
-    // ── 图片处理管线：三层降级 ──
+    // ── 图片处理管线：先处理再存储 ──
     let processedImages: ImageData[] | null = null;
     let imageDescription: string | null = null;
 
@@ -161,6 +138,47 @@ export async function POST(request: Request) {
       perfEnd('Image Processing');
     }
 
+    // 根据处理结果决定 sourceType
+    const sourceType = frontendSourceType || (processedImages ? 'image' : 'text');
+
+    if (regenerate) {
+      await conversationManager.deleteLastAssistantMessage(activeConversationId!);
+    } else {
+      if (processedImages) {
+        // Vision 模式：存原始 base64
+        const imageDataStr = processedImages.length === 1
+          ? processedImages[0].data
+          : JSON.stringify(processedImages.map(img => ({ data: img.data, mimeType: img.mimeType })));
+        const imageMimeTypeStr = processedImages.length === 1
+          ? processedImages[0].mimeType
+          : 'application/json';
+        await conversationManager.addMessage({
+          conversationId: activeConversationId,
+          role: 'user',
+          content: userContent,
+          imageData: imageDataStr,
+          imageMimeType: imageMimeTypeStr,
+          sourceType: 'image',
+        });
+      } else if (imageDescription) {
+        // 降级模式：描述文字持久化到 content，不存 base64
+        await conversationManager.addMessage({
+          conversationId: activeConversationId,
+          role: 'user',
+          content: `[图片内容]\n${imageDescription}\n\n${userContent}`,
+          sourceType: 'text',
+        });
+      } else {
+        // 纯文本
+        await conversationManager.addMessage({
+          conversationId: activeConversationId,
+          role: 'user',
+          content: userContent,
+          sourceType: 'text',
+        });
+      }
+    }
+
     // ── Build LLM messages with context ──
     perfMark('Build Context');
     const contextMessages = await conversationManager.buildContextMessages(activeConversationId);
@@ -168,14 +186,12 @@ export async function POST(request: Request) {
     // Build the new user message for LLM
     let newUserMessage: LLMMessage;
     if (processedImages) {
-      // Vision 模式：直接带图片
       newUserMessage = {
         role: 'user',
         content: strategy.getUserPrompt(userContent, chartType),
         images: processedImages,
       };
     } else if (imageDescription) {
-      // 降级模式：图片描述 + 用户 prompt
       newUserMessage = {
         role: 'user',
         content: strategy.getUserPrompt(
