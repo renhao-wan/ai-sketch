@@ -468,33 +468,35 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
           </div>
         )}
 
-        {/* 操作栏：新建 + 导入导出 */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={handleCreateNew}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200 font-medium"
-          >
-            <Plus size={14} /><span>{t('config.new')}</span>
-          </button>
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--border)] rounded-xl transition-all duration-200"
-          >
-            <Download size={14} /><span>{t('common.export')}</span>
-          </button>
-          <button
-            onClick={handleImport}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--border)] rounded-xl transition-all duration-200"
-          >
-            <Upload size={14} /><span>{t('common.import')}</span>
-          </button>
-          <button
-            onClick={() => setVisionPage(true)}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--border)] rounded-xl transition-all duration-200"
-          >
-            <Eye size={14} /><span>{t('settings.vision')}</span>
-          </button>
-        </div>
+        {/* 操作栏 */}
+        {!visionPage && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={handleCreateNew}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200 font-medium"
+            >
+              <Plus size={14} /><span>{t('config.new')}</span>
+            </button>
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--border)] rounded-xl transition-all duration-200"
+            >
+              <Download size={14} /><span>{t('common.export')}</span>
+            </button>
+            <button
+              onClick={handleImport}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--border)] rounded-xl transition-all duration-200"
+            >
+              <Upload size={14} /><span>{t('common.import')}</span>
+            </button>
+            <button
+              onClick={() => setVisionPage(true)}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm text-[var(--muted)] bg-[var(--surface-warm-hover)] hover:bg-[var(--border)] rounded-xl transition-all duration-200"
+            >
+              <Eye size={14} /><span>{t('settings.vision')}</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── 视觉模型配置页面 ── */}
