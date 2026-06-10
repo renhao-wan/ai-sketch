@@ -392,6 +392,8 @@ export const zh = {
   'settings.dataDesc': '存储统计',
   'settings.cache': '缓存管理',
   'settings.cacheDesc': '管理 LLM 响应缓存策略和存储',
+  'settings.vision': '视觉模型',
+  'settings.visionDesc': '配置用于图片理解的多模态模型，让所有模型都能处理图片',
   'settings.storageStats': '存储统计',
   'settings.conversations': '会话数量',
   'settings.configs': '配置数量',
@@ -543,6 +545,28 @@ export const zh = {
   'update.downloadedHint': '新版本下载完成，重启即可应用',
   'update.install': '重启安装',
   'update.error': '更新失败',
+
+  // Vision
+  'vision.apiType': 'API 类型',
+  'vision.apiTypeOpenai': 'OpenAI 兼容',
+  'vision.apiTypeAnthropic': 'Anthropic',
+  'vision.baseUrl': 'Base URL',
+  'vision.baseUrlPlaceholder': 'https://api.groq.com/openai/v1',
+  'vision.apiKey': 'API Key',
+  'vision.apiKeyPlaceholder': 'sk-...',
+  'vision.model': '模型名称',
+  'vision.modelPlaceholder': 'llama-4-scout',
+  'vision.save': '保存配置',
+  'vision.test': '测试连接',
+  'vision.testSuccess': '连接成功',
+  'vision.testFail': '连接失败',
+  'vision.saved': '配置已保存',
+  'vision.deleted': '配置已删除',
+  'vision.noConfig': '未配置视觉模型时，图片将使用 OCR 提取文字',
+  'vision.status': '状态',
+  'vision.statusConfigured': '已配置',
+  'vision.statusNotConfigured': '未配置',
+  'vision.currentModel': '当前视觉模型',
 } as const;
 
 export type TranslationKey = keyof typeof zh;
