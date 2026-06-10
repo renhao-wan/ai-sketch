@@ -101,8 +101,12 @@ class ExcalidrawStrategy implements DiagramStrategy {
         appState: { viewBackgroundColor: '#ffffff', exportWithDarkMode: false },
         files: null,
       });
+      // 移除固定宽高
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
       return svg.outerHTML;
-    } catch {
+    } catch (e) {
+      console.error('[ExcalidrawPreview]', e);
       return null;
     }
   }

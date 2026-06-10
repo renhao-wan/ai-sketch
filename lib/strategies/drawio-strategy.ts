@@ -86,52 +86,10 @@ class DrawioStrategy implements DiagramStrategy {
     return createExportBlob(code, this.mimeType);
   }
 
-  async generatePreview(code: string): Promise<string | null> {
-    try {
-      const { Graph, ModelXmlSerializer, getDefaultPlugins } = await import('@maxgraph/core');
-
-      // 创建离屏容器
-      const container = document.createElement('div');
-      container.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:800px;height:600px;';
-      document.body.appendChild(container);
-
-      try {
-        const graph = new Graph(container, undefined, getDefaultPlugins());
-        const serializer = new ModelXmlSerializer(graph.getDataModel());
-
-        // 提取 mxGraphModel
-        let cleanXml = code.trim();
-        const match = cleanXml.match(/<mxGraphModel[\s\S]*?<\/mxGraphModel>/);
-        if (match) cleanXml = match[0];
-
-        serializer.import(cleanXml);
-
-        // 等待渲染完成
-        await new Promise(r => setTimeout(r, 50));
-
-        // 提取 SVG
-        const svgEl = container.querySelector('svg');
-        if (!svgEl) return null;
-
-        const cloned = svgEl.cloneNode(true) as SVGSVGElement;
-        cloned.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-        // 移除固定宽高，让 SVG 自适应容器
-        cloned.removeAttribute('width');
-        cloned.removeAttribute('height');
-        // 确保有 viewBox
-        if (!cloned.getAttribute('viewBox')) {
-          const bbox = graph.getGraphBounds();
-          const scale = graph.getView().getScale();
-          cloned.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width / scale} ${bbox.height / scale}`);
-        }
-        return new XMLSerializer().serializeToString(cloned);
-      } finally {
-        document.body.removeChild(container);
-      }
-    } catch (e) {
-      console.error('[DrawioPreview]', e);
-      return null;
-    }
+  async generatePreview(_code: string): Promise<string | null> {
+    // Draw.io 需要完整的 maxgraph 实例渲染，离屏方案开销大且不稳定
+    // 暂不支持预览，返回 null 显示占位符
+    return null;
   }
 
   generateImagePrompt(chartType: string): string {
