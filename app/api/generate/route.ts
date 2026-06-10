@@ -219,8 +219,12 @@ export async function POST(request: Request) {
         ? await buildContextHash(contextMessages)
         : undefined;
 
+      const promptForCache = imageDescription
+        ? `[图片内容]\n${imageDescription}\n\n${userContent}`
+        : userContent;
+
       cacheKeyValue = await buildCacheKey({
-        prompt: strategy.getUserPrompt(userContent, chartType),
+        prompt: strategy.getUserPrompt(promptForCache, chartType),
         format: diagramFormat,
         chartType,
         model: config.model,

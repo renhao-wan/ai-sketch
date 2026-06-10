@@ -102,13 +102,18 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(visionConfig),
       });
+
       if (response.ok) {
         setVisionIsConfigured(true);
         setVisionCurrentModel(visionConfig.model);
         setVisionTestResult(null);
+        showNotification(t('vision.saved'), '', 'success');
+      } else {
+        const data = await response.json().catch(() => ({}));
+        showNotification(t('config.saveFailed'), data.error || '', 'error');
       }
     } catch (error) {
-      console.error('Failed to save vision config:', error);
+      showNotification(t('config.saveFailed'), (error as Error).message, 'error');
     } finally {
       setVisionSaving(false);
     }

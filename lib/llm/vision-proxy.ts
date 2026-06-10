@@ -81,16 +81,22 @@ async function extractViaVisionApi(
     // 解析响应（OpenAI 和 Anthropic 格式）
     const choices = data.choices as Array<Record<string, unknown>> | undefined;
     if (choices?.[0]?.message) {
-      return (choices[0].message as Record<string, unknown>).content as string;
+      const content = (choices[0].message as Record<string, unknown>).content;
+      if (typeof content === 'string' && content.trim()) {
+        return content;
+      }
     }
 
     // Anthropic 格式
-    const content = data.content as Array<Record<string, unknown>> | undefined;
-    if (content?.[0]?.text) {
-      return content[0].text as string;
+    const contentArr = data.content as Array<Record<string, unknown>> | undefined;
+    if (contentArr?.[0]?.text) {
+      const text = contentArr[0].text;
+      if (typeof text === 'string' && text.trim()) {
+        return text;
+      }
     }
 
-    console.error('[Vision Proxy] 无法解析 Vision API 响应');
+    console.error('[Vision Proxy] Vision API 返回空内容');
     return null;
   } catch (error) {
     console.error('[Vision Proxy] Vision API 调用异常:', error);
