@@ -116,7 +116,8 @@ class DrawioStrategy implements DiagramStrategy {
       } finally {
         document.body.removeChild(container);
       }
-    } catch {
+    } catch (e) {
+      console.error('[DrawioPreview] 渲染失败:', e);
       return null;
     }
   }

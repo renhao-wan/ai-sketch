@@ -109,12 +109,14 @@ class MermaidStrategy implements DiagramStrategy {
       mermaid.initialize({
         startOnLoad: false,
         theme: 'neutral',
-        securityLevel: 'strict',
+        securityLevel: 'loose',
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       });
       const id = `preview-${crypto.randomUUID()}`;
       const { svg } = await mermaid.render(id, code.trim());
       return svg;
-    } catch {
+    } catch (e) {
+      console.error('[MermaidPreview] 渲染失败:', e);
       return null;
     }
   }
