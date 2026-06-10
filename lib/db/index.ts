@@ -116,6 +116,19 @@ async function initDb(): Promise<Database> {
   db.run(`CREATE INDEX IF NOT EXISTS idx_response_cache_last_used ON response_cache(last_used_at DESC)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_response_cache_config ON response_cache(config_name, model)`);
 
+  // Vision API 配置表
+  db.run(`
+    CREATE TABLE IF NOT EXISTS vision_config (
+      id TEXT PRIMARY KEY DEFAULT 'default',
+      api_type TEXT NOT NULL DEFAULT 'openai',
+      base_url TEXT NOT NULL DEFAULT '',
+      api_key TEXT NOT NULL DEFAULT '',
+      model TEXT NOT NULL DEFAULT '',
+      created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+    )
+  `);
+
   // 标签表
   db.run(`
     CREATE TABLE IF NOT EXISTS conversation_tags (
