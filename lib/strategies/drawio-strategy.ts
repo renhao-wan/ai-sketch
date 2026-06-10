@@ -129,15 +129,11 @@ class DrawioStrategy implements DiagramStrategy {
         cloned.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
 
         // 设置 viewBox 让 SVG 能缩放适配容器
+        // fitPlugin.fit() 已调整 scale，SVG 坐标已变换，直接用 bounds
         const bounds = graph.getGraphBounds();
-        const scale = graph.getView().getScale();
         if (bounds.width > 0 && bounds.height > 0) {
-          const padding = 10;
-          const vbX = bounds.x / scale - padding;
-          const vbY = bounds.y / scale - padding;
-          const vbW = bounds.width / scale + padding * 2;
-          const vbH = bounds.height / scale + padding * 2;
-          cloned.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
+          const padding = 20;
+          cloned.setAttribute('viewBox', `${bounds.x - padding} ${bounds.y - padding} ${bounds.width + padding * 2} ${bounds.height + padding * 2}`);
         }
 
         cloned.removeAttribute('width');
