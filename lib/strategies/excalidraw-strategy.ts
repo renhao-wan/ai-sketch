@@ -105,8 +105,7 @@ class ExcalidrawStrategy implements DiagramStrategy {
       svg.removeAttribute('width');
       svg.removeAttribute('height');
       return svg.outerHTML;
-    } catch (e) {
-      console.error('[ExcalidrawPreview]', e);
+    } catch {
       return null;
     }
   }
