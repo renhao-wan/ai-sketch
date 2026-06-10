@@ -531,14 +531,11 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('vision.apiType')}</label>
-                <select
+                <Dropdown
+                  options={[{ value: 'openai', label: t('vision.apiTypeOpenai') }, { value: 'anthropic', label: t('vision.apiTypeAnthropic') }]}
                   value={visionConfig.apiType}
-                  onChange={(e) => setVisionConfig(prev => ({ ...prev, apiType: e.target.value as 'openai' | 'anthropic' }))}
-                  className="w-full px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--bg)] text-[var(--fg)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)] text-sm"
-                >
-                  <option value="openai">{t('vision.apiTypeOpenai')}</option>
-                  <option value="anthropic">{t('vision.apiTypeAnthropic')}</option>
-                </select>
+                  onChange={(v) => setVisionConfig(prev => ({ ...prev, apiType: v as 'openai' | 'anthropic' }))}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('vision.model')}</label>
