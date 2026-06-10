@@ -446,5 +446,6 @@ if (!result.success) {
 
 - [架构概览](./overview.md) — 整体架构设计
 - [图表格式策略模式](./diagram-strategy.md) — DiagramStrategy 接口详解
+- [图片处理管线](./image-processing.md) — 图片三层降级策略详解
 - [API 接口文档](../api/endpoints.md) — 后端 API 接口说明
 - [开发扩展指南](../guides/extend-diagram.md) — 如何添加新输入类型

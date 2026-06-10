@@ -227,6 +227,7 @@ app/editor/page.tsx（编辑器）
 - [设计模式](./design-patterns.md) — 项目中使用的所有设计模式详解
 - [图表格式策略模式](./diagram-strategy.md) — DiagramStrategy 接口详解
 - [输入类型策略模式](./input-strategy.md) — InputStrategy 接口详解
+- [图片处理管线](./image-processing.md) — 图片三层降级策略
 - [响应缓存](./response-cache.md) — L1/L2 分层缓存架构
 - [数据管理](./data-management.md) — 数据文件和清理操作
 - [API 接口文档](../api/endpoints.md) — 后端 API 接口说明

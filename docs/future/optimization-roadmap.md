@@ -45,161 +45,38 @@
 
 ## 二、上下文管理
 
-这是当前项目**最核心的问题**，直接影响图表生成质量。
+### 2.1 图片处理：三层降级策略（已实现）
 
-### 2.1 截断策略缺陷
+**位置**：`lib/llm/vision-proxy.ts`
 
-#### 问题 1：按条数而非 token 数截断（严重）
+项目已实现完整的图片处理管线，根据当前模型能力自动选择最优方案：
 
-**位置**：`lib/db/conversation-manager.ts` `buildContextMessages` 方法
+```
+Layer 1: 当前模型支持 vision（如 GPT-4o、Claude 3 等）
+  → 直接将 base64 图片发送给 LLM
 
-**现状**：使用 `MAX_CONTEXT_MESSAGES = 20` 作为阈值，不区分消息大小。
+Layer 2: 用户配置了独立的 Vision API
+  → 调用 Vision API 提取图片描述，以纯文本形式存入上下文
 
-**影响**：
-- 一条包含 base64 图片数据的 user 消息可能消耗数万 token
-- 20 条长文本消息也可能远超模型上下文窗口
-- 没有任何 token 预算管理机制
-
-**改进方案**：
-```typescript
-// 伪代码示意
-const MAX_CONTEXT_TOKENS = 8000; // 根据模型调整
-let tokenBudget = MAX_CONTEXT_TOKENS;
-const selectedMessages = [];
-
-for (const msg of reversedMessages) {
-  const tokens = estimateTokens(msg);
-  if (tokenBudget - tokens < 0) break;
-  selectedMessages.unshift(msg);
-  tokenBudget -= tokens;
-}
+Layer 3: Tesseract.js OCR
+  → 提取图片中的文字内容，以纯文本形式存入上下文
 ```
 
-引入 token 计数（可用 tiktoken 或简单估算），按 token 预算而非条数截断。
+**关键设计**：
+- Layer 2/3 降级后，图片描述以纯文本存入 `messages.content`，**不存 base64 数据**（`image_data` 为空）
+- 因此降级模式下，历史消息不会重发图片数据
+- 仅 Layer 1（vision 模式）会在历史消息中保留 base64 数据
 
----
+**Vision 模型检测**：`lib/llm/vision-models.ts` 通过正则匹配模型名（GPT-4o、Claude 3、Gemini、Qwen-VL 等）
 
-#### 问题 2：截断通知以 assistant 角色插入（中等）
+**Vision API 配置**：`lib/db/vision-config.ts` 独立于主 LLM 配置，用户可单独配置用于图片理解的多模态模型
 
-**位置**：`conversation-manager.ts` 第 366-372 行
+### 2.2 剩余问题
 
-**现状**：截断通知的 role 设为 `'assistant'`，破坏 user/assistant 交替规则。
-
-**影响**：LLM 可能将截断通知误解为之前的对话回复，产生语义混乱。
-
-**改进方案**：将截断通知的 role 改为 `'system'`，或直接在 system prompt 中说明上下文被截断。
-
----
-
-#### 问题 3：中间轮次修改历史完全丢失（严重）
-
-**现状**：当对话超过 20 轮时，中间的修改指令（如"把颜色改成蓝色"）被截断丢弃。
-
-**影响**：
-- 用户说"再调整一下布局"时，LLM 不知道当前代码做了哪些修改
-- 图表代码的累积修改历史丢失
-
-**改进方案**：
-1. 保留首条消息 + 最近 N 条消息（当前方案）
-2. 对被截断的中间消息生成**修改摘要**，作为 system 消息注入
-3. 或者将当前代码变更 diff 作为上下文的一部分
-
----
-
-#### 问题 4：首条消息未经 strategy 格式化（中等）
-
-**位置**：`app/api/generate/route.ts` 第 140-144 行
-
-**现状**：截断保留的第一条 user 消息是数据库中的原始输入，而非经过 `getUserPrompt()` 格式化的版本。
-
-**影响**：与最后一条格式化后的消息风格不一致，LLM 收到的指令格式混乱。
-
-**改进方案**：在 `buildContextMessages` 返回后，对首条 user 消息也应用 `getUserPrompt()` 格式化。
-
----
-
-### 2.2 图片上下文污染
-
-#### 问题 5：历史图片每次请求都重发（严重）
-
-**位置**：`conversation-manager.ts` `toLLMMessage` → `parseStoredImages`
-
-**现状**：存储到数据库的 base64 图片数据在每次请求时都被完整加载并发送给 LLM。
-
-**影响**：
-- 第 1 轮发送的 2MB 图片，到第 10 轮仍会被完整发送
-- 大幅增加 API 调用的 token 消耗和请求延迟
-- 可能超出模型的上下文窗口限制
-
-**改进方案**：
-1. **图片数据不入历史上下文**：只在当前轮次发送图片，历史消息中只保留图片的描述文字
-2. **图片压缩**：存储前压缩到合理尺寸（如最大 1024px）
-3. **图片摘要**：对历史图片生成文字描述替代原始数据
-
----
-
-#### 问题 6：图片数据以 base64 存储在 messages 表（中等）
-
-**位置**：`lib/db/conversation-manager.ts` `addMessage` 方法
-
-**现状**：`image_data TEXT` 字段存储完整 base64 字符串。
-
-**影响**：单行数据量极大，影响查询性能和数据库导出速度。
-
-**改进方案**：
-- 将图片存储为独立文件，messages 表只存文件路径
-- 或使用 BLOB 类型替代 TEXT
-
----
-
-### 2.3 System Prompt 浪费
-
-#### 问题 7：每次请求发送全部 22 种图表规范（中等）
-
-**位置**：`app/api/generate/route.ts` 第 147 行
-
-**现状**：system prompt 包含所有 22 种图表类型的完整规范，无论用户请求的是哪种类型。
-
-**影响**：约 90% 的图表规范是无用的 token 浪费。
-
-**改进方案**：
-```typescript
-// 按图表类型裁剪 system prompt
-function getSystemPrompt(chartType: string): string {
-  const baseRules = getBaseSystemPrompt();
-  const chartSpec = getChartSpec(chartType);
-  return `${baseRules}\n\n${chartSpec}`;
-}
-```
-
-只发送当前请求所需的图表类型规范。
-
----
-
-#### 问题 8：system prompt 被重复调用（轻微）
-
-**位置**：`app/api/generate/route.ts` 第 147 行和第 152 行
-
-**现状**：`strategy.getSystemPrompt()` 在构建消息和日志中各调用一次。
-
-**改进方案**：缓存到变量中复用。
-
----
-
-### 2.4 错误消息污染
-
-#### 问题 9：生成失败消息存入数据库（中等）
-
-**位置**：`app/api/generate/route.ts` 第 222-228 行
-
-**现状**：`[Generation failed: ...]` 作为 assistant 消息保存到数据库。
-
-**影响**：后续请求的上下文中 LLM 会看到这个错误消息，可能影响生成质量。
-
-**改进方案**：
-1. 生成失败时不保存错误消息到数据库
-2. 或标记为 `'system'` role，不参与上下文构建
-3. 或添加 `is_error` 字段，在 `buildContextMessages` 中过滤
+| 问题 | 严重度 | 说明 |
+|------|--------|------|
+| Vision 模式下历史图片重发 | 中等 | 仅当 Layer 1 生效时（模型支持 vision），历史轮次的 base64 图片会重复发送。可通过 `toLLMMessage` 增加 `isCurrentTurn` 参数解决 |
+| 截断通知 role 为 assistant | 轻微 | 破坏 user/assistant 交替规则，实际影响可忽略 |
 
 ---
 
@@ -923,10 +800,6 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 
 | # | 问题 | 模块 | 状态 |
 |---|------|------|------|
-| 14 | 截断策略按条数而非 token 数 | 上下文管理 | ❌ |
-| 15 | 中间轮次修改历史完全丢失 | 上下文管理 | ❌ |
-| 16 | 历史图片每次请求都重发 | 上下文管理 | ❌ |
-| 17 | 图片数据不入历史上下文 | 上下文管理 | ❌ |
 | 18 | Mermaid 14/21 种类型降级 | Mermaid 画布 | ✅ |
 | 19 | Excalidraw 流式期间每个元素完整重绘 | Excalidraw 画布 | ✅ |
 | 20 | onMaximizeChange 监听器泄漏 | Electron | ✅ |
@@ -936,19 +809,13 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 7 | closeDb() 在 Electron 退出前调用 | 数据库/Electron | ✅ |
 | 8 | Temperature 改为可配置参数 | LLM 客户端 | ✅ |
 | 10 | 代码预览展开/收起按钮 | 消息气泡 | ✅ |
+| 16 | 图片三层降级管线 | 上下文管理 | ✅ |
 
-### 建议优先解决的 4 个未完成问题
-
-1. **上下文截断改为 token 预算机制** — "上下文控制不好"的根本原因
-2. **图片数据不入历史上下文** — 大幅降低 token 消耗
-3. **历史图片不再每次重发** — 与上条配合，减少请求体积
-4. **截断通知 role 修正** — 破坏 user/assistant 交替规则
-
-### 🟡 中等问题（3 项）
+### 🟡 中等问题（1 项）
 
 详见附录 A，主要集中在：
-- 上下文管理（截断通知 role、首条消息格式化、图片 base64 存储）
 - 输入策略（FileStrategy 编码/截断）
+- Vision 模式下历史图片重发（仅 Layer 1 生效时）
 
 ### 🟢 轻微问题（0 项）
 
@@ -1032,23 +899,16 @@ const displayContent = expanded ? message.content : message.content.substring(0,
 | 65 | Excalidraw scrollToContent 延迟 | 🟡 | 2026-06-06 | 流式过程中不调用，只在流结束后调用一次 |
 | 66 | Excalidraw 失败元素提示 | 🟡 | 2026-06-06 | 收集转换失败的元素，流结束后显示警告通知 |
 
-### ❌ 未完成 — 严重（4 项）
+### ❌ 未完成 — 严重（0 项）
+
+无
+
+### ❌ 未完成 — 中等（2 项）
 
 | # | 优化项 | 模块 | 说明 |
 |---|--------|------|------|
-| 14 | 截断策略按条数而非 token 数 | 上下文管理 | `MAX_CONTEXT_MESSAGES=20`，无 token 预算 |
-| 15 | 中间轮次修改历史完全丢失 | 上下文管理 | 无摘要机制，超 20 轮直接丢弃 |
-| 16 | 历史图片每次请求都重发 | 上下文管理 | `toLLMMessage` 无条件附带所有 base64 图片 |
-| 17 | 图片数据不入历史上下文 | 上下文管理 | 只在当前轮次发送图片，历史保留描述文字 |
-
-### ❌ 未完成 — 中等（3 项）
-
-| # | 优化项 | 模块 | 说明 |
-|---|--------|------|------|
-| 22 | 截断通知 role 为 assistant 应为 system | 上下文管理 | 破坏 user/assistant 交替规则 |
-| 23 | 首条消息未经 getUserPrompt 格式化 | 上下文管理 | 历史消息原始发送，与当前轮次格式不一致 |
-| 24 | 图片以 base64 TEXT 存储 | 上下文管理 | 单行数据量极大，影响查询性能 |
 | 27 | FileStrategy 不处理编码/截断 | 输入策略 | 无编码检测，超长内容无截断 |
+| — | Vision 模式下历史图片重发 | 上下文管理 | 仅 Layer 1 生效时，`toLLMMessage` 无条件附带历史 base64 图片 |
 
 ### ❌ 未完成 — 轻微（0 项）
 
