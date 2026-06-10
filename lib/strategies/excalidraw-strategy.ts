@@ -88,6 +88,25 @@ class ExcalidrawStrategy implements DiagramStrategy {
     return createExportBlob(code, this.mimeType);
   }
 
+  async generatePreview(code: string): Promise<string | null> {
+    try {
+      const { exportToSvg, convertToExcalidrawElements } = await import('@excalidraw/excalidraw');
+      const arrayStr = extractFirstJsonArray(code.trim());
+      if (!arrayStr) return null;
+      const rawElements = JSON.parse(arrayStr);
+      if (!Array.isArray(rawElements) || rawElements.length === 0) return null;
+      const converted = convertToExcalidrawElements(rawElements, { regenerateIds: true });
+      const svg = await exportToSvg({
+        elements: converted,
+        appState: { viewBackgroundColor: '#ffffff', exportWithDarkMode: false },
+        files: null,
+      });
+      return svg.outerHTML;
+    } catch {
+      return null;
+    }
+  }
+
   generateImagePrompt(chartType: string): string {
     return buildImagePrompt(chartType, 'Excalidraw', CHART_TYPES, '将图片里的内容转换为excalidraw');
   }

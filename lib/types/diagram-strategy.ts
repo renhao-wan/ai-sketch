@@ -51,6 +51,13 @@ export interface DiagramStrategy {
   /** Create a Blob for file download/export */
   createExportBlob(code: string): Blob;
 
+  /**
+   * 从图表代码生成 SVG 预览字符串
+   * 仅客户端可用（需要 DOM），用于版本历史预览
+   * @returns SVG markup string，失败时返回 null
+   */
+  generatePreview?(code: string): Promise<string | null>;
+
   // ── Image prompt ──
 
   /** Generate a format-specific prompt for image-to-diagram conversion */

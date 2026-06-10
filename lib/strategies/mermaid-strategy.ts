@@ -103,6 +103,22 @@ class MermaidStrategy implements DiagramStrategy {
     return createExportBlob(code, this.mimeType);
   }
 
+  async generatePreview(code: string): Promise<string | null> {
+    try {
+      const mermaid = (await import('mermaid')).default;
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'neutral',
+        securityLevel: 'strict',
+      });
+      const id = `preview-${crypto.randomUUID()}`;
+      const { svg } = await mermaid.render(id, code.trim());
+      return svg;
+    } catch {
+      return null;
+    }
+  }
+
   generateImagePrompt(chartType: string): string {
     return buildImagePrompt(chartType, 'Mermaid', CHART_TYPES as Record<string, string>, '只输出 Mermaid 代码，不要包含代码块标记。');
   }

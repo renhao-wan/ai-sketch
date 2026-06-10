@@ -1,25 +1,31 @@
 'use client';
 
 import { useLocale } from '@/lib/locales';
+import { Loader2 } from 'lucide-react';
 
 interface VersionThumbnailProps {
-  thumbnail: string | undefined;
+  svg: string | null | undefined;
+  loading: boolean;
   versionNumber: number;
 }
 
-export default function VersionThumbnail({ thumbnail, versionNumber }: VersionThumbnailProps) {
+export default function VersionThumbnail({ svg, loading, versionNumber }: VersionThumbnailProps) {
   const { t } = useLocale();
 
-  if (thumbnail) {
+  if (loading) {
     return (
-      <div className="w-full aspect-[16/10] rounded-lg overflow-hidden bg-[var(--surface)] border border-[var(--border)]">
-        <img
-          src={thumbnail}
-          alt={`${t('versionHistory.version')} ${versionNumber}`}
-          className="w-full h-full object-contain"
-          draggable={false}
-        />
+      <div className="w-full aspect-[16/10] rounded-lg bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center">
+        <Loader2 size={20} className="animate-spin text-[var(--muted)]" />
       </div>
+    );
+  }
+
+  if (svg) {
+    return (
+      <div
+        className="w-full aspect-[16/10] rounded-lg overflow-hidden bg-white border border-[var(--border)] [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+        dangerouslySetInnerHTML={{ __html: svg }}
+      />
     );
   }
 

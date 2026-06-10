@@ -8,7 +8,8 @@ interface VersionCardProps {
   versionNumber: number;
   createdAt: number;
   isCurrent: boolean;
-  thumbnail: string | undefined;
+  svg: string | null | undefined;
+  loading: boolean;
   onSelect: (id: string) => void;
 }
 
@@ -17,7 +18,7 @@ function formatTime(timestamp: number): string {
   return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function VersionCard({ id, versionNumber, createdAt, isCurrent, thumbnail, onSelect }: VersionCardProps) {
+export default function VersionCard({ id, versionNumber, createdAt, isCurrent, svg, loading, onSelect }: VersionCardProps) {
   const { t } = useLocale();
 
   return (
@@ -42,8 +43,8 @@ export default function VersionCard({ id, versionNumber, createdAt, isCurrent, t
         )}
       </div>
 
-      {/* 缩略图 */}
-      <VersionThumbnail thumbnail={thumbnail} versionNumber={versionNumber} />
+      {/* 预览 */}
+      <VersionThumbnail svg={svg} loading={loading} versionNumber={versionNumber} />
     </button>
   );
 }

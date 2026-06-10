@@ -86,6 +86,41 @@ class DrawioStrategy implements DiagramStrategy {
     return createExportBlob(code, this.mimeType);
   }
 
+  async generatePreview(code: string): Promise<string | null> {
+    try {
+      const { Graph, ModelXmlSerializer, getDefaultPlugins } = await import('@maxgraph/core');
+
+      // 创建离屏容器
+      const container = document.createElement('div');
+      container.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:800px;height:600px;';
+      document.body.appendChild(container);
+
+      try {
+        const graph = new Graph(container, undefined, getDefaultPlugins());
+        const serializer = new ModelXmlSerializer(graph.getDataModel());
+
+        // 提取 mxGraphModel
+        let cleanXml = code.trim();
+        const match = cleanXml.match(/<mxGraphModel[\s\S]*?<\/mxGraphModel>/);
+        if (match) cleanXml = match[0];
+
+        serializer.import(cleanXml);
+
+        // 提取 SVG
+        const svgEl = container.querySelector('svg');
+        if (!svgEl) return null;
+
+        const cloned = svgEl.cloneNode(true) as SVGSVGElement;
+        cloned.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        return new XMLSerializer().serializeToString(cloned);
+      } finally {
+        document.body.removeChild(container);
+      }
+    } catch {
+      return null;
+    }
+  }
+
   generateImagePrompt(chartType: string): string {
     return buildImagePrompt(chartType, 'Draw.io', CHART_TYPES as Record<string, string>, '只输出 Draw.io XML 代码，不要包含代码块标记。XML 必须包含完整的 mxfile/mxGraphModel 结构。');
   }

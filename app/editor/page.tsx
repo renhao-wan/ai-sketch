@@ -96,7 +96,6 @@ function EditorContent() {
   const [isElectron, setIsElectron] = useState(false);
   const [versionDrawerOpen, setVersionDrawerOpen] = useState(false);
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
-  const [versionThumbnails, setVersionThumbnails] = useState<Map<string, string>>(new Map());
 
   // Refs
   const pendingInitRef = useRef<import('@/lib/utils/init-data').InitData | null>(null);
@@ -153,23 +152,10 @@ function EditorContent() {
         id: msg.id,
         versionNumber: index + 1,
         createdAt: msg.createdAt,
+        code: msg.content,
       })),
     [conversation.messages]
   );
-
-  // 从 localStorage 恢复历史缩略图
-  useEffect(() => {
-    const assistantMessages = conversation.messages.filter(msg => msg.role === 'assistant');
-    const restored = new Map<string, string>();
-    for (const msg of assistantMessages) {
-      const cached = localStorage.getItem(`version_thumb_${msg.id}`);
-      if (cached) restored.set(msg.id, cached);
-    }
-    if (restored.size > 0) {
-      setVersionThumbnails(prev => new Map([...prev, ...restored]));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversation.messages]);
 
   // 代码生成 Hook
   const generation = useGeneration({
@@ -187,20 +173,6 @@ function EditorContent() {
       setIsConfigManagerOpen(true);
     },
     onChartTypeUpdate: setCurrentChartType,
-    onGenerationComplete: (messageId: string) => {
-      requestAnimationFrame(() => {
-        const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
-        if (canvas) {
-          const thumbnail = canvas.toDataURL('image/png', 0.5);
-          setVersionThumbnails(prev => new Map(prev).set(messageId, thumbnail));
-          try {
-            localStorage.setItem(`version_thumb_${messageId}`, thumbnail);
-          } catch {
-            // localStorage 满了，忽略
-          }
-        }
-      });
-    },
   });
 
   // AI 操作 Hook
@@ -487,7 +459,7 @@ function EditorContent() {
         versions={versions}
         currentVersionId={currentVersionId}
         onSelectVersion={handleSelectVersion}
-        thumbnails={versionThumbnails}
+        format={format}
       />
     </>
   );
