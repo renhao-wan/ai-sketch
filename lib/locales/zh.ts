@@ -159,6 +159,7 @@ export const zh = {
   'config.detectOllama': '检测本地模型',
   'config.ollamaBatchCreated': '已创建 {count} 个 Ollama 配置',
   'config.ollamaDefaultDesc': '本地 Ollama 模型',
+  'config.backToList': '返回',
 
   // History
   'history.title': '历史记录',
