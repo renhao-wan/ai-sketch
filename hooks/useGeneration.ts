@@ -22,6 +22,7 @@ interface UseGenerationOptions {
   onMessagesUpdate: (updater: (prev: ConversationMessage[]) => ConversationMessage[]) => void;
   onConfigReminder: () => void;
   onChartTypeUpdate?: (chartType: string) => void;
+  onGenerationComplete?: (messageId: string, code: string) => void;
 }
 
 /**
@@ -236,6 +237,9 @@ export function useGeneration(options: UseGenerationOptions) {
           ? { ...m, content: optimizedCode, conversationId: activeConvId || m.conversationId }
           : m
       ));
+
+      // 通知生成完成（用于缩略图截取等）
+      options.onGenerationComplete?.(optimisticAssistantMsg.id, optimizedCode);
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       console.error('[Generation] Error:', error);
