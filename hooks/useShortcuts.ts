@@ -168,7 +168,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     keys: ['Alt', 'V'],
     description: '版本历史',
     descriptionKey: 'shortcuts.openVersionHistory',
-    scope: 'editor',
+    scope: 'global',
   },
   // 窗口控制
   {
