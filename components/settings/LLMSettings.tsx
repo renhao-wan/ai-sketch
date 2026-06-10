@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import * as api from '@/lib/api/client';
 import { useNotification } from '@/lib/contexts/NotificationContext';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
 import ScrollToTop from '@/components/ui/ScrollToTop';
-import { Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2, Tag } from 'lucide-react';
+import { Plus, Download, Upload, TestTube, TestTube2, Edit3, Copy, Trash2, Check, Search, X, Loader2, Tag, Eye, ChevronDown, CheckCircle, XCircle, Save } from 'lucide-react';
 import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
@@ -55,6 +55,90 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [showTagSelector, setShowTagSelector] = useState<string | null>(null); // configId
   const tagTriggerRef = useRef<HTMLButtonElement>(null);
+
+  // ── Vision 配置 ──
+  const [visionExpanded, setVisionExpanded] = useState(false);
+  const [visionConfig, setVisionConfig] = useState<{
+    apiType: 'openai' | 'anthropic';
+    baseUrl: string;
+    apiKey: string;
+    model: string;
+  }>({ apiType: 'openai', baseUrl: '', apiKey: '', model: '' });
+  const [visionSaving, setVisionSaving] = useState(false);
+  const [visionTesting, setVisionTesting] = useState(false);
+  const [visionTestResult, setVisionTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [visionIsConfigured, setVisionIsConfigured] = useState(false);
+  const [visionCurrentModel, setVisionCurrentModel] = useState('');
+
+  const loadVisionConfig = useCallback(async () => {
+    try {
+      const response = await fetch('/api/vision/config');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.config) {
+          setVisionConfig({
+            apiType: data.config.apiType,
+            baseUrl: data.config.baseUrl,
+            apiKey: data.config.apiKey,
+            model: data.config.model,
+          });
+          setVisionIsConfigured(true);
+          setVisionCurrentModel(data.config.model);
+        } else {
+          setVisionIsConfigured(false);
+          setVisionCurrentModel('');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load vision config:', error);
+    }
+  }, []);
+
+  const handleVisionSave = async () => {
+    setVisionSaving(true);
+    try {
+      const response = await fetch('/api/vision/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(visionConfig),
+      });
+      if (response.ok) {
+        setVisionIsConfigured(true);
+        setVisionCurrentModel(visionConfig.model);
+        setVisionTestResult(null);
+      }
+    } catch (error) {
+      console.error('Failed to save vision config:', error);
+    } finally {
+      setVisionSaving(false);
+    }
+  };
+
+  const handleVisionDelete = async () => {
+    try {
+      await fetch('/api/vision/config', { method: 'DELETE' });
+      setVisionConfig({ apiType: 'openai', baseUrl: '', apiKey: '', model: '' });
+      setVisionIsConfigured(false);
+      setVisionCurrentModel('');
+      setVisionTestResult(null);
+    } catch (error) {
+      console.error('Failed to delete vision config:', error);
+    }
+  };
+
+  const handleVisionTest = async () => {
+    setVisionTesting(true);
+    setVisionTestResult(null);
+    try {
+      const response = await fetch('/api/vision/test', { method: 'POST' });
+      const data = await response.json();
+      setVisionTestResult(data);
+    } catch (error) {
+      setVisionTestResult({ success: false, message: (error as Error).message });
+    } finally {
+      setVisionTesting(false);
+    }
+  };
 
   const { showBanner, handleDismissBanner } = useCountBanner({
     count: configs.length,
@@ -141,6 +225,13 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
     const ids = configs.map(c => c.id!).filter(Boolean);
     api.fetchConfigTagsBatch(ids).then(setConfigTagsMap).catch(() => {});
   }, [configs]);
+
+  useEffect(() => {
+    if (isVisible) {
+      loadVisionConfig();
+      setVisionTestResult(null);
+    }
+  }, [isVisible, loadVisionConfig]);
 
   /** 新建配置 */
   const handleCreateNew = () => {
@@ -539,6 +630,131 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
           }))}
         </div>
       </ScrollToTop>
+
+      {/* ── 视觉模型配置（折叠） ── */}
+      <div className="mt-6 rounded-xl border border-[var(--border)] overflow-hidden">
+        <button
+          onClick={() => setVisionExpanded(!visionExpanded)}
+          className="w-full flex items-center justify-between px-5 py-4 bg-[var(--surface-warm)] hover:bg-[var(--surface-warm-hover)] transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[var(--accent-indigo)]/10 flex items-center justify-center">
+              <Eye size={16} className="text-[var(--accent-indigo)]" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-medium text-[var(--fg)]">{t('settings.vision')}</p>
+              <p className="text-xs text-[var(--muted)]">
+                {visionIsConfigured
+                  ? `${t('vision.currentModel')}: ${visionCurrentModel}`
+                  : t('vision.noConfig')
+                }
+              </p>
+            </div>
+          </div>
+          <ChevronDown
+            size={18}
+            className={`text-[var(--muted)] transition-transform duration-200 ${visionExpanded ? 'rotate-180' : ''}`}
+          />
+        </button>
+
+        {visionExpanded && (
+          <div className="px-5 py-5 border-t border-[var(--border)] space-y-4">
+            {/* 配置表单 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">
+                  {t('vision.apiType')}
+                </label>
+                <select
+                  value={visionConfig.apiType}
+                  onChange={(e) => setVisionConfig(prev => ({ ...prev, apiType: e.target.value as 'openai' | 'anthropic' }))}
+                  className="w-full px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)] text-sm"
+                >
+                  <option value="openai">{t('vision.apiTypeOpenai')}</option>
+                  <option value="anthropic">{t('vision.apiTypeAnthropic')}</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">
+                  {t('vision.model')}
+                </label>
+                <input
+                  type="text"
+                  value={visionConfig.model}
+                  onChange={(e) => setVisionConfig(prev => ({ ...prev, model: e.target.value }))}
+                  placeholder={t('vision.modelPlaceholder')}
+                  className="w-full px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)] text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">
+                {t('vision.baseUrl')}
+              </label>
+              <input
+                type="text"
+                value={visionConfig.baseUrl}
+                onChange={(e) => setVisionConfig(prev => ({ ...prev, baseUrl: e.target.value }))}
+                placeholder={t('vision.baseUrlPlaceholder')}
+                className="w-full px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)] text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">
+                {t('vision.apiKey')}
+              </label>
+              <input
+                type="password"
+                value={visionConfig.apiKey}
+                onChange={(e) => setVisionConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+                placeholder={t('vision.apiKeyPlaceholder')}
+                className="w-full px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)] text-sm"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleVisionSave}
+                disabled={visionSaving || !visionConfig.baseUrl || !visionConfig.apiKey || !visionConfig.model}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-indigo)] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {visionSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                {t('vision.save')}
+              </button>
+              <button
+                onClick={handleVisionTest}
+                disabled={visionTesting || !visionIsConfigured}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border)] text-[var(--fg)] text-sm font-medium hover:bg-[var(--surface-warm-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {visionTesting ? <Loader2 size={16} className="animate-spin" /> : <TestTube2 size={16} />}
+                {t('vision.test')}
+              </button>
+              {visionIsConfigured && (
+                <button
+                  onClick={handleVisionDelete}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-300 text-red-500 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-950/20 transition-all"
+                >
+                  <Trash2 size={16} />
+                  {t('common.delete')}
+                </button>
+              )}
+            </div>
+
+            {visionTestResult && (
+              <div className={`flex items-center gap-2 p-3 rounded-xl text-sm ${
+                visionTestResult.success
+                  ? 'bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400'
+                  : 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400'
+              }`}>
+                {visionTestResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                {visionTestResult.message}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* 标签选择器（portal 渲染） */}
       {showTagSelector && (() => {
