@@ -7,6 +7,7 @@ import { buildCacheKey, buildContextHash } from '@/lib/cache/cache-key';
 import { getStrategy } from '@/lib/strategies/registry';
 import type { LLMConfig, LLMMessage, ImageData } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
+import { processImages } from '@/lib/llm/vision-proxy';
 
 /** LLM 生成失败时是否值得重试（排除用户主动取消） */
 function isRetryableError(error: unknown): boolean {
@@ -145,17 +146,42 @@ export async function POST(request: Request) {
       });
     }
 
+    // ── 图片处理管线：三层降级 ──
+    let processedImages: ImageData[] | null = null;
+    let imageDescription: string | null = null;
+
+    if (allImages.length > 0) {
+      perfMark('Image Processing');
+      const imageResult = await processImages(config, allImages, userContent);
+      if (imageResult.mode === 'vision') {
+        processedImages = imageResult.images;
+      } else {
+        imageDescription = imageResult.description;
+      }
+      perfEnd('Image Processing');
+    }
+
     // ── Build LLM messages with context ──
     perfMark('Build Context');
     const contextMessages = await conversationManager.buildContextMessages(activeConversationId);
 
     // Build the new user message for LLM
     let newUserMessage: LLMMessage;
-    if (allImages.length > 0) {
+    if (processedImages) {
+      // Vision 模式：直接带图片
       newUserMessage = {
         role: 'user',
         content: strategy.getUserPrompt(userContent, chartType),
-        images: allImages,
+        images: processedImages,
+      };
+    } else if (imageDescription) {
+      // 降级模式：图片描述 + 用户 prompt
+      newUserMessage = {
+        role: 'user',
+        content: strategy.getUserPrompt(
+          `[图片内容]\n${imageDescription}\n\n${userContent}`,
+          chartType,
+        ),
       };
     } else {
       newUserMessage = {
@@ -184,7 +210,8 @@ export async function POST(request: Request) {
     console.log(`[Generate] Messages count: ${fullMessages.length}, System prompt length: ${systemPrompt.length}`);
 
     // ── 检查缓存（仅对非图片输入、非重新生成的请求生效）──
-    const shouldCache = allImages.length === 0 && !regenerate;
+    // Vision 模式不缓存（带图片），降级模式可缓存（纯文本）
+    const shouldCache = !processedImages && !regenerate;
     let cacheKeyValue: string | null = null;
 
     if (shouldCache) {
