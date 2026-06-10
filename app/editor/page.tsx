@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useReducer, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, useReducer, useMemo, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { AppIcon } from '@/components/layout/TopBar';
@@ -17,6 +17,7 @@ import * as api from '@/lib/api/client';
 import { isConfigValid } from '@/lib/api/config-validator';
 import { getStrategy } from '@/lib/strategies/registry';
 import { consumeInitData } from '@/lib/utils/init-data';
+import { Clock } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
 import { useShortcuts } from '@/hooks/useShortcuts';
 import { useConversation } from '@/hooks/useConversation';
@@ -28,6 +29,7 @@ import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 // 动态导入重型组件（按需加载）
 const ConfigSelector = dynamic(() => import('@/components/dialogs/ConfigSelector'), { ssr: false });
 const BottomContextPanel = dynamic(() => import('@/components/layout/BottomContextPanel'), { ssr: false });
+const VersionHistoryDrawer = dynamic(() => import('@/components/version-history/VersionHistoryDrawer'), { ssr: false });
 
 // --- Reducer 类型定义 ---
 
@@ -92,6 +94,9 @@ function EditorContent() {
   const [bottomPanelTab, setBottomPanelTab] = useState('code');
   const [panelWidth, setPanelWidth] = useState(360);
   const [isElectron, setIsElectron] = useState(false);
+  const [versionDrawerOpen, setVersionDrawerOpen] = useState(false);
+  const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
+  const [versionThumbnails, setVersionThumbnails] = useState<Map<string, string>>(new Map());
 
   // Refs
   const pendingInitRef = useRef<import('@/lib/utils/init-data').InitData | null>(null);
@@ -140,6 +145,32 @@ function EditorContent() {
     onError: (msg) => generation.setApiError(msg),
   });
 
+  // 版本列表：从 messages 中提取 assistant 消息
+  const versions = useMemo(() =>
+    conversation.messages
+      .filter(msg => msg.role === 'assistant')
+      .map((msg, index) => ({
+        id: msg.id,
+        versionNumber: index + 1,
+        createdAt: msg.createdAt,
+      })),
+    [conversation.messages]
+  );
+
+  // 从 localStorage 恢复历史缩略图
+  useEffect(() => {
+    const assistantMessages = conversation.messages.filter(msg => msg.role === 'assistant');
+    const restored = new Map<string, string>();
+    for (const msg of assistantMessages) {
+      const cached = localStorage.getItem(`version_thumb_${msg.id}`);
+      if (cached) restored.set(msg.id, cached);
+    }
+    if (restored.size > 0) {
+      setVersionThumbnails(prev => new Map([...prev, ...restored]));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.messages]);
+
   // 代码生成 Hook
   const generation = useGeneration({
     config,
@@ -156,6 +187,20 @@ function EditorContent() {
       setIsConfigManagerOpen(true);
     },
     onChartTypeUpdate: setCurrentChartType,
+    onGenerationComplete: (messageId: string) => {
+      requestAnimationFrame(() => {
+        const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
+        if (canvas) {
+          const thumbnail = canvas.toDataURL('image/png', 0.5);
+          setVersionThumbnails(prev => new Map(prev).set(messageId, thumbnail));
+          try {
+            localStorage.setItem(`version_thumb_${messageId}`, thumbnail);
+          } catch {
+            // localStorage 满了，忽略
+          }
+        }
+      });
+    },
   });
 
   // AI 操作 Hook
@@ -260,6 +305,7 @@ function EditorContent() {
     onNewConversation: conversation.newConversation,
     onOpenSettings: (tab) => router.push(tab ? `/settings?tab=${tab}` : '/settings'),
     onSwitchFormat: (f) => { setFormat(f); dispatchGenResult({ type: 'CLEAR' }); },
+    onOpenVersionHistory: () => setVersionDrawerOpen(prev => !prev),
   });
 
   const detectCodeFormat = (code: string): DiagramFormat => {
@@ -288,6 +334,17 @@ function EditorContent() {
       dispatchGenResult({ type: 'SET_JSON_ERROR', payload: result.error });
     }
   }, [format]);
+
+  const handleSelectVersion = useCallback((versionId: string) => {
+    const msg = conversation.messages.find(m => m.id === versionId);
+    if (!msg) return;
+    handleShowDiagram(msg.content);
+    setCurrentVersionId(versionId);
+  }, [conversation.messages, handleShowDiagram]);
+
+  const handleCloseVersionDrawer = useCallback(() => {
+    setVersionDrawerOpen(false);
+  }, []);
 
   const handleApplyCode = async () => {
     setIsApplyingCode(true);
@@ -383,6 +440,15 @@ function EditorContent() {
             disabled={generation.isGenerating || !generatedCode}
           />
 
+          {/* Version History Trigger */}
+          <button
+            onClick={() => setVersionDrawerOpen(prev => !prev)}
+            className="absolute top-4 right-4 z-10 p-2 rounded-xl bg-[var(--surface-elevated)]/80 backdrop-blur-sm border border-[var(--border)] hover:bg-[var(--surface-elevated)] text-[var(--muted)] hover:text-[var(--text)] transition-all shadow-lg"
+            title={t('versionHistory.title')}
+          >
+            <Clock size={18} />
+          </button>
+
           {/* Canvas */}
           <div className="flex-1 relative">
             <DiagramCanvas format={format} data={renderData} isStreaming={generation.isStreaming} streamRendererRef={streamRendererRef} exportRef={canvasExportRef} />
@@ -414,6 +480,15 @@ function EditorContent() {
 
       {/* Modals */}
       <ConfigSelector isOpen={isConfigManagerOpen} onClose={() => setIsConfigManagerOpen(false)} onConfigSelect={handleConfigSelect} />
+
+      <VersionHistoryDrawer
+        open={versionDrawerOpen}
+        onClose={handleCloseVersionDrawer}
+        versions={versions}
+        currentVersionId={currentVersionId}
+        onSelectVersion={handleSelectVersion}
+        thumbnails={versionThumbnails}
+      />
     </>
   );
 }

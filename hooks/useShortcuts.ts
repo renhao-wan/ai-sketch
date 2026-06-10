@@ -163,6 +163,13 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     descriptionKey: 'shortcuts.switchDrawio',
     scope: 'editor',
   },
+  {
+    id: 'open-version-history',
+    keys: ['Alt', 'V'],
+    description: '版本历史',
+    descriptionKey: 'shortcuts.openVersionHistory',
+    scope: 'editor',
+  },
   // 窗口控制
   {
     id: 'window-minimize',
@@ -216,6 +223,7 @@ interface ShortcutActions {
   onOpenHistory?: () => void;
   onOpenSettings?: (tab?: string) => void;
   onSwitchFormat?: (format: 'excalidraw' | 'mermaid' | 'drawio') => void;
+  onOpenVersionHistory?: () => void;
 }
 
 export function useShortcuts(actions?: ShortcutActions) {
@@ -308,6 +316,12 @@ export function useShortcuts(actions?: ShortcutActions) {
         if (matchKeys(event, ['Alt', '3'])) {
           event.preventDefault();
           actions.onSwitchFormat?.('drawio');
+          return;
+        }
+        // 版本历史
+        if (matchKeys(event, ['Alt', 'V'])) {
+          event.preventDefault();
+          actions.onOpenVersionHistory?.();
           return;
         }
       }
