@@ -31,6 +31,9 @@ extraResources:
   - from: "data"
     to: "data"
     filter: ["**/*"]
+  - from: "assets/tesseract"
+    to: "tesseract"
+    filter: ["**/*.traineddata"]
 
 # Windows 配置
 win:
