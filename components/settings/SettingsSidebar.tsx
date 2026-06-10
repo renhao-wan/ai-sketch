@@ -1,10 +1,10 @@
 'use client';
 
-import { Palette, Wand2, Globe, MessageSquare, Database, Keyboard, Info, Tags, HardDrive, LucideIcon } from 'lucide-react';
+import { Palette, Wand2, Globe, MessageSquare, Keyboard, Info, Tags, HardDrive, LucideIcon } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
 import type { TranslationKey } from '@/lib/locales';
 
-export type SettingsTab = 'appearance' | 'llm' | 'tags' | 'network' | 'conversations' | 'data' | 'cache' | 'shortcuts' | 'about';
+export type SettingsTab = 'appearance' | 'llm' | 'tags' | 'network' | 'conversations' | 'storage' | 'shortcuts' | 'about';
 
 interface SettingsSidebarProps {
   activeTab: SettingsTab;
@@ -16,8 +16,7 @@ const tabs: { key: SettingsTab; icon: LucideIcon; labelKey: TranslationKey }[] =
   { key: 'llm', icon: Wand2, labelKey: 'settings.llm' },
   { key: 'conversations', icon: MessageSquare, labelKey: 'settings.conversations' },
   { key: 'tags', icon: Tags, labelKey: 'tags.title' },
-  { key: 'data', icon: Database, labelKey: 'settings.data' },
-  { key: 'cache', icon: HardDrive, labelKey: 'settings.cache' },
+  { key: 'storage', icon: HardDrive, labelKey: 'settings.storage' },
   { key: 'shortcuts', icon: Keyboard, labelKey: 'settings.shortcuts' },
   { key: 'network', icon: Globe, labelKey: 'settings.network' },
   { key: 'about', icon: Info, labelKey: 'settings.about' },

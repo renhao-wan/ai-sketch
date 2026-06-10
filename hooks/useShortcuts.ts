@@ -64,17 +64,10 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     scope: 'global',
   },
   {
-    id: 'open-data',
+    id: 'open-storage',
     keys: ['Alt', 'D'],
-    description: '数据管理',
-    descriptionKey: 'shortcuts.openData',
-    scope: 'global',
-  },
-  {
-    id: 'open-cache',
-    keys: ['Alt', 'G'],
-    description: '缓存管理',
-    descriptionKey: 'shortcuts.openCache',
+    description: '存储管理',
+    descriptionKey: 'shortcuts.openStorage',
     scope: 'global',
   },
   {
@@ -288,12 +281,7 @@ export function useShortcuts(actions?: ShortcutActions) {
         }
         if (matchKeys(event, ['Alt', 'D'])) {
           event.preventDefault();
-          actions.onOpenSettings?.('data');
-          return;
-        }
-        if (matchKeys(event, ['Alt', 'G'])) {
-          event.preventDefault();
-          actions.onOpenSettings?.('cache');
+          actions.onOpenSettings?.('storage');
           return;
         }
         if (matchKeys(event, ['Alt', 'B'])) {
