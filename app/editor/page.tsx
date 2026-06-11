@@ -430,7 +430,7 @@ function EditorContent() {
           {/* 分割线折叠按钮 */}
           <div className="relative flex-shrink-0 w-3 flex items-center justify-center group cursor-pointer" onClick={() => setIsPanelCollapsed(prev => !prev)}>
             <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-[var(--border)]" />
-            <Tooltip content={isPanelCollapsed ? '展开' : '收起'} side={isPanelCollapsed ? 'right' : 'bottom'}>
+            <Tooltip key={String(isPanelCollapsed)} content={isPanelCollapsed ? '展开' : '收起'} side={isPanelCollapsed ? 'right' : 'bottom'}>
               <div className="relative z-30 w-5 h-10 flex items-center justify-center rounded-md bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] opacity-0 group-hover:opacity-100 transition-all duration-200">
                 {isPanelCollapsed ? (
                   <ChevronRight size={12} />
