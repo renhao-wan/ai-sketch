@@ -580,6 +580,21 @@ export const zh = {
   'vision.statusConfigured': '已配置',
   'vision.statusNotConfigured': '未配置',
   'vision.currentModel': '当前视觉模型',
+
+  // 生成模式
+  'generation.mode.fast': '快速',
+  'generation.mode.auto': '自动',
+  'generation.mode.quality': '高质量',
+  'generation.mode.fastDesc': '单步生成，速度快',
+  'generation.mode.autoDesc': '根据复杂度自动选择',
+  'generation.mode.qualityDesc': '多轮生成 + 自检，质量最高',
+  'generation.progress.step': '步骤 {current}/{total}',
+  'generation.progress.planning': '规划中...',
+  'generation.progress.generating': '生成中...',
+  'generation.progress.checking': '检查中...',
+  'generation.progress.fixing': '修复中...',
+  'generation.critique.passed': '校验通过',
+  'generation.critique.failed': '发现问题，正在修复...',
 } as const;
 
 export type TranslationKey = keyof typeof zh;

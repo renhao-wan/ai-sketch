@@ -582,4 +582,19 @@ export const en: TranslationDict = {
   'vision.statusConfigured': 'Configured',
   'vision.statusNotConfigured': 'Not configured',
   'vision.currentModel': 'Current vision model',
+
+  // Generation modes
+  'generation.mode.fast': 'Fast',
+  'generation.mode.auto': 'Auto',
+  'generation.mode.quality': 'Quality',
+  'generation.mode.fastDesc': 'Single-step generation, fast',
+  'generation.mode.autoDesc': 'Auto-select based on complexity',
+  'generation.mode.qualityDesc': 'Multi-pass + self-check, highest quality',
+  'generation.progress.step': 'Step {current}/{total}',
+  'generation.progress.planning': 'Planning...',
+  'generation.progress.generating': 'Generating...',
+  'generation.progress.checking': 'Checking...',
+  'generation.progress.fixing': 'Fixing...',
+  'generation.critique.passed': 'Validation passed',
+  'generation.critique.failed': 'Issues found, fixing...',
 };
