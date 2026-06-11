@@ -303,14 +303,12 @@ export default function AICopilotPanel({
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-[var(--bg-glass)] backdrop-blur-2xl relative z-10" style={{ width: panelWidth, minWidth: panelWidth }}>
-      {/* Resize Handle */}
+      {/* Resize Handle — 纯拖拽区域，不显示竖线（由分割线元素提供） */}
       {onPanelWidthChange && (
         <div
           onMouseDown={handleResizeStart}
-          className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize z-20 group"
-        >
-          <div className="w-0.5 h-full mx-auto bg-[var(--accent-violet)]/10 group-hover:bg-[var(--accent-violet)]/40 transition-colors duration-200" />
-        </div>
+          className="absolute top-0 right-0 w-2 h-full cursor-col-resize z-20"
+        />
       )}
 
       {/* Error Banner */}
