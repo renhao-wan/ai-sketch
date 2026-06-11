@@ -1,6 +1,7 @@
 appId: ai-sketch
 productName: AI Sketch
 copyright: Copyright © 2024 AI Sketch
+artifactName: "AI-Sketch-${version}-${arch}.${ext}"
 
 publish:
   provider: github
@@ -60,7 +61,7 @@ nsis:
 mac:
   target:
     - target: dmg
-      arch: [x64, arm64]
+      arch: [arm64]
   icon: electron/resources/icon.icns
   category: public.app-category.developer-tools
   hardenedRuntime: true

@@ -247,8 +247,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}.AppImage
-          asset_name: AI-Sketch-${{ steps.version.outputs.version }}.AppImage
+          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}-x86_64.AppImage
+          asset_name: AI-Sketch-${{ steps.version.outputs.version }}-x86_64.AppImage
           asset_content_type: application/octet-stream
 
       - name: Upload Linux blockmap to Release
@@ -257,8 +257,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}.AppImage.blockmap
-          asset_name: AI-Sketch-${{ steps.version.outputs.version }}.AppImage.blockmap
+          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}-x86_64.AppImage.blockmap
+          asset_name: AI-Sketch-${{ steps.version.outputs.version }}-x86_64.AppImage.blockmap
           asset_content_type: application/octet-stream
 
       - name: Upload Linux latest-linux.yml to Release
