@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { X, Clock } from 'lucide-react';
+import { X, GitBranch } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
 import { getStrategy } from '@/lib/strategies/registry';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
@@ -167,7 +167,7 @@ export default function VersionHistoryDrawer({
     <>
       {/* 遮罩层 */}
       <div
-        className={`fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-200 ${
+        className={`fixed top-14 inset-x-0 bottom-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-200 ${
           open ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       />
@@ -175,14 +175,14 @@ export default function VersionHistoryDrawer({
       {/* 抽屉面板 */}
       <div
         ref={drawerRef}
-        className={`fixed top-0 right-0 h-full w-[360px] bg-[var(--bg)] border-l border-[var(--border)] shadow-2xl z-50 overflow-y-auto
+        className={`fixed top-14 right-0 bottom-0 w-[360px] bg-[var(--bg)] border-l border-[var(--border)] shadow-2xl z-50 overflow-y-auto
           transform transition-transform duration-200 ease-out
           ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* 头部 */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-4 h-14 border-b border-[var(--border)] bg-[var(--bg)]">
           <div className="flex items-center gap-2">
-            <Clock size={18} className="text-[var(--accent-indigo)]" />
+            <GitBranch size={18} className="text-[var(--accent-indigo)]" />
             <h2 className="text-sm font-semibold text-[var(--text)]">{t('versionHistory.title')}</h2>
           </div>
           <button
@@ -197,7 +197,7 @@ export default function VersionHistoryDrawer({
         <div className="p-4 space-y-3">
           {versions.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-center">
-              <Clock size={48} className="text-[var(--muted)] opacity-30 mb-4" />
+              <GitBranch size={48} className="text-[var(--muted)] opacity-30 mb-4" />
               <p className="text-sm font-medium text-[var(--muted)]">{t('versionHistory.empty')}</p>
               <p className="text-xs text-[var(--muted)] mt-1">{t('versionHistory.emptyDesc')}</p>
             </div>
