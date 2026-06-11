@@ -61,7 +61,7 @@ export default function VersionHistoryDrawer({
       if (currentVersionId) {
         const el = cardRefs.current.get(currentVersionId);
         if (el) {
-          el.scrollIntoView({ behavior: 'instant', block: 'center' });
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
           return;
         }
       }
