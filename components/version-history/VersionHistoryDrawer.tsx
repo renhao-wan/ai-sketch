@@ -66,7 +66,7 @@ export default function VersionHistoryDrawer({
         }
       }
       // 没有当前版本时保持顶部不动
-    }, 500);
+    }, 250);
     return () => clearTimeout(timeout);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
