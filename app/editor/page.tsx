@@ -167,6 +167,11 @@ function EditorContent() {
     [conversation.messages]
   );
 
+  // 版本列表变化时清空当前版本选择
+  useEffect(() => {
+    setCurrentVersionId(null);
+  }, [versions]);
+
   // 代码生成 Hook
   const generation = useGeneration({
     config,
