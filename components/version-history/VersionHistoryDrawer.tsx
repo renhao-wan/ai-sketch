@@ -175,7 +175,7 @@ export default function VersionHistoryDrawer({
       {/* 抽屉面板 */}
       <div
         ref={drawerRef}
-        className={`fixed top-14 right-0 bottom-0 w-[360px] bg-[var(--bg)] border-l border-[var(--border)] shadow-2xl z-50 overflow-y-auto
+        className={`fixed top-14 right-0 bottom-0 w-[360px] bg-[var(--bg)] border-l border-[var(--border)] shadow-2xl z-50 overflow-y-auto scrollbar-thin
           transform transition-transform duration-200 ease-out
           ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >
