@@ -1,7 +1,6 @@
 appId: ai-sketch
 productName: AI Sketch
 copyright: Copyright © 2024 AI Sketch
-artifactName: "${productName}-Setup-${version}.${ext}"
 
 publish:
   provider: github
@@ -45,6 +44,7 @@ win:
   requestedExecutionLevel: asInvoker
 
 nsis:
+  artifactName: "${productName}-Setup-${version}.${ext}"
   oneClick: false
   allowToChangeInstallationDirectory: true
   installerIcon: electron/resources/icon.ico
