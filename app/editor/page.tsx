@@ -99,6 +99,7 @@ function EditorContent() {
   const [versionDrawerOpen, setVersionDrawerOpen] = useState(false);
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  const [generationMode, setGenerationMode] = useState<'fast' | 'auto' | 'quality'>('auto');
 
   // Refs
   const pendingInitRef = useRef<import('@/lib/utils/init-data').InitData | null>(null);
@@ -191,6 +192,13 @@ function EditorContent() {
       setIsConfigManagerOpen(true);
     },
     onChartTypeUpdate: setCurrentChartType,
+    generationMode,
+    onProgress: (step, totalSteps, message) => {
+      console.log(`[Progress] ${step}/${totalSteps}: ${message}`);
+    },
+    onCritique: (passed, issues) => {
+      console.log(`[Critique] passed=${passed}, issues:`, issues);
+    },
   });
 
   // AI 操作 Hook
@@ -292,7 +300,10 @@ function EditorContent() {
   // 注册快捷键
   useShortcuts({
     onGoHome: () => router.push('/'),
-    onNewConversation: conversation.newConversation,
+    onNewConversation: () => {
+      conversation.newConversation();
+      setGenerationMode('auto');
+    },
     onOpenSettings: (tab) => router.push(tab ? `/settings?tab=${tab}` : '/settings'),
     onSwitchFormat: (f) => { setFormat(f); dispatchGenResult({ type: 'CLEAR' }); },
     onOpenVersionHistory: () => setVersionDrawerOpen(prev => !prev),
@@ -425,6 +436,8 @@ function EditorContent() {
             onPanelWidthChange={handlePanelWidthChange}
             collapsed={isPanelCollapsed}
             onCollapsedChange={setIsPanelCollapsed}
+            generationMode={generationMode}
+            onGenerationModeChange={setGenerationMode}
           />
 
           {/* 分割线折叠按钮 */}
