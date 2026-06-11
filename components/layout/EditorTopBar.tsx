@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  Clock,
+  GitBranch,
   Wand2,
   Tag,
 } from 'lucide-react';
@@ -188,7 +188,7 @@ export default function EditorTopBar({
             onClick={onVersionHistory}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
           >
-            <Clock size={16} />
+            <GitBranch size={16} />
           </button>
         </Tooltip>
 
