@@ -295,16 +295,7 @@ export default function AICopilotPanel({
 
   if (isCollapsed) {
     return (
-      <div className="h-full flex flex-col items-center py-4 bg-[var(--bg-glass)] backdrop-blur-2xl">
-        <Tooltip content={t('copilot.expandPanel')} side="right">
-          <button
-            onClick={() => setIsCollapsed(false)}
-            className="w-9 h-9 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-          >
-            <ChevronRight size={18} />
-          </button>
-        </Tooltip>
-      </div>
+      <div className="h-full bg-[var(--bg-glass)] backdrop-blur-2xl" style={{ width: 0, minWidth: 0 }} />
     );
   }
 
