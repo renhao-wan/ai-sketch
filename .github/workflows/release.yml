@@ -9,8 +9,29 @@ permissions:
   contents: write
 
 jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create_release.outputs.id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
   build-windows:
     name: Build Windows
+    needs: create-release
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -47,6 +68,7 @@ jobs:
 
   build-macos:
     name: Build macOS
+    needs: create-release
     runs-on: macos-14
     steps:
       - name: Checkout
@@ -83,6 +105,7 @@ jobs:
 
   build-linux:
     name: Build Linux
+    needs: create-release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
