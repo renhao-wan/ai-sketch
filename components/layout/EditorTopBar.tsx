@@ -99,7 +99,7 @@ export default function EditorTopBar({
 
   return (
     <div
-      className="flex items-center justify-between px-6 h-14 bg-[var(--bg-glass)] backdrop-blur-2xl border-b border-[var(--border)] flex-shrink-0 relative z-20"
+      className="flex items-center justify-between px-6 h-14 bg-[var(--bg-glass)] backdrop-blur-xl border-b border-[var(--border)] flex-shrink-0 relative z-20"
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       {/* 左侧：Logo + 会话列表 */}
