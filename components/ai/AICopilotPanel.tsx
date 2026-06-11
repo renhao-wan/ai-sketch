@@ -92,10 +92,12 @@ export default function AICopilotPanel({
   const [isCollapsedLocal, setIsCollapsedLocal] = useState(false);
   const isCollapsed = collapsedProp ?? isCollapsedLocal;
   const setIsCollapsed = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
-    const next = typeof value === 'function' ? value(isCollapsed) : value;
-    setIsCollapsedLocal(next);
-    onCollapsedChange?.(next);
-  }, [isCollapsed, onCollapsedChange]);
+    setIsCollapsedLocal(prev => {
+      const next = typeof value === 'function' ? value(prev) : value;
+      onCollapsedChange?.(next);
+      return next;
+    });
+  }, [onCollapsedChange]);
   const [prompt, setPrompt] = useState(currentInput || '');
   const [chartType, setChartType] = useState(currentChartType || 'auto');
   const textareaRef = useRef<HTMLTextAreaElement>(null);

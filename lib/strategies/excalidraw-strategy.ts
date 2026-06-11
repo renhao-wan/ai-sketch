@@ -10,6 +10,9 @@ import { optimizeExcalidrawCode } from '@/lib/diagram/optimize-arrows';
 import { repairJsonClosure, stripCodeFences, extractFirstJsonArray } from '@/lib/diagram/json-repair';
 import { createExportBlob, buildImagePrompt } from './helpers';
 
+/** 缓存 excalidraw 模块的 import promise，避免重复加载 */
+let excalidrawModulePromise: Promise<typeof import('@excalidraw/excalidraw')> | null = null;
+
 /** Excalidraw 支持的元素类型 */
 const VALID_ELEMENT_TYPES = new Set([
   'rectangle', 'ellipse', 'diamond', 'text', 'arrow', 'line',
@@ -90,7 +93,11 @@ class ExcalidrawStrategy implements DiagramStrategy {
 
   async generatePreview(code: string): Promise<string | null> {
     try {
-      const { exportToSvg, convertToExcalidrawElements } = await import('@excalidraw/excalidraw');
+      // 模块级缓存 import，避免重复加载大型依赖
+      if (!excalidrawModulePromise) {
+        excalidrawModulePromise = import('@excalidraw/excalidraw');
+      }
+      const { exportToSvg, convertToExcalidrawElements } = await excalidrawModulePromise;
       const arrayStr = extractFirstJsonArray(code.trim());
       if (!arrayStr) return null;
       const rawElements = JSON.parse(arrayStr);

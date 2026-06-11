@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import { useLocale } from '@/lib/locales';
 import { Loader2 } from 'lucide-react';
 
@@ -21,11 +23,12 @@ export default function VersionThumbnail({ svg, loading, versionNumber }: Versio
   }
 
   if (svg) {
+    const sanitized = useMemo(() => DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } }), [svg]);
     return (
       <div
         className="version-thumbnail w-full rounded-lg overflow-hidden bg-white border border-[var(--border)] flex items-center justify-center"
         style={{ maxHeight: '200px' }}
-        dangerouslySetInnerHTML={{ __html: svg }}
+        dangerouslySetInnerHTML={{ __html: sanitized }}
       />
     );
   }

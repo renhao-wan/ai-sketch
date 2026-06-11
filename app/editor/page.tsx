@@ -26,6 +26,7 @@ import { useGeneration } from '@/hooks/useGeneration';
 import { useAIActions } from '@/hooks/useAIActions';
 import type { LLMConfig } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
+import { detectCodeFormat } from '@/lib/utils/detect-code-format';
 
 // 动态导入重型组件（按需加载）
 const ConfigSelector = dynamic(() => import('@/components/dialogs/ConfigSelector'), { ssr: false });
@@ -146,15 +147,6 @@ function EditorContent() {
     onError: (msg) => generation.setApiError(msg),
   });
 
-  // 检测代码格式（从代码内容推断）
-  const detectCodeFormat = (code: string): DiagramFormat => {
-    const trimmed = code.trim();
-    if (trimmed.startsWith('<')) return 'drawio';
-    if (trimmed.startsWith('[')) return 'excalidraw';
-    if (trimmed.startsWith('{') && trimmed.includes('"elements"')) return 'excalidraw';
-    return 'mermaid';
-  };
-
   // 版本列表：从 messages 中提取 assistant 消息，推断每个版本的格式
   const versions = useMemo(() =>
     conversation.messages
@@ -169,10 +161,19 @@ function EditorContent() {
     [conversation.messages]
   );
 
+  // 稳定的版本 ID 列表，避免引用变化导致 effect 频繁触发
+  const versionsKey = useMemo(() =>
+    conversation.messages
+      .filter(msg => msg.role === 'assistant')
+      .map(msg => msg.id)
+      .join(','),
+    [conversation.messages]
+  );
+
   // 版本列表变化时清空当前版本选择
   useEffect(() => {
     setCurrentVersionId(null);
-  }, [versions]);
+  }, [versionsKey]);
 
   // 代码生成 Hook
   const generation = useGeneration({

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { X, GitBranch } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
 import { getStrategy } from '@/lib/strategies/registry';
@@ -33,17 +33,22 @@ export default function VersionHistoryDrawer({
   const { t } = useLocale();
   const drawerRef = useRef<HTMLDivElement>(null);
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
+  const previewsRef = useRef<Map<string, string>>(new Map());
   const [loadingSet, setLoadingSet] = useState<Set<string>>(new Set());
   const loadingSetRef = useRef<Set<string>>(new Set());
   const observerRef = useRef<IntersectionObserver | null>(null);
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
+  // 稳定的版本 ID 列表，避免引用变化导致 effect 频繁触发
+  const versionsKey = useMemo(() => versions.map(v => v.id).join(','), [versions]);
+
   // 版本列表变化时清空所有预览缓存
   useEffect(() => {
     setPreviews(new Map());
+    previewsRef.current = new Map();
     setLoadingSet(new Set());
     loadingSetRef.current = new Set();
-  }, [versions]);
+  }, [versionsKey]);
 
   // 点击外部关闭
   useEffect(() => {
@@ -57,10 +62,9 @@ export default function VersionHistoryDrawer({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open, onClose]);
 
-  // 打开时滚动到当前版本，没有当前版本则滚动到底部（最新版本）
+  // 打开时滚动到当前版本
   useEffect(() => {
     if (!open) return;
-    // 等待 DOM 渲染完成
     const timeout = setTimeout(() => {
       const container = drawerRef.current;
       if (!container) return;
@@ -72,7 +76,6 @@ export default function VersionHistoryDrawer({
           return;
         }
       }
-      // 没有当前版本时保持顶部不动
     }, 250);
     return () => clearTimeout(timeout);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -88,9 +91,9 @@ export default function VersionHistoryDrawer({
     return () => document.removeEventListener('keydown', handleEsc);
   }, [open, onClose]);
 
-  // 懒加载单个版本预览
+  // 懒加载单个版本预览 — 用 ref 检查缓存，避免闭包依赖 state
   const loadPreview = useCallback(async (version: VersionItem) => {
-    if (previews.has(version.id) || loadingSetRef.current.has(version.id)) return;
+    if (previewsRef.current.has(version.id) || loadingSetRef.current.has(version.id)) return;
 
     loadingSetRef.current.add(version.id);
     setLoadingSet(prev => new Set(prev).add(version.id));
@@ -99,7 +102,8 @@ export default function VersionHistoryDrawer({
       const strategy = getStrategy(version.format);
       const svg = await strategy.generatePreview?.(version.code);
       if (svg) {
-        setPreviews(prev => new Map(prev).set(version.id, svg));
+        previewsRef.current = new Map(previewsRef.current).set(version.id, svg);
+        setPreviews(previewsRef.current);
       }
     } catch {
       // 忽略
@@ -111,15 +115,13 @@ export default function VersionHistoryDrawer({
         return next;
       });
     }
-  }, [previews]);
+  }, []);
 
   // IntersectionObserver 懒加载
   useEffect(() => {
     if (!open) return;
 
-    // 等待 DOM 渲染
     const timeout = setTimeout(() => {
-      // 抽屉面板自身就是滚动容器
       const scrollContainer = drawerRef.current;
       if (!scrollContainer) return;
 
@@ -137,7 +139,6 @@ export default function VersionHistoryDrawer({
         { root: scrollContainer, threshold: 0.1 }
       );
 
-      // 观察所有卡片
       cardRefs.current.forEach((el) => {
         observerRef.current?.observe(el);
       });
@@ -150,18 +151,17 @@ export default function VersionHistoryDrawer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, versions]);
 
-  // 注册卡片 ref
+  // 注册卡片 ref — 用 ref 检查缓存，避免依赖 previews state
   const setCardRef = useCallback((id: string, el: HTMLDivElement | null) => {
     if (el) {
       cardRefs.current.set(id, el);
-      // 如果 observer 已存在，立即观察
-      if (observerRef.current && !previews.has(id) && !loadingSetRef.current.has(id)) {
+      if (observerRef.current && !previewsRef.current.has(id) && !loadingSetRef.current.has(id)) {
         observerRef.current.observe(el);
       }
     } else {
       cardRefs.current.delete(id);
     }
-  }, [previews]);
+  }, []);
 
   return (
     <>
