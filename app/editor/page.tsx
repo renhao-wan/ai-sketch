@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback, useRef, useReducer, useMemo, Suspense
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { AppIcon } from '@/components/layout/TopBar';
-import WindowControls from '@/components/layout/WindowControls';
 import AICopilotPanel from '@/components/ai/AICopilotPanel';
+import EditorTopBar from '@/components/layout/EditorTopBar';
 import FloatingAIActions from '@/components/ai/FloatingAIActions';
 import CodeEditor from '@/components/editor/CodeEditor';
 import { useNotification } from '@/lib/contexts/NotificationContext';
@@ -17,7 +17,6 @@ import * as api from '@/lib/api/client';
 import { isConfigValid } from '@/lib/api/config-validator';
 import { getStrategy } from '@/lib/strategies/registry';
 import { consumeInitData } from '@/lib/utils/init-data';
-import { Clock } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
 import { useShortcuts } from '@/hooks/useShortcuts';
 import { useConversation } from '@/hooks/useConversation';
@@ -96,6 +95,7 @@ function EditorContent() {
   const [isElectron, setIsElectron] = useState(false);
   const [versionDrawerOpen, setVersionDrawerOpen] = useState(false);
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
 
   // Refs
   const pendingInitRef = useRef<import('@/lib/utils/init-data').InitData | null>(null);
@@ -381,81 +381,85 @@ function EditorContent() {
 
   return (
     <>
-      <div className="h-full flex relative overflow-hidden bg-[var(--bg)] noise-overlay">
+      <div className="h-full flex flex-col relative overflow-hidden bg-[var(--bg)] noise-overlay">
         {/* Decorative Blur Orbs */}
         <div className="blur-orb blur-orb-indigo" style={{ width: 320, height: 320, top: '-60px', left: '-80px' }} />
         <div className="blur-orb blur-orb-violet" style={{ width: 260, height: 260, bottom: '-40px', right: '10%' }} />
         <div className="blur-orb blur-orb-cyan" style={{ width: 200, height: 200, top: '40%', right: '-40px' }} />
 
-        {/* AI Copilot Panel (Left) */}
-        <AICopilotPanel
+        {/* 全局顶栏 */}
+        <EditorTopBar
+          onGoHome={() => router.push('/')}
           conversationId={conversation.conversationId}
-          messages={conversation.messages}
-          isStreaming={generation.isStreaming}
           onLoadConversation={conversation.loadConversation}
           onNewConversation={conversation.newConversation}
-          onSendMessage={generation.sendMessage}
-          onCancel={generation.cancelGeneration}
-          isGenerating={generation.isGenerating}
-          currentInput={currentInput}
-          currentChartType={currentChartType}
-          currentFormat={format}
-          onFormatChange={(f) => { setFormat(f); dispatchGenResult({ type: 'CLEAR' }); }}
           onOpenConfig={() => setIsConfigManagerOpen(true)}
-          onExport={handleExport}
-          onRegenerate={() => generation.regenerate(conversation.messages, currentChartType)}
-          onShowDiagram={handleShowDiagram}
-          apiError={generation.apiError}
-          onClearError={() => generation.setApiError(null)}
-          panelWidth={panelWidth}
-          onPanelWidthChange={handlePanelWidthChange}
-          headerExtra={<WindowControls />}
+          onCollapse={() => setIsPanelCollapsed(prev => !prev)}
+          isCollapsed={isPanelCollapsed}
+          onVersionHistory={() => setVersionDrawerOpen(prev => !prev)}
         />
 
-        {/* Main Canvas Area */}
-        <div className="flex-1 flex flex-col relative">
-          {/* Floating AI Actions */}
-          <FloatingAIActions
-            onAction={aiActions.handleAIAction}
-            loadingAction={aiActions.aiActionLoading}
-            disabled={generation.isGenerating || !generatedCode}
+        {/* 主内容区域：侧边栏 + 画布 */}
+        <div className="flex-1 flex min-h-0">
+          {/* AI Copilot Panel (Left) */}
+          <AICopilotPanel
+            conversationId={conversation.conversationId}
+            messages={conversation.messages}
+            isStreaming={generation.isStreaming}
+            onSendMessage={generation.sendMessage}
+            onCancel={generation.cancelGeneration}
+            isGenerating={generation.isGenerating}
+            currentInput={currentInput}
+            currentChartType={currentChartType}
+            currentFormat={format}
+            onFormatChange={(f) => { setFormat(f); dispatchGenResult({ type: 'CLEAR' }); }}
+            onExport={handleExport}
+            onRegenerate={() => generation.regenerate(conversation.messages, currentChartType)}
+            onShowDiagram={handleShowDiagram}
+            apiError={generation.apiError}
+            onClearError={() => generation.setApiError(null)}
+            panelWidth={panelWidth}
+            onPanelWidthChange={handlePanelWidthChange}
+            collapsed={isPanelCollapsed}
+            onCollapsedChange={setIsPanelCollapsed}
           />
 
-          {/* Version History Trigger */}
-          <button
-            onClick={() => setVersionDrawerOpen(prev => !prev)}
-            className="absolute top-4 right-4 z-10 p-2 rounded-xl bg-[var(--surface-elevated)]/80 backdrop-blur-sm border border-[var(--border)] hover:bg-[var(--surface-elevated)] text-[var(--muted)] hover:text-[var(--text)] transition-all shadow-lg"
-            title={t('versionHistory.title')}
-          >
-            <Clock size={18} />
-          </button>
-
-          {/* Canvas */}
-          <div className="flex-1 relative">
-            <DiagramCanvas format={format} data={renderData} isStreaming={generation.isStreaming} streamRendererRef={streamRendererRef} exportRef={canvasExportRef} />
-          </div>
-
-          {/* Bottom Context Panel */}
-          <BottomContextPanel
-            generatedCode={generatedCode}
-            explanation={aiActions.aiExplanation}
-            format={format}
-            activeTab={bottomPanelTab}
-            onTabChange={setBottomPanelTab}
-            onExportAs={handleExportAs}
-          >
-            <CodeEditor
-              code={generatedCode}
-              onChange={(v) => dispatchGenResult({ type: 'SET_CODE', payload: v ?? '' })}
-              onApply={handleApplyCode}
-              onClear={() => dispatchGenResult({ type: 'SET_CODE', payload: '' })}
-              jsonError={jsonError}
-              onClearJsonError={() => dispatchGenResult({ type: 'SET_JSON_ERROR', payload: null })}
-              isGenerating={generation.isGenerating}
-              isApplyingCode={isApplyingCode}
-              language={strategy.codeLanguage}
+          {/* Main Canvas Area */}
+          <div className="flex-1 flex flex-col relative">
+            {/* Floating AI Actions */}
+            <FloatingAIActions
+              onAction={aiActions.handleAIAction}
+              loadingAction={aiActions.aiActionLoading}
+              disabled={generation.isGenerating || !generatedCode}
             />
-          </BottomContextPanel>
+
+            {/* Canvas */}
+            <div className="flex-1 relative">
+              <DiagramCanvas format={format} data={renderData} isStreaming={generation.isStreaming} streamRendererRef={streamRendererRef} exportRef={canvasExportRef} />
+            </div>
+
+            {/* Bottom Context Panel */}
+            <BottomContextPanel
+              generatedCode={generatedCode}
+              explanation={aiActions.aiExplanation}
+              format={format}
+              activeTab={bottomPanelTab}
+              onTabChange={setBottomPanelTab}
+              onExportAs={handleExportAs}
+            >
+              <CodeEditor
+                code={generatedCode}
+                onChange={(v) => dispatchGenResult({ type: 'SET_CODE', payload: v ?? '' })}
+                onApply={handleApplyCode}
+                onClear={() => dispatchGenResult({ type: 'SET_CODE', payload: '' })}
+                jsonError={jsonError}
+                onClearJsonError={() => dispatchGenResult({ type: 'SET_JSON_ERROR', payload: null })}
+                isGenerating={generation.isGenerating}
+                isApplyingCode={isApplyingCode}
+                language={strategy.codeLanguage}
+              />
+            </BottomContextPanel>
+          </div>
         </div>
       </div>
 

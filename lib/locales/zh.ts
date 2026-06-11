@@ -58,6 +58,7 @@ export const zh = {
 
   // AI Copilot Panel
   'copilot.expandPanel': '展开面板',
+  'copilot.collapsePanel': '折叠面板',
   'copilot.export': '导出',
   'copilot.backHome': '返回首页',
   'copilot.aiChartAssistant': 'AI 图表助手',

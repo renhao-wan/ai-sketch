@@ -60,6 +60,7 @@ export const en: TranslationDict = {
 
   // AI Copilot Panel
   'copilot.expandPanel': 'Expand Panel',
+  'copilot.collapsePanel': 'Collapse Panel',
   'copilot.export': 'Export',
   'copilot.backHome': 'Back to Home',
   'copilot.aiChartAssistant': 'AI Chart Assistant',
