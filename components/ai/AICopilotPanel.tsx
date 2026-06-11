@@ -20,6 +20,7 @@ import FormatSelector from '@/components/editor/FormatSelector';
 import Tooltip from '@/components/ui/Tooltip';
 import type { SourceType, ConversationMessage } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
+import GenerationModeToggle, { type GenerationMode } from './GenerationModeToggle';
 
 /** 从代码内容检测图表格式 */
 function detectCodeFormat(code: string): DiagramFormat {
@@ -65,6 +66,9 @@ interface AICopilotPanelProps {
   /** 从外部控制面板折叠状态 */
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
+  /** 生成模式 */
+  generationMode?: GenerationMode;
+  onGenerationModeChange?: (mode: GenerationMode) => void;
 }
 
 export default function AICopilotPanel({
@@ -87,6 +91,8 @@ export default function AICopilotPanel({
   onPanelWidthChange,
   collapsed: collapsedProp,
   onCollapsedChange,
+  generationMode = 'auto',
+  onGenerationModeChange,
 }: AICopilotPanelProps) {
   const { t } = useLocale();
   const [isCollapsedLocal, setIsCollapsedLocal] = useState(false);
@@ -372,6 +378,13 @@ export default function AICopilotPanel({
           <div className="w-full mb-3">
             <FormatSelector value={currentFormat} onChange={onFormatChange} className="w-full" />
           </div>
+          <div className="w-full mb-3">
+            <GenerationModeToggle
+              value={generationMode}
+              onChange={(m) => onGenerationModeChange?.(m)}
+              disabled={isGenerating}
+            />
+          </div>
 
           {/* Chart Type */}
           <div className="w-full">
@@ -386,6 +399,11 @@ export default function AICopilotPanel({
         {hasMessages && (
           <div className="px-4 pt-3 pb-1 space-y-2">
             <FormatSelector value={currentFormat} onChange={onFormatChange} className="w-full" />
+            <GenerationModeToggle
+              value={generationMode}
+              onChange={(m) => onGenerationModeChange?.(m)}
+              disabled={isGenerating}
+            />
             <ChartTypeSelect value={chartType} onChange={setChartType} format={currentFormat} />
           </div>
         )}
