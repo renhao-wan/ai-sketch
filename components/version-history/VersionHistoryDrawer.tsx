@@ -53,6 +53,7 @@ export default function VersionHistoryDrawer({
   // 打开时滚动到当前版本，没有当前版本则滚动到底部（最新版本）
   useEffect(() => {
     if (!open) return;
+    // 等待 DOM 渲染完成
     const timeout = setTimeout(() => {
       const container = drawerRef.current;
       if (!container) return;
@@ -60,15 +61,15 @@ export default function VersionHistoryDrawer({
       if (currentVersionId) {
         const el = cardRefs.current.get(currentVersionId);
         if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.scrollIntoView({ behavior: 'instant', block: 'center' });
           return;
         }
       }
-      // 兜底：滚动到底部
-      container.scrollTop = container.scrollHeight;
-    }, 200);
+      // 没有当前版本时保持顶部不动
+    }, 500);
     return () => clearTimeout(timeout);
-  }, [open, currentVersionId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // ESC 关闭
   useEffect(() => {
