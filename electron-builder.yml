@@ -44,7 +44,7 @@ win:
   requestedExecutionLevel: asInvoker
 
 nsis:
-  artifactName: "${productName}-Setup-${version}.${ext}"
+  artifactName: "AI-Sketch-Setup-${version}.${ext}"
   oneClick: false
   allowToChangeInstallationDirectory: true
   installerIcon: electron/resources/icon.ico
