@@ -38,6 +38,24 @@ export default function VersionHistoryDrawer({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
+  // 版本列表变化时清理不属于当前列表的旧预览和状态
+  useEffect(() => {
+    const currentIds = new Set(versions.map(v => v.id));
+    setPreviews(prev => {
+      if (prev.size === 0) return prev;
+      const next = new Map<string, string>();
+      prev.forEach((svg, id) => {
+        if (currentIds.has(id)) next.set(id, svg);
+      });
+      return next.size === prev.size ? prev : next;
+    });
+    setLoadingSet(prev => {
+      if (prev.size === 0) return prev;
+      const next = new Set([...prev].filter(id => currentIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [versions]);
+
   // 点击外部关闭
   useEffect(() => {
     if (!open) return;
