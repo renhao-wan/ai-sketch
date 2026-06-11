@@ -13,6 +13,10 @@ interface VersionThumbnailProps {
 
 export default function VersionThumbnail({ svg, loading, versionNumber }: VersionThumbnailProps) {
   const { t } = useLocale();
+  const sanitized = useMemo(
+    () => svg ? DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } }) : null,
+    [svg]
+  );
 
   if (loading) {
     return (
@@ -22,8 +26,7 @@ export default function VersionThumbnail({ svg, loading, versionNumber }: Versio
     );
   }
 
-  if (svg) {
-    const sanitized = useMemo(() => DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } }), [svg]);
+  if (sanitized) {
     return (
       <div
         className="version-thumbnail w-full rounded-lg overflow-hidden bg-white border border-[var(--border)] flex items-center justify-center"
