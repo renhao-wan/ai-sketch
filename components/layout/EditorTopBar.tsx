@@ -2,9 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
   Clock,
   Wand2,
   Tag,
@@ -25,8 +22,6 @@ interface EditorTopBarProps {
   onLoadConversation: (id: string) => void;
   onNewConversation: () => void;
   onOpenConfig: () => void;
-  onCollapse: () => void;
-  isCollapsed: boolean;
   onVersionHistory: () => void;
 }
 
@@ -36,20 +31,17 @@ export default function EditorTopBar({
   onLoadConversation,
   onNewConversation,
   onOpenConfig,
-  onCollapse,
-  isCollapsed,
   onVersionHistory,
 }: EditorTopBarProps) {
   const { t } = useLocale();
 
-  // 更多菜单状态
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  // 标签选择器状态
   const [showTagSelector, setShowTagSelector] = useState(false);
   const [conversationTags, setConversationTags] = useState<ConversationTag[]>([]);
   const [allConvTags, setAllConvTags] = useState<ConversationTag[]>([]);
-  const moreBtnRef = useRef<HTMLButtonElement>(null);
-  const moreMenuRef = useRef<HTMLDivElement>(null);
-  const [moreMenuPos, setMoreMenuPos] = useState({ top: 0, left: 0 });
+  const tagBtnRef = useRef<HTMLButtonElement>(null);
+  const tagMenuRef = useRef<HTMLDivElement>(null);
+  const [tagMenuPos, setTagMenuPos] = useState({ top: 0, left: 0 });
 
   // 加载所有对话标签
   useEffect(() => {
@@ -65,28 +57,27 @@ export default function EditorTopBar({
 
   // 标签展开时重新计算菜单位置
   useEffect(() => {
-    if (!showMoreMenu || !moreBtnRef.current) return;
-    const rect = moreBtnRef.current.getBoundingClientRect();
-    const menuWidth = 224; // w-56
+    if (!showTagSelector || !tagBtnRef.current) return;
+    const rect = tagBtnRef.current.getBoundingClientRect();
+    const menuWidth = 224;
     const left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8));
-    setMoreMenuPos({ top: rect.bottom + 4, left });
-  }, [showMoreMenu, showTagSelector]);
+    setTagMenuPos({ top: rect.bottom + 4, left });
+  }, [showTagSelector]);
 
-  // 更多菜单点击外部关闭
+  // 标签选择器点击外部关闭
   useEffect(() => {
-    if (!showMoreMenu) return;
+    if (!showTagSelector) return;
     const handleClickOutside = (e: globalThis.MouseEvent) => {
       const target = e.target as Node;
-      if (moreBtnRef.current?.contains(target)) return;
-      if (moreMenuRef.current?.contains(target)) return;
-      setShowMoreMenu(false);
+      if (tagBtnRef.current?.contains(target)) return;
+      if (tagMenuRef.current?.contains(target)) return;
       setShowTagSelector(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showMoreMenu]);
+  }, [showTagSelector]);
 
-  // 标签选择器关闭后刷新当前对话标签
+  // 标签变更
   const handleTagChange = useCallback(async (tagIds: string[]) => {
     if (!conversationId) return;
     try {
@@ -120,102 +111,60 @@ export default function EditorTopBar({
         />
       </div>
 
-      {/* 右侧：更多菜单 + 折叠 + 版本历史 + 窗口控制 */}
+      {/* 右侧：标签 + 配置 + 版本历史 + 窗口控制 */}
       <div className="flex items-center gap-1 flex-shrink-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-        {/* 更多菜单 */}
+        {/* 标签按钮 */}
         <div className="relative">
-          <Tooltip content={t('copilot.more')} side="bottom">
+          <Tooltip content={t('copilot.tags')} side="bottom">
             <button
-              ref={moreBtnRef}
-              onClick={() => {
-                if (!showMoreMenu && moreBtnRef.current) {
-                  const rect = moreBtnRef.current.getBoundingClientRect();
-                  const menuWidth = 224; // w-56
-                  const left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8));
-                  setMoreMenuPos({ top: rect.bottom + 4, left });
-                  setShowMoreMenu(true);
-                } else {
-                  setShowMoreMenu(false);
-                  setShowTagSelector(false);
-                }
-              }}
+              ref={tagBtnRef}
+              onClick={() => setShowTagSelector(prev => !prev)}
               className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
-                showMoreMenu
+                showTagSelector
                   ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
                   : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
               }`}
             >
-              <MoreHorizontal size={16} />
+              <Tag size={16} />
+              {conversationTags.length > 0 && !showTagSelector && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[9px] font-medium text-white bg-[var(--accent-indigo)] rounded-full">
+                  {conversationTags.length}
+                </span>
+              )}
             </button>
           </Tooltip>
-          {/* 下拉菜单 */}
-          {showMoreMenu && createPortal(
+          {/* 标签选择器下拉 */}
+          {showTagSelector && createPortal(
             <div
-              ref={moreMenuRef}
+              ref={tagMenuRef}
               className="fixed z-[200] w-56 bg-[var(--surface-warm)] backdrop-blur-xl rounded-xl border border-[var(--border)] shadow-[0_8px_30px_rgba(28,25,23,0.12)]"
-              style={{ top: moreMenuPos.top, left: moreMenuPos.left }}
+              style={{ top: tagMenuPos.top, left: tagMenuPos.left }}
             >
-              {/* 配置管理 */}
-              <button
-                onClick={() => { onOpenConfig(); setShowMoreMenu(false); setShowTagSelector(false); }}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors rounded-t-xl"
-              >
-                <Wand2 size={14} className="text-[var(--muted)]" />
-                <span>{t('copilot.config')}</span>
-              </button>
-
-              <div className="h-px bg-[var(--border)]" />
-
-              {/* 标签 */}
-              <button
-                onClick={() => {
-                  setShowTagSelector(prev => !prev);
-                }}
-                className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm transition-colors ${
-                  showTagSelector
-                    ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5'
-                    : 'text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-                } ${!showTagSelector ? 'rounded-b-xl' : ''}`}
-              >
-                <Tag size={14} className={showTagSelector ? 'text-[var(--accent-indigo)]' : 'text-[var(--muted)]'} />
-                <span>{t('copilot.tags')}</span>
-                {conversationTags.length > 0 && !showTagSelector && (
-                  <span className="ml-auto text-[11px] text-[var(--muted)] bg-[var(--surface-warm-hover)] px-1.5 py-0.5 rounded-full">
-                    {conversationTags.length}
-                  </span>
-                )}
-              </button>
-
-              {/* 标签选择器（内联展开） */}
-              {showTagSelector && (
-                <div className="border-t border-[var(--border)] rounded-b-xl">
-                  {!conversationId ? (
-                    <div className="px-4 py-5 text-center text-xs text-[var(--muted)]">
-                      {t('copilot.sendFirst')}
-                    </div>
-                  ) : (
-                    <div className="p-4">
-                      <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto scrollbar-thin pt-1">
-                        {allConvTags.length === 0 ? (
-                          <div className="w-full text-center py-4 text-xs text-[var(--muted)]">{t('tags.noTags')}</div>
-                        ) : allConvTags.map(tag => (
-                          <TagBadge
-                            key={tag.id}
-                            name={tag.name}
-                            color={tag.color}
-                            size="md"
-                            selected={conversationTags.some(ct => ct.id === tag.id)}
-                            onClick={() => {
-                              const ids = conversationTags.some(ct => ct.id === tag.id)
-                                ? conversationTags.filter(ct => ct.id !== tag.id).map(ct => ct.id)
-                                : [...conversationTags.map(ct => ct.id), tag.id];
-                              handleTagChange(ids);
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
+              {!conversationId ? (
+                <div className="px-4 py-5 text-center text-xs text-[var(--muted)]">
+                  {t('copilot.sendFirst')}
+                </div>
+              ) : (
+                <div className="p-4">
+                  <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto scrollbar-thin pt-1">
+                    {allConvTags.length === 0 ? (
+                      <div className="w-full text-center py-4 text-xs text-[var(--muted)]">{t('tags.noTags')}</div>
+                    ) : allConvTags.map(tag => (
+                      <TagBadge
+                        key={tag.id}
+                        name={tag.name}
+                        color={tag.color}
+                        size="md"
+                        selected={conversationTags.some(ct => ct.id === tag.id)}
+                        onClick={() => {
+                          const ids = conversationTags.some(ct => ct.id === tag.id)
+                            ? conversationTags.filter(ct => ct.id !== tag.id).map(ct => ct.id)
+                            : [...conversationTags.map(ct => ct.id), tag.id];
+                          handleTagChange(ids);
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>,
@@ -223,13 +172,13 @@ export default function EditorTopBar({
           )}
         </div>
 
-        {/* 折叠/展开按钮 */}
-        <Tooltip content={isCollapsed ? t('copilot.expandPanel') : t('copilot.collapsePanel')} side="bottom">
+        {/* 配置按钮 */}
+        <Tooltip content={t('copilot.config')} side="bottom">
           <button
-            onClick={onCollapse}
+            onClick={onOpenConfig}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
           >
-            {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            <Wand2 size={16} />
           </button>
         </Tooltip>
 

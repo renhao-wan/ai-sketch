@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useReducer, useMemo, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { AppIcon } from '@/components/layout/TopBar';
 import AICopilotPanel from '@/components/ai/AICopilotPanel';
 import EditorTopBar from '@/components/layout/EditorTopBar';
@@ -394,8 +395,6 @@ function EditorContent() {
           onLoadConversation={conversation.loadConversation}
           onNewConversation={conversation.newConversation}
           onOpenConfig={() => setIsConfigManagerOpen(true)}
-          onCollapse={() => setIsPanelCollapsed(prev => !prev)}
-          isCollapsed={isPanelCollapsed}
           onVersionHistory={() => setVersionDrawerOpen(prev => !prev)}
         />
 
@@ -423,6 +422,22 @@ function EditorContent() {
             collapsed={isPanelCollapsed}
             onCollapsedChange={setIsPanelCollapsed}
           />
+
+          {/* 分割线折叠按钮 */}
+          <div className="relative flex-shrink-0 w-3 flex items-center justify-center group">
+            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-[var(--border)]" />
+            <button
+              onClick={() => setIsPanelCollapsed(prev => !prev)}
+              className="relative z-10 w-5 h-10 flex items-center justify-center rounded-md bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] opacity-0 group-hover:opacity-100 transition-all duration-200"
+              title={isPanelCollapsed ? t('copilot.expandPanel') : t('copilot.collapsePanel')}
+            >
+              {isPanelCollapsed ? (
+                <ChevronRight size={12} />
+              ) : (
+                <ChevronLeft size={12} />
+              )}
+            </button>
+          </div>
 
           {/* Main Canvas Area */}
           <div className="flex-1 flex flex-col relative">
