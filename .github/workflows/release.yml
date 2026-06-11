@@ -144,8 +144,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}-arm64-mac.dmg
-          asset_name: AI-Sketch-${{ steps.version.outputs.version }}-arm64-mac.dmg
+          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}-mac.dmg
+          asset_name: AI-Sketch-${{ steps.version.outputs.version }}-mac.dmg
           asset_content_type: application/octet-stream
 
       - name: Upload macOS latest-mac.yml to Release

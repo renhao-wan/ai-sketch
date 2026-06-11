@@ -68,6 +68,7 @@ mac:
   gatekeeperAssess: false
   entitlements: electron/resources/entitlements.mac.plist
   entitlementsInherit: electron/resources/entitlements.mac.plist
+  artifactName: "AI-Sketch-${version}-mac.${ext}"
 
 dmg:
   contents:
