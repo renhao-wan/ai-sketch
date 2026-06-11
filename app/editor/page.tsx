@@ -423,12 +423,11 @@ function EditorContent() {
             onCollapsedChange={setIsPanelCollapsed}
           />
 
-          {/* 分割线折叠按钮 */}
-          <div className="relative flex-shrink-0 w-3 flex items-center justify-center group">
-            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-[var(--border)]" />
+          {/* 分割线折叠按钮 — 不加额外竖线，复用 AICopilotPanel 的 resize handle 作为分割线 */}
+          <div className="relative flex-shrink-0 w-0 flex items-center justify-center group">
             <button
               onClick={() => setIsPanelCollapsed(prev => !prev)}
-              className="relative z-10 w-5 h-10 flex items-center justify-center rounded-md bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] opacity-0 group-hover:opacity-100 transition-all duration-200"
+              className="absolute z-30 w-5 h-10 flex items-center justify-center rounded-md bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] opacity-0 group-hover:opacity-100 transition-all duration-200"
               title={isPanelCollapsed ? t('copilot.expandPanel') : t('copilot.collapsePanel')}
             >
               {isPanelCollapsed ? (
