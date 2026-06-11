@@ -90,7 +90,7 @@ class DrawioStrategy implements DiagramStrategy {
     try {
       const { Graph, ModelXmlSerializer, getDefaultPlugins } = await import('@maxgraph/core');
 
-      // 创建离屏容器 — 必须有明确的非零尺寸且参与布局
+      // 创建离屏容器
       const container = document.createElement('div');
       container.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:800px;height:600px;display:block;';
       document.body.appendChild(container);
@@ -103,7 +103,7 @@ class DrawioStrategy implements DiagramStrategy {
         const match = cleanXml.match(/<mxGraphModel[\s\S]*?<\/mxGraphModel>/);
         if (match) cleanXml = match[0];
 
-        // 按照 DrawioCanvas 的 loadXml 流程：关闭渲染 → 导入 → fit → 居中 → 恢复 → refresh
+        // 按照 DrawioCanvas 的 loadXml 流程
         const view = graph.getView();
         const wasRendering = (view as any).rendering;
         (view as any).rendering = false;
@@ -120,26 +120,32 @@ class DrawioStrategy implements DiagramStrategy {
         (view as any).rendering = wasRendering;
         graph.refresh();
 
-        // 提取 SVG
+        // 提取已渲染的 SVG
         const svgEl = container.querySelector('svg');
         if (!svgEl) return null;
+
+        // 完全复制 DrawioCanvas exportAs 的 SVG 处理逻辑
+        const containerRect = container.getBoundingClientRect();
+        const width = containerRect.width || 800;
+        const height = containerRect.height || 600;
 
         const cloned = svgEl.cloneNode(true) as SVGSVGElement;
         cloned.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
         cloned.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
 
-        // 设置 viewBox 让 SVG 能缩放适配容器
-        // fitPlugin.fit() 已调整 scale，SVG 坐标已变换，直接用 bounds
-        const bounds = graph.getGraphBounds();
-        if (bounds.width > 0 && bounds.height > 0) {
-          const padding = 20;
-          cloned.setAttribute('viewBox', `${bounds.x - padding} ${bounds.y - padding} ${bounds.width + padding * 2} ${bounds.height + padding * 2}`);
-        }
+        // 设置 SVG 尺寸和 viewBox
+        cloned.setAttribute('width', String(width));
+        cloned.setAttribute('height', String(height));
+        // 用容器尺寸作为 viewBox，确保内容完整显示并居中
+        cloned.setAttribute('viewBox', `0 0 ${width} ${height}`);
 
-        cloned.removeAttribute('width');
-        cloned.removeAttribute('height');
+        // 移除 min-width/min-height，让 SVG 能缩放
+        cloned.style.minWidth = '';
+        cloned.style.minHeight = '';
+        // 确保居中显示
+        cloned.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-        // 清理 @import 和外部引用
+        // 清理
         cloned.querySelectorAll('style').forEach(s => {
           if (s.textContent) s.textContent = s.textContent.replace(/@import[^;]+;/g, '');
         });
@@ -150,7 +156,8 @@ class DrawioStrategy implements DiagramStrategy {
       } finally {
         document.body.removeChild(container);
       }
-    } catch {
+    } catch (e) {
+      console.error('[DrawioPreview]', e);
       return null;
     }
   }

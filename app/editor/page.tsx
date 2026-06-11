@@ -144,7 +144,16 @@ function EditorContent() {
     onError: (msg) => generation.setApiError(msg),
   });
 
-  // 版本列表：从 messages 中提取 assistant 消息
+  // 检测代码格式（从代码内容推断）
+  const detectCodeFormat = (code: string): DiagramFormat => {
+    const trimmed = code.trim();
+    if (trimmed.startsWith('<')) return 'drawio';
+    if (trimmed.startsWith('[')) return 'excalidraw';
+    if (trimmed.startsWith('{') && trimmed.includes('"elements"')) return 'excalidraw';
+    return 'mermaid';
+  };
+
+  // 版本列表：从 messages 中提取 assistant 消息，推断每个版本的格式
   const versions = useMemo(() =>
     conversation.messages
       .filter(msg => msg.role === 'assistant')
@@ -153,6 +162,7 @@ function EditorContent() {
         versionNumber: index + 1,
         createdAt: msg.createdAt,
         code: msg.content,
+        format: detectCodeFormat(msg.content),
       })),
     [conversation.messages]
   );
@@ -280,13 +290,7 @@ function EditorContent() {
     onOpenVersionHistory: () => setVersionDrawerOpen(prev => !prev),
   });
 
-  const detectCodeFormat = (code: string): DiagramFormat => {
-    const trimmed = code.trim();
-    if (trimmed.startsWith('<')) return 'drawio';
-    if (trimmed.startsWith('[')) return 'excalidraw';
-    if (trimmed.startsWith('{') && trimmed.includes('"elements"')) return 'excalidraw';
-    return 'mermaid';
-  };
+
 
   const handleShowDiagram = useCallback((content: string) => {
     const detectedFormat = detectCodeFormat(content);
@@ -459,7 +463,6 @@ function EditorContent() {
         versions={versions}
         currentVersionId={currentVersionId}
         onSelectVersion={handleSelectVersion}
-        format={format}
       />
     </>
   );

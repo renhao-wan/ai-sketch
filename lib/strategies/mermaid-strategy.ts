@@ -105,6 +105,7 @@ class MermaidStrategy implements DiagramStrategy {
 
   async generatePreview(code: string): Promise<string | null> {
     try {
+      console.log('[MermaidPreview] code:', code.substring(0, 100));
       const mermaid = (await import('mermaid')).default;
       mermaid.initialize({
         startOnLoad: false,
@@ -113,11 +114,14 @@ class MermaidStrategy implements DiagramStrategy {
       });
       const id = `preview-${crypto.randomUUID()}`;
       const { svg } = await mermaid.render(id, code.trim());
+      console.log('[MermaidPreview] svg length:', svg?.length);
+      if (!svg) return null;
       // 移除固定宽高，确保 SVG 能缩放适配容器
       return svg
         .replace(/<svg([^>]*)width="[^"]*"/, '<svg$1')
         .replace(/<svg([^>]*)height="[^"]*"/, '<svg$1');
-    } catch {
+    } catch (e) {
+      console.error('[MermaidPreview] error:', e);
       return null;
     }
   }

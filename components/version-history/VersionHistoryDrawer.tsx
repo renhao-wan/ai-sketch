@@ -12,6 +12,7 @@ export interface VersionItem {
   versionNumber: number;
   createdAt: number;
   code: string;
+  format: DiagramFormat;
 }
 
 interface VersionHistoryDrawerProps {
@@ -20,7 +21,6 @@ interface VersionHistoryDrawerProps {
   versions: VersionItem[];
   currentVersionId: string | null;
   onSelectVersion: (versionId: string) => void;
-  format: DiagramFormat;
 }
 
 export default function VersionHistoryDrawer({
@@ -29,14 +29,12 @@ export default function VersionHistoryDrawer({
   versions,
   currentVersionId,
   onSelectVersion,
-  format,
 }: VersionHistoryDrawerProps) {
   const { t } = useLocale();
   const drawerRef = useRef<HTMLDivElement>(null);
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
   const [loadingSet, setLoadingSet] = useState<Set<string>>(new Set());
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const loadedRef = useRef(false);
 
   // 点击外部关闭
   useEffect(() => {
@@ -60,77 +58,43 @@ export default function VersionHistoryDrawer({
     return () => document.removeEventListener('keydown', handleEsc);
   }, [open, onClose]);
 
-  // 懒加载 SVG 预览
-  const loadPreview = useCallback(async (version: VersionItem) => {
-    if (previews.has(version.id) || loadingSet.has(version.id)) return;
-
-    setLoadingSet(prev => new Set(prev).add(version.id));
-
-    try {
-      const strategy = getStrategy(format);
-      if (!strategy.generatePreview) return;
-
-      const svg = await strategy.generatePreview(version.code);
-      if (svg) {
-        setPreviews(prev => new Map(prev).set(version.id, svg));
-      }
-    } catch {
-      // 预览生成失败，忽略
-    } finally {
-      setLoadingSet(prev => {
-        const next = new Set(prev);
-        next.delete(version.id);
-        return next;
-      });
-    }
-  }, [format, previews, loadingSet]);
-
-  // IntersectionObserver 懒加载
+  // 抽屉打开时加载所有版本预览
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      loadedRef.current = false;
+      return;
+    }
+    if (loadedRef.current) return;
+    loadedRef.current = true;
 
-    // 抽屉打开时，为所有没有预览的版本设置观察器
-    const timeout = setTimeout(() => {
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              const versionId = entry.target.getAttribute('data-version-id');
-              const version = versions.find(v => v.id === versionId);
-              if (version) loadPreview(version);
-              observerRef.current?.unobserve(entry.target);
-            }
+    // 找出需要加载的版本
+    const toLoad = versions.filter(v => !previews.has(v.id));
+    if (toLoad.length === 0) return;
+
+    // 标记全部为 loading
+    setLoadingSet(new Set(toLoad.map(v => v.id)));
+
+    // 串行加载，每个版本用自己的 format
+    (async () => {
+      for (const version of toLoad) {
+        try {
+          const strategy = getStrategy(version.format);
+          const svg = await strategy.generatePreview?.(version.code);
+          if (svg) {
+            setPreviews(prev => new Map(prev).set(version.id, svg));
           }
-        },
-        { root: drawerRef.current?.querySelector('.version-list'), threshold: 0.1 }
-      );
-
-      cardRefs.current.forEach((el, id) => {
-        if (!previews.has(id) && !loadingSet.has(id)) {
-          observerRef.current?.observe(el);
+        } catch {
+          // 忽略
         }
-      });
-    }, 100);
-
-    return () => {
-      clearTimeout(timeout);
-      observerRef.current?.disconnect();
-    };
+        setLoadingSet(prev => {
+          const next = new Set(prev);
+          next.delete(version.id);
+          return next;
+        });
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, versions]);
-
-  // 注册卡片 ref
-  const setCardRef = useCallback((id: string, el: HTMLDivElement | null) => {
-    if (el) {
-      cardRefs.current.set(id, el);
-      // 如果 observer 已存在，立即观察
-      if (observerRef.current && !previews.has(id) && !loadingSet.has(id)) {
-        observerRef.current.observe(el);
-      }
-    } else {
-      cardRefs.current.delete(id);
-    }
-  }, [previews, loadingSet]);
 
   return (
     <>
@@ -144,12 +108,12 @@ export default function VersionHistoryDrawer({
       {/* 抽屉面板 */}
       <div
         ref={drawerRef}
-        className={`fixed top-0 right-0 h-full w-[360px] bg-[var(--bg)] border-l border-[var(--border)] shadow-2xl z-50
+        className={`fixed top-0 right-0 h-full w-[360px] bg-[var(--bg)] border-l border-[var(--border)] shadow-2xl z-50 overflow-y-auto
           transform transition-transform duration-200 ease-out
           ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* 头部 */}
-        <div className="flex items-center justify-between px-4 h-14 border-b border-[var(--border)]">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-4 h-14 border-b border-[var(--border)] bg-[var(--bg)]">
           <div className="flex items-center gap-2">
             <Clock size={18} className="text-[var(--accent-indigo)]" />
             <h2 className="text-sm font-semibold text-[var(--text)]">{t('versionHistory.title')}</h2>
@@ -163,30 +127,25 @@ export default function VersionHistoryDrawer({
         </div>
 
         {/* 版本列表 */}
-        <div className="version-list flex-1 overflow-y-auto p-4 space-y-3" style={{ height: 'calc(100% - 56px)' }}>
+        <div className="p-4 space-y-3">
           {versions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="flex flex-col items-center justify-center h-64 text-center">
               <Clock size={48} className="text-[var(--muted)] opacity-30 mb-4" />
               <p className="text-sm font-medium text-[var(--muted)]">{t('versionHistory.empty')}</p>
               <p className="text-xs text-[var(--muted)] mt-1">{t('versionHistory.emptyDesc')}</p>
             </div>
           ) : (
             versions.map((version) => (
-              <div
+              <VersionCard
                 key={version.id}
-                ref={(el) => setCardRef(version.id, el)}
-                data-version-id={version.id}
-              >
-                <VersionCard
-                  id={version.id}
-                  versionNumber={version.versionNumber}
-                  createdAt={version.createdAt}
-                  isCurrent={version.id === currentVersionId}
-                  svg={previews.get(version.id)}
-                  loading={loadingSet.has(version.id)}
-                  onSelect={onSelectVersion}
-                />
-              </div>
+                id={version.id}
+                versionNumber={version.versionNumber}
+                createdAt={version.createdAt}
+                isCurrent={version.id === currentVersionId}
+                svg={previews.get(version.id)}
+                loading={loadingSet.has(version.id)}
+                onSelect={onSelectVersion}
+              />
             ))
           )}
         </div>
