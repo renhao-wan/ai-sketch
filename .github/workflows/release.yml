@@ -62,7 +62,7 @@ jobs:
         run: mkdir -p data
 
       - name: Build Electron app
-        run: npx electron-builder --win --x64
+        run: npx electron-builder --win --x64 --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
@@ -116,7 +116,7 @@ jobs:
         run: mkdir -p data
 
       - name: Build Electron app
-        run: npx electron-builder --mac
+        run: npx electron-builder --mac --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
@@ -169,7 +169,7 @@ jobs:
         run: mkdir -p data
 
       - name: Build Electron app
-        run: npx electron-builder --linux AppImage --x64
+        run: npx electron-builder --linux AppImage --x64 --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
