@@ -50,6 +50,26 @@ export default function VersionHistoryDrawer({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open, onClose]);
 
+  // 打开时滚动到当前版本，没有当前版本则滚动到底部（最新版本）
+  useEffect(() => {
+    if (!open) return;
+    const timeout = setTimeout(() => {
+      const container = drawerRef.current;
+      if (!container) return;
+
+      if (currentVersionId) {
+        const el = cardRefs.current.get(currentVersionId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+      }
+      // 兜底：滚动到底部
+      container.scrollTop = container.scrollHeight;
+    }, 200);
+    return () => clearTimeout(timeout);
+  }, [open, currentVersionId]);
+
   // ESC 关闭
   useEffect(() => {
     if (!open) return;
