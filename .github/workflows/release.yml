@@ -154,8 +154,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}.dmg
-          asset_name: AI-Sketch-${{ steps.version.outputs.version }}.dmg
+          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}-arm64-mac.dmg
+          asset_name: AI-Sketch-${{ steps.version.outputs.version }}-arm64-mac.dmg
           asset_content_type: application/octet-stream
 
       - name: Upload macOS DMG blockmap to Release
@@ -164,8 +164,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}.dmg.blockmap
-          asset_name: AI-Sketch-${{ steps.version.outputs.version }}.dmg.blockmap
+          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}-arm64-mac.dmg.blockmap
+          asset_name: AI-Sketch-${{ steps.version.outputs.version }}-arm64-mac.dmg.blockmap
           asset_content_type: application/octet-stream
 
       - name: Upload macOS ZIP to Release
@@ -174,8 +174,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}-mac.zip
-          asset_name: AI-Sketch-${{ steps.version.outputs.version }}-mac.zip
+          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}-arm64-mac.zip
+          asset_name: AI-Sketch-${{ steps.version.outputs.version }}-arm64-mac.zip
           asset_content_type: application/octet-stream
 
       - name: Upload macOS ZIP blockmap to Release
@@ -184,8 +184,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}-mac.zip.blockmap
-          asset_name: AI-Sketch-${{ steps.version.outputs.version }}-mac.zip.blockmap
+          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}-arm64-mac.zip.blockmap
+          asset_name: AI-Sketch-${{ steps.version.outputs.version }}-arm64-mac.zip.blockmap
           asset_content_type: application/octet-stream
 
       - name: Upload macOS latest-mac.yml to Release
