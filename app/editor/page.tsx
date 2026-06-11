@@ -396,7 +396,9 @@ function EditorContent() {
           onLoadConversation={conversation.loadConversation}
           onNewConversation={conversation.newConversation}
           onOpenConfig={() => setIsConfigManagerOpen(true)}
+          isConfigOpen={isConfigManagerOpen}
           onVersionHistory={() => setVersionDrawerOpen(prev => !prev)}
+          isVersionDrawerOpen={versionDrawerOpen}
         />
 
         {/* 主内容区域：侧边栏 + 画布 */}

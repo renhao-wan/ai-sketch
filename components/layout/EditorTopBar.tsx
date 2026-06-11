@@ -22,7 +22,9 @@ interface EditorTopBarProps {
   onLoadConversation: (id: string) => void;
   onNewConversation: () => void;
   onOpenConfig: () => void;
+  isConfigOpen: boolean;
   onVersionHistory: () => void;
+  isVersionDrawerOpen: boolean;
 }
 
 export default function EditorTopBar({
@@ -31,7 +33,9 @@ export default function EditorTopBar({
   onLoadConversation,
   onNewConversation,
   onOpenConfig,
+  isConfigOpen,
   onVersionHistory,
+  isVersionDrawerOpen,
 }: EditorTopBarProps) {
   const { t } = useLocale();
 
@@ -176,7 +180,11 @@ export default function EditorTopBar({
         <Tooltip content={t('copilot.config')} side="bottom">
           <button
             onClick={onOpenConfig}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
+              isConfigOpen
+                ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
+                : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+            }`}
           >
             <Wand2 size={16} />
           </button>
@@ -186,7 +194,11 @@ export default function EditorTopBar({
         <Tooltip content={t('versionHistory.title')} side="bottom">
           <button
             onClick={onVersionHistory}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
+              isVersionDrawerOpen
+                ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
+                : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+            }`}
           >
             <GitBranch size={16} />
           </button>
