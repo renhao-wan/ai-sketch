@@ -295,7 +295,7 @@ export default function AICopilotPanel({
 
   if (isCollapsed) {
     return (
-      <div className="h-full flex flex-col items-center py-4 bg-[var(--bg-glass)] backdrop-blur-2xl border-r border-[var(--accent-violet)]/20">
+      <div className="h-full flex flex-col items-center py-4 bg-[var(--bg-glass)] backdrop-blur-2xl">
         <Tooltip content={t('copilot.expandPanel')} side="right">
           <button
             onClick={() => setIsCollapsed(false)}
