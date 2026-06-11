@@ -8,6 +8,10 @@ import { getStrategy } from '@/lib/strategies/registry';
 import type { LLMConfig, LLMMessage, ImageData } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 import { processImages } from '@/lib/llm/vision-proxy';
+import { assessComplexity } from '@/lib/generation/complexity-assessor';
+import { generatePlan } from '@/lib/generation/planner';
+import { executeMultiPass } from '@/lib/generation/multi-pass-generator';
+import type { GenerationMode } from '@/lib/generation/types';
 
 /** LLM 生成失败时是否值得重试（排除用户主动取消） */
 function isRetryableError(error: unknown): boolean {
@@ -59,7 +63,7 @@ export async function POST(request: Request) {
     perfMark('Total');
 
     perfMark('Parse Request');
-    const { configId, config: configBody, userInput, chartType, format, conversationId, sourceType: frontendSourceType, regenerate: regen } = await request.json() as {
+    const { configId, config: configBody, userInput, chartType, format, conversationId, sourceType: frontendSourceType, regenerate: regen, mode: requestMode } = await request.json() as {
       configId?: string;
       config?: LLMConfig;
       userInput: string | { text?: string; image?: ImageData; images?: ImageData[] };
@@ -68,7 +72,9 @@ export async function POST(request: Request) {
       conversationId?: string;
       sourceType?: string;
       regenerate?: boolean;
+      mode?: GenerationMode;
     };
+    const generationMode: GenerationMode = requestMode || 'auto';
     regenerate = regen ?? false;
     activeConversationId = conversationId || null;
     perfEnd('Parse Request');
@@ -285,6 +291,15 @@ export async function POST(request: Request) {
 
           let optimizedCode: string;
 
+          // 判断实际执行的模式
+          let effectiveMode: Exclude<GenerationMode, 'auto'> = 'fast';
+          if (generationMode === 'auto') {
+            effectiveMode = assessComplexity(userContent, diagramFormat);
+            console.log(`[Generate] Auto mode resolved to: ${effectiveMode}`);
+          } else if (generationMode === 'quality') {
+            effectiveMode = 'quality';
+          }
+
           if (cachedResponse) {
             // 使用缓存的响应（已经是处理过的最终代码）
             optimizedCode = cachedResponse;
@@ -298,7 +313,18 @@ export async function POST(request: Request) {
               controller.enqueue(encoder.encode(data));
               await new Promise(r => setTimeout(r, delayMs));
             }
+          } else if (effectiveMode === 'quality') {
+            // 高质量模式：多轮生成
+            const plan = await generatePlan(config!, userContent, diagramFormat, contextMessages, combinedController.signal);
+            console.log(`[Generate] Plan: ${plan.complexity}, ${plan.steps.length} steps, ~${plan.estimatedNodes} nodes`);
+
+            optimizedCode = await executeMultiPass(
+              config!, plan, userContent, diagramFormat, contextMessages,
+              (event) => controller.enqueue(encoder.encode(event)),
+              combinedController.signal,
+            );
           } else {
+            // 快速模式：单步生成（现有逻辑）
             // 获取全局重试配置
             const maxRetries = await configManager.getMaxRetries();
             let lastError: unknown = null;
