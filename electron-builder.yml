@@ -1,6 +1,7 @@
 appId: ai-sketch
 productName: AI Sketch
 copyright: Copyright © 2024 AI Sketch
+artifactName: "${productName}-Setup-${version}.${ext}"
 
 publish:
   provider: github
