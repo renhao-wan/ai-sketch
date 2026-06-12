@@ -582,6 +582,36 @@ html, body {
   background: var(--scrollbar-thumb-hover);
 }
 
+/* Textarea & Input scrollbar styling */
+textarea::-webkit-scrollbar,
+input::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+textarea::-webkit-scrollbar-track,
+input::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+textarea::-webkit-scrollbar-thumb,
+input::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-subtle);
+  border-radius: 999px;
+}
+
+textarea::-webkit-scrollbar-thumb:hover,
+input::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb);
+}
+
+/* Firefox scrollbar */
+textarea,
+input {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb-subtle) transparent;
+}
+
 /* ============================================
    Segmented Control
    ============================================ */
