@@ -679,10 +679,10 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
       {/* Confirm Dialog */}
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
-        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
-        onConfirm={() => {
-          confirmDialog.onConfirm?.();
-          setConfirmDialog({ ...confirmDialog, isOpen: false });
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={async () => {
+          await confirmDialog.onConfirm?.();
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         }}
         title={confirmDialog.title}
         message={confirmDialog.message}
