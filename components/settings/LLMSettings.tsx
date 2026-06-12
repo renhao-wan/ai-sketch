@@ -33,7 +33,6 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [testingConfigId, setTestingConfigId] = useState<string | null>(null);
-  const [error, setError] = useState('');
   const { showNotification } = useNotification();
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({ isOpen: false, title: '', message: '', onConfirm: null });
   const [ollamaDetected, setOllamaDetected] = useState(false);
@@ -59,7 +58,7 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
       setConfigs(data.configs);
       setActiveConfigId(data.activeConfigId);
     } catch (err) {
-      setError(t('config.loadFailed') + (err as Error).message);
+      showNotification(t('config.loadFailed'), (err as Error).message, 'error');
     }
   };
 
@@ -153,10 +152,9 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
         try {
           await api.deleteConfig(configId);
           await loadConfigs();
-          setError('');
           showNotification(t('config.deleteSuccess'), t('config.deleteSuccessMsg'), 'success');
         } catch (err) {
-          setError(t('config.deleteFailed') + (err as Error).message);
+          showNotification(t('config.deleteFailed'), (err as Error).message, 'error');
         }
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
       },
@@ -168,9 +166,8 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
     try {
       await api.cloneConfig(config.id!);
       await loadConfigs();
-      setError('');
     } catch (err) {
-      setError(t('config.cloneFailed') + (err as Error).message);
+      showNotification(t('config.cloneFailed'), (err as Error).message, 'error');
     }
   };
 
@@ -179,16 +176,14 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
     try {
       await api.setActiveConfig(configId);
       await loadConfigs();
-      setError('');
     } catch (err) {
-      setError(t('config.switchFailed') + (err as Error).message);
+      showNotification(t('config.switchFailed'), (err as Error).message, 'error');
     }
   };
 
   /** 测试连接 */
   const handleTestConnection = async (config: LLMConfig) => {
     setTestingConfigId(config.id!);
-    setError('');
     try {
       const result = await api.testConnection(config);
       showNotification(
@@ -214,9 +209,8 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
       setEditingConfig(null);
       setIsCreating(false);
       await loadConfigs();
-      setError('');
     } catch (err) {
-      setError(t('config.saveFailed') + (err as Error).message);
+      showNotification(t('config.saveFailed'), (err as Error).message, 'error');
     }
   };
 
@@ -232,7 +226,7 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(t('config.exportFailed') + (err as Error).message);
+      showNotification(t('config.exportFailed'), (err as Error).message, 'error');
     }
   };
 
@@ -255,10 +249,10 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
           );
           await loadConfigs();
         } else {
-          setError(t('config.importFailed') + result.message);
+          showNotification(t('config.importFailed'), result.message, 'error');
         }
       } catch (err) {
-        setError(t('config.importFailed') + (err as Error).message);
+        showNotification(t('config.importFailed'), (err as Error).message, 'error');
       }
     };
     input.click();
@@ -298,7 +292,7 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
         'success',
       );
     } catch (err) {
-      setError(t('config.saveFailed') + (err as Error).message);
+      showNotification(t('config.saveFailed'), (err as Error).message, 'error');
     } finally {
       setOllamaCreating(false);
     }
@@ -326,15 +320,8 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
 
   return (
     <div className="h-full flex flex-col">
-      {/* 固定头部：错误提示 + Banner + 操作栏 + 搜索 */}
+      {/* 固定头部：Banner + 操作栏 + 搜索 */}
       <div className="flex-shrink-0 space-y-4 mb-4">
-        {/* 错误提示 */}
-        {error && (
-          <div className="px-4 py-3 bg-red-500/10 rounded-xl">
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        )}
-
         {/* 数量提示 Banner */}
         <CountBanner
           show={showBanner}
