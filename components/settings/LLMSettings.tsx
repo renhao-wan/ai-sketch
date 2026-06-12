@@ -75,36 +75,45 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
     }
   }, [isVisible]);
 
-  // 检测本地 Ollama 服务（仅挂载时检测一次）
+  // 检测本地 Ollama 服务（仅挂载时检测一次，不依赖配置加载结果）
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // 先检测 Ollama 服务（使用默认 URL，不依赖配置加载）
+      let detectedModels: { id: string; name: string }[] = [];
       try {
-        const currentConfigs = await api.fetchConfigs();
-        const ollamaConfig = currentConfigs.configs.find(c => c.type === 'ollama');
-        const body: Record<string, string> = {};
-        if (ollamaConfig?.baseUrl) body.baseUrl = ollamaConfig.baseUrl;
-
         const res = await fetch('/api/ollama/detect', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body: JSON.stringify({}),
         });
         const data = await res.json();
         if (!cancelled && data.detected && data.models?.length > 0) {
-          const existingModels = new Set(
-            currentConfigs.configs.filter(c => c.type === 'ollama').map(c => c.model),
-          );
-          const newModels = data.models.filter(
-            (m: { id: string; name: string }) => !existingModels.has(m.id),
-          );
-          if (newModels.length > 0) {
-            setOllamaDetected(true);
-            setOllamaModels(newModels);
-          }
+          detectedModels = data.models;
         }
       } catch {
-        // 静默忽略
+        // 检测失败，跳过
+      }
+
+      if (cancelled || detectedModels.length === 0) return;
+
+      // 过滤掉已有配置的模型
+      try {
+        const currentConfigs = await api.fetchConfigs();
+        const existingModels = new Set(
+          currentConfigs.configs.filter(c => c.type === 'ollama').map(c => c.model),
+        );
+        const newModels = detectedModels.filter(m => !existingModels.has(m.id));
+        if (!cancelled && newModels.length > 0) {
+          setOllamaDetected(true);
+          setOllamaModels(newModels);
+        }
+      } catch {
+        // 配置加载失败时，仍然显示检测到的模型（让用户手动选择）
+        if (!cancelled && detectedModels.length > 0) {
+          setOllamaDetected(true);
+          setOllamaModels(detectedModels);
+        }
       }
     })();
     return () => { cancelled = true; };

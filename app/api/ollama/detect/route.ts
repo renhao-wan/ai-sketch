@@ -64,9 +64,10 @@ export async function POST(request: Request) {
       models,
     });
   } catch (error) {
-    const message = error instanceof DOMException && error.name === 'AbortError'
-      ? 'Ollama 服务连接超时'
-      : '未检测到 Ollama 服务';
+    const isAbort = error instanceof DOMException && error.name === 'AbortError';
+    const message = isAbort ? 'Ollama 服务连接超时' : '未检测到 Ollama 服务';
+    // 记录详细错误信息以便排查生产环境检测失败问题
+    console.error(`[Ollama Detect] ${message}:`, error);
     return NextResponse.json({
       detected: false,
       error: message,
