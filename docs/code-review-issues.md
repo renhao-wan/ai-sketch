@@ -160,72 +160,55 @@ apiKey: rawApiKey && isEncrypted(rawApiKey) ? decrypt(rawApiKey) : rawApiKey,
 ### 🟠 LLM-01: fetchModels 无超时控制
 
 - **文件**: `lib/llm/client.ts:237`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `fetchModels` 没有设置 `signal`（超时信号），也没有使用 `fetchWithRetry`。如果模型列表端点无响应，调用方会无限期等待。
 - **影响**: 用户点击"测试连接"后可能长时间无反馈。
-- **修复建议**: 添加 AbortController 超时（如 10 秒）。
-
-```typescript
-export async function fetchModels(type: string, baseUrl: string, apiKey: string): Promise<ModelInfo[]> {
-  validateBaseUrl(baseUrl);
-  const provider = getProvider(type);
-  const url = provider.getModelsEndpoint(baseUrl);
-  const headers = provider.buildModelsRequestHeaders(apiKey);
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
-  try {
-    const response = await proxyFetch(url, { headers, signal: controller.signal });
-    // ...
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-```
+- **修复方案**: 添加 AbortController 10 秒超时控制，在 `finally` 块中清理定时器。
 
 ---
 
 ### 🟠 LLM-02: fetchWithRetry 不重试网络错误
 
 - **文件**: `lib/llm/client.ts:87-134`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 重试逻辑只处理 HTTP 429 状态码。网络层面的错误（DNS 解析失败、连接超时、连接被拒绝）会直接抛出异常，不会被重试。
-- **修复建议**: 在 `proxyFetch` 调用处添加 try-catch，对网络错误（`TypeError`、`ECONNRESET`、`ETIMEDOUT`）进行重试。
+- **修复方案**: 添加 `isRetryableNetworkError` 函数，识别 `TypeError`、`ECONNRESET`、`ECONNREFUSED`、`ETIMEDOUT`、`ENOTFOUND` 等网络错误。`fetchWithRetry` 中对可重试的网络错误进行指数退避重试，用户主动取消（`AbortError`）不重试。
 
 ---
 
 ### 🟡 LLM-03: proxyFetch 重复实现
 
 - **文件**: `lib/llm/client.ts:37-43` + `lib/llm/vision-proxy.ts:70-72`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 两处实现了完全相同的代理 fetch 逻辑。
-- **修复建议**: 将 `proxyFetch` 提取到 `proxy-manager.ts` 或独立的 `fetch-utils.ts` 中。
+- **修复方案**: 将 `proxyFetch` 抽取到 `proxy-manager.ts` 中作为命名导出，`client.ts` 和 `vision-proxy.ts` 统一从此模块导入。
 
 ---
 
 ### 🟡 LLM-04: 代理 URL 无格式校验
 
 - **文件**: `lib/llm/proxy-manager.ts:67`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 代理 URL 直接传给 `ProxyAgent` 构造函数，没有做任何格式校验。
-- **修复建议**: 至少验证代理 URL 的协议格式（`http:` 或 `https:`）。
+- **修复方案**: 在 `replaceAgent` 中添加 URL 格式解析和协议白名单校验（`http:`, `https:`, `socks4:`, `socks5:`），无效 URL 时 warn 并跳过。
 
 ---
 
 ### 🟢 LLM-05: console.time 日志在生产环境保留
 
-- **文件**: `lib/llm/client.ts:100-102`
-- **状态**: `[ ]`
+- **文件**: `lib/llm/client.ts:100-102`, `lib/llm/proxy-manager.ts:29-32`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 生产环境中保留了 `console.time/timeEnd` 日志。
-- **修复建议**: 用环境变量或日志级别控制。
+- **修复方案**: 移除 `client.ts` 中 `fetchWithRetry` 的 `console.time/timeEnd`，移除 `proxy-manager.ts` 中 `getAgent` 的 `console.time/timeEnd`。`callLLM` 的日志中移除了 temperature 和 maxTokens（避免信息过度暴露）。
 
 ---
 
 ### 🟢 LLM-06: AnthropicProvider.processMessage 类型断言不安全
 
 - **文件**: `lib/llm/providers/anthropic.ts:67`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `return message as unknown as AnthropicMessage` 将 `LLMMessage`（content 为 string）断言为 `AnthropicMessage`（content 为 Array），类型不匹配。
-- **修复建议**: 显式构造正确的类型。
+- **修复方案**: 无图片时显式构造 `{ role, content: [{ type: 'text', text }] }` 结构，避免不安全的类型断言。同步更新了 `anthropic.test.ts` 测试用例。
 
 ---
 
@@ -767,8 +750,8 @@ useEffect(() => {
 | GEN-02 | fixedCode 二次校验 | 1h | `[ ]` |
 | GEN-03 | Excalidraw 合并失败处理 | 0.5h | `[ ]` |
 | GEN-05 | Mermaid 合并过滤补全 | 0.5h | `[ ]` |
-| LLM-01 | fetchModels 超时 | 0.5h | `[ ]` |
-| LLM-02 | 网络错误重试 | 1h | `[ ]` |
+| LLM-01 | fetchModels 超时 | 0.5h | ✅ |
+| LLM-02 | 网络错误重试 | 1h | ✅ |
 
 ### 第三阶段：质量提升（1-2 周）
 

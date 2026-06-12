@@ -10,8 +10,7 @@ import type { LLMConfig, ImageData } from '@/lib/types';
 import { isVisionModel } from './vision-models';
 import { getVisionConfig } from '@/lib/db/vision-config';
 import { getProvider } from './providers';
-import { proxyManager } from './proxy-manager';
-import { fetch as undiciFetch } from 'undici';
+import { proxyFetch } from './proxy-manager';
 
 // ── Types ──
 
@@ -60,16 +59,11 @@ async function extractViaVisionApi(
       max_tokens: 4096,
     };
 
-    const agent = await proxyManager.getAgent();
-    const fetchOptions: RequestInit = {
+    const response = await proxyFetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
-    };
-
-    const response = agent
-      ? await undiciFetch(url, { ...fetchOptions, dispatcher: agent } as any) as unknown as Response
-      : await fetch(url, fetchOptions);
+    });
 
     if (!response.ok) {
       console.error('[Vision Proxy] Vision API 调用失败:', response.status, await response.text());

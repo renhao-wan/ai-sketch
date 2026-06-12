@@ -74,9 +74,11 @@ describe('AnthropicProvider', () => {
   });
 
   describe('processMessage', () => {
-    it('无图片时原样返回', () => {
+    it('无图片时转换为 content 数组格式', () => {
       const msg = { role: 'user' as const, content: 'hello' };
-      expect(provider.processMessage(msg)).toEqual(msg);
+      const result = provider.processMessage(msg);
+      expect(result.role).toBe('user');
+      expect(result.content).toEqual([{ type: 'text', text: 'hello' }]);
     });
 
     it('有图片时转换为 content 数组', () => {

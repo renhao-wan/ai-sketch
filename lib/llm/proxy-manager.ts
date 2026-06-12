@@ -1,9 +1,14 @@
 /**
  * 代理管理器
  * 负责管理 LLM 请求的代理配置，支持从数据库动态读取和环境变量回退
+ * 同时提供代理感知的 proxyFetch 封装，供 client.ts 和 vision-proxy.ts 复用
  */
 
 import { ProxyAgent } from 'undici';
+import { fetch as undiciFetch } from 'undici';
+
+/** 允许的代理 URL 协议 */
+const VALID_PROXY_PROTOCOLS = ['http:', 'https:', 'socks4:', 'socks5:'];
 
 /** 代理管理器 */
 class ProxyManager {
@@ -26,10 +31,8 @@ class ProxyManager {
     this.hasChecked = true;
 
     try {
-      console.time('[ProxyManager] Load Config');
       const { configManager } = await import('@/lib/db/config-manager');
       const { proxyUrl, proxyEnabled } = await configManager.getProxy();
-      console.timeEnd('[ProxyManager] Load Config');
 
       if (proxyEnabled && proxyUrl) {
         if (proxyUrl !== this.proxyUrl) {
@@ -62,6 +65,20 @@ class ProxyManager {
    * 关闭旧实例，创建新实例，避免连接泄漏
    */
   private async replaceAgent(url: string): Promise<void> {
+    // 校验代理 URL 协议格式
+    try {
+      const parsed = new URL(url);
+      if (!VALID_PROXY_PROTOCOLS.includes(parsed.protocol)) {
+        console.warn(`[ProxyManager] 不支持的代理协议: ${parsed.protocol}，仅支持 ${VALID_PROXY_PROTOCOLS.join(', ')}`);
+        this.proxyUrl = null;
+        return;
+      }
+    } catch {
+      console.warn(`[ProxyManager] 无效的代理 URL: ${url}`);
+      this.proxyUrl = null;
+      return;
+    }
+
     await this.closeAgent();
     this.proxyUrl = url;
     this.agent = new ProxyAgent(url);
@@ -103,3 +120,17 @@ class ProxyManager {
 
 /** 单例导出 */
 export const proxyManager = new ProxyManager();
+
+/**
+ * 代理感知的 fetch 封装
+ * 有代理时用 undici.fetch + ProxyAgent，无代理时用全局 fetch
+ * 注意: undici.fetch 的 dispatcher 参数未被标准 RequestInit 类型覆盖，
+ * 因此需要类型断言；返回值类型与全局 fetch 兼容但签名不同，需双重断言。
+ */
+export async function proxyFetch(url: string, options?: RequestInit): Promise<Response> {
+  const agent = await proxyManager.getAgent();
+  if (agent) {
+    return undiciFetch(url, { ...options, dispatcher: agent } as any) as unknown as Promise<Response>;
+  }
+  return fetch(url, options);
+}

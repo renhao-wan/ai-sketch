@@ -4,8 +4,7 @@
  */
 
 import type { LLMConfig, LLMMessage, ModelInfo, TestConnectionResult } from '@/lib/types';
-import { fetch as undiciFetch } from 'undici';
-import { proxyManager } from './proxy-manager';
+import { proxyFetch } from './proxy-manager';
 import { getProvider } from './providers';
 import { parseSSEStream, parseSSEData } from '@/lib/api/sse-parser';
 
@@ -28,20 +27,6 @@ function validateBaseUrl(url: string): void {
   }
 }
 
-/**
- * 代理感知的 fetch 封装
- * 有代理时用 undici.fetch + ProxyAgent，无代理时用全局 fetch
- * 注意: undici.fetch 的 dispatcher 参数未被标准 RequestInit 类型覆盖，
- * 因此需要类型断言；返回值类型与全局 fetch 兼容但签名不同，需双重断言。
- */
-async function proxyFetch(url: string, options?: RequestInit): Promise<Response> {
-  const agent = await proxyManager.getAgent();
-  if (agent) {
-    return undiciFetch(url, { ...options, dispatcher: agent } as any) as unknown as Promise<Response>;
-  }
-  return fetch(url, options);
-}
-
 interface SSEProcessorOptions {
   body: ReadableStream<Uint8Array>;
   onChunk?: (chunk: string) => void;
@@ -56,7 +41,7 @@ interface SSEProcessorOptions {
  * 使用共享的 parseSSEStream 解析器
  */
 async function processSSEStream(options: SSEProcessorOptions): Promise<string> {
-  const { body, onChunk, signal, extractContent, checkStop, skipLine } = options;
+  const { body, onChunk, signal, extractContent, checkStop } = options;
   let fullText = '';
 
   await parseSSEStream({
@@ -81,8 +66,31 @@ async function processSSEStream(options: SSEProcessorOptions): Promise<string> {
   return fullText;
 }
 
+/** 判断是否为可重试的网络错误 */
+function isRetryableNetworkError(error: unknown): boolean {
+  if (error instanceof TypeError) {
+    // fetch 抛出的网络错误通常是 TypeError（如 "Failed to fetch"）
+    return true;
+  }
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    // 用户主动取消，不重试
+    return false;
+  }
+  if (error instanceof Error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code && ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', 'UND_ERR_CONNECT_TIMEOUT'].includes(code)) {
+      return true;
+    }
+    // undici 的连接错误消息
+    if (error.message.includes('fetch failed') || error.message.includes('Connect Timeout Error')) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
- * Fetch with automatic retry on 429 rate limiting
+ * Fetch with automatic retry on 429 rate limiting and network errors
  */
 async function fetchWithRetry(
   url: string,
@@ -97,40 +105,58 @@ async function fetchWithRetry(
       throw new DOMException('The operation was aborted.', 'AbortError');
     }
 
-    console.time(`[LLM Client] API Request (attempt ${attempt + 1})`);
-    const response = await proxyFetch(url, options);
-    console.timeEnd(`[LLM Client] API Request (attempt ${attempt + 1})`);
+    try {
+      const response = await proxyFetch(url, options);
 
-    if (response.status !== 429) {
-      return response;
+      if (response.status !== 429) {
+        return response;
+      }
+
+      // 429 Rate Limit — 计算重试延迟
+      const retryAfter = response.headers.get('Retry-After');
+      let delayMs: number;
+
+      if (retryAfter) {
+        const parsed = parseInt(retryAfter, 10);
+        delayMs = isNaN(parsed) ? 1000 * (attempt + 1) : parsed * 1000;
+      } else {
+        delayMs = 1000 * Math.pow(2, attempt);
+      }
+
+      await response.text().catch(() => {});
+      lastError = new Error(`Rate limited (429). Retrying... (attempt ${attempt + 1}/${maxRetries + 1})`);
+
+      // 等待重试延迟
+      if (attempt < maxRetries) {
+        await new Promise<void>((resolve, reject) => {
+          const timer = setTimeout(resolve, delayMs);
+          signal?.addEventListener('abort', () => {
+            clearTimeout(timer);
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          }, { once: true });
+        });
+      }
+    } catch (error) {
+      // 网络错误重试
+      if (isRetryableNetworkError(error) && attempt < maxRetries) {
+        const delayMs = 1000 * Math.pow(2, attempt);
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.warn(`[LLM Client] 网络错误，${delayMs}ms 后重试 (attempt ${attempt + 1}/${maxRetries + 1}):`, (error as Error).message);
+        await new Promise<void>((resolve, reject) => {
+          const timer = setTimeout(resolve, delayMs);
+          signal?.addEventListener('abort', () => {
+            clearTimeout(timer);
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          }, { once: true });
+        });
+        continue;
+      }
+      // 不可重试的错误，直接抛出
+      throw error;
     }
-
-    const retryAfter = response.headers.get('Retry-After');
-    let delayMs: number;
-
-    if (retryAfter) {
-      const parsed = parseInt(retryAfter, 10);
-      delayMs = isNaN(parsed) ? 1000 * (attempt + 1) : parsed * 1000;
-    } else {
-      delayMs = 1000 * Math.pow(2, attempt);
-    }
-
-    await response.text().catch(() => {});
-
-    if (attempt < maxRetries) {
-      await new Promise<void>((resolve, reject) => {
-        const timer = setTimeout(resolve, delayMs);
-        signal?.addEventListener('abort', () => {
-          clearTimeout(timer);
-          reject(new DOMException('The operation was aborted.', 'AbortError'));
-        }, { once: true });
-      });
-    }
-
-    lastError = new Error(`Rate limited (429). Retrying... (attempt ${attempt + 1}/${maxRetries + 1})`);
   }
 
-  throw lastError || new Error('Rate limited after all retries');
+  throw lastError || new Error('Request failed after all retries');
 }
 
 /**
@@ -145,7 +171,7 @@ export async function callLLM(
 ): Promise<string> {
   const { type, baseUrl, apiKey, model, temperature, maxTokens } = config;
 
-  console.log(`[LLM Client] Calling ${type} API, model: ${model}, baseUrl: ${baseUrl}, temperature: ${temperature ?? 0.5}, maxTokens: ${maxTokens ?? 'default'}`);
+  console.log(`[LLM Client] Calling ${type} API, model: ${model}, baseUrl: ${baseUrl}`);
 
   validateBaseUrl(baseUrl);
 
@@ -201,6 +227,10 @@ export async function testConnection(config: LLMConfig): Promise<TestConnectionR
       };
     }
   } catch (error) {
+    // 非预期错误记录到控制台以便调试
+    if (!(error instanceof TypeError || error instanceof DOMException)) {
+      console.error('[LLM Client] testConnection 非预期错误:', error);
+    }
     return {
       success: false,
       message: `连接失败: ${(error as Error).message}`,
@@ -226,6 +256,7 @@ function parseModelsResponse(data: unknown): ModelInfo[] {
 /**
  * Fetch available models from provider
  * 使用策略模式，通过 provider 类型分发到对应的实现
+ * 带 10 秒超时控制，避免无限等待
  */
 export async function fetchModels(type: string, baseUrl: string, apiKey: string): Promise<ModelInfo[]> {
   validateBaseUrl(baseUrl);
@@ -234,11 +265,19 @@ export async function fetchModels(type: string, baseUrl: string, apiKey: string)
   const url = provider.getModelsEndpoint(baseUrl);
   const headers = provider.buildModelsRequestHeaders(apiKey);
 
-  const response = await proxyFetch(url, { headers });
+  // 10 秒超时控制
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch models: ${response.status}`);
+  try {
+    const response = await proxyFetch(url, { headers, signal: controller.signal });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch models: ${response.status}`);
+    }
+
+    return parseModelsResponse(await response.json());
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return parseModelsResponse(await response.json());
 }

@@ -64,7 +64,11 @@ export class AnthropicProvider implements LLMProvider {
   processMessage(message: LLMMessage): AnthropicMessage {
     const images = message.images;
     if (!images || images.length === 0) {
-      return message as unknown as AnthropicMessage;
+      // 无图片时显式构造 AnthropicMessage，避免不安全的类型断言
+      return {
+        role: message.role,
+        content: [{ type: 'text', text: message.content }],
+      };
     }
 
     const contentParts: Array<{ type: string; text?: string; source?: { type: string; media_type: string; data: string } }> = [
