@@ -184,17 +184,29 @@ ipcMain.handle('get-app-version', () => {
   return app.getVersion();
 });
 
-// IPC 处理：卸载前询问是否删除数据
+// IPC 处理：询问并删除应用数据
 ipcMain.handle('confirm-delete-data', async () => {
   const result = await dialog.showMessageBox({
     type: 'question',
     buttons: ['删除数据', '保留数据'],
     defaultId: 1,
-    title: '卸载确认',
+    title: '删除数据',
     message: '是否删除应用数据？',
     detail: '应用数据包括配置、对话历史等。删除后无法恢复。',
   });
-  return result.response === 0; // 0 = 删除数据
+  if (result.response === 0) {
+    try {
+      const fs = require('fs');
+      if (fs.existsSync(userDataPath)) {
+        fs.rmSync(userDataPath, { recursive: true, force: true });
+      }
+      return true;
+    } catch (e) {
+      console.error('[Electron] 删除数据失败:', e);
+      return false;
+    }
+  }
+  return false;
 });
 
 // IPC 处理：窗口控制
