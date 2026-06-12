@@ -126,6 +126,28 @@ ${userInput}`;
   generateImagePrompt(chartType: string): string {
     return buildImagePrompt(chartType, 'New Format', CHART_TYPES, '将图片里的内容转换为新格式');
   }
+
+  // ── 可选方法（用于生成引擎）──
+
+  /**
+   * 规则校验（可选）
+   * 检查代码的结构性问题，不消耗 token
+   */
+  ruleCheck?(code: string): { passed: boolean; issues: string[]; severity: 'error' | 'warning' } {
+    // 实现规则校验逻辑
+    return { passed: true, issues: [], severity: 'warning' };
+  }
+
+  /**
+   * 代码合并（可选）
+   * 多 pass 生成时，将新步骤的输出合并到已累积的代码中
+   */
+  mergeCode?(existing: string, incoming: string): string {
+    // 实现代码合并逻辑
+    const existingParsed = JSON.parse(existing);
+    const incomingParsed = JSON.parse(incoming);
+    return JSON.stringify([...existingParsed, ...incomingParsed]);
+  }
 }
 
 export const newFormatStrategy: DiagramStrategy = new NewFormatStrategy();
@@ -282,9 +304,10 @@ export default {
  */
 
 import type { InputStrategy, InputValidationResult, MessagePayload } from '@/lib/types/input-strategy';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 class VideoStrategy implements InputStrategy {
-  readonly sourceType = 'video';
+  readonly sourceType = 'video' as const;
 
   /**
    * 判断是否能处理该文件
@@ -330,8 +353,9 @@ class VideoStrategy implements InputStrategy {
 
   /**
    * 构建消息
+   * 注意：diagramFormat 参数用于生成默认 prompt（当用户未输入时）
    */
-  buildMessage(processedData: unknown, userPrompt: string, chartType: string): MessagePayload {
+  buildMessage(processedData: unknown, userPrompt: string, chartType: string, diagramFormat?: DiagramFormat): MessagePayload {
     const { frames } = processedData as { frames: string[]; duration: number };
 
     return {
@@ -382,10 +406,10 @@ export { fileStrategy } from './file-strategy';
 
 ### 步骤 3：更新类型定义
 
-编辑 `lib/types/input-strategy.ts`：
+编辑 `lib/types/index.ts`：
 
 ```typescript
-export type InputSourceType = 'text' | 'file' | 'image' | 'video';
+export type SourceType = 'text' | 'file' | 'image' | 'video';
 ```
 
 ---

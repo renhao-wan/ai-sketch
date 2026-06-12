@@ -4,12 +4,13 @@
 
 ## 概述
 
-AI Sketch 支持两种类型的 LLM API：
+AI Sketch 支持三种类型的 LLM API：
 
 | 类型 | 说明 | 典型服务商 |
 |------|------|-----------|
-| **OpenAI** | OpenAI 兼容接口（`/chat/completions`） | OpenAI、DeepSeek、Moonshot、Ollama、vLLM |
+| **OpenAI** | OpenAI 兼容接口（`/chat/completions`） | OpenAI、DeepSeek、Moonshot、vLLM |
 | **Anthropic** | Anthropic 原生接口（`/messages`） | Claude 系列模型 |
+| **Ollama** | Ollama 本地部署接口（`/api/chat`） | Ollama 本地模型 |
 
 ## 配置入口
 
@@ -100,9 +101,9 @@ AI Sketch 支持两种类型的 LLM API：
 
 | 字段 | 值 |
 |------|-----|
-| 提供商类型 | `OpenAI` |
-| Base URL | `http://localhost:11434/v1` |
-| API Key | `ollama`（任意值） |
+| 提供商类型 | `Ollama` |
+| Base URL | `http://localhost:11434` |
+| API Key | 留空或任意值 |
 | 模型 | `llama3`、`qwen2`、`deepseek-coder` |
 
 **前提条件**：已安装并运行 Ollama，且已拉取模型。
@@ -118,6 +119,11 @@ ollama pull qwen2
 # 启动服务（默认端口 11434）
 ollama serve
 ```
+
+**说明**：
+- Ollama 使用专用的 Provider，无需 API Key
+- 自动处理 `/api/chat` 端点和请求格式
+- 模型列表通过 `/api/tags` 端点获取
 
 ### vLLM（本地部署）
 

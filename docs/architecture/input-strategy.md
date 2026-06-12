@@ -33,31 +33,36 @@
 
 ## 接口定义
 
-**文件位置**：`lib/types/input-strategy.ts`
+**文件位置**：`lib/types/input-strategy.ts`（类型定义）和 `lib/types/index.ts`（`SourceType` 定义）
 
 ```typescript
-export type InputSourceType = 'text' | 'file' | 'image';
+// lib/types/index.ts
+export type SourceType = 'text' | 'file' | 'image';
+
+// lib/types/input-strategy.ts
+import type { SourceType } from './index';
+import type { DiagramFormat } from './diagram-strategy';
 
 export type InputValidationResult =
   | { valid: true }
   | { valid: false; error: string };
 
 export interface ProcessedItem {
-  sourceType: InputSourceType;
+  sourceType: SourceType;
   data: unknown;
   fileName: string;
 }
 
 export type MessagePayload =
-  | { type: 'text'; content: string; sourceType: InputSourceType }
+  | { type: 'text'; content: string; sourceType: SourceType }
   | { type: 'image'; content: { text: string; images: unknown[] }; sourceType: 'image' };
 
 export interface InputStrategy {
-  readonly sourceType: InputSourceType;
+  readonly sourceType: SourceType;
   canHandle(file: File): boolean;
   validate(input: unknown): InputValidationResult;
   process(input: unknown): Promise<unknown>;
-  buildMessage(processedData: unknown, userPrompt: string, chartType: string): MessagePayload;
+  buildMessage(processedData: unknown, userPrompt: string, chartType: string, diagramFormat?: DiagramFormat): MessagePayload;
 }
 ```
 
@@ -65,7 +70,7 @@ export interface InputStrategy {
 
 | 类型 | 说明 |
 |------|------|
-| `InputSourceType` | 输入源类型：文本、文件、图片 |
+| `SourceType` | 输入源类型：文本、文件、图片（定义在 `lib/types/index.ts`） |
 | `InputValidationResult` | 验证结果：成功或带错误信息的失败 |
 | `ProcessedItem` | 处理后的文件项 |
 | `MessagePayload` | 标准化的消息载荷，可直接发送 |
@@ -386,8 +391,8 @@ export const orchestrator = new InputOrchestrator([
 ### 3. 更新类型定义
 
 ```typescript
-// lib/types/input-strategy.ts
-export type InputSourceType = 'text' | 'file' | 'image' | 'video';
+// lib/types/index.ts
+export type SourceType = 'text' | 'file' | 'image' | 'video';
 ```
 
 ## 错误处理

@@ -60,10 +60,22 @@ export interface DiagramStrategy {
 
   // ── 图片转图表 ──
   generateImagePrompt(chartType: string): string;
+
+  // ── 可选方法 ──
+
+  /** 从图表代码生成 SVG 预览字符串（仅客户端可用） */
+  generatePreview?(code: string): Promise<string | null>;
+
+  /** 规则校验：检查代码的结构性问题（不消耗 token） */
+  ruleCheck?(code: string): { passed: boolean; issues: string[]; severity: 'error' | 'warning' };
+
+  /** 合并两个代码片段（多 pass 生成时使用） */
+  mergeCode?(existing: string, incoming: string): string;
 }
 
-export type ValidationResult =
-  | { valid: true; data: unknown }
+/** 泛型验证结果类型，允许各策略指定具体数据类型 */
+export type ValidationResult<T = unknown> =
+  | { valid: true; data: T }
   | { valid: false; error: string };
 ```
 
@@ -88,6 +100,9 @@ export type ValidationResult =
 | `validate()` | 客户端 | 验证代码是否可渲染 |
 | `createExportBlob()` | 客户端 | 创建导出文件 Blob |
 | `generateImagePrompt()` | 服务端 | 生成图片转图表的提示词 |
+| `generatePreview?()` | 客户端 | 生成 SVG 预览（可选，用于版本历史） |
+| `ruleCheck?()` | 服务端 | 规则校验（可选，用于生成引擎） |
+| `mergeCode?()` | 服务端 | 代码合并（可选，用于多 pass 生成） |
 
 ## 策略注册表
 

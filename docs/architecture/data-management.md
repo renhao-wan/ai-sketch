@@ -38,10 +38,15 @@
 | 表 | 内容 | key 示例 |
 |----|------|---------|
 | `llm_configs` | LLM 提供商配置 | — |
-| `meta` | 全局设置键值对 | `active_config_id`、`proxy_url`、`proxy_enabled`、`llm_max_retries`、`preference_locale`、`preference_theme`、`preference_glow_enabled` |
+| `meta` | 全局设置键值对 | `active_config_id`、`proxy_url`、`proxy_enabled`、`llm_max_retries`、`preference_locale`、`preference_theme`、`preference_glow_enabled`、`cache_ttl_days`、`cache_hits`、`cache_misses` |
 | `conversations` | 对话记录 | — |
 | `messages` | 对话消息 | — |
 | `response_cache` | AI 响应缓存（L2 持久层，100MB 上限，可配置 TTL，7 天默认） | — |
+| `vision_config` | Vision API 配置 | — |
+| `conversation_tags` | 对话标签 | — |
+| `config_tags` | 配置标签 | — |
+| `conversation_tag_relations` | 对话-标签关联 | — |
+| `config_tag_relations` | 配置-标签关联 | — |
 
 ## 设置页面清理操作
 
@@ -50,20 +55,20 @@
 | 操作 | 影响范围 |
 |------|---------|
 | 删除 | meta 表：`preference_locale` → `zh`、`preference_theme` → `light`、`preference_glow_enabled` → `false` |
-| 保留 | 对话、配置、缓存、代理、重试次数、窗口状态、加密密钥 |
+| 保留 | 对话、配置、缓存、代理、重试次数、窗口状态、加密密钥、标签 |
 
 ### 清除对话
 
 | 操作 | 影响范围 |
 |------|---------|
-| 删除 | `conversations` 表（全部）、`messages` 表（全部） |
+| 删除 | `conversations` 表（全部）、`messages` 表（全部）、`conversation_tags` 表（全部）、`conversation_tag_relations` 表（全部） |
 | 保留 | 配置、缓存、偏好设置、代理、重试次数、窗口状态、加密密钥 |
 
 ### 清除配置
 
 | 操作 | 影响范围 |
 |------|---------|
-| 删除 | `llm_configs` 表（全部）、meta 表 `active_config_id` |
+| 删除 | `llm_configs` 表（全部）、meta 表 `active_config_id`、`config_tags` 表（全部）、`config_tag_relations` 表（全部） |
 | 保留 | 对话、缓存、偏好设置、代理、重试次数、窗口状态、加密密钥文件 |
 
 ### 清除缓存

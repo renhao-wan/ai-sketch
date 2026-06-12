@@ -461,12 +461,18 @@ data: [DONE]
 interface LLMConfig {
   id?: string;
   name: string;
-  type: 'openai' | 'anthropic';
-  base_url: string;
-  api_key: string;
+  type: 'openai' | 'anthropic' | 'ollama';
+  baseUrl: string;
+  apiKey: string;
   model: string;
   description?: string;
-  is_active?: number;
+  isActive?: boolean;
+  /** 生成温度，控制输出随机性，范围 0-2，默认 0.5 */
+  temperature?: number;
+  /** 最大输出 token 数，控制生成长度，默认值取决于 provider 类型 */
+  maxTokens?: number;
+  createdAt?: number;
+  updatedAt?: number;
 }
 ```
 
@@ -491,29 +497,29 @@ interface ImageData {
 interface Conversation {
   id: string;
   title: string;
-  chart_type: string;
+  chartType: string;
   format: DiagramFormat;
-  config_name?: string;
-  config_model?: string;
-  current_code?: string;
-  message_count: number;
-  created_at: number;
-  updated_at: number;
+  configName?: string;
+  configModel?: string;
+  currentCode: string;
+  messageCount: number;
+  createdAt: number;
+  updatedAt: number;
 }
 ```
 
-### Message
+### ConversationMessage
 
 ```typescript
-interface Message {
+interface ConversationMessage {
   id: string;
-  conversation_id: string;
+  conversationId: string;
   role: 'user' | 'assistant';
   content: string;
-  image_data?: string;
-  image_mime_type?: string;
-  source_type: string;
-  created_at: number;
+  imageData?: string;
+  imageMimeType?: string;
+  sourceType?: SourceType;
+  createdAt: number;
 }
 ```
 
@@ -576,14 +582,16 @@ const { configs, activeConfigId } = await api.getConfigs();
 |------|------|------|
 | id | TEXT | 主键 |
 | name | TEXT | 配置名称 |
-| type | TEXT | API 类型（openai/anthropic） |
+| type | TEXT | API 类型（openai/anthropic/ollama） |
 | base_url | TEXT | API Base URL |
-| api_key | TEXT | API Key |
+| api_key | TEXT | API Key（AES-256-GCM 加密存储） |
 | model | TEXT | 模型名称 |
 | description | TEXT | 描述 |
 | is_active | INTEGER | 是否活跃 |
-| created_at | TEXT | 创建时间 |
-| updated_at | TEXT | 更新时间 |
+| temperature | REAL | 生成温度，默认 0.5 |
+| max_tokens | INTEGER | 最大输出 token 数，默认 16384 |
+| created_at | INTEGER | 创建时间戳（Unix 毫秒） |
+| updated_at | INTEGER | 更新时间戳（Unix 毫秒） |
 
 ### conversations
 

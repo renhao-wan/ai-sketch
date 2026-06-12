@@ -63,6 +63,7 @@ DiagramStrategy（接口）
 - 优化图表代码（如箭头对齐）
 - 验证代码有效性
 - 导出文件
+- 规则校验和代码合并（可选，用于生成引擎）
 
 **详细文档**：[图表格式策略模式](./diagram-strategy.md)
 
@@ -85,6 +86,23 @@ InputOrchestrator（编排器）
 - 合并多个输入为统一的消息格式
 
 **详细文档**：[输入类型策略模式](./input-strategy.md)
+
+### 3. LLM Provider 模式（LLM Provider）
+
+统一不同 LLM 服务提供商的接口差异。
+
+```
+LLMProvider（接口）
+    ├── OpenAIProvider（OpenAI 兼容 API）
+    ├── AnthropicProvider（Anthropic API）
+    └── OllamaProvider（Ollama 本地部署）
+```
+
+**职责**：
+- 构建请求头和请求体
+- 获取 API 端点
+- 解析 SSE 响应流
+- 获取模型列表
 
 ## 数据流
 
@@ -209,9 +227,11 @@ app/editor/page.tsx（编辑器）
 
 - **流式生成**：边生成边渲染，无需等待完整响应
 - **L1/L2 缓存**：内存热点缓存 + SQLite 持久缓存，重复请求秒级响应（详见[响应缓存](./response-cache.md)）
+- **生成模式**：支持快速/自动/高质量三种模式，自动模式根据复杂度智能选择（详见[生成模式](./generation-mode.md)）
 - **动态导入**：重型画布组件使用 `next/dynamic` + `ssr: false`
 - **WASM 数据库**：sql.js 比纯 JS 实现更高效
 - **懒加载**：Monaco Editor 按需加载
+- **数据库持久化**：防抖写入 + 原子文件替换，避免频繁 I/O
 
 ## 安全设计
 
@@ -229,6 +249,7 @@ app/editor/page.tsx（编辑器）
 - [输入类型策略模式](./input-strategy.md) — InputStrategy 接口详解
 - [图片处理管线](./image-processing.md) — 图片三层降级策略
 - [响应缓存](./response-cache.md) — L1/L2 分层缓存架构
+- [生成模式](./generation-mode.md) — 快速/自动/高质量三种生成模式
 - [数据管理](./data-management.md) — 数据文件和清理操作
 - [API 接口文档](../api/endpoints.md) — 后端 API 接口说明
 - [开发扩展指南](../guides/extend-diagram.md) — 如何添加新图表格式

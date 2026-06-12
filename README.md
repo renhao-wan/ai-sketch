@@ -174,12 +174,17 @@ pnpm start            # 启动生产服务器
 - [架构概览](docs/architecture/overview.md) — 整体架构设计、核心模块、数据流
 - [图表格式策略模式](docs/architecture/diagram-strategy.md) — DiagramStrategy 接口详解
 - [输入类型策略模式](docs/architecture/input-strategy.md) — InputStrategy 接口详解
+- [设计模式](docs/architecture/design-patterns.md) — 项目中使用的所有设计模式详解
+- [生成模式](docs/architecture/generation-mode.md) — 快速/自动/高质量三种生成模式
+- [图片处理管线](docs/architecture/image-processing.md) — 图片三层降级策略
+- [响应缓存](docs/architecture/response-cache.md) — L1/L2 分层缓存架构
+- [数据管理](docs/architecture/data-management.md) — 数据文件和清理操作
 
 ### API 文档
 - [API 接口文档](docs/api/endpoints.md) — 后端 API 接口详细说明
 
 ### 开发指南
-- [LLM 配置指南](docs/guides/llm-config.md) — 如何配置 OpenAI、Anthropic、本地模型
+- [LLM 配置指南](docs/guides/llm-config.md) — 如何配置 OpenAI、Anthropic、Ollama
 - [开发扩展指南](docs/guides/extend-diagram.md) — 如何添加新图表格式、新输入类型
 - [部署指南](docs/guides/deployment.md) — Web 端和 Electron 端部署说明
 

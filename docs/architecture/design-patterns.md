@@ -86,14 +86,22 @@ export function getStrategy(format: DiagramFormat): DiagramStrategy {
 ```typescript
 // lib/types/diagram-strategy.ts
 export interface DiagramStrategy {
-  readonly codeLanguage: string;
+  readonly format: DiagramFormat;
+  readonly displayName: string;
+  readonly codeLanguage: CodeLanguage;
   readonly fileExtension: string;
+  readonly mimeType: string;
   getSystemPrompt(): string;
-  getUserPrompt(input: string, chartType: string): string;
-  postProcess(code: string): string;
+  getUserPrompt(userInput: string, chartType: string): string;
+  postProcess(rawCode: string): string;
   optimize(code: string): string;
   validate(code: string): ValidationResult;
   createExportBlob(code: string): Blob;
+  generateImagePrompt(chartType: string): string;
+  // 可选方法
+  generatePreview?(code: string): Promise<string | null>;
+  ruleCheck?(code: string): { passed: boolean; issues: string[]; severity: 'error' | 'warning' };
+  mergeCode?(existing: string, incoming: string): string;
 }
 ```
 
@@ -139,6 +147,7 @@ export interface LLMProvider {
 **实现**:
 - `OpenAIProvider` — OpenAI 兼容 API
 - `AnthropicProvider` — Anthropic API
+- `OllamaProvider` — Ollama 本地部署 API
 
 **应用**:
 ```typescript
@@ -388,6 +397,7 @@ const conversation = useConversation({
 | `lib/llm/providers/types.ts` | Provider 接口定义 |
 | `lib/llm/providers/openai.ts` | OpenAI Provider 实现 |
 | `lib/llm/providers/anthropic.ts` | Anthropic Provider 实现 |
+| `lib/llm/providers/ollama.ts` | Ollama Provider 实现 |
 | `lib/llm/providers/registry.ts` | Provider 注册表 |
 
 ### 数据库模式

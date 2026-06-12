@@ -90,6 +90,7 @@ CREATE INDEX idx_response_cache_config ON response_cache(config_name, model);
 | `model` | AI 模型名称 |
 | `configName` | LLM 配置名称 |
 | `contextHash` | 多轮对话上下文哈希（可选，取最近 6 条消息） |
+| `mode` | 生成模式（fast / auto / quality，可选） |
 
 ### 多轮对话支持
 
@@ -186,9 +187,8 @@ async getOrFetch(cacheKey, fetcher, metadata) {
 | 文件 | 职责 |
 |------|------|
 | `lib/cache/memory-cache.ts` | L1 内存缓存（泛型 LRU Map） |
-| `lib/cache/cache-key.ts` | 统一缓存键生成 |
-| `lib/cache/cache-invalidator.ts` | 配置感知的缓存失效 |
-| `lib/db/cache-manager.ts` | L1/L2 协调器，缓存 CRUD |
+| `lib/cache/cache-key.ts` | 统一缓存键生成（包含 `buildCacheKey` 和 `buildContextHash`） |
+| `lib/db/cache-manager.ts` | L1/L2 协调器，缓存 CRUD，含 inflight 去重 |
 | `lib/db/index.ts` | 数据库初始化，response_cache 表定义 |
 | `lib/db/config-manager.ts` | 配置变更时触发缓存失效 |
 | `app/api/generate/route.ts` | 生成路由，集成缓存查找/写入 |
