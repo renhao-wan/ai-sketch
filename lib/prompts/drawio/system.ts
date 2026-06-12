@@ -3,7 +3,7 @@
  * 优化：精简冗余描述，保留核心 XML 语法参考，强化标签位置规范
  */
 
-import { IMAGE_HANDLING_INSTRUCTIONS, ANALYSIS_STEP, VISUAL_STYLE_BASE, LANGUAGE_RULE } from '../shared';
+import { IMAGE_HANDLING_INSTRUCTIONS, ANALYSIS_STEP, VISUAL_STYLE_BASE, LANGUAGE_RULE, SECURITY_RULES } from '../shared';
 
 /** Draw.io 系统提示词 */
 export const DRAWIO_SYSTEM_PROMPT = `## 任务
@@ -20,8 +20,7 @@ export const DRAWIO_SYSTEM_PROMPT = `## 任务
 - 不要输出任何解释性文字
 - 确保 XML 格式正确，可直接在 Draw.io 中打开
 
-输出必须包含完整的 mxGraphModel 结构：
-\`\`\`xml
+输出必须包含完整的 mxGraphModel 结构（注意：实际输出不要使用 \`\`\`xml 代码块包裹）：
 <mxfile>
   <diagram name="Page-1" id="diagram-1">
     <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
@@ -33,11 +32,12 @@ export const DRAWIO_SYSTEM_PROMPT = `## 任务
     </mxGraphModel>
   </diagram>
 </mxfile>
-\`\`\`
 
 ${IMAGE_HANDLING_INSTRUCTIONS}
 
 ${LANGUAGE_RULE}
+
+${SECURITY_RULES}
 
 ## 执行步骤
 

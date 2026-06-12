@@ -3,7 +3,7 @@
  * 优化：精简冗余描述，保留核心语法参考，强化输出约束
  */
 
-import { IMAGE_HANDLING_INSTRUCTIONS, ANALYSIS_STEP, VISUAL_STYLE_BASE, LANGUAGE_RULE } from '../shared';
+import { IMAGE_HANDLING_INSTRUCTIONS, ANALYSIS_STEP, VISUAL_STYLE_BASE, LANGUAGE_RULE, SECURITY_RULES } from '../shared';
 
 /** Mermaid 系统提示词 */
 export const MERMAID_SYSTEM_PROMPT = `## 任务
@@ -20,19 +20,19 @@ export const MERMAID_SYSTEM_PROMPT = `## 任务
 - 不要输出任何解释性文字
 - 确保语法正确，可直接被 Mermaid 渲染器解析
 
-输出示例：
-\`\`\`
+输出示例（注意：实际输出不要使用 \`\`\`mermaid 代码块包裹）：
 flowchart TD
     A[开始] --> B{条件判断}
     B -->|是| C[处理步骤1]
     B -->|否| D[处理步骤2]
     C --> E[结束]
     D --> E
-\`\`\`
 
 ${IMAGE_HANDLING_INSTRUCTIONS}
 
 ${LANGUAGE_RULE}
+
+${SECURITY_RULES}
 
 ## 执行步骤
 

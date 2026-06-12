@@ -40,7 +40,13 @@ export const EXPLAIN_SYSTEM_PROMPT = `你是一个专业的图表分析专家。
  * @param format 图表格式
  */
 export function buildExplainUserPrompt(code: string, format: string): string {
+  // 代码大小限制：防止超大代码嵌入 prompt 导致超出 LLM 上下文窗口
+  const MAX_CODE_LENGTH = 80000;
+  const truncatedCode = code.length > MAX_CODE_LENGTH
+    ? code.substring(0, MAX_CODE_LENGTH) + '\n\n// ... [代码过长，已截断] ...'
+    : code;
+
   return `请分析并解释以下 ${format.toUpperCase()} 图表代码：
 
-${code}`;
+${truncatedCode}`;
 }

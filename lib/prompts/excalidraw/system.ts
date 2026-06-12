@@ -3,7 +3,7 @@
  * 优化：精简冗余描述，保留核心 API 参考，强化关键约束
  */
 
-import { IMAGE_HANDLING_INSTRUCTIONS, ANALYSIS_STEP, VISUAL_STYLE_BASE, LANGUAGE_RULE } from '../shared';
+import { IMAGE_HANDLING_INSTRUCTIONS, ANALYSIS_STEP, VISUAL_STYLE_BASE, LANGUAGE_RULE, SECURITY_RULES } from '../shared';
 
 /** Excalidraw 系统提示词 */
 export const EXCALIDRAW_SYSTEM_PROMPT = `## 任务
@@ -20,12 +20,14 @@ export const EXCALIDRAW_SYSTEM_PROMPT = `## 任务
 - 不要使用 markdown 代码块包裹
 - 确保 JSON 格式正确，可被 JSON.parse 解析
 
-输出示例：
+输出示例（注意：实际输出不要使用 markdown 代码块包裹）：
 [{"type": "rectangle", "x": 100, "y": 200, "width": 180, "height": 80, "backgroundColor": "#e3f2fd", "strokeColor": "#1976d2"}]
 
 ${IMAGE_HANDLING_INSTRUCTIONS}
 
 ${LANGUAGE_RULE}
+
+${SECURITY_RULES}
 
 ## 执行步骤
 
