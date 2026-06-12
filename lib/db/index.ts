@@ -208,11 +208,11 @@ export async function getDb(): Promise<Database> {
 }
 
 /**
- * 将内存数据库持久化到磁盘（异步 + 原子写入）
+ * 将内存数据库持久化到磁盘（原子写入）
  * 使用 write-to-temp-then-rename 模式确保写入的原子性：
  * - 先写入临时文件，再通过 rename 覆盖目标文件
  * - rename 在大多数文件系统上是原子操作，避免写入过程中崩溃导致数据库损坏
- * 使用异步 I/O 避免阻塞事件循环
+ * 目录检查使用同步 I/O（性能影响可忽略），数据写入使用异步 I/O 避免阻塞事件循环
  * 写入失败时标记 isDirty 以便后续重试，不抛出异常以避免阻塞业务
  */
 export function saveToDisk(): void {

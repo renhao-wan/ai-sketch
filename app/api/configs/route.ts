@@ -19,30 +19,26 @@ export async function GET() {
 
 /**
  * POST /api/configs
- * Create a new config or test connection
- * Body: { action: 'create', config } or { action: 'test', config } or { config } (backward compat = test)
+ * 创建新配置
+ * Body: { config: LLMConfig }
+ *
+ * 注意：测试连接请使用 POST /api/configs/test
  */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { action, config } = body as { action?: string; config: LLMConfig };
+    const { config } = body as { config: LLMConfig };
 
     if (!config) {
-      return NextResponse.json({ error: 'Missing required parameter: config' }, { status: 400 });
+      return NextResponse.json({ error: '缺少必要参数: config' }, { status: 400 });
     }
 
-    if (action === 'create') {
-      const newConfig = await configManager.createConfig(config);
-      return NextResponse.json(newConfig);
-    }
-
-    // Default: test connection (backward compat)
-    const result = await configManager.testConnectionAction(config);
-    return NextResponse.json(result);
+    const newConfig = await configManager.createConfig(config);
+    return NextResponse.json(newConfig);
   } catch (error) {
     console.error('Error in POST /api/configs:', error);
     return NextResponse.json(
-      { success: false, message: (error as Error).message || '操作失败' },
+      { success: false, message: (error as Error).message || '创建配置失败' },
       { status: 500 },
     );
   }

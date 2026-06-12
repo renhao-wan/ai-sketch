@@ -53,7 +53,7 @@ export async function parseSSEStream(options: SSEParserOptions): Promise<void> {
             if (e instanceof SyntaxError) {
               consecutiveParseErrors++;
               if (consecutiveParseErrors >= maxParseErrors) {
-                throw new Error('Too many consecutive SSE parse failures — stream may be corrupted');
+                throw new Error('连续 SSE 解析失败次数过多，数据流可能已损坏');
               }
             } else {
               throw e;

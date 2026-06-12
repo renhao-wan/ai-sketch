@@ -311,7 +311,9 @@ class ConfigManager {
 
   async searchConfigs(query: string): Promise<LLMConfig[]> {
     const db = await getDb();
-    const lowerQuery = `%${query.toLowerCase()}%`;
+    // 转义 LIKE 通配符（%、_、\），防止被解释为通配符
+    const escaped = query.toLowerCase().replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+    const lowerQuery = `%${escaped}%`;
     const stmt = db.prepare(
       `SELECT * FROM llm_configs WHERE LOWER(name) LIKE ? OR LOWER(description) LIKE ? OR LOWER(type) LIKE ? ORDER BY created_at DESC`,
     );

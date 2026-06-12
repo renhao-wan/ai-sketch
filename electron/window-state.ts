@@ -15,7 +15,15 @@ interface WindowState {
   isMaximized: boolean;
 }
 
-const STATE_FILE = path.join(app.getPath('userData'), 'window-state.json');
+/** 延迟初始化状态文件路径，避免在 app.whenReady() 前调用 app.getPath() */
+let _stateFile: string | null = null;
+function getStateFile(): string {
+  if (!_stateFile) {
+    _stateFile = path.join(app.getPath('userData'), 'window-state.json');
+  }
+  return _stateFile;
+}
+
 const DEFAULT_STATE: WindowState = { width: 1200, height: 800, isMaximized: false };
 
 /** 数值范围限制 */
@@ -24,7 +32,7 @@ const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(
 /** 加载上次保存的窗口状态，失败时返回默认值 */
 export function loadWindowState(): WindowState {
   try {
-    const data = fs.readFileSync(STATE_FILE, 'utf-8');
+    const data = fs.readFileSync(getStateFile(), 'utf-8');
     const parsed = JSON.parse(data);
     if (typeof parsed.width === 'number' && typeof parsed.height === 'number') {
       return {
@@ -47,7 +55,7 @@ export function loadWindowState(): WindowState {
 /** 保存窗口状态到文件 */
 export function saveWindowState(state: WindowState): void {
   try {
-    fs.writeFileSync(STATE_FILE, JSON.stringify(state));
+    fs.writeFileSync(getStateFile(), JSON.stringify(state));
   } catch (e) {
     console.error('[Window] 保存窗口状态失败:', e);
   }

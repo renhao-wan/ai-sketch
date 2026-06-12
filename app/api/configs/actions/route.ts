@@ -80,8 +80,8 @@ const actionHandlers: Record<string, ActionHandler> = {
   },
 
   'set-retries': async (body) => {
-    const maxRetries = getNumber(body, 'maxRetries', 0, 10);
-    if (maxRetries === undefined) throw new Error('maxRetries 必须是 0-10 之间的数字');
+    const maxRetries = getNumber(body, 'maxRetries', 0, 5);
+    if (maxRetries === undefined) throw new Error('maxRetries 必须是 0-5 之间的数字');
     await configManager.setMaxRetries(maxRetries);
     return { success: true };
   },

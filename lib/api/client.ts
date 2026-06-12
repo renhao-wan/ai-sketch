@@ -55,10 +55,10 @@ export async function cloneConfig(id: string, newName?: string): Promise<LLMConf
 }
 
 export async function testConnection(config: Partial<LLMConfig>): Promise<TestConnectionResult> {
-  return request('/api/configs', {
+  return request('/api/configs/test', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'test', config }),
+    body: JSON.stringify({ config }),
   });
 }
 

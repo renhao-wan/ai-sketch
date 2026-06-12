@@ -120,7 +120,6 @@ export async function POST(request: Request) {
     // Create conversation if none exists
     if (!activeConversationId) {
       isNewConversation = true;
-      const userInputText = typeof userInput === 'string' ? userInput : (userInput.text || '');
       const title = userInputText.length > 50 ? userInputText.substring(0, 50) + '...' : userInputText || 'Image Generation';
       const conv = await conversationManager.create({
         title,
@@ -315,9 +314,9 @@ export async function POST(request: Request) {
             // 使用缓存的响应（已经是处理过的最终代码）
             optimizedCode = cachedResponse;
 
-            // 模拟流式输出（更自然的节奏）
+            // 模拟流式输出（缓存命中时使用更快的节奏）
             const chunkSize = 100;
-            const delayMs = 10;
+            const delayMs = 2;
             for (let i = 0; i < optimizedCode.length; i += chunkSize) {
               const chunk = optimizedCode.substring(i, i + chunkSize);
               const data = `data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`;

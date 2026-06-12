@@ -59,7 +59,7 @@ export function decrypt(ciphertext: string): string {
   const key = getOrCreateKey();
   const parts = ciphertext.split(':');
   if (parts.length !== 3) {
-    throw new Error('Invalid encrypted format');
+    throw new Error('加密格式无效');
   }
 
   const iv = Buffer.from(parts[0], 'hex');

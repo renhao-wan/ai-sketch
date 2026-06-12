@@ -74,6 +74,6 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
 export function useLocale() {
   const ctx = useContext(LocaleContext);
-  if (!ctx) throw new Error('useLocale must be used within LocaleProvider');
+  if (!ctx) throw new Error('useLocale 必须在 LocaleProvider 内使用');
   return ctx;
 }

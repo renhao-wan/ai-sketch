@@ -434,20 +434,19 @@ class ConversationManager {
     const db = await getDb();
     const { query, sort = 'updated_at', order = 'desc', limit = 20, offset = 0, tagId } = params;
 
-    // 构建 WHERE 子句
-    const whereClauses: string[] = [];
+    // 构建 JOIN 子句和参数（tagId 在前，因为 JOIN 在 WHERE 之前）
     const queryParams: unknown[] = [];
-
-    if (query && query.trim()) {
-      whereClauses.push('LOWER(c.title) LIKE ?');
-      queryParams.push(`%${query.toLowerCase()}%`);
-    }
-
-    // 标签筛选：通过 JOIN conversation_tag_relations 实现
     let joinClause = '';
     if (tagId) {
       joinClause = 'INNER JOIN conversation_tag_relations r ON c.id = r.conversation_id AND r.tag_id = ?';
-      queryParams.unshift(tagId); // 将 tagId 放在参数最前面
+      queryParams.push(tagId);
+    }
+
+    // 构建 WHERE 子句
+    const whereClauses: string[] = [];
+    if (query && query.trim()) {
+      whereClauses.push('LOWER(c.title) LIKE ?');
+      queryParams.push(`%${query.toLowerCase()}%`);
     }
 
     const whereStr = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';

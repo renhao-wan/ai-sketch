@@ -194,7 +194,7 @@ export async function callLLM(
   }
 
   if (!response.body) {
-    throw new Error('Response body is null — stream not available');
+    throw new Error('响应体为空，流式传输不可用');
   }
 
   return processSSEStream({
