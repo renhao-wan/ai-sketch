@@ -17,7 +17,7 @@ interface WindowState {
 
 /** 延迟初始化状态文件路径，避免在 app.whenReady() 前调用 app.getPath() */
 let _stateFile: string | null = null;
-function getStateFile(): string {
+export function getStateFile(): string {
   if (!_stateFile) {
     _stateFile = path.join(app.getPath('userData'), 'window-state.json');
   }

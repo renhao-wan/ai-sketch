@@ -147,8 +147,8 @@ class CacheManager {
     response: string,
     metadata: { configName: string; model: string },
   ): Promise<void> {
-    // 写入 L1
-    this.l1.set(cacheKey, response);
+    // 写入 L1（附带 metadata 以便按配置精确清除）
+    this.l1.set(cacheKey, response, { configName: metadata.configName, model: metadata.model });
 
     // 写入 L2
     const db = await getDb();
@@ -231,13 +231,17 @@ class CacheManager {
     const db = await getDb();
     db.run('DELETE FROM response_cache WHERE config_name = ? AND model = ?', [configName, model]);
     const result = db.exec('SELECT changes() as count');
-    const count = result.length > 0 ? (result[0].values[0][0] as number) : 0;
+    const l2Count = result.length > 0 ? (result[0].values[0][0] as number) : 0;
 
-    // L1 无法按配置过滤，整体清除
-    this.l1.clear();
+    // L1 按 metadata 精确清除
+    const l1Count = this.l1.deleteIf(
+      (meta) => meta.configName === configName && meta.model === model,
+    );
+
+    console.log(`[Cache] 按配置清除缓存: ${configName}/${model}, L1: ${l1Count}, L2: ${l2Count}`);
 
     requestSave();
-    return count;
+    return l2Count;
   }
 
   /**

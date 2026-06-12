@@ -10,17 +10,25 @@
  * - Falls back to jsonrepair (npm) if parsing still fails
  */
 
-// Optional robust repair library (loaded lazily to avoid bundler resolution)
+// Optional robust repair library (loaded lazily via dynamic import)
 let jsonRepairLib: ((input: string) => string) | null = null;
-try {
-  // 动态加载可选依赖，避免打包器静态解析
-  // 使用 globalThis.require 绕过 webpack 的静态分析，同时不触发 no-new-func 规则
-  const g = globalThis as Record<string, unknown>;
-  const req = typeof g.require === 'function' ? g.require as (id: string) => unknown : null;
-  const mod = req?.('jsonrepair') as Record<string, unknown> | undefined;
-  jsonRepairLib = (mod?.jsonrepair || mod?.default || null) as ((input: string) => string) | null;
-} catch (_) {
-  // not installed; proceed without it
+let jsonRepairLoadAttempted = false;
+
+/** 延迟加载 jsonrepair 库 */
+async function loadJsonRepair(): Promise<((input: string) => string) | null> {
+  if (jsonRepairLoadAttempted) return jsonRepairLib;
+  jsonRepairLoadAttempted = true;
+
+  try {
+    // 使用动态 import 加载可选依赖
+    // 已在 next.config.mjs 的 serverExternalPackages 中配置
+    const mod = await import('jsonrepair');
+    jsonRepairLib = (mod.jsonrepair || mod.default || null) as ((input: string) => string) | null;
+  } catch {
+    // not installed; proceed without it
+    jsonRepairLib = null;
+  }
+  return jsonRepairLib;
 }
 
 /**
@@ -126,12 +134,41 @@ export function repairJsonClosure(input: string): string {
   try {
     JSON.parse(out);
   } catch (_) {
+    // 同步尝试已加载的库
     if (jsonRepairLib) {
       try { out = jsonRepairLib(out); } catch (_) { /* ignore */ }
     }
   }
 
   return out;
+}
+
+/**
+ * 异步版本的 JSON 修复（会尝试加载 jsonrepair 库）
+ * 适用于非关键路径，可以等待异步加载
+ */
+export async function repairJsonClosureAsync(input: string): Promise<string> {
+  const repaired = repairJsonClosure(input);
+
+  // 如果已经能解析，直接返回
+  try {
+    JSON.parse(repaired);
+    return repaired;
+  } catch {
+    // 继续尝试加载 jsonrepair
+  }
+
+  // 尝试加载 jsonrepair 库
+  const lib = await loadJsonRepair();
+  if (lib) {
+    try {
+      return lib(repaired);
+    } catch {
+      // ignore
+    }
+  }
+
+  return repaired;
 }
 
 /**

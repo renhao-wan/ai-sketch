@@ -6,6 +6,8 @@
 interface CacheEntry<T> {
   value: T;
   size: number;
+  /** 可选的元数据，用于按条件筛选清除 */
+  metadata?: Record<string, string>;
 }
 
 export class MemoryCache<T = string> {
@@ -34,8 +36,18 @@ export class MemoryCache<T = string> {
   }
 
   /** 设置缓存值，超限时淘汰最旧条目 */
-  set(key: string, value: T, size?: number): void {
-    const entrySize = size ?? this.estimateSize(value);
+  set(key: string, value: T, sizeOrMetadata?: number | Record<string, string>): void {
+    let entrySize: number;
+    let metadata: Record<string, string> | undefined;
+
+    if (typeof sizeOrMetadata === 'number') {
+      entrySize = sizeOrMetadata;
+    } else if (sizeOrMetadata && typeof sizeOrMetadata === 'object') {
+      metadata = sizeOrMetadata;
+      entrySize = this.estimateSize(value);
+    } else {
+      entrySize = this.estimateSize(value);
+    }
 
     // 条目过大，跳过写入
     if (entrySize > this.maxSizeBytes) {
@@ -59,7 +71,7 @@ export class MemoryCache<T = string> {
     }
 
     this.currentSize += entrySize;
-    this.cache.set(key, { value, size: entrySize });
+    this.cache.set(key, { value, size: entrySize, metadata });
   }
 
   /** 删除缓存条目 */
@@ -69,6 +81,32 @@ export class MemoryCache<T = string> {
       this.currentSize -= entry.size;
     }
     return this.cache.delete(key);
+  }
+
+  /** 按条件删除缓存条目（key 中包含指定前缀的条目） */
+  deleteByPrefix(prefix: string): number {
+    let count = 0;
+    for (const [key, entry] of this.cache) {
+      if (key.startsWith(prefix)) {
+        this.currentSize -= entry.size;
+        this.cache.delete(key);
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /** 按 metadata 条件删除缓存条目 */
+  deleteIf(predicate: (metadata: Record<string, string>) => boolean): number {
+    let count = 0;
+    for (const [key, entry] of this.cache) {
+      if (entry.metadata && predicate(entry.metadata)) {
+        this.currentSize -= entry.size;
+        this.cache.delete(key);
+        count++;
+      }
+    }
+    return count;
   }
 
   /** 检查是否包含指定 key */

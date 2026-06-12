@@ -1,6 +1,7 @@
 import { getDb, requestSave } from './index';
 import { withTransaction } from './transaction';
 import { generateId, parseStoredImages } from '@/lib/utils';
+import { safeString, safeNumber, safeOptionalString } from './validation';
 import type { Conversation, ConversationMessage, ConversationWithMessages, LLMMessage } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
@@ -35,29 +36,29 @@ function rowToConversation(row: ConversationRow): Conversation {
 /** 将数据库行对象解析为 Conversation 对象 */
 function parseConversationRow(row: Record<string, unknown>): Conversation {
   return rowToConversation({
-    id: row.id as string,
-    title: row.title as string,
-    chart_type: row.chart_type as string,
-    format: row.format as string,
-    config_name: row.config_name as string | null,
-    config_model: row.config_model as string | null,
-    current_code: row.current_code as string,
-    message_count: row.message_count as number,
-    created_at: row.created_at as number,
-    updated_at: row.updated_at as number,
+    id: safeString(row.id, 'id'),
+    title: safeString(row.title, 'title', 'New Conversation'),
+    chart_type: safeString(row.chart_type, 'chart_type', 'auto'),
+    format: safeString(row.format, 'format', 'excalidraw'),
+    config_name: safeOptionalString(row.config_name, 'config_name'),
+    config_model: safeOptionalString(row.config_model, 'config_model'),
+    current_code: safeString(row.current_code, 'current_code'),
+    message_count: safeNumber(row.message_count, 'message_count'),
+    created_at: safeNumber(row.created_at, 'created_at'),
+    updated_at: safeNumber(row.updated_at, 'updated_at'),
   });
 }
 
 function rowToMessage(row: Record<string, unknown>): ConversationMessage {
   return {
-    id: row.id as string,
-    conversationId: row.conversation_id as string,
-    role: row.role as 'user' | 'assistant',
-    content: row.content as string,
-    imageData: (row.image_data as string) || undefined,
-    imageMimeType: (row.image_mime_type as string) || undefined,
-    sourceType: (row.source_type as 'text' | 'file' | 'image') || 'text',
-    createdAt: row.created_at as number,
+    id: safeString(row.id, 'id'),
+    conversationId: safeString(row.conversation_id, 'conversation_id'),
+    role: safeString(row.role, 'role') as 'user' | 'assistant',
+    content: safeString(row.content, 'content'),
+    imageData: safeOptionalString(row.image_data, 'image_data'),
+    imageMimeType: safeOptionalString(row.image_mime_type, 'image_mime_type'),
+    sourceType: safeString(row.source_type, 'source_type', 'text') as 'text' | 'file' | 'image',
+    createdAt: safeNumber(row.created_at, 'created_at'),
   };
 }
 

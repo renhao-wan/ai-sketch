@@ -56,5 +56,5 @@ export async function buildContextHash(
   const recent = messages.slice(-maxMessages);
   const content = recent.map(m => `${m.role}:${typeof m.content === 'string' ? m.content : '[multimodal]'}`).join('\n');
   const hash = await sha256(content);
-  return hash.substring(0, 8);
+  return hash.substring(0, 16);
 }

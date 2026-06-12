@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 import { configManager } from '@/lib/db/config-manager';
 
 /** Action 处理函数类型 */
@@ -118,18 +116,11 @@ const actionHandlers: Record<string, ActionHandler> = {
   },
 
   'reset-window-state': async () => {
-    // 窗口状态文件位于 userData 根目录（数据库文件所在目录的上两级）
-    const dbPath = process.env.AI_SKETCH_DB_PATH || path.join(process.cwd(), 'data', 'ai-sketch.db');
-    const userDataDir = path.dirname(path.dirname(dbPath));
-    const stateFile = path.join(userDataDir, 'window-state.json');
-    try {
-      if (fs.existsSync(stateFile)) {
-        fs.unlinkSync(stateFile);
-      }
-    } catch (e) {
-      console.error('Failed to delete window-state.json:', e);
-    }
-    return { success: true };
+    // 注意：此 action 是回退方案，Electron 环境下应优先使用 IPC 调用
+    // 前端代码会优先尝试 window.electronAPI.resetWindowState()
+    // 此处仅处理非 Electron 环境（如 Web 开发模式）
+    console.warn('[API] reset-window-state action 被调用，建议使用 Electron IPC');
+    return { success: true, message: '请使用 Electron IPC 调用此功能' };
   },
 };
 

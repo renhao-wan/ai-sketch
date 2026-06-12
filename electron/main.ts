@@ -9,9 +9,10 @@
  */
 
 import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
+import fs from 'fs';
 import path from 'path';
 import { startServer, stopServer } from './server';
-import { loadWindowState, saveWindowState } from './window-state';
+import { loadWindowState, saveWindowState, getStateFile } from './window-state';
 import { initAutoUpdater, checkForUpdates, downloadUpdate, quitAndInstall } from './updater';
 
 /** 主窗口实例 */
@@ -207,6 +208,21 @@ ipcMain.handle('confirm-delete-data', async () => {
     }
   }
   return false;
+});
+
+// IPC 处理：重置窗口状态
+ipcMain.handle('reset-window-state', () => {
+  try {
+    const stateFile = getStateFile();
+    if (fs.existsSync(stateFile)) {
+      fs.unlinkSync(stateFile);
+      console.log('[Electron] 窗口状态文件已删除');
+    }
+    return { success: true };
+  } catch (e) {
+    console.error('[Electron] 删除窗口状态文件失败:', e);
+    return { success: false, error: (e as Error).message };
+  }
 });
 
 // IPC 处理：窗口控制

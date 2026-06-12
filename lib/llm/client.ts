@@ -7,6 +7,7 @@ import type { LLMConfig, LLMMessage, ModelInfo, TestConnectionResult } from '@/l
 import { proxyFetch } from './proxy-manager';
 import { getProvider } from './providers';
 import { parseSSEStream, parseSSEData } from '@/lib/api/sse-parser';
+import { isRetryableError } from '@/lib/utils/error';
 
 // ── URL validation ──
 
@@ -66,29 +67,6 @@ async function processSSEStream(options: SSEProcessorOptions): Promise<string> {
   return fullText;
 }
 
-/** 判断是否为可重试的网络错误 */
-function isRetryableNetworkError(error: unknown): boolean {
-  if (error instanceof TypeError) {
-    // fetch 抛出的网络错误通常是 TypeError（如 "Failed to fetch"）
-    return true;
-  }
-  if (error instanceof DOMException && error.name === 'AbortError') {
-    // 用户主动取消，不重试
-    return false;
-  }
-  if (error instanceof Error) {
-    const code = (error as NodeJS.ErrnoException).code;
-    if (code && ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', 'UND_ERR_CONNECT_TIMEOUT'].includes(code)) {
-      return true;
-    }
-    // undici 的连接错误消息
-    if (error.message.includes('fetch failed') || error.message.includes('Connect Timeout Error')) {
-      return true;
-    }
-  }
-  return false;
-}
-
 /**
  * Fetch with automatic retry on 429 rate limiting and network errors
  */
@@ -138,7 +116,7 @@ async function fetchWithRetry(
       }
     } catch (error) {
       // 网络错误重试
-      if (isRetryableNetworkError(error) && attempt < maxRetries) {
+      if (isRetryableError(error) && attempt < maxRetries) {
         const delayMs = 1000 * Math.pow(2, attempt);
         lastError = error instanceof Error ? error : new Error(String(error));
         console.warn(`[LLM Client] 网络错误，${delayMs}ms 后重试 (attempt ${attempt + 1}/${maxRetries + 1}):`, (error as Error).message);

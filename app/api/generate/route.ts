@@ -12,12 +12,7 @@ import { assessComplexity } from '@/lib/generation/complexity-assessor';
 import { generatePlan } from '@/lib/generation/planner';
 import { executeMultiPass } from '@/lib/generation/multi-pass-generator';
 import type { GenerationMode } from '@/lib/generation/types';
-
-/** LLM 生成失败时是否值得重试（排除用户主动取消） */
-function isRetryableError(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === 'AbortError') return false;
-  return true;
-}
+import { isRetryableError } from '@/lib/utils/error';
 
 /** 生成失败后清理脏数据：新建会话删除整个会话，已有会话删除刚添加的消息 */
 async function cleanupOnFailure(

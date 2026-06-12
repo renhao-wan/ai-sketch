@@ -47,6 +47,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   /**
+   * 重置窗口状态（删除窗口位置/大小记录）
+   * @returns { success: boolean, error?: string }
+   */
+  resetWindowState: (): Promise<{ success: boolean; error?: string }> => ipcRenderer.invoke('reset-window-state'),
+
+  /**
    * 窗口控制 API
    */
   window: {

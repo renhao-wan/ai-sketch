@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ['sql.js'],
+  serverExternalPackages: ['sql.js', 'jsonrepair'],
   devIndicators: {
     appIsrStatus: false,
     buildActivity: false,

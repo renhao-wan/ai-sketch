@@ -4,6 +4,7 @@ import { withTransaction } from './transaction';
 import { encrypt, decrypt, isEncrypted } from './crypto';
 import { testConnection } from '@/lib/llm/client';
 import { generateId } from '@/lib/utils';
+import { safeString, safeNumber, safeBoolean, safeOptionalString } from './validation';
 import type { LLMConfig, TestConnectionResult } from '@/lib/types';
 
 interface ConfigStats {
@@ -32,22 +33,22 @@ interface ConfigRow {
 
 /** 将数据库行对象解析为 LLMConfig */
 function rowToConfig(row: Record<string, unknown>): LLMConfig {
-  const rawKey = row.api_key as string;
+  const rawKey = safeString(row.api_key, 'api_key');
   // 兼容读取：未加密的明文直接返回，已加密的解密后返回
   const apiKey = isEncrypted(rawKey) ? decrypt(rawKey) : rawKey;
   return {
-    id: row.id as string,
-    name: row.name as string,
-    type: row.type as 'openai' | 'anthropic' | 'ollama',
-    baseUrl: row.base_url as string,
+    id: safeString(row.id, 'id'),
+    name: safeString(row.name, 'name'),
+    type: safeString(row.type, 'type') as 'openai' | 'anthropic' | 'ollama',
+    baseUrl: safeString(row.base_url, 'base_url'),
     apiKey,
-    model: row.model as string,
-    description: row.description as string,
-    isActive: (row.is_active as number) === 1,
-    temperature: (row.temperature as number) ?? 0.5,
-    maxTokens: row.max_tokens as number,
-    createdAt: row.created_at as number,
-    updatedAt: row.updated_at as number,
+    model: safeString(row.model, 'model'),
+    description: safeString(row.description, 'description'),
+    isActive: safeBoolean(row.is_active, 'is_active'),
+    temperature: safeNumber(row.temperature, 'temperature', 0.5),
+    maxTokens: safeNumber(row.max_tokens, 'max_tokens', 16384),
+    createdAt: safeNumber(row.created_at, 'created_at'),
+    updatedAt: safeNumber(row.updated_at, 'updated_at'),
   };
 }
 

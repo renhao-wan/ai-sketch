@@ -248,11 +248,16 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
           }
           await api.clearCache();
           await api.resetMeta();
-          await fetch('/api/configs/actions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'reset-window-state' }),
-          });
+          // 优先使用 Electron IPC 重置窗口状态，回退到 API 调用
+          if (typeof window !== 'undefined' && 'electronAPI' in window) {
+            await (window as unknown as { electronAPI: { resetWindowState: () => Promise<unknown> } }).electronAPI.resetWindowState();
+          } else {
+            await fetch('/api/configs/actions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'reset-window-state' }),
+            });
+          }
           setConversationCount(0);
           setConfigCount(0);
           setCacheEntries(0);

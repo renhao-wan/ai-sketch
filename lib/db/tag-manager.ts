@@ -5,99 +5,119 @@ import { isEncrypted, decrypt } from './crypto';
 import type { ConversationTag, ConfigTag, Conversation, LLMConfig } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
-/** 将数据库行转换为 ConversationTag */
-function rowToConversationTag(row: Record<string, unknown>): ConversationTag {
-  return {
-    id: row.id as string,
-    name: row.name as string,
-    color: row.color as string,
-    createdAt: row.created_at as number,
-  };
+/** 通用标签接口 */
+interface BaseTag {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: number;
 }
 
-/** 将数据库行转换为 ConfigTag */
-function rowToConfigTag(row: Record<string, unknown>): ConfigTag {
+/** 将数据库行转换为标签对象（通用） */
+function rowToTag<T extends BaseTag>(row: Record<string, unknown>): T {
   return {
     id: row.id as string,
     name: row.name as string,
     color: row.color as string,
     createdAt: row.created_at as number,
+  } as T;
+}
+
+/** 通用标签 CRUD 操作工厂 */
+function createTagCRUD<T extends BaseTag>(tableName: string) {
+  return {
+    async getAll(): Promise<T[]> {
+      const db = await getDb();
+      const stmt = db.prepare(`SELECT * FROM ${tableName} ORDER BY created_at DESC`);
+      const tags: T[] = [];
+      try {
+        while (stmt.step()) {
+          tags.push(rowToTag<T>(stmt.getAsObject() as Record<string, unknown>));
+        }
+      } finally {
+        stmt.free();
+      }
+      return tags;
+    },
+
+    async create(data: { name: string; color: string }): Promise<T> {
+      const db = await getDb();
+      const id = generateId();
+      const now = Date.now();
+
+      db.run(
+        `INSERT INTO ${tableName} (id, name, color, created_at) VALUES (?, ?, ?, ?)`,
+        [id, data.name, data.color, now],
+      );
+      requestSave();
+
+      return { id, name: data.name, color: data.color, createdAt: now } as T;
+    },
+
+    async update(id: string, data: { name?: string; color?: string }): Promise<T> {
+      const db = await getDb();
+      const existing = db.exec(`SELECT * FROM ${tableName} WHERE id = ?`, [id]);
+      if (existing.length === 0 || existing[0].values.length === 0) {
+        throw new Error('标签不存在');
+      }
+
+      const row = existing[0].values[0];
+      const current = {
+        id: row[0] as string,
+        name: row[1] as string,
+        color: row[2] as string,
+        createdAt: row[3] as number,
+      };
+
+      const updated = {
+        ...current,
+        name: data.name ?? current.name,
+        color: data.color ?? current.color,
+      };
+
+      db.run(
+        `UPDATE ${tableName} SET name = ?, color = ? WHERE id = ?`,
+        [updated.name, updated.color, id],
+      );
+      requestSave();
+
+      return updated as T;
+    },
+
+    async delete(id: string, relationTable: string, relationColumn: string): Promise<void> {
+      const db = await getDb();
+      withTransaction(db, () => {
+        db.run(`DELETE FROM ${relationTable} WHERE ${relationColumn} = ?`, [id]);
+        db.run(`DELETE FROM ${tableName} WHERE id = ?`, [id]);
+      });
+    },
   };
 }
 
 class TagManager {
-  private generateId = generateId;
+  private conversationTagCRUD = createTagCRUD<ConversationTag>('conversation_tags');
+  private configTagCRUD = createTagCRUD<ConfigTag>('config_tags');
 
   // ==================== 对话标签 ====================
 
   /** 获取所有对话标签 */
   async getConversationTags(): Promise<ConversationTag[]> {
-    const db = await getDb();
-    const stmt = db.prepare('SELECT * FROM conversation_tags ORDER BY created_at DESC');
-    const tags: ConversationTag[] = [];
-    try {
-      while (stmt.step()) {
-        tags.push(rowToConversationTag(stmt.getAsObject() as Record<string, unknown>));
-      }
-    } finally {
-      stmt.free();
-    }
-    return tags;
+    return this.conversationTagCRUD.getAll();
   }
 
   /** 创建对话标签 */
   async createConversationTag(data: { name: string; color: string }): Promise<ConversationTag> {
-    const db = await getDb();
-    const id = this.generateId();
-    const now = Date.now();
-
-    db.run(
-      'INSERT INTO conversation_tags (id, name, color, created_at) VALUES (?, ?, ?, ?)',
-      [id, data.name, data.color, now],
-    );
-    requestSave();
-
-    return { id, name: data.name, color: data.color, createdAt: now };
+    return this.conversationTagCRUD.create(data);
   }
 
   /** 更新对话标签 */
   async updateConversationTag(id: string, data: { name?: string; color?: string }): Promise<ConversationTag> {
-    const db = await getDb();
-    const existing = db.exec('SELECT * FROM conversation_tags WHERE id = ?', [id]);
-    if (existing.length === 0 || existing[0].values.length === 0) {
-      throw new Error('标签不存在');
-    }
-
-    const row = existing[0].values[0];
-    const current = {
-      id: row[0] as string,
-      name: row[1] as string,
-      color: row[2] as string,
-      createdAt: row[3] as number,
-    };
-
-    const updated = {
-      ...current,
-      name: data.name ?? current.name,
-      color: data.color ?? current.color,
-    };
-
-    db.run(
-      'UPDATE conversation_tags SET name = ?, color = ? WHERE id = ?',
-      [updated.name, updated.color, id],
-    );
-    requestSave();
-
-    return updated;
+    return this.conversationTagCRUD.update(id, data);
   }
 
   /** 删除对话标签 */
   async deleteConversationTag(id: string): Promise<void> {
-    const db = await getDb();
-    withTransaction(db, () => {
-      db.run('DELETE FROM conversation_tag_relations WHERE tag_id = ?', [id]);
-      db.run('DELETE FROM conversation_tags WHERE id = ?', [id]);
-    });
+    return this.conversationTagCRUD.delete(id, 'conversation_tag_relations', 'tag_id');
   }
 
   /** 设置对话标签（替换） */
@@ -198,72 +218,22 @@ class TagManager {
 
   /** 获取所有配置标签 */
   async getConfigTags(): Promise<ConfigTag[]> {
-    const db = await getDb();
-    const stmt = db.prepare('SELECT * FROM config_tags ORDER BY created_at DESC');
-    const tags: ConfigTag[] = [];
-    try {
-      while (stmt.step()) {
-        tags.push(rowToConfigTag(stmt.getAsObject() as Record<string, unknown>));
-      }
-    } finally {
-      stmt.free();
-    }
-    return tags;
+    return this.configTagCRUD.getAll();
   }
 
   /** 创建配置标签 */
   async createConfigTag(data: { name: string; color: string }): Promise<ConfigTag> {
-    const db = await getDb();
-    const id = this.generateId();
-    const now = Date.now();
-
-    db.run(
-      'INSERT INTO config_tags (id, name, color, created_at) VALUES (?, ?, ?, ?)',
-      [id, data.name, data.color, now],
-    );
-    requestSave();
-
-    return { id, name: data.name, color: data.color, createdAt: now };
+    return this.configTagCRUD.create(data);
   }
 
   /** 更新配置标签 */
   async updateConfigTag(id: string, data: { name?: string; color?: string }): Promise<ConfigTag> {
-    const db = await getDb();
-    const existing = db.exec('SELECT * FROM config_tags WHERE id = ?', [id]);
-    if (existing.length === 0 || existing[0].values.length === 0) {
-      throw new Error('标签不存在');
-    }
-
-    const row = existing[0].values[0];
-    const current = {
-      id: row[0] as string,
-      name: row[1] as string,
-      color: row[2] as string,
-      createdAt: row[3] as number,
-    };
-
-    const updated = {
-      ...current,
-      name: data.name ?? current.name,
-      color: data.color ?? current.color,
-    };
-
-    db.run(
-      'UPDATE config_tags SET name = ?, color = ? WHERE id = ?',
-      [updated.name, updated.color, id],
-    );
-    requestSave();
-
-    return updated;
+    return this.configTagCRUD.update(id, data);
   }
 
   /** 删除配置标签 */
   async deleteConfigTag(id: string): Promise<void> {
-    const db = await getDb();
-    withTransaction(db, () => {
-      db.run('DELETE FROM config_tag_relations WHERE tag_id = ?', [id]);
-      db.run('DELETE FROM config_tags WHERE id = ?', [id]);
-    });
+    return this.configTagCRUD.delete(id, 'config_tag_relations', 'tag_id');
   }
 
   /** 设置配置标签（替换） */
