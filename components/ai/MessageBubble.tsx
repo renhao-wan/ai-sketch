@@ -37,6 +37,32 @@ function highlightText(text: string, query: string): React.ReactNode {
   return parts.length > 0 ? parts : text;
 }
 
+/** 用户消息内容，长文本自动收起 */
+const USER_TEXT_LIMIT = 300;
+
+function UserContent({ content, highlightQuery }: { content: string; highlightQuery?: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = content.length > USER_TEXT_LIMIT;
+
+  if (!isLong) {
+    return <p className="whitespace-pre-wrap break-words">{highlightText(content, highlightQuery || '')}</p>;
+  }
+
+  return (
+    <div>
+      <p className="whitespace-pre-wrap break-words">
+        {highlightText(expanded ? content : content.substring(0, USER_TEXT_LIMIT) + '...', highlightQuery || '')}
+      </p>
+      <button
+        onClick={() => setExpanded(prev => !prev)}
+        className="mt-1 text-[11px] text-[var(--accent-indigo)] hover:text-[var(--accent-indigo)]/80 transition-colors"
+      >
+        {expanded ? '收起' : '展开全部'}
+      </button>
+    </div>
+  );
+}
+
 const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, highlightQuery, onRegenerate, onCopy, onExport, onShowDiagram, progress }: MessageBubbleProps) {
   const { t } = useLocale();
   const isUser = message.role === 'user';
@@ -129,7 +155,7 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, 
 
           {/* Text content */}
           {isUser ? (
-            <p className="whitespace-pre-wrap break-words">{highlightText(message.content, highlightQuery || '')}</p>
+            <UserContent content={message.content} highlightQuery={highlightQuery} />
           ) : (
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
