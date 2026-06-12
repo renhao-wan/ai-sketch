@@ -70,6 +70,8 @@ interface AICopilotPanelProps {
   /** 生成模式 */
   generationMode?: GenerationMode;
   onGenerationModeChange?: (mode: GenerationMode) => void;
+  /** 高质量模式的生成进度 */
+  generationProgress?: { step: number; totalSteps: number; message: string } | null;
 }
 
 export default function AICopilotPanel({
@@ -94,6 +96,7 @@ export default function AICopilotPanel({
   onCollapsedChange,
   generationMode = 'auto',
   onGenerationModeChange,
+  generationProgress,
 }: AICopilotPanelProps) {
   const { t } = useLocale();
   const [isCollapsedLocal, setIsCollapsedLocal] = useState(false);
@@ -348,6 +351,7 @@ export default function AICopilotPanel({
                 onCopy={isAssistant && !isMsgStreaming ? () => navigator.clipboard.writeText(msg.content) : undefined}
                 onExport={isAssistant && !isMsgStreaming ? () => exportMessage(msg.content) : undefined}
                 onShowDiagram={isAssistant && !isMsgStreaming ? () => onShowDiagram(msg.content) : undefined}
+                progress={isMsgStreaming ? generationProgress : undefined}
               />
             );
           })}

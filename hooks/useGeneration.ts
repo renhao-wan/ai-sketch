@@ -256,6 +256,8 @@ export function useGeneration(options: UseGenerationOptions) {
       ));
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
+      // 用户主动取消或服务端取消时不显示错误
+      if ((error as Error).message === 'Generation cancelled') return;
       console.error('[Generation] Error:', error);
 
       // 新建会话失败时，服务端已删除该会话，回滚客户端的 conversationId
