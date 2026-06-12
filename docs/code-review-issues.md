@@ -582,36 +582,36 @@ apiKey: rawApiKey && isEncrypted(rawApiKey) ? decrypt(rawApiKey) : rawApiKey,
 ### 🔴 CI-01: 使用已弃用的 GitHub Actions
 
 - **文件**: `.github/workflows/release.yml`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `actions/create-release@v1` 和 `actions/upload-release-asset@v1` 已被官方弃用，可能存在安全漏洞。
-- **修复建议**: 迁移到 `softprops/action-gh-release` 或使用 `gh` CLI。
+- **修复方案**: 迁移到 `softprops/action-gh-release@v2`。重构流程：三个平台先构建并上传 artifact，最后统一创建 Release 并附加所有产物。
 
 ---
 
 ### 🟡 CI-02: CI 缺少依赖审计
 
 - **文件**: `.github/workflows/ci.yml`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 未使用 `pnpm audit` 检查依赖漏洞。
-- **修复建议**: 添加 `pnpm audit --audit-level=high` 步骤。
+- **修复方案**: 添加 `pnpm audit --audit-level=high || true` 步骤（`|| true` 避免审计失败阻断 CI）。
 
 ---
 
 ### 🟡 CI-03: CI/CD 缺少最小权限声明
 
 - **文件**: `.github/workflows/ci.yml`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 未显式配置 `permissions`，默认使用仓库的默认权限。
-- **修复建议**: 显式声明 `permissions: contents: read`。
+- **修复方案**: 显式声明 `permissions: contents: read`。
 
 ---
 
 ### 🟡 CI-04: ESLint 规则过于宽松
 
 - **文件**: `eslint.config.mjs`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 仅使用 `nextVitals` 规则集，缺少安全相关规则（`no-eval`、`no-implied-eval`、`no-new-func`）。
-- **修复建议**: 添加安全相关和代码质量规则。
+- **修复方案**: 添加 `no-eval`、`no-implied-eval`、`no-new-func`、`no-script-url` 四条安全规则（error 级别）。修复了 lint 检测到的 3 处代码问题。
 
 ---
 

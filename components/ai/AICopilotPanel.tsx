@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, type KeyboardEvent, type MouseEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, type KeyboardEvent, type MouseEvent } from 'react';
 import {
   Send,
   Paperclip,
@@ -133,6 +133,7 @@ export default function AICopilotPanel({
         urls.set(file, URL.createObjectURL(file));
       }
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 需要同步创建 URL 供渲染使用，cleanup 中释放
     setImageBlobUrls(urls);
     return () => {
       urls.forEach(url => URL.revokeObjectURL(url));

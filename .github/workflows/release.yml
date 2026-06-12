@@ -9,30 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  create-release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    outputs:
-      release_id: ${{ steps.create_release.outputs.id }}
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-
   build-windows:
     name: Build Windows
-    needs: create-release
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -75,29 +53,16 @@ jobs:
         shell: bash
         run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
-      - name: Upload Windows installer to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: dist/AI-Sketch-Setup-${{ steps.version.outputs.version }}.exe
-          asset_name: AI-Sketch-Setup-${{ steps.version.outputs.version }}.exe
-          asset_content_type: application/octet-stream
-
-      - name: Upload Windows latest.yml to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: dist/latest.yml
-          asset_name: latest.yml
-          asset_content_type: text/yaml
+          name: windows-artifacts
+          path: |
+            dist/AI-Sketch-Setup-${{ steps.version.outputs.version }}.exe
+            dist/latest.yml
 
   build-macos:
     name: Build macOS
-    needs: create-release
     runs-on: macos-14
     steps:
       - name: Checkout
@@ -138,29 +103,16 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
-      - name: Upload macOS DMG to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}-mac.dmg
-          asset_name: AI-Sketch-${{ steps.version.outputs.version }}-mac.dmg
-          asset_content_type: application/octet-stream
-
-      - name: Upload macOS latest-mac.yml to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: dist/latest-mac.yml
-          asset_name: latest-mac.yml
-          asset_content_type: text/yaml
+          name: macos-artifacts
+          path: |
+            dist/AI-Sketch-${{ steps.version.outputs.version }}-mac.dmg
+            dist/latest-mac.yml
 
   build-linux:
     name: Build Linux
-    needs: create-release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -201,22 +153,48 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
-      - name: Upload Linux AppImage to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: dist/AI-Sketch-${{ steps.version.outputs.version }}-x86_64.AppImage
-          asset_name: AI-Sketch-${{ steps.version.outputs.version }}-x86_64.AppImage
-          asset_content_type: application/octet-stream
+          name: linux-artifacts
+          path: |
+            dist/AI-Sketch-${{ steps.version.outputs.version }}-x86_64.AppImage
+            dist/latest-linux.yml
 
-      - name: Upload Linux latest-linux.yml to Release
-        uses: actions/upload-release-asset@v1
+  create-release:
+    name: Create Release
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: find artifacts -type f | sort
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/AI-Sketch-Setup-${{ steps.version.outputs.version }}.exe
+            artifacts/latest.yml
+            artifacts/AI-Sketch-${{ steps.version.outputs.version }}-mac.dmg
+            artifacts/latest-mac.yml
+            artifacts/AI-Sketch-${{ steps.version.outputs.version }}-x86_64.AppImage
+            artifacts/latest-linux.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: dist/latest-linux.yml
-          asset_name: latest-linux.yml
-          asset_content_type: text/yaml

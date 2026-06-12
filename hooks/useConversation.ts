@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import * as api from '@/lib/api/client';
 import type { ConversationMessage } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
@@ -20,7 +20,7 @@ export function useConversation(options: UseConversationOptions = {}) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+  useEffect(() => { optionsRef.current = options; });
 
   const loadConversation = useCallback(async (id: string) => {
     const opts = optionsRef.current;

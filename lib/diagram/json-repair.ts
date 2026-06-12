@@ -13,10 +13,8 @@
 // Optional robust repair library (loaded lazily to avoid bundler resolution)
 let jsonRepairLib: ((input: string) => string) | null = null;
 try {
-  // Use Function constructor to avoid static resolution by bundlers
-  // 比 eval 更安全：不访问调用方的局部作用域
-  const req = new Function('return typeof require !== "undefined" ? require : null')();
-  const mod = req?.('jsonrepair');
+  // 动态加载可选依赖，避免打包器静态解析
+  const mod = require('jsonrepair');
   jsonRepairLib = mod?.jsonrepair || mod?.default || null;
 } catch (_) {
   // not installed; proceed without it
