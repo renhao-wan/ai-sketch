@@ -86,16 +86,6 @@ export default function Tooltip({
     };
   }, []);
 
-  const getTransform = () => {
-    switch (side) {
-      case 'top':
-      case 'bottom':
-      case 'left':
-      case 'right':
-        return 'none';
-    }
-  };
-
   const getArrowStyle = (): React.CSSProperties => {
     const base: React.CSSProperties = {
       position: 'absolute',

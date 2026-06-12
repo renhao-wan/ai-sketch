@@ -50,6 +50,13 @@ export default function BottomContextPanel({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
 
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
   const handleCopy = useCallback(() => {
     if (!generatedCode) return;
     navigator.clipboard.writeText(generatedCode);

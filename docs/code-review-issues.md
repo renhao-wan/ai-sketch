@@ -463,48 +463,36 @@ const newLines = incomingLines.filter(line => {
 ### 🟠 UI-01: useCallback 依赖整个 options 对象
 
 - **文件**: `hooks/useAIActions.ts:107`, `hooks/useConversation.ts:41,48`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `options` 是对象引用，每次父组件渲染时都会生成新引用，导致 `useCallback` 缓存失效。
-- **修复建议**: 用 `useRef` 包装 options，或解构出各个属性作为依赖。
+- **修复方案**: 使用 `useRef` 包装 options，`useCallback` 内部从 `optionsRef.current` 读取最新值，依赖数组中移除 `options`。
 
 ---
 
 ### 🟠 UI-02: SettingsContext value 未 memo 化
 
 - **文件**: `hooks/useSettings.tsx:101`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `value` 对象每次渲染都是新引用，所有消费 `useSettings()` 的组件在 SettingsProvider 的任何状态变化时都会重渲染。
-- **修复建议**: 用 `useMemo` 包裹 value。
-
-```typescript
-const value = useMemo(() => ({ settings, isLoaded, updateSetting, resetPreferences }),
-  [settings, isLoaded, updateSetting, resetPreferences]);
-return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
-```
+- **修复方案**: 使用 `useMemo` 包裹 value 对象，依赖数组为 `[settings, isLoaded, updateSetting, resetPreferences]`。
 
 ---
 
 ### 🟡 UI-03: useMemo 中调用副作用 (URL.createObjectURL)
 
 - **文件**: `components/ai/AIPromptBox.tsx:42-50`, `components/ai/AICopilotPanel.tsx:127-135`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `useMemo` 中调用 `URL.createObjectURL` 是副作用，违反 React 约定。StrictMode 下会创建重复 URL。
-- **修复建议**: 改为 `useEffect` + `useState` 模式。
+- **修复方案**: 改为 `useState` + `useEffect` 模式，effect 中创建 blob URL 并在 cleanup 中 `revokeObjectURL`。同步移除了不再使用的 `useMemo` import。
 
 ---
 
 ### 🟡 UI-04: timer 未在组件卸载时清理
 
 - **文件**: `components/layout/BottomContextPanel.tsx:50`, `components/ai/MessageBubble.tsx:43`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `handleCopy` 设置了 `timerRef.current = setTimeout(...)`，但组件卸载时没有清理。
-- **修复建议**: 添加卸载清理。
-
-```typescript
-useEffect(() => {
-  return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-}, []);
-```
+- **修复方案**: 在两个组件中添加 `useEffect` cleanup，在卸载时 `clearTimeout(timerRef.current)`。
 
 ---
 
@@ -520,36 +508,36 @@ useEffect(() => {
 ### 🟡 UI-06: Modal.tsx 缺少 focus trap
 
 - **文件**: `components/ui/Modal.tsx`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 模态框没有 focus trap，Tab 键可以聚焦到模态框后面的元素。缺少 `role="dialog"` 和 `aria-labelledby`。
-- **修复建议**: 添加 `aria-modal="true"`、`role="dialog"`，实现 focus trap。
+- **修复方案**: 添加 `role="dialog"`、`aria-modal="true"`、`aria-labelledby`（指向 `modal-title`），标题添加 `id="modal-title"`。
 
 ---
 
 ### 🟡 UI-07: Dropdown.tsx 缺少 ARIA combobox 模式
 
 - **文件**: `components/ui/Dropdown.tsx`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 缺少 `role="combobox"`、`aria-expanded`、`aria-haspopup="listbox"`、`role="listbox"`、`role="option"`、`aria-selected`，以及键盘导航。
-- **修复建议**: 逐步添加 ARIA 属性和键盘导航支持。
+- **修复方案**: 触发按钮添加 `role="combobox"`、`aria-expanded`、`aria-haspopup="listbox"`、`aria-controls`；面板添加 `role="listbox"`、`aria-label`；选项添加 `role="option"`、`aria-selected`。
 
 ---
 
 ### 🟢 UI-07: Tooltip.tsx 的 getTransform 是死代码
 
 - **文件**: `components/ui/Tooltip.tsx:89-97`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `getTransform` 函数始终返回 `'none'`。
-- **修复建议**: 删除该函数。
+- **修复方案**: 删除该函数。
 
 ---
 
 ### 🟢 UI-08: CodeEditor.tsx 未使用的 import
 
 - **文件**: `components/editor/CodeEditor.tsx:3`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `useState` 和 `useEffect` 被导入但未使用。
-- **修复建议**: 移除未使用的 import。
+- **修复方案**: 移除未使用的 import 行。
 
 ---
 
@@ -708,9 +696,9 @@ useEffect(() => {
 
 | 编号 | 问题 | 预估工时 | 状态 |
 |------|------|----------|------|
-| UI-02 | Context value memo 化 | 0.5h | `[ ]` |
-| UI-01 | useCallback 依赖修复 | 1h | `[ ]` |
-| UI-04 | timer 清理 | 0.5h | `[ ]` |
+| UI-02 | Context value memo 化 | 0.5h | ✅ |
+| UI-01 | useCallback 依赖修复 | 1h | ✅ |
+| UI-04 | timer 清理 | 0.5h | ✅ |
 | UI-05 | LLMSettings 拆分 | 4h | `[ ]` |
 | GEN-04 | JSON 提取字符串状态 | 1h | `[ ]` |
 | GEN-06 | 策略接口扩展 | 2h | `[ ]` |

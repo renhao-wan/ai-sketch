@@ -114,6 +114,8 @@ export default function Dropdown({
   const panel = isOpen ? createPortal(
     <div
       id="dropdown-panel"
+      role="listbox"
+      aria-label={resolvedPlaceholder}
       style={panelStyle}
       className="bg-[var(--surface-warm)] backdrop-blur-xl rounded-xl border border-[var(--border)] shadow-[0_4px_16px_rgba(28,25,23,0.06)] overflow-hidden animate-fade-in"
     >
@@ -122,6 +124,8 @@ export default function Dropdown({
           <button
             key={option.value}
             type="button"
+            role="option"
+            aria-selected={option.value === value}
             onClick={() => handleSelect(option.value)}
             className={`w-full px-3.5 py-2 text-left text-[13px] transition-colors duration-150 flex items-center justify-between ${
               option.value === value
@@ -149,6 +153,10 @@ export default function Dropdown({
     <div ref={containerRef} className="relative" onKeyDown={handleKeyDown}>
       <button
         type="button"
+        role="combobox"
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        aria-controls={isOpen ? 'dropdown-panel' : undefined}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={triggerClass}

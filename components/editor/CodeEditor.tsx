@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+// React hooks 未使用，无需从 react 导入
 import { Editor, loader } from '@monaco-editor/react';
 
 // Lazy-init Monaco from local package (avoids CDN Tracking Prevention warnings)

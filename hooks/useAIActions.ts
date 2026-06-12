@@ -27,8 +27,11 @@ export function useAIActions(options: UseAIActionsOptions) {
   const { t } = useLocale();
   const [aiActionLoading, setAiActionLoading] = useState<AIActionId | null>(null);
   const [aiExplanation, setAiExplanation] = useState('');
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   const handleAIAction = useCallback(async (actionId: AIActionId) => {
+    const options = optionsRef.current;
     if (!options.generatedCode) {
       options.onNotification(t('aiAction.noCode'), '', 'warning');
       return;
@@ -104,7 +107,7 @@ export function useAIActions(options: UseAIActionsOptions) {
       setAiActionLoading(null);
       options.abortControllerRef.current = null;
     }
-  }, [options, t]);
+  }, [t]);
 
   return {
     aiActionLoading,

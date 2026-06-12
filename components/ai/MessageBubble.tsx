@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { User, Bot, RefreshCw, Copy, Download, Check, Play, ChevronDown, ChevronUp } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
 import { parseStoredImages } from '@/lib/utils';
@@ -70,6 +70,13 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, 
   const [expanded, setExpanded] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const CODE_PREVIEW_LENGTH = 300;
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
   const isLongCode = !isUser && message.content.length > CODE_PREVIEW_LENGTH;
 
   const handleCopy = useCallback(() => {

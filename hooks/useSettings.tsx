@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useContext, createContext } from 'react';
+import { useState, useEffect, useCallback, useContext, createContext, useMemo } from 'react';
 
 export type Theme = 'dark' | 'light' | 'ocean' | 'sakura' | 'emerald' | 'sunset';
 
@@ -97,8 +97,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => {});
   }, []);
 
+  const value = useMemo(() => ({ settings, isLoaded, updateSetting, resetPreferences }),
+    [settings, isLoaded, updateSetting, resetPreferences]);
+
   return (
-    <SettingsContext.Provider value={{ settings, isLoaded, updateSetting, resetPreferences }}>
+    <SettingsContext.Provider value={value}>
       {children}
     </SettingsContext.Provider>
   );

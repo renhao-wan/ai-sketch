@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import * as api from '@/lib/api/client';
 import type { ConversationMessage } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
@@ -19,33 +19,37 @@ interface UseConversationOptions {
 export function useConversation(options: UseConversationOptions = {}) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   const loadConversation = useCallback(async (id: string) => {
+    const opts = optionsRef.current;
     try {
       const conv = await api.getConversation(id);
       setConversationId(conv.id);
       setMessages(conv.messages);
 
       if (conv.format && ['excalidraw', 'mermaid', 'drawio'].includes(conv.format)) {
-        options.onFormatChange?.(conv.format as DiagramFormat);
+        opts.onFormatChange?.(conv.format as DiagramFormat);
       }
 
       // 恢复图表类型
-      options.onChartTypeChange?.(conv.chartType);
+      opts.onChartTypeChange?.(conv.chartType);
 
-      options.onCodeClear?.();
+      opts.onCodeClear?.();
     } catch (err) {
       console.error('Failed to load conversation:', err);
-      options.onError?.('Failed to load conversation');
+      opts.onError?.('Failed to load conversation');
     }
-  }, [options]);
+  }, []);
 
   const newConversation = useCallback(() => {
+    const opts = optionsRef.current;
     setConversationId(null);
     setMessages([]);
-    options.onCodeClear?.();
-    options.onFormatChange?.('excalidraw');
-  }, [options]);
+    opts.onCodeClear?.();
+    opts.onFormatChange?.('excalidraw');
+  }, []);
 
   const addUserMessage = useCallback((msg: ConversationMessage) => {
     setMessages(prev => [...prev, msg]);
