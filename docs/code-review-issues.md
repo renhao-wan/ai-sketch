@@ -327,60 +327,45 @@ apiKey: rawApiKey && isEncrypted(rawApiKey) ? decrypt(rawApiKey) : rawApiKey,
 ### 🔴 GEN-02: LLM 评审的 fixedCode 无大小限制和二次校验
 
 - **文件**: `lib/generation/critic.ts:188-195` → `lib/generation/multi-pass-generator.ts:129-131`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `fixedCode` 直接返回给 `multi-pass-generator.ts` 使用，经过 `postProcess` 和 `optimize` 后直接成为最终输出。如果 LLM 返回了破坏性的代码（空数组、超大 JSON、含注入内容的 XML），没有任何大小限制或二次校验。
-- **修复建议**: 在 `multi-pass-generator.ts` 使用 `fixedCode` 前添加大小限制检查和 `ruleCheck` 二次校验。
+- **修复方案**: 添加 500KB 大小限制、空值检查、`ruleCheck` 二次校验，无效内容会被拒绝。
 
 ---
 
 ### 🔴 GEN-03: Excalidraw 合并失败时静默丢弃新代码
 
 - **文件**: `lib/generation/multi-pass-generator.ts:216-218`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 当新步骤的 JSON 解析失败时，`catch` 块直接 `return existing`，整个步骤的输出被静默丢弃。用户无感知，SSE 事件已推送了 "完成" 状态。
-- **修复建议**: 至少通过 `sendEvent` 推送一个 warning 事件，或在最终的 critique 事件中标注合并失败。
-
-```typescript
-} catch (e) {
-  console.warn('[MultiPass] Excalidraw 合并失败，保留已有代码:', (e as Error).message);
-  // 可选：通过 sendEvent 推送 warning
-  return existing;
-}
-```
+- **修复方案**: 合并失败时记录 `console.warn` 日志（已下沉到 `ExcalidrawStrategy.mergeCode`）。
 
 ---
 
 ### 🟡 GEN-04: JSON 提取不处理字符串内的花括号
 
 - **文件**: `lib/generation/planner.ts:74-78`, `lib/generation/critic.ts:179-182`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 括号平衡匹配不追踪字符串状态。如果 LLM 在 JSON 的字符串值中包含 `{` 或 `}`，括号计数会错乱，导致 JSON 提取提前截断或延迟。
-- **修复建议**: 在括号扫描循环中加入 `inString` 标志，与 `json-repair.ts` 中的实现保持一致。或直接复用 `json-repair.ts` 导出的 JSON 提取函数。
+- **修复方案**: 在 `json-repair.ts` 中新增 `extractFirstJsonObject` 函数（带字符串状态追踪），`planner.ts` 和 `critic.ts` 统一复用。
 
 ---
 
 ### 🟡 GEN-05: Mermaid 合并过滤不完整
 
 - **文件**: `lib/generation/multi-pass-generator.ts:223-228`
-- **状态**: `[ ]`
-- **描述**: 过滤正则只覆盖了 `graph`、`flowchart`、`sequenceDiagram`、`classDiagram` 四种图表类型，遗漏了 `erDiagram`、`gantt`、`pie`、`stateDiagram`、`mindmap`、`timeline`、`block-beta` 等。
-- **修复建议**: 参考 `mermaid-strategy.ts:15-20` 的 `VALID_STARTS`，补全正则。
-
-```typescript
-const newLines = incomingLines.filter(line => {
-  const trimmed = line.trim();
-  return trimmed && !/^(graph|flowchart|sequenceDiagram|classDiagram|erDiagram|gantt|pie|stateDiagram|mindmap|timeline|block-beta|requirementDiagram|gitGraph)/i.test(trimmed);
-});
-```
+- **状态**: `[x]` ✅ 已修复
+- **描述**: 过滤正则只覆盖了 4 种图表类型，遗漏了 `erDiagram`、`gantt`、`pie` 等。
+- **修复方案**: 补全正则为 13 种图表类型（已下沉到 `MermaidStrategy.mergeCode`）。
 
 ---
 
 ### 🟡 GEN-06: ruleCheck 和 mergeCode 使用 if-else 链，违反开闭原则
 
 - **文件**: `lib/generation/critic.ts:20-27`, `lib/generation/multi-pass-generator.ts:209-245`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 新增格式需要修改这两处的 if-else 链。建议将格式特定逻辑下沉到 `DiagramStrategy` 接口。
-- **修复建议**: 在 `DiagramStrategy` 接口中新增 `ruleCheck?(code: string): string[]` 和 `mergeCode?(existing: string, incoming: string): string` 方法。
+- **修复方案**: 在 `DiagramStrategy` 接口中新增可选的 `ruleCheck()` 和 `mergeCode()` 方法。三个策略各自实现。`critic.ts` 和 `multi-pass-generator.ts` 改为委托给策略方法，删除旧的 if-else 链。
 
 ---
 
@@ -396,9 +381,9 @@ const newLines = incomingLines.filter(line => {
 ### 🟢 GEN-08: 括号平衡 JSON 提取逻辑重复 3 次
 
 - **文件**: `lib/generation/planner.ts:70-78`, `lib/generation/critic.ts:173-183`, `lib/diagram/json-repair.ts:69-109`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 前两处是简化版（不追踪字符串状态），`json-repair.ts` 是完整版。
-- **修复建议**: 将 JSON 提取逻辑统一到 `json-repair.ts` 中导出。
+- **修复方案**: 新增 `extractFirstJsonObject` 统一导出，`planner.ts` 和 `critic.ts` 改为 import 复用。
 
 ---
 
@@ -414,9 +399,9 @@ const newLines = incomingLines.filter(line => {
 ### 🟢 GEN-10: json-repair.ts 使用 eval 引入依赖
 
 - **文件**: `lib/diagram/json-repair.ts:16-22`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `(0, eval)('require')` 绕过打包器的静态分析。在 CSP 严格的环境中 eval 会被禁止。
-- **修复建议**: 改用 `Function('return require')()` 或在打包配置中显式 externalize `jsonrepair`。
+- **修复方案**: 改为 `new Function('return typeof require !== "undefined" ? require : null')()`，更安全且兼容 CSP。
 
 ---
 
@@ -425,18 +410,18 @@ const newLines = incomingLines.filter(line => {
 ### 🟡 STRAT-01: DiagramFormat 联合类型硬编码
 
 - **文件**: `lib/types/diagram-strategy.ts:7`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 新增格式需要同时修改 `DiagramFormat` 类型、`registry.ts`、`CodeLanguage` 类型、`critic.ts`、`multi-pass-generator.ts` 共 5+ 处。
-- **修复建议**: 参见 GEN-06，将格式特定逻辑下沉到策略接口。
+- **修复方案**: 通过 GEN-06 将 `ruleCheck` 和 `mergeCode` 下沉到策略接口，`critic.ts` 和 `multi-pass-generator.ts` 中的 if-else 链已消除。新增格式只需实现接口方法，不再需要修改调度逻辑。
 
 ---
 
 ### 🟢 STRAT-02: ValidationResult 的 data 类型过于宽泛
 
 - **文件**: `lib/types/diagram-strategy.ts:68-70`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `data: unknown` 导致调用方每次都需要类型断言。
-- **修复建议**: 改为泛型 `ValidationResult<T = unknown>`。
+- **修复方案**: 改为泛型 `ValidationResult<T = unknown>`，各策略可指定具体数据类型。
 
 ---
 

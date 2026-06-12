@@ -165,6 +165,36 @@ class DrawioStrategy implements DiagramStrategy {
   generateImagePrompt(chartType: string): string {
     return buildImagePrompt(chartType, 'Draw.io', CHART_TYPES as Record<string, string>, '只输出 Draw.io XML 代码，不要包含代码块标记。XML 必须包含完整的 mxfile/mxGraphModel 结构。');
   }
+
+  ruleCheck(code: string) {
+    const issues: string[] = [];
+
+    if (!code.includes('<mxfile>') && !code.includes('<mxGraphModel>')) {
+      return { passed: false, issues: ['缺少有效的 Draw.io XML 结构'], severity: 'error' as const };
+    }
+
+    const cellCount = (code.match(/<mxCell/g) || []).length;
+    const selfClosedCount = (code.match(/<mxCell[^>]*\/>/g) || []).length;
+    const closedCount = (code.match(/<\/mxCell>/g) || []).length;
+    if (cellCount > 0 && selfClosedCount + closedCount < cellCount) {
+      issues.push('mxCell 标签可能未正确闭合');
+    }
+
+    return { passed: issues.length === 0, issues, severity: issues.length > 0 ? 'warning' as const : 'error' as const };
+  }
+
+  mergeCode(existing: string, incoming: string): string {
+    const cellRegex = /<mxCell[^>]*\/>/g;
+    const incomingCells = incoming.match(cellRegex) || [];
+    if (incomingCells.length === 0) return existing;
+
+    const insertPoint = existing.lastIndexOf('</root>');
+    if (insertPoint === -1) return existing;
+
+    return existing.slice(0, insertPoint)
+      + incomingCells.join('\n  ')
+      + '\n' + existing.slice(insertPoint);
+  }
 }
 
 export const drawioStrategy: DiagramStrategy = new DrawioStrategy();

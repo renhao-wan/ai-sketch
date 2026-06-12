@@ -223,52 +223,17 @@ function buildStepMessages(
   ];
 }
 
-/** 合并两个代码片段 */
+/** 合并两个代码片段（委托给各策略的 mergeCode 方法） */
 function mergeCode(existing: string, incoming: string, format: DiagramFormat): string {
   if (!existing) return incoming;
   if (!incoming) return existing;
 
   const strategy = getStrategy(format);
-
-  if (format === 'excalidraw') {
-    try {
-      const existingArr = JSON.parse(strategy.postProcess(existing));
-      const incomingArr = JSON.parse(strategy.postProcess(incoming));
-      const existingElements = Array.isArray(existingArr) ? existingArr : (existingArr.elements || []);
-      const incomingElements = Array.isArray(incomingArr) ? incomingArr : (incomingArr.elements || []);
-      return JSON.stringify([...existingElements, ...incomingElements]);
-    } catch (e) {
-      console.warn('[MultiPass] Excalidraw 合并失败，保留已有代码:', (e as Error).message);
-      return existing;
-    }
+  if (strategy.mergeCode) {
+    return strategy.mergeCode(existing, incoming);
   }
 
-  if (format === 'mermaid') {
-    // Mermaid：追加代码行（跳过重复的声明行）
-    // 覆盖所有 Mermaid 图表类型的声明关键字
-    const MERMAID_DECLARATION_RE = /^(graph|flowchart|sequenceDiagram|classDiagram|erDiagram|gantt|pie|stateDiagram|mindmap|timeline|block-beta|requirementDiagram|gitGraph)\b/i;
-    const incomingLines = incoming.split('\n');
-    const newLines = incomingLines.filter(line => {
-      const trimmed = line.trim();
-      return trimmed && !MERMAID_DECLARATION_RE.test(trimmed);
-    });
-    return existing + '\n' + newLines.join('\n');
-  }
-
-  if (format === 'drawio') {
-    // Draw.io：提取 mxCell 追加到现有文件
-    const cellRegex = /<mxCell[^>]*\/>/g;
-    const incomingCells = incoming.match(cellRegex) || [];
-    if (incomingCells.length === 0) return existing;
-
-    const insertPoint = existing.lastIndexOf('</root>');
-    if (insertPoint === -1) return existing;
-
-    return existing.slice(0, insertPoint)
-      + incomingCells.join('\n  ')
-      + '\n' + existing.slice(insertPoint);
-  }
-
+  // 未实现 mergeCode 的格式直接返回 incoming
   return incoming;
 }
 

@@ -120,6 +120,53 @@ class ExcalidrawStrategy implements DiagramStrategy {
   generateImagePrompt(chartType: string): string {
     return buildImagePrompt(chartType, 'Excalidraw', CHART_TYPES, '将图片里的内容转换为excalidraw');
   }
+
+  ruleCheck(code: string) {
+    const issues: string[] = [];
+    let elements: unknown[];
+    try {
+      const parsed = JSON.parse(code);
+      elements = Array.isArray(parsed) ? parsed : (parsed.elements || []);
+    } catch {
+      return { passed: false, issues: ['JSON 解析失败'], severity: 'error' as const };
+    }
+
+    if (elements.length === 0) {
+      return { passed: false, issues: ['元素列表为空'], severity: 'error' as const };
+    }
+
+    // 连线断开检测
+    const elementIds = new Set(elements.map(e => (e as Record<string, unknown>).id as string));
+    for (const el of elements) {
+      const elem = el as Record<string, unknown>;
+      if (elem.type === 'arrow' || elem.type === 'line') {
+        const startBinding = elem.startBinding as Record<string, unknown> | null;
+        const endBinding = elem.endBinding as Record<string, unknown> | null;
+        if (startBinding?.elementId && !elementIds.has(startBinding.elementId as string)) {
+          issues.push(`箭头 ${elem.id} 的起始元素 ${startBinding.elementId} 不存在`);
+        }
+        if (endBinding?.elementId && !elementIds.has(endBinding.elementId as string)) {
+          issues.push(`箭头 ${elem.id} 的目标元素 ${endBinding.elementId} 不存在`);
+        }
+      }
+    }
+
+    const hasErrors = issues.some(i => i.includes('不存在'));
+    return { passed: issues.length === 0, issues, severity: hasErrors ? 'error' as const : 'warning' as const };
+  }
+
+  mergeCode(existing: string, incoming: string): string {
+    try {
+      const existingArr = JSON.parse(this.postProcess(existing));
+      const incomingArr = JSON.parse(this.postProcess(incoming));
+      const existingElements = Array.isArray(existingArr) ? existingArr : (existingArr.elements || []);
+      const incomingElements = Array.isArray(incomingArr) ? incomingArr : (incomingArr.elements || []);
+      return JSON.stringify([...existingElements, ...incomingElements]);
+    } catch (e) {
+      console.warn('[ExcalidrawStrategy] 合并失败，保留已有代码:', (e as Error).message);
+      return existing;
+    }
+  }
 }
 
 function fixUnescapedQuotes(jsonString: string): string {

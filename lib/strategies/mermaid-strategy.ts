@@ -127,6 +127,39 @@ class MermaidStrategy implements DiagramStrategy {
   generateImagePrompt(chartType: string): string {
     return buildImagePrompt(chartType, 'Mermaid', CHART_TYPES as Record<string, string>, '只输出 Mermaid 代码，不要包含代码块标记。');
   }
+
+  ruleCheck(code: string) {
+    const issues: string[] = [];
+    const lines = code.split('\n').filter(l => l.trim());
+
+    const hasDirection = lines.some(l =>
+      /^(graph|flowchart)\s+(TD|TB|BT|RL|LR)/i.test(l.trim()),
+    );
+    if (!hasDirection) {
+      issues.push('缺少方向声明（TD/TB/RL/LR）');
+    }
+
+    const validStarters = ['graph', 'flowchart', 'sequenceDiagram', 'classDiagram',
+      'stateDiagram', 'erDiagram', 'gantt', 'pie', 'mindmap'];
+    const firstLine = lines[0]?.trim().toLowerCase() || '';
+    const hasValidStarter = validStarters.some(s => firstLine.startsWith(s.toLowerCase()));
+    if (!hasValidStarter) {
+      issues.push('缺少有效的图表类型声明');
+    }
+
+    const hasErrors = !hasValidStarter;
+    return { passed: issues.length === 0, issues, severity: hasErrors ? 'error' as const : 'warning' as const };
+  }
+
+  mergeCode(existing: string, incoming: string): string {
+    const MERMAID_DECLARATION_RE = /^(graph|flowchart|sequenceDiagram|classDiagram|erDiagram|gantt|pie|stateDiagram|mindmap|timeline|block-beta|requirementDiagram|gitGraph)\b/i;
+    const incomingLines = incoming.split('\n');
+    const newLines = incomingLines.filter(line => {
+      const trimmed = line.trim();
+      return trimmed && !MERMAID_DECLARATION_RE.test(trimmed);
+    });
+    return existing + '\n' + newLines.join('\n');
+  }
 }
 
 export const mermaidStrategy: DiagramStrategy = new MermaidStrategy();

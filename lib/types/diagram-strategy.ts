@@ -62,9 +62,27 @@ export interface DiagramStrategy {
 
   /** Generate a format-specific prompt for image-to-diagram conversion */
   generateImagePrompt(chartType: string): string;
+
+  // ── Generation engine support ──
+
+  /**
+   * 规则校验：检查代码的结构性问题（不消耗 token）
+   * 用于 critic 的规则校验阶段和 fixedCode 的二次校验
+   * @returns 校验结果，passed 为 true 表示通过
+   */
+  ruleCheck?(code: string): { passed: boolean; issues: string[]; severity: 'error' | 'warning' };
+
+  /**
+   * 合并两个代码片段（多 pass 生成时使用）
+   * 用于将新步骤的输出合并到已累积的代码中
+   * @param existing 已累积的代码
+   * @param incoming 新步骤的输出
+   * @returns 合并后的代码
+   */
+  mergeCode?(existing: string, incoming: string): string;
 }
 
-/** Validation result discriminated union */
-export type ValidationResult =
-  | { valid: true; data: unknown }
+/** Validation result discriminated union（泛型，允许各策略指定具体数据类型） */
+export type ValidationResult<T = unknown> =
+  | { valid: true; data: T }
   | { valid: false; error: string };
