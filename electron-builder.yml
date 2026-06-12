@@ -43,6 +43,11 @@ win:
       arch: [x64]
   icon: electron/resources/icon.ico
   requestedExecutionLevel: asInvoker
+  # 代码签名（取消注释并配置证书信息以启用）
+  # certificateFile: path/to/certificate.pfx
+  # certificatePassword: ${CERTIFICATE_PASSWORD}
+  # 或使用证书主题名（从证书存储中自动查找）
+  # certificateSubjectName: "Your Company Name"
 
 nsis:
   artifactName: "AI-Sketch-Setup-${version}.${ext}"

@@ -18,13 +18,25 @@ interface WindowState {
 const STATE_FILE = path.join(app.getPath('userData'), 'window-state.json');
 const DEFAULT_STATE: WindowState = { width: 1200, height: 800, isMaximized: false };
 
+/** 数值范围限制 */
+const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+
 /** 加载上次保存的窗口状态，失败时返回默认值 */
 export function loadWindowState(): WindowState {
   try {
     const data = fs.readFileSync(STATE_FILE, 'utf-8');
     const parsed = JSON.parse(data);
     if (typeof parsed.width === 'number' && typeof parsed.height === 'number') {
-      return { ...DEFAULT_STATE, ...parsed };
+      return {
+        ...DEFAULT_STATE,
+        ...parsed,
+        // 限制窗口尺寸范围，防止恶意修改或异常值
+        width: clamp(parsed.width, 400, 7680),
+        height: clamp(parsed.height, 300, 4320),
+        // 限制坐标范围，防止窗口移出屏幕
+        x: typeof parsed.x === 'number' ? clamp(parsed.x, -500, 7680) : undefined,
+        y: typeof parsed.y === 'number' ? clamp(parsed.y, -500, 4320) : undefined,
+      };
     }
     return DEFAULT_STATE;
   } catch {

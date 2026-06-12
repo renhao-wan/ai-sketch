@@ -59,6 +59,7 @@ function createWindow(): void {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true, // 启用沙箱模式，进一步限制渲染进程的系统调用能力
       devTools: isDev, // 开发模式启用开发者工具
     },
   });

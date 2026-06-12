@@ -2,16 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <!-- Electron/Chromium JIT 编译所需 -->
     <key>com.apple.security.cs.allow-jit</key>
     <true/>
+    <!-- Electron 渲染进程所需（V8 引擎需要可执行内存） -->
     <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
     <true/>
-    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
-    <true/>
+    <!-- 出站网络连接（调用 LLM API） -->
     <key>com.apple.security.network.client</key>
     <true/>
-    <key>com.apple.security.network.server</key>
-    <true/>
+    <!-- 用户选择的文件读写（导入/导出配置、保存图表） -->
     <key>com.apple.security.files.user-selected.read-write</key>
     <true/>
 </dict>

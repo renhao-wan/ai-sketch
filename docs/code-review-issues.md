@@ -544,36 +544,36 @@ apiKey: rawApiKey && isEncrypted(rawApiKey) ? decrypt(rawApiKey) : rawApiKey,
 ### 🟠 ELEC-01: 缺少代码签名配置
 
 - **文件**: `electron-builder.yml`, `.github/workflows/release.yml`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 未配置 Windows EV 证书和 macOS Developer ID。Windows 上 SmartScreen 会警告"未知发布者"，macOS 上 Gatekeeper 会阻止运行。
-- **修复建议**: 配置代码签名证书。在 `electron-builder.yml` 中添加 `win.certificateFile`/`certificatePassword`，`mac.identity`。
+- **修复方案**: 在 `electron-builder.yml` 中添加代码签名配置注释（certificateFile/certificatePassword/certificateSubjectName），用户取消注释并填入证书信息即可启用。
 
 ---
 
 ### 🟡 ELEC-02: macOS entitlements 过度开放
 
 - **文件**: `electron/resources/entitlements.mac.plist`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `allow-dyld-environment-variables` 允许 DYLD 环境变量，可能被利用进行库注入。`allow-unsigned-executable-memory` 降低了安全性。`network.server` 对图表生成工具可能不需要。
-- **修复建议**: 评估并移除不必要的权限。
+- **修复方案**: 移除 `allow-dyld-environment-variables`（库注入风险）和 `network.server`（不需要作为服务器），保留 `allow-jit`、`allow-unsigned-executable-memory`（Electron/Chromium 必需）和 `network.client`、`files.user-selected.read-write`。添加注释说明每个权限的用途。
 
 ---
 
 ### 🟡 ELEC-03: 窗口状态缺少范围验证
 
 - **文件**: `electron/window-state.ts:26`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 只验证了 `width` 和 `height` 是数字，但未验证范围。恶意修改 `window-state.json` 可设置极大窗口尺寸或负数坐标。
-- **修复建议**: 添加数值范围限制。
+- **修复方案**: 添加 `clamp` 函数限制 width(400-7680)、height(300-4320)、x(-500-7680)、y(-500-4320) 范围。
 
 ---
 
 ### 🟢 ELEC-04: 缺少 sandbox: true
 
 - **文件**: `electron/main.ts:58`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 未启用 Electron 沙箱模式。
-- **修复建议**: 在 `webPreferences` 中添加 `sandbox: true`。
+- **修复方案**: 在 `webPreferences` 中添加 `sandbox: true`，进一步限制渲染进程的系统调用能力。
 
 ---
 
