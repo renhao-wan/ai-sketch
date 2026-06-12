@@ -20,7 +20,8 @@ import FormatSelector from '@/components/editor/FormatSelector';
 import Tooltip from '@/components/ui/Tooltip';
 import type { SourceType, ConversationMessage } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
-import GenerationModeToggle, { type GenerationMode } from './GenerationModeToggle';
+import GenerationModeToggle from './GenerationModeToggle';
+import type { GenerationMode } from '@/lib/generation/types';
 
 /** 从代码内容检测图表格式 */
 function detectCodeFormat(code: string): DiagramFormat {
@@ -378,13 +379,6 @@ export default function AICopilotPanel({
           <div className="w-full mb-3">
             <FormatSelector value={currentFormat} onChange={onFormatChange} className="w-full" />
           </div>
-          <div className="w-full mb-3">
-            <GenerationModeToggle
-              value={generationMode}
-              onChange={(m) => onGenerationModeChange?.(m)}
-              disabled={isGenerating}
-            />
-          </div>
 
           {/* Chart Type */}
           <div className="w-full">
@@ -399,11 +393,6 @@ export default function AICopilotPanel({
         {hasMessages && (
           <div className="px-4 pt-3 pb-1 space-y-2">
             <FormatSelector value={currentFormat} onChange={onFormatChange} className="w-full" />
-            <GenerationModeToggle
-              value={generationMode}
-              onChange={(m) => onGenerationModeChange?.(m)}
-              disabled={isGenerating}
-            />
             <ChartTypeSelect value={chartType} onChange={setChartType} format={currentFormat} />
           </div>
         )}
@@ -503,6 +492,11 @@ export default function AICopilotPanel({
             </button>
           </Tooltip>
           <div className="flex-1" />
+          <GenerationModeToggle
+            value={generationMode}
+            onChange={(m) => onGenerationModeChange?.(m)}
+            disabled={isGenerating}
+          />
           {isGenerating ? (
             <button
               onClick={onCancel}

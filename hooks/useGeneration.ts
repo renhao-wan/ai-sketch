@@ -119,6 +119,10 @@ export function useGeneration(options: UseGenerationOptions) {
   const abortControllerRef = useRef<AbortController | null>(null);
   const isStreamingRef = useRef(false);
 
+  // 用 ref 包装 options，避免 useCallback 因 options 引用变化而失效
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+
   // 同步 isStreaming 到 ref
   const updateIsStreaming = useCallback((value: boolean) => {
     setIsStreaming(value);
@@ -143,6 +147,7 @@ export function useGeneration(options: UseGenerationOptions) {
     optimisticUserMsg?: ConversationMessage;
     optimisticAssistantMsg: ConversationMessage;
   }): Promise<void> => {
+    const opts = optionsRef.current;
     const {
       userInput,
       chartType,
@@ -158,12 +163,12 @@ export function useGeneration(options: UseGenerationOptions) {
     setIsGenerating(true);
     updateIsStreaming(true);
     setApiError(null);
-    options.onJsonErrorUpdate(null);
+    opts.onJsonErrorUpdate(null);
     // 清空渲染数据，确保显示"正在生成中"提示
-    options.onRenderDataUpdate(null);
+    opts.onRenderDataUpdate(null);
 
     // 记录请求前的 conversationId，用于失败时回滚（新建会话失败后服务端会删除该会话）
-    const previousConversationId = options.conversationId;
+    const previousConversationId = opts.conversationId;
 
     const sendTime = performance.now();
     let firstContentTime: number | null = null;
@@ -173,14 +178,14 @@ export function useGeneration(options: UseGenerationOptions) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          configId: options.config!.id,
+          configId: opts.config!.id,
           userInput,
           chartType,
-          format: options.format,
-          conversationId: options.conversationId,
+          format: opts.format,
+          conversationId: opts.conversationId,
           sourceType,
           regenerate,
-          mode: options.generationMode || 'auto',
+          mode: opts.generationMode || 'auto',
         }),
         signal: controller.signal,
       });
@@ -192,9 +197,9 @@ export function useGeneration(options: UseGenerationOptions) {
         controller.signal,
         {
           onMeta: (convId) => {
-            options.onConversationIdUpdate(convId);
+            opts.onConversationIdUpdate(convId);
             if (optimisticUserMsg) {
-              options.onMessagesUpdate(prev => prev.map(m =>
+              opts.onMessagesUpdate(prev => prev.map(m =>
                 (m.id === optimisticUserMsg.id || m.id === optimisticAssistantMsg.id)
                   ? { ...m, conversationId: convId }
                   : m
@@ -206,22 +211,22 @@ export function useGeneration(options: UseGenerationOptions) {
               firstContentTime = performance.now();
               console.log(`[Generation] First content in ${Math.round(firstContentTime - sendTime)}ms`);
             }
-            options.onCodeUpdate(stripped);
-            options.streamRendererRef.current?.feed(stripped);
-            options.onMessagesUpdate(prev => prev.map(m =>
+            opts.onCodeUpdate(stripped);
+            opts.streamRendererRef.current?.feed(stripped);
+            opts.onMessagesUpdate(prev => prev.map(m =>
               m.id === optimisticAssistantMsg.id ? { ...m, content: stripped } : m
             ));
           },
           onRetry: () => {
             // 重试时清空画布和已累积的代码，准备接收新内容
-            options.onCodeUpdate('');
-            options.streamRendererRef.current?.reset();
-            options.onMessagesUpdate(prev => prev.map(m =>
+            opts.onCodeUpdate('');
+            opts.streamRendererRef.current?.reset();
+            opts.onMessagesUpdate(prev => prev.map(m =>
               m.id === optimisticAssistantMsg.id ? { ...m, content: '' } : m
             ));
           },
-          onProgress: options.onProgress,
-          onCritique: options.onCritique,
+          onProgress: opts.onProgress,
+          onCritique: opts.onCritique,
         },
         t,
       );
@@ -229,22 +234,22 @@ export function useGeneration(options: UseGenerationOptions) {
       console.log(`[Generation] Stream completed in ${Math.round(performance.now() - sendTime)}ms`);
 
       // 后处理
-      const optimizedCode = postProcessCode(accumulatedCode, options.format);
-      options.onCodeUpdate(optimizedCode);
-      options.streamRendererRef.current?.reset();
+      const optimizedCode = postProcessCode(accumulatedCode, opts.format);
+      opts.onCodeUpdate(optimizedCode);
+      opts.streamRendererRef.current?.reset();
 
       // 验证并应用
-      const strategy = getStrategy(options.format);
+      const strategy = getStrategy(opts.format);
       const result = strategy.validate(optimizedCode);
       if (result.valid) {
-        options.onRenderDataUpdate(result.data);
-        options.onJsonErrorUpdate(null);
+        opts.onRenderDataUpdate(result.data);
+        opts.onJsonErrorUpdate(null);
       } else {
-        options.onJsonErrorUpdate(result.error);
+        opts.onJsonErrorUpdate(result.error);
       }
 
       // 更新消息
-      options.onMessagesUpdate(prev => prev.map(m =>
+      opts.onMessagesUpdate(prev => prev.map(m =>
         m.id === optimisticAssistantMsg.id
           ? { ...m, content: optimizedCode, conversationId: activeConvId || m.conversationId }
           : m
@@ -255,7 +260,7 @@ export function useGeneration(options: UseGenerationOptions) {
 
       // 新建会话失败时，服务端已删除该会话，回滚客户端的 conversationId
       if (previousConversationId === null) {
-        options.onConversationIdUpdate(null);
+        opts.onConversationIdUpdate(null);
       }
 
       setApiError(
@@ -268,7 +273,7 @@ export function useGeneration(options: UseGenerationOptions) {
       setIsGenerating(false);
       updateIsStreaming(false);
     }
-  }, [options, t, updateIsStreaming]);
+  }, [t, updateIsStreaming]);
 
   /**
    * 发送新消息
@@ -279,21 +284,22 @@ export function useGeneration(options: UseGenerationOptions) {
     sourceType: string = 'text',
   ) => {
     if (isGenerating) return;
+    const opts = optionsRef.current;
 
-    if (!isConfigValid(options.config)) {
-      options.onConfigReminder();
+    if (!isConfigValid(opts.config)) {
+      opts.onConfigReminder();
       return;
     }
 
     // 更新图表类型状态
-    options.onChartTypeUpdate?.(chartType);
+    opts.onChartTypeUpdate?.(chartType);
 
     const userContent = typeof userMessage === 'string' ? userMessage : (userMessage.text || '');
 
     // 创建乐观消息
     const optimisticUserMsg: ConversationMessage = {
       id: generateId(),
-      conversationId: options.conversationId || '',
+      conversationId: opts.conversationId || '',
       role: 'user',
       content: userContent,
       sourceType: sourceType as 'text' | 'file' | 'image',
@@ -302,14 +308,14 @@ export function useGeneration(options: UseGenerationOptions) {
 
     const optimisticAssistantMsg: ConversationMessage = {
       id: generateId(),
-      conversationId: options.conversationId || '',
+      conversationId: opts.conversationId || '',
       role: 'assistant',
       content: '',
       sourceType: 'text',
       createdAt: Date.now(),
     };
 
-    options.onMessagesUpdate(prev => [...prev, optimisticUserMsg, optimisticAssistantMsg]);
+    opts.onMessagesUpdate(prev => [...prev, optimisticUserMsg, optimisticAssistantMsg]);
 
     await executeGeneration({
       userInput: userMessage,
@@ -318,16 +324,17 @@ export function useGeneration(options: UseGenerationOptions) {
       optimisticUserMsg,
       optimisticAssistantMsg,
     });
-  }, [isGenerating, options, executeGeneration]);
+  }, [isGenerating, executeGeneration]);
 
   /**
    * 重新生成
    */
   const regenerate = useCallback(async (messages: ConversationMessage[], chartType: string = 'auto') => {
     if (isGenerating || messages.length === 0) return;
+    const opts = optionsRef.current;
 
-    if (!isConfigValid(options.config)) {
-      options.onConfigReminder();
+    if (!isConfigValid(opts.config)) {
+      opts.onConfigReminder();
       return;
     }
 
@@ -343,7 +350,7 @@ export function useGeneration(options: UseGenerationOptions) {
       : lastUserMsg.content;
 
     // 删除旧的 assistant 消息
-    options.onMessagesUpdate(prev => {
+    opts.onMessagesUpdate(prev => {
       const lastAssistantIdx = [...prev].reverse().findIndex(m => m.role === 'assistant');
       if (lastAssistantIdx === -1) return prev;
       const idx = prev.length - 1 - lastAssistantIdx;
@@ -353,13 +360,13 @@ export function useGeneration(options: UseGenerationOptions) {
     // 添加新的 assistant 占位
     const optimisticAssistantMsg: ConversationMessage = {
       id: generateId(),
-      conversationId: options.conversationId || '',
+      conversationId: opts.conversationId || '',
       role: 'assistant',
       content: '',
       sourceType: 'text',
       createdAt: Date.now(),
     };
-    options.onMessagesUpdate(prev => [...prev, optimisticAssistantMsg]);
+    opts.onMessagesUpdate(prev => [...prev, optimisticAssistantMsg]);
 
     await executeGeneration({
       userInput,
@@ -368,7 +375,7 @@ export function useGeneration(options: UseGenerationOptions) {
       regenerate: true,
       optimisticAssistantMsg,
     });
-  }, [isGenerating, options, executeGeneration]);
+  }, [isGenerating, executeGeneration]);
 
   return {
     isGenerating,

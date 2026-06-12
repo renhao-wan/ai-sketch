@@ -66,13 +66,24 @@ export async function generatePlan(
     planJson += chunk;
   }, signal);
 
-  // 提取 JSON（处理可能的代码围栏）
-  const jsonMatch = planJson.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error('Planner 未返回有效的 JSON');
+  // 提取 JSON（括号平衡匹配，避免贪婪正则的误匹配）
+  const startIdx = planJson.indexOf('{');
+  if (startIdx === -1) throw new Error('Planner 未返回有效的 JSON');
+  let depth = 0;
+  let endIdx = -1;
+  for (let i = startIdx; i < planJson.length; i++) {
+    if (planJson[i] === '{') depth++;
+    else if (planJson[i] === '}') depth--;
+    if (depth === 0) { endIdx = i; break; }
   }
+  if (endIdx === -1) throw new Error('Planner 未返回有效的 JSON');
 
-  const plan = JSON.parse(jsonMatch[0]) as GenerationPlan;
+  let plan: GenerationPlan;
+  try {
+    plan = JSON.parse(planJson.slice(startIdx, endIdx + 1)) as GenerationPlan;
+  } catch {
+    throw new Error('Planner 返回的 JSON 格式错误');
+  }
 
   // 验证计划结构
   if (!plan.steps || !Array.isArray(plan.steps) || plan.steps.length < 2) {

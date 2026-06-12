@@ -27,6 +27,7 @@ import { useAIActions } from '@/hooks/useAIActions';
 import type { LLMConfig } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 import { detectCodeFormat } from '@/lib/utils/detect-code-format';
+import type { GenerationMode } from '@/lib/generation/types';
 
 // 动态导入重型组件（按需加载）
 const ConfigSelector = dynamic(() => import('@/components/dialogs/ConfigSelector'), { ssr: false });
@@ -99,7 +100,7 @@ function EditorContent() {
   const [versionDrawerOpen, setVersionDrawerOpen] = useState(false);
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
-  const [generationMode, setGenerationMode] = useState<'fast' | 'auto' | 'quality'>('auto');
+  const [generationMode, setGenerationMode] = useState<GenerationMode>('auto');
 
   // Refs
   const pendingInitRef = useRef<import('@/lib/utils/init-data').InitData | null>(null);

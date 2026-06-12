@@ -79,10 +79,10 @@ export async function consumeSSEStream(
         } else if (parsed.type === 'result' && parsed.content) {
           // 最终结果事件（服务端已处理，如去除代码围栏）
           callbacks.onResult?.(parsed.content as string);
-        } else if (parsed.type === 'progress') {
-          callbacks.onProgress?.(parsed.step as number, parsed.totalSteps as number, parsed.message as string);
-        } else if (parsed.type === 'critique') {
-          callbacks.onCritique?.(parsed.passed as boolean, parsed.issues as string[]);
+        } else if (parsed.type === 'progress' && typeof parsed.step === 'number' && typeof parsed.totalSteps === 'number') {
+          callbacks.onProgress?.(parsed.step, parsed.totalSteps, (parsed.message as string) || '');
+        } else if (parsed.type === 'critique' && typeof parsed.passed === 'boolean' && Array.isArray(parsed.issues)) {
+          callbacks.onCritique?.(parsed.passed, parsed.issues);
         } else if (parsed.type === 'error') {
           throw new Error(parsed.error as string);
         } else if (parsed.content) {

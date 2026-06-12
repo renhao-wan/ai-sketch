@@ -25,7 +25,7 @@ export async function executeMultiPass(
   signal?: AbortSignal,
 ): Promise<string> {
   const strategy = getStrategy(format);
-  const totalSteps = plan.steps.length + 2; // 步骤 + critic + 可能的 repair
+  const totalSteps = plan.steps.length + 1; // 步骤 + critic（repair 为动态追加）
   let currentStep = 0;
   let accumulatedCode = '';
 
@@ -49,7 +49,13 @@ export async function executeMultiPass(
     const stepMessages = buildStepMessages(
       step.type, step.description, format,
       userInput, contextMessages, accumulatedCode,
-      step.dependencies.map(d => stepResults[d]),
+      step.dependencies.map(d => {
+        if (d < 0 || d >= i || !stepResults[d]) {
+          console.warn(`[MultiPass] 步骤 ${i} 的依赖索引 ${d} 无效，跳过`);
+          return '';
+        }
+        return stepResults[d];
+      }),
     );
 
     // 调用 LLM 生成这一步的代码
@@ -99,29 +105,43 @@ export async function executeMultiPass(
   // 如果规则校验失败，尝试 LLM 评审 + 修复
   if (!ruleResult.passed && ruleResult.severity === 'error') {
     currentStep++;
+    // 动态追加 repair 步骤
+    const repairTotalSteps = totalSteps + 1;
     const repairProgress: ProgressEvent = {
       type: 'progress',
       step: currentStep,
-      totalSteps,
+      totalSteps: repairTotalSteps,
       message: '修复问题...',
     };
     sendEvent(`data: ${JSON.stringify(repairProgress)}\n\n`);
 
     const maxRetries = await configManager.getMaxRetries();
     let lastError: unknown = null;
+    let currentRuleResult = ruleResult;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const critiqueResult = await llmCritique(
           config, userInput, accumulatedCode, format,
-          ruleResult.issues, signal,
+          currentRuleResult.issues, signal,
         );
 
         if (critiqueResult.fixedCode) {
           const fixedProcessed = strategy.postProcess(critiqueResult.fixedCode);
           accumulatedCode = strategy.optimize(fixedProcessed);
-        }
 
+          // 重新校验修复后的代码
+          const reCheck = ruleCheck(accumulatedCode, format);
+          if (reCheck.passed || reCheck.severity !== 'error') {
+            lastError = null;
+            break;
+          }
+          // 更新 issues 供下次 LLM 参考
+          currentRuleResult = reCheck;
+          if (attempt >= maxRetries) break;
+          continue;
+        }
+        // LLM 认为无需修复
         lastError = null;
         break;
       } catch (err) {
@@ -194,7 +214,7 @@ function mergeCode(existing: string, incoming: string, format: DiagramFormat): s
       const incomingElements = Array.isArray(incomingArr) ? incomingArr : (incomingArr.elements || []);
       return JSON.stringify([...existingElements, ...incomingElements]);
     } catch {
-      return incoming;
+      return existing; // 保留已有代码，丢弃无法合并的新代码
     }
   }
 

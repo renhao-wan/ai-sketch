@@ -13,6 +13,7 @@ interface CacheKeyInput {
   model: string;
   configName: string;
   contextHash?: string;
+  mode?: string;
 }
 
 /** SHA-256 哈希，取前 16 位 hex */
@@ -36,6 +37,7 @@ export async function buildCacheKey(input: CacheKeyInput): Promise<string> {
     input.model,
     input.configName,
     input.contextHash ?? '',
+    input.mode ?? '',
   ].join('|');
   return sha256(parts);
 }

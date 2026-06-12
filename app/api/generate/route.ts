@@ -231,6 +231,15 @@ export async function POST(request: Request) {
 
     console.log(`[Generate] Messages count: ${fullMessages.length}, System prompt length: ${systemPrompt.length}`);
 
+    // ── 判断实际执行的模式（缓存 key 需要包含 effectiveMode）──
+    let effectiveMode: Exclude<GenerationMode, 'auto'> = 'fast';
+    if (generationMode === 'auto') {
+      effectiveMode = assessComplexity(userContent, diagramFormat);
+      console.log(`[Generate] Auto mode resolved to: ${effectiveMode}`);
+    } else if (generationMode === 'quality') {
+      effectiveMode = 'quality';
+    }
+
     // ── 检查缓存（仅对非图片输入、非重新生成的请求生效）──
     // Vision 模式不缓存（带图片），降级模式可缓存（纯文本）
     const shouldCache = !processedImages && !regenerate;
@@ -252,6 +261,7 @@ export async function POST(request: Request) {
         model: config.model,
         configName: config.name || config.type,
         contextHash,
+        mode: effectiveMode,
       });
     }
     let cachedResponse: string | null = null;
@@ -290,15 +300,6 @@ export async function POST(request: Request) {
           controller.enqueue(encoder.encode(metaEvent));
 
           let optimizedCode: string;
-
-          // 判断实际执行的模式
-          let effectiveMode: Exclude<GenerationMode, 'auto'> = 'fast';
-          if (generationMode === 'auto') {
-            effectiveMode = assessComplexity(userContent, diagramFormat);
-            console.log(`[Generate] Auto mode resolved to: ${effectiveMode}`);
-          } else if (generationMode === 'quality') {
-            effectiveMode = 'quality';
-          }
 
           if (cachedResponse) {
             // 使用缓存的响应（已经是处理过的最终代码）
@@ -416,6 +417,8 @@ export async function POST(request: Request) {
           controller.close();
         } finally {
           clearTimeout(timeoutId);
+          request.signal?.removeEventListener('abort', onAbort);
+          timeoutController.signal.removeEventListener('abort', onAbort);
         }
       },
     });

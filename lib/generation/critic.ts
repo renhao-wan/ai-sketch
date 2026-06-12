@@ -119,9 +119,11 @@ function checkDrawio(code: string): string[] {
     issues.push('[ERROR] 缺少有效的 Draw.io XML 结构');
   }
 
-  // 检查 XML 基本闭合
+  // 检查 XML 基本闭合（仅匹配 mxCell 标签的闭合）
   const cellCount = (code.match(/<mxCell/g) || []).length;
-  const cellCloseCount = (code.match(/\/>/g) || []).length + (code.match(/<\/mxCell>/g) || []).length;
+  const selfClosedCount = (code.match(/<mxCell[^>]*\/>/g) || []).length;
+  const closedCount = (code.match(/<\/mxCell>/g) || []).length;
+  const cellCloseCount = selfClosedCount + closedCount;
   if (cellCount > 0 && cellCloseCount < cellCount) {
     issues.push('[WARNING] mxCell 标签可能未正确闭合');
   }
@@ -167,13 +169,24 @@ ${code}
     responseJson += chunk;
   }, signal);
 
-  const jsonMatch = responseJson.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
+  // 括号平衡匹配提取 JSON
+  const startIdx = responseJson.indexOf('{');
+  if (startIdx === -1) {
+    return { issues: ['LLM 评审未返回有效 JSON'], fixedCode: null };
+  }
+  let depth = 0;
+  let endIdx = -1;
+  for (let i = startIdx; i < responseJson.length; i++) {
+    if (responseJson[i] === '{') depth++;
+    else if (responseJson[i] === '}') depth--;
+    if (depth === 0) { endIdx = i; break; }
+  }
+  if (endIdx === -1) {
     return { issues: ['LLM 评审未返回有效 JSON'], fixedCode: null };
   }
 
   try {
-    const result = JSON.parse(jsonMatch[0]);
+    const result = JSON.parse(responseJson.slice(startIdx, endIdx + 1));
     return {
       issues: Array.isArray(result.issues) ? result.issues : [],
       fixedCode: result.fixedCode || null,
