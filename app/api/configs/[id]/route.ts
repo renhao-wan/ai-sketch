@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { configManager } from '@/lib/db/config-manager';
 import { withErrorHandling } from '@/lib/api/with-error-handling';
-import type { LLMConfig } from '@/lib/types';
+
+/** configs PUT 允许更新的字段白名单 */
+const CONFIG_UPDATE_ALLOWED = ['name', 'type', 'baseUrl', 'apiKey', 'model', 'description', 'enabled', 'temperature', 'maxTokens'] as const;
 
 /**
  * GET /api/configs/[id]
@@ -18,11 +20,15 @@ export const GET = withErrorHandling(async (_request: Request, { params }: { par
 
 /**
  * PUT /api/configs/[id]
- * Update a config
+ * Update a config（仅允许白名单字段）
  */
 export const PUT = withErrorHandling(async (request: Request, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
-  const data = (await request.json()) as Partial<LLMConfig>;
+  const rawData = await request.json();
+  // 字段白名单过滤，防止覆盖 id/isActive/createdAt 等不应由客户端修改的字段
+  const data = Object.fromEntries(
+    Object.entries(rawData).filter(([k]) => (CONFIG_UPDATE_ALLOWED as readonly string[]).includes(k))
+  );
   const config = await configManager.updateConfig(id, data);
   return NextResponse.json(config);
 }, '/api/configs/[id] PUT');

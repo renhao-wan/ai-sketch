@@ -217,42 +217,27 @@ apiKey: rawApiKey && isEncrypted(rawApiKey) ? decrypt(rawApiKey) : rawApiKey,
 ### 🔴 API-01: SSRF — ollama/detect 的 baseUrl 未限制
 
 - **文件**: `app/api/ollama/detect/route.ts:22-28`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 客户端可传入任意 `baseUrl`，服务端会向该地址发起 HTTP 请求。虽然此应用是本地桌面应用，但仍存在 SSRF 风险。
-- **修复建议**: 添加 URL 白名单，仅允许 `localhost` 和 `127.0.0.1`。
-
-```typescript
-const { baseUrl } = await request.json().catch(() => ({}));
-const ollamaUrl = baseUrl || OLLAMA_DEFAULT_URL;
-const parsed = new URL(ollamaUrl);
-if (!['localhost', '127.0.0.1'].includes(parsed.hostname)) {
-  return NextResponse.json({ detected: false, error: '仅支持本地 Ollama 服务' });
-}
-```
+- **修复方案**: 添加 URL 解析和 hostname 白名单校验，仅允许 `localhost` 和 `127.0.0.1`，无效 URL 返回明确错误信息。
 
 ---
 
 ### 🔴 API-02: withErrorHandling 生产环境泄露错误信息
 
 - **文件**: `lib/api/with-error-handling.ts:33`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 生产环境下直接返回 `(error as Error).message`，可能包含数据库错误信息、文件路径、SQL 语句等。
-- **修复建议**:
-
-```typescript
-const message = process.env.NODE_ENV === 'development'
-  ? (error as Error).message
-  : '请求处理失败，请稍后重试';
-```
+- **修复方案**: 添加 `process.env.NODE_ENV === 'development'` 判断，生产环境返回通用错误消息。
 
 ---
 
 ### 🟠 API-03: generate 端点 userInput 无长度限制
 
 - **文件**: `app/api/generate/route.ts:69`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `userInput.text` 没有长度限制，超长文本会导致 LLM API 调用超时或超出 token 限制。
-- **修复建议**: 添加最大长度检查（如 50000 字符），超出返回 400。
+- **修复方案**: 添加 50000 字符最大长度检查，超出返回 400 错误和当前长度信息。
 
 ---
 
@@ -268,73 +253,45 @@ const message = process.env.NODE_ENV === 'development'
 ### 🟠 API-05: configs/[id] PUT 和 conversations/[id] PATCH 直接透传 body
 
 - **文件**: `app/api/configs/[id]/route.ts:25`, `app/api/conversations/[id]/route.ts:25`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 请求体未经白名单过滤直接传入 `updateConfig` / `update`，客户端可传入任意字段覆盖数据。
-- **修复建议**: 使用字段白名单过滤。
-
-```typescript
-// configs/[id] PUT
-const allowed = ['name', 'type', 'baseUrl', 'apiKey', 'model', 'enabled', 'temperature', 'maxTokens'];
-const rawData = await request.json();
-const data = Object.fromEntries(Object.entries(rawData).filter(([k]) => allowed.includes(k)));
-```
+- **修复方案**: 添加字段白名单过滤。`configs PUT` 允许 `name/type/baseUrl/apiKey/model/description/enabled/temperature/maxTokens`。`conversations PATCH` 允许 `title/chartType/format/configName/configModel`。
 
 ---
 
 ### 🟠 API-06: conversations GET 的 limit/offset/sort/order 未校验
 
 - **文件**: `app/api/conversations/route.ts:13-16`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `limit`/`offset` 可能为 NaN 或超大值；`sort`/`order` 未做白名单校验。
-- **修复建议**:
-
-```typescript
-const rawLimit = parseInt(searchParams.get('limit') || '20', 10);
-const limit = isNaN(rawLimit) ? 20 : Math.min(Math.max(rawLimit, 1), 100);
-const rawOffset = parseInt(searchParams.get('offset') || '0', 10);
-const offset = isNaN(rawOffset) ? 0 : Math.max(rawOffset, 0);
-const allowedSorts = ['updated_at', 'created_at'];
-const sort = allowedSorts.includes(searchParams.get('sort') || '') ? searchParams.get('sort')! : 'updated_at';
-const order = searchParams.get('order') === 'asc' ? 'asc' : 'desc';
-```
+- **修复方案**: 添加 `sort`/`order` 白名单校验（`updated_at/created_at`、`asc/desc`），`limit` 范围限制（1-100），`offset` 非负限制，`NaN` 兜底默认值。
 
 ---
 
 ### 🟡 API-07: ai-action 的 finally 块未移除事件监听器
 
 - **文件**: `app/api/ai-action/route.ts:77-80`
-- **状态**: `[ ]`
-- **描述**: `finally` 块中清理了 `timeoutId` 和 `controller.close()`，但没有移除 `request.signal` 和 `timeoutController.signal` 上的事件监听器。对比 `generate/route.ts:420-421` 正确做了移除。
-- **修复建议**: 在 `finally` 块中添加:
-
-```typescript
-request.signal?.removeEventListener('abort', onAbort);
-timeoutController.signal.removeEventListener('abort', onAbort);
-```
+- **状态**: `[x]` ✅ 已修复
+- **描述**: `finally` 块中清理了 `timeoutId` 和 `controller.close()`，但没有移除 `request.signal` 和 `timeoutController.signal` 上的事件监听器。
+- **修复方案**: 在 `finally` 块中添加 `request.signal?.removeEventListener('abort', onAbort)` 和 `timeoutController.signal.removeEventListener('abort', onAbort)`。
 
 ---
 
 ### 🟡 API-08: configs/actions/route.ts 多个 action 缺少输入验证
 
 - **文件**: `app/api/configs/actions/route.ts`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: `set-active` 的 `configId`、`set-retries` 的 `maxRetries`、`import` 的 `configs` 等字段未做类型和范围校验。
-- **修复建议**: 为每个 action 添加输入验证。
+- **修复方案**: 添加 `getString`/`getNumber`/`getStringArray` 辅助函数做运行时类型校验。`set-retries` 限制 0-10 范围，`import` 限制 1MB 大小，`get-all-preferences` 限制最多 50 个 key。所有需要必填字段的 action 添加校验错误提示。
 
 ---
 
 ### 🟡 API-09: cache/ttl 的 ttlDays 未校验
 
 - **文件**: `app/api/cache/ttl/route.ts:16-18`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 可传入负数、0、小数、Infinity、NaN。
-- **修复建议**:
-
-```typescript
-if (typeof ttlDays !== 'number' || !isFinite(ttlDays) || ttlDays < 1 || ttlDays > 365) {
-  return NextResponse.json({ error: 'ttlDays 必须是 1-365 之间的数字' }, { status: 400 });
-}
-```
+- **修复方案**: 添加类型检查（`typeof + isFinite`）和范围校验（1-365），同时为 GET 和 PUT 的错误响应添加生产环境错误信息过滤。
 
 ---
 
@@ -735,18 +692,18 @@ useEffect(() => {
 | DB-10 | 事务不支持嵌套 | 1h | ✅ |
 | DB-11 | requestSave 的 await 语义误导 | 0.5h | ✅ |
 | TEST-01 | 修复失败的测试用例 | 0.5h | ✅ |
-| API-02 | 生产环境错误信息泄露 | 0.5h | `[ ]` |
-| API-01 | SSRF — ollama/detect | 0.5h | `[ ]` |
+| API-02 | 生产环境错误信息泄露 | 0.5h | ✅ |
+| API-01 | SSRF — ollama/detect | 0.5h | ✅ |
 | GEN-01 | Prompt 注入防护 | 1h | `[ ]` |
 
 ### 第二阶段：健壮性改进（3-5 天）
 
 | 编号 | 问题 | 预估工时 | 状态 |
 |------|------|----------|------|
-| API-03 | userInput 长度限制 | 0.5h | `[ ]` |
-| API-04 | 图片数据限制 | 0.5h | `[ ]` |
-| API-05 | 字段白名单校验 | 1h | `[ ]` |
-| API-06 | 参数校验 | 1h | `[ ]` |
+| API-03 | userInput 长度限制 | 0.5h | ✅ |
+| API-04 | 图片数据限制 | 0.5h | `[ ]` (单独处理) |
+| API-05 | 字段白名单校验 | 1h | ✅ |
+| API-06 | 参数校验 | 1h | ✅ |
 | GEN-02 | fixedCode 二次校验 | 1h | `[ ]` |
 | GEN-03 | Excalidraw 合并失败处理 | 0.5h | `[ ]` |
 | GEN-05 | Mermaid 合并过滤补全 | 0.5h | `[ ]` |

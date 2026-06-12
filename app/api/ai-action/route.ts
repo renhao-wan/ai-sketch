@@ -76,6 +76,9 @@ export async function POST(request: Request) {
           controller.enqueue(encoder.encode(errorData));
         } finally {
           clearTimeout(timeoutId);
+          // 移除事件监听器，避免内存泄漏
+          request.signal?.removeEventListener('abort', onAbort);
+          timeoutController.signal.removeEventListener('abort', onAbort);
           controller.close();
         }
       },

@@ -22,6 +22,22 @@ export async function POST(request: Request) {
     const { baseUrl } = await request.json().catch(() => ({}));
     const ollamaUrl = baseUrl || OLLAMA_DEFAULT_URL;
 
+    // SSRF 防护：仅允许 localhost 和 127.0.0.1
+    try {
+      const parsed = new URL(ollamaUrl);
+      if (parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1') {
+        return NextResponse.json({
+          detected: false,
+          error: '仅支持本地 Ollama 服务（localhost / 127.0.0.1）',
+        });
+      }
+    } catch {
+      return NextResponse.json({
+        detected: false,
+        error: '无效的 URL 格式',
+      });
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 

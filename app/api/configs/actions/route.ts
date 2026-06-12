@@ -6,19 +6,46 @@ import { configManager } from '@/lib/db/config-manager';
 /** Action 处理函数类型 */
 type ActionHandler = (body: Record<string, unknown>) => Promise<unknown>;
 
+/** 从对象中提取指定类型的字段值 */
+function getString(body: Record<string, unknown>, key: string): string | undefined {
+  const val = body[key];
+  return typeof val === 'string' ? val : undefined;
+}
+
+function getNumber(body: Record<string, unknown>, key: string, min: number, max: number): number | undefined {
+  const val = body[key];
+  if (typeof val !== 'number' || !isFinite(val)) return undefined;
+  return Math.min(Math.max(val, min), max);
+}
+
+function getStringArray(body: Record<string, unknown>, key: string, maxLen: number): string[] | undefined {
+  const val = body[key];
+  if (!Array.isArray(val)) return undefined;
+  const arr = val.filter((v): v is string => typeof v === 'string');
+  return arr.length > maxLen ? arr.slice(0, maxLen) : arr;
+}
+
 /** Action 命令注册表 */
 const actionHandlers: Record<string, ActionHandler> = {
   'set-active': async (body) => {
-    await configManager.setActiveConfig(body.configId as string);
+    const configId = getString(body, 'configId');
+    if (!configId) throw new Error('configId 必须是非空字符串');
+    await configManager.setActiveConfig(configId);
     return { success: true };
   },
 
   'clone': async (body) => {
-    return configManager.cloneConfig(body.configId as string, body.newName as string | undefined);
+    const configId = getString(body, 'configId');
+    if (!configId) throw new Error('configId 必须是非空字符串');
+    return configManager.cloneConfig(configId, getString(body, 'newName'));
   },
 
   'import': async (body) => {
-    return configManager.importConfigs(body.configs as string);
+    const configs = getString(body, 'configs');
+    if (!configs) throw new Error('configs 必须是非空字符串');
+    // 限制导入数据大小（1MB）
+    if (configs.length > 1024 * 1024) throw new Error('导入数据过大，最大支持 1MB');
+    return configManager.importConfigs(configs);
   },
 
   'export': async () => {
@@ -27,7 +54,8 @@ const actionHandlers: Record<string, ActionHandler> = {
   },
 
   'search': async (body) => {
-    return configManager.searchConfigs(body.query as string);
+    const query = getString(body, 'query');
+    return configManager.searchConfigs(query);
   },
 
   'stats': async () => {
@@ -40,7 +68,7 @@ const actionHandlers: Record<string, ActionHandler> = {
 
   'set-proxy': async (body) => {
     await configManager.setProxy(
-      (body.proxyUrl as string) || 'http://127.0.0.1:7890',
+      getString(body, 'proxyUrl') || 'http://127.0.0.1:7890',
       !!body.proxyEnabled,
     );
     return { success: true };
@@ -52,7 +80,9 @@ const actionHandlers: Record<string, ActionHandler> = {
   },
 
   'set-retries': async (body) => {
-    await configManager.setMaxRetries(body.maxRetries as number);
+    const maxRetries = getNumber(body, 'maxRetries', 0, 10);
+    if (maxRetries === undefined) throw new Error('maxRetries 必须是 0-10 之间的数字');
+    await configManager.setMaxRetries(maxRetries);
     return { success: true };
   },
 
@@ -62,17 +92,24 @@ const actionHandlers: Record<string, ActionHandler> = {
   },
 
   'get-preference': async (body) => {
-    const value = await configManager.getPreference(body.key as string);
+    const key = getString(body, 'key');
+    if (!key) throw new Error('key 必须是非空字符串');
+    const value = await configManager.getPreference(key);
     return { value };
   },
 
   'set-preference': async (body) => {
-    await configManager.setPreference(body.key as string, body.value as string);
+    const key = getString(body, 'key');
+    if (!key) throw new Error('key 必须是非空字符串');
+    const value = getString(body, 'value');
+    if (value === undefined) throw new Error('value 必须是字符串');
+    await configManager.setPreference(key, value);
     return { success: true };
   },
 
   'get-all-preferences': async (body) => {
-    const keys = body.keys as string[];
+    const keys = getStringArray(body, 'keys', 50);
+    if (!keys || keys.length === 0) throw new Error('keys 必须是非空字符串数组，最多 50 个');
     const result: Record<string, string | null> = {};
     for (const key of keys) {
       result[key] = await configManager.getPreference(key);

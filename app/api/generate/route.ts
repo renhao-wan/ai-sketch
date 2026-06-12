@@ -102,6 +102,16 @@ export async function POST(request: Request) {
       );
     }
 
+    // 输入长度限制：防止超大 prompt 导致 LLM API 超时或超出 token 限制
+    const MAX_TEXT_LENGTH = 50000;
+    const userInputText = typeof userInput === 'string' ? userInput : (userInput.text || '');
+    if (userInputText.length > MAX_TEXT_LENGTH) {
+      return NextResponse.json(
+        { error: `输入文本过长，最大支持 ${MAX_TEXT_LENGTH} 字符，当前 ${userInputText.length} 字符` },
+        { status: 400 },
+      );
+    }
+
     const diagramFormat: DiagramFormat = format || 'excalidraw';
     const strategy = getStrategy(diagramFormat);
 
