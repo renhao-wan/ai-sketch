@@ -4,6 +4,7 @@
  */
 
 import { callLLM } from '@/lib/llm/client';
+import { extractFirstJsonObject } from '@/lib/diagram/json-repair';
 import type { LLMConfig, LLMMessage } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 import type { GenerationPlan } from './types';
@@ -66,21 +67,13 @@ export async function generatePlan(
     planJson += chunk;
   }, signal);
 
-  // 提取 JSON（括号平衡匹配，避免贪婪正则的误匹配）
-  const startIdx = planJson.indexOf('{');
-  if (startIdx === -1) throw new Error('Planner 未返回有效的 JSON');
-  let depth = 0;
-  let endIdx = -1;
-  for (let i = startIdx; i < planJson.length; i++) {
-    if (planJson[i] === '{') depth++;
-    else if (planJson[i] === '}') depth--;
-    if (depth === 0) { endIdx = i; break; }
-  }
-  if (endIdx === -1) throw new Error('Planner 未返回有效的 JSON');
+  // 提取 JSON（使用带字符串状态追踪的括号平衡匹配）
+  const jsonStr = extractFirstJsonObject(planJson);
+  if (!jsonStr) throw new Error('Planner 未返回有效的 JSON');
 
   let plan: GenerationPlan;
   try {
-    plan = JSON.parse(planJson.slice(startIdx, endIdx + 1)) as GenerationPlan;
+    plan = JSON.parse(jsonStr) as GenerationPlan;
   } catch {
     throw new Error('Planner 返回的 JSON 格式错误');
   }

@@ -5,6 +5,7 @@
  */
 
 import { callLLM } from '@/lib/llm/client';
+import { extractFirstJsonObject } from '@/lib/diagram/json-repair';
 import type { LLMConfig, LLMMessage } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 import type { CritiqueResult } from './types';
@@ -169,24 +170,14 @@ ${code}
     responseJson += chunk;
   }, signal);
 
-  // 括号平衡匹配提取 JSON
-  const startIdx = responseJson.indexOf('{');
-  if (startIdx === -1) {
-    return { issues: ['LLM 评审未返回有效 JSON'], fixedCode: null };
-  }
-  let depth = 0;
-  let endIdx = -1;
-  for (let i = startIdx; i < responseJson.length; i++) {
-    if (responseJson[i] === '{') depth++;
-    else if (responseJson[i] === '}') depth--;
-    if (depth === 0) { endIdx = i; break; }
-  }
-  if (endIdx === -1) {
+  // 使用带字符串状态追踪的括号平衡匹配提取 JSON
+  const jsonStr = extractFirstJsonObject(responseJson);
+  if (!jsonStr) {
     return { issues: ['LLM 评审未返回有效 JSON'], fixedCode: null };
   }
 
   try {
-    const result = JSON.parse(responseJson.slice(startIdx, endIdx + 1));
+    const result = JSON.parse(jsonStr);
     return {
       issues: Array.isArray(result.issues) ? result.issues : [],
       fixedCode: result.fixedCode || null,

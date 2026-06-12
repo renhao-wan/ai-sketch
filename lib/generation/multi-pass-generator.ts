@@ -127,10 +127,34 @@ export async function executeMultiPass(
         );
 
         if (critiqueResult.fixedCode) {
-          const fixedProcessed = strategy.postProcess(critiqueResult.fixedCode);
+          // 安全边界：限制 fixedCode 大小，防止 LLM 返回异常内容
+          const MAX_FIXED_CODE_SIZE = 500000; // 500KB
+          if (critiqueResult.fixedCode.length > MAX_FIXED_CODE_SIZE) {
+            console.warn(`[MultiPass] LLM 返回的 fixedCode 过大 (${critiqueResult.fixedCode.length} 字符)，跳过修复`);
+            break;
+          }
+
+          // 安全边界：检查 fixedCode 是否为空或明显无效
+          const trimmedFixed = critiqueResult.fixedCode.trim();
+          if (!trimmedFixed || trimmedFixed === '[]' || trimmedFixed === '{}') {
+            console.warn('[MultiPass] LLM 返回了空的 fixedCode，跳过修复');
+            break;
+          }
+
+          const fixedProcessed = strategy.postProcess(trimmedFixed);
+
+          // 二次校验：postProcess 后的结果必须通过规则校验
+          const preOptimizeCheck = ruleCheck(fixedProcessed, format);
+          if (!preOptimizeCheck.passed && preOptimizeCheck.severity === 'error') {
+            console.warn('[MultiPass] fixedCode 规则校验未通过，跳过此次修复:', preOptimizeCheck.issues);
+            currentRuleResult = preOptimizeCheck;
+            if (attempt >= maxRetries) break;
+            continue;
+          }
+
           accumulatedCode = strategy.optimize(fixedProcessed);
 
-          // 重新校验修复后的代码
+          // 最终校验
           const reCheck = ruleCheck(accumulatedCode, format);
           if (reCheck.passed || reCheck.severity !== 'error') {
             lastError = null;
@@ -213,17 +237,20 @@ function mergeCode(existing: string, incoming: string, format: DiagramFormat): s
       const existingElements = Array.isArray(existingArr) ? existingArr : (existingArr.elements || []);
       const incomingElements = Array.isArray(incomingArr) ? incomingArr : (incomingArr.elements || []);
       return JSON.stringify([...existingElements, ...incomingElements]);
-    } catch {
-      return existing; // 保留已有代码，丢弃无法合并的新代码
+    } catch (e) {
+      console.warn('[MultiPass] Excalidraw 合并失败，保留已有代码:', (e as Error).message);
+      return existing;
     }
   }
 
   if (format === 'mermaid') {
     // Mermaid：追加代码行（跳过重复的声明行）
+    // 覆盖所有 Mermaid 图表类型的声明关键字
+    const MERMAID_DECLARATION_RE = /^(graph|flowchart|sequenceDiagram|classDiagram|erDiagram|gantt|pie|stateDiagram|mindmap|timeline|block-beta|requirementDiagram|gitGraph)\b/i;
     const incomingLines = incoming.split('\n');
     const newLines = incomingLines.filter(line => {
       const trimmed = line.trim();
-      return trimmed && !/^(graph|flowchart|sequenceDiagram|classDiagram)/i.test(trimmed);
+      return trimmed && !MERMAID_DECLARATION_RE.test(trimmed);
     });
     return existing + '\n' + newLines.join('\n');
   }

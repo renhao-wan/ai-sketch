@@ -13,8 +13,9 @@
 // Optional robust repair library (loaded lazily to avoid bundler resolution)
 let jsonRepairLib: ((input: string) => string) | null = null;
 try {
-  // Use eval to avoid static resolution by bundlers
-  const req = (0, eval)('require');
+  // Use Function constructor to avoid static resolution by bundlers
+  // 比 eval 更安全：不访问调用方的局部作用域
+  const req = new Function('return typeof require !== "undefined" ? require : null')();
   const mod = req?.('jsonrepair');
   jsonRepairLib = mod?.jsonrepair || mod?.default || null;
 } catch (_) {
@@ -237,6 +238,45 @@ export function extractCompleteElements(buffer: string, startFrom = 0): { elemen
   }
 
   return { elements, consumed: i };
+}
+
+/**
+ * 使用括号平衡匹配从混合文本中提取第一个完整的 JSON 对象。
+ * 与 planner.ts / critic.ts 中的简化版不同，此实现追踪字符串状态，
+ * 正确处理字符串值中包含的 `{` 或 `}` 字符。
+ *
+ * @returns 提取到的 JSON 字符串，未找到则返回 null
+ */
+export function extractFirstJsonObject(text: string): string | null {
+  if (!text || typeof text !== 'string') return null;
+  const startIdx = text.indexOf('{');
+  if (startIdx === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+
+  for (let i = startIdx; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inString) {
+      if (escape) { escape = false; continue; }
+      if (ch === '\\') { escape = true; continue; }
+      if (ch === '"') { inString = false; }
+      continue;
+    }
+
+    if (ch === '"') { inString = true; continue; }
+    if (ch === '{') { depth++; continue; }
+    if (ch === '}') {
+      depth--;
+      if (depth === 0) {
+        return text.slice(startIdx, i + 1);
+      }
+    }
+  }
+
+  return null;
 }
 
 // Helpers
