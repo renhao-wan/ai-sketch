@@ -14,8 +14,11 @@
 let jsonRepairLib: ((input: string) => string) | null = null;
 try {
   // 动态加载可选依赖，避免打包器静态解析
-  const mod = require('jsonrepair');
-  jsonRepairLib = mod?.jsonrepair || mod?.default || null;
+  // 使用 globalThis.require 绕过 webpack 的静态分析，同时不触发 no-new-func 规则
+  const g = globalThis as Record<string, unknown>;
+  const req = typeof g.require === 'function' ? g.require as (id: string) => unknown : null;
+  const mod = req?.('jsonrepair') as Record<string, unknown> | undefined;
+  jsonRepairLib = (mod?.jsonrepair || mod?.default || null) as ((input: string) => string) | null;
 } catch (_) {
   // not installed; proceed without it
 }

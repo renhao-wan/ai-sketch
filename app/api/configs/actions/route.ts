@@ -54,7 +54,7 @@ const actionHandlers: Record<string, ActionHandler> = {
   },
 
   'search': async (body) => {
-    const query = getString(body, 'query');
+    const query = getString(body, 'query') ?? '';
     return configManager.searchConfigs(query);
   },
 
