@@ -5,8 +5,10 @@ import * as api from '@/lib/api/client';
 import { useNotification } from '@/lib/contexts/NotificationContext';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
 import ScrollToTop from '@/components/ui/ScrollToTop';
-import { Plus, Download, Upload, TestTube, TestTube2, Edit3, Copy, Trash2, Check, Search, X, Loader2, Tag, Eye, ChevronDown, CheckCircle, XCircle, Save, ArrowLeft } from 'lucide-react';
-import Dropdown from '@/components/ui/Dropdown';
+import OllamaBanner from './OllamaBanner';
+import VisionConfigPanel from './VisionConfigPanel';
+import ConfigEditor from './ConfigEditor';
+import { Plus, Download, Upload, TestTube, Edit3, Copy, Trash2, Check, Search, X, Loader2, Tag, Eye } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 import CountBanner from '@/components/ui/CountBanner';
@@ -14,27 +16,14 @@ import { useCountBanner } from '@/hooks/useCountBanner';
 import TagBadge from '@/components/ui/TagBadge';
 import TagCloudSelector from '@/components/ui/TagCloudSelector';
 import TagFilter from '@/components/ui/TagFilter';
-import type { LLMConfig, ModelInfo, ConfirmDialogState, ConfigTag } from '@/lib/types';
-
-/** ConfigEditor 子组件的 Props */
-interface ConfigEditorProps {
-  config: Partial<LLMConfig>;
-  isCreating: boolean;
-  onSave: (config: Partial<LLMConfig>) => void;
-  onCancel: () => void;
-}
+import type { LLMConfig, ConfirmDialogState, ConfigTag } from '@/lib/types';
 
 /**
- * LLM 配置管理组件（内联版本）
- * 从 ConfigManager 迁移，去除了 Modal 包装，适配设置页内联展示
- *
- * 功能包括：
- * - 配置列表展示（搜索、排序）
- * - 新增/编辑配置
- * - 克隆、删除、设为活跃
- * - 测试连接
- * - 导入/导出 JSON
- * - 配置数量提示 Banner
+ * LLM 配置管理组件（主容器）
+ * 负责状态管理和布局编排，具体功能拆分到子组件：
+ * - OllamaBanner: Ollama 检测提示
+ * - VisionConfigPanel: Vision API 配置页面
+ * - ConfigEditor: 配置编辑表单
  */
 export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) {
   const { t } = useLocale();
@@ -55,95 +44,7 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [showTagSelector, setShowTagSelector] = useState<string | null>(null); // configId
   const tagTriggerRef = useRef<HTMLButtonElement>(null);
-
-  // ── Vision 配置 ──
   const [visionPage, setVisionPage] = useState(false);
-  const [visionConfig, setVisionConfig] = useState<{
-    apiType: 'openai' | 'anthropic';
-    baseUrl: string;
-    apiKey: string;
-    model: string;
-  }>({ apiType: 'openai', baseUrl: '', apiKey: '', model: '' });
-  const [visionSaving, setVisionSaving] = useState(false);
-  const [visionTesting, setVisionTesting] = useState(false);
-  const [visionTestResult, setVisionTestResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [visionIsConfigured, setVisionIsConfigured] = useState(false);
-  const [visionCurrentModel, setVisionCurrentModel] = useState('');
-
-  const loadVisionConfig = useCallback(async () => {
-    try {
-      const response = await fetch('/api/vision/config');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.config) {
-          setVisionConfig({
-            apiType: data.config.apiType,
-            baseUrl: data.config.baseUrl,
-            apiKey: data.config.apiKey,
-            model: data.config.model,
-          });
-          setVisionIsConfigured(true);
-          setVisionCurrentModel(data.config.model);
-        } else {
-          setVisionIsConfigured(false);
-          setVisionCurrentModel('');
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load vision config:', error);
-    }
-  }, []);
-
-  const handleVisionSave = async () => {
-    setVisionSaving(true);
-    try {
-      const response = await fetch('/api/vision/config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(visionConfig),
-      });
-
-      if (response.ok) {
-        setVisionIsConfigured(true);
-        setVisionCurrentModel(visionConfig.model);
-        setVisionTestResult(null);
-        showNotification(t('vision.saved'), '', 'success');
-      } else {
-        const data = await response.json().catch(() => ({}));
-        showNotification(t('config.saveFailed'), data.error || '', 'error');
-      }
-    } catch (error) {
-      showNotification(t('config.saveFailed'), (error as Error).message, 'error');
-    } finally {
-      setVisionSaving(false);
-    }
-  };
-
-  const handleVisionDelete = async () => {
-    try {
-      await fetch('/api/vision/config', { method: 'DELETE' });
-      setVisionConfig({ apiType: 'openai', baseUrl: '', apiKey: '', model: '' });
-      setVisionIsConfigured(false);
-      setVisionCurrentModel('');
-      setVisionTestResult(null);
-    } catch (error) {
-      console.error('Failed to delete vision config:', error);
-    }
-  };
-
-  const handleVisionTest = async () => {
-    setVisionTesting(true);
-    setVisionTestResult(null);
-    try {
-      const response = await fetch('/api/vision/test', { method: 'POST' });
-      const data = await response.json();
-      setVisionTestResult(data);
-    } catch (error) {
-      setVisionTestResult({ success: false, message: (error as Error).message });
-    } finally {
-      setVisionTesting(false);
-    }
-  };
 
   const { showBanner, handleDismissBanner } = useCountBanner({
     count: configs.length,
@@ -180,7 +81,6 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
     let cancelled = false;
     (async () => {
       try {
-        // 读取当前配置，获取已有的 Ollama URL（支持远程 Ollama）
         const currentConfigs = await api.fetchConfigs();
         const ollamaConfig = currentConfigs.configs.find(c => c.type === 'ollama');
         const body: Record<string, string> = {};
@@ -193,7 +93,6 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
         });
         const data = await res.json();
         if (!cancelled && data.detected && data.models?.length > 0) {
-          // 过滤掉已有配置的模型
           const existingModels = new Set(
             currentConfigs.configs.filter(c => c.type === 'ollama').map(c => c.model),
           );
@@ -231,13 +130,6 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
     const ids = configs.map(c => c.id!).filter(Boolean);
     api.fetchConfigTagsBatch(ids).then(setConfigTagsMap).catch(() => {});
   }, [configs]);
-
-  useEffect(() => {
-    if (isVisible) {
-      loadVisionConfig();
-      setVisionTestResult(null);
-    }
-  }, [isVisible, loadVisionConfig]);
 
   /** 新建配置 */
   const handleCreateNew = () => {
@@ -371,16 +263,14 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
     input.click();
   };
 
-  /** 快速添加 Ollama 配置（为每个发现的模型创建独立配置） */
+  /** 快速添加 Ollama 配置 */
   const handleAddOllama = async () => {
-    if (ollamaCreating) return; // 防止重复点击
+    if (ollamaCreating) return;
     setOllamaCreating(true);
     try {
-      // 收集现有配置名称，避免重名
       const existingNames = new Set(configs.map(c => c.name));
 
       for (const model of ollamaModels) {
-        // 生成唯一名称：优先 "Ollama - modelname"，冲突时加编号
         let name = `Ollama - ${model.name}`;
         let counter = 1;
         while (existingNames.has(name)) {
@@ -423,7 +313,6 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
         )
       : configs;
 
-    // 按标签筛选
     if (selectedTagId) {
       result = result.filter(c => {
         const cfgTags = configTagsMap[c.id!] || [];
@@ -455,22 +344,11 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
 
         {/* Ollama 检测 Banner */}
         {ollamaDetected && (
-          <div className="px-4 py-3 bg-[var(--accent-indigo)]/10 rounded-xl flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-[var(--accent-indigo)]">{t('config.ollamaDetected')}</p>
-              <p className="text-xs text-[var(--muted)] mt-0.5">
-                {t('config.ollamaDetectedDesc', { count: ollamaModels.length })}
-              </p>
-            </div>
-            <button
-              onClick={handleAddOllama}
-              disabled={ollamaCreating}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200 font-medium disabled:opacity-50"
-            >
-              {ollamaCreating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-              <span>{ollamaCreating ? t('common.loading') : t('config.addOllamaConfig')}</span>
-            </button>
-          </div>
+          <OllamaBanner
+            models={ollamaModels}
+            creating={ollamaCreating}
+            onAdd={handleAddOllama}
+          />
         )}
 
         {/* 操作栏 */}
@@ -506,122 +384,7 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
 
       {/* ── 视觉模型配置页面 ── */}
       {visionPage && (
-        <div className="flex-1 overflow-y-auto scrollbar-thin pt-2">
-          <div className="mb-4">
-            <button
-              onClick={() => setVisionPage(false)}
-              className="flex items-center gap-2 text-sm text-[var(--muted)] hover:text-[var(--fg)] transition-colors"
-            >
-              <ArrowLeft size={16} />
-              {t('config.backToList')}
-            </button>
-          </div>
-
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] p-6 space-y-5">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg bg-[var(--accent-indigo)]/10 flex items-center justify-center">
-                <Eye size={20} className="text-[var(--accent-indigo)]" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-[var(--fg)]">{t('settings.vision')}</h3>
-                <p className="text-xs text-[var(--muted)]">{t('settings.visionDesc')}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('vision.apiType')}</label>
-                <Dropdown
-                  options={[{ value: 'openai', label: t('vision.apiTypeOpenai') }, { value: 'anthropic', label: t('vision.apiTypeAnthropic') }]}
-                  value={visionConfig.apiType}
-                  onChange={(v) => setVisionConfig(prev => ({ ...prev, apiType: v as 'openai' | 'anthropic' }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('vision.model')}</label>
-                <input
-                  type="text"
-                  value={visionConfig.model}
-                  onChange={(e) => setVisionConfig(prev => ({ ...prev, model: e.target.value }))}
-                  placeholder={t('vision.modelPlaceholder')}
-                  className="w-full px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--bg)] text-[var(--fg)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)] text-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('vision.baseUrl')}</label>
-              <input
-                type="text"
-                value={visionConfig.baseUrl}
-                onChange={(e) => setVisionConfig(prev => ({ ...prev, baseUrl: e.target.value }))}
-                placeholder={t('vision.baseUrlPlaceholder')}
-                className="w-full px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--bg)] text-[var(--fg)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)] text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('vision.apiKey')}</label>
-              <input
-                type="password"
-                value={visionConfig.apiKey}
-                onChange={(e) => setVisionConfig(prev => ({ ...prev, apiKey: e.target.value }))}
-                placeholder={t('vision.apiKeyPlaceholder')}
-                className="w-full px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--bg)] text-[var(--fg)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)] text-sm"
-              />
-            </div>
-
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                onClick={handleVisionSave}
-                disabled={visionSaving || !visionConfig.baseUrl || !visionConfig.apiKey || !visionConfig.model}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-indigo)] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                {visionSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                {t('vision.save')}
-              </button>
-              <button
-                onClick={handleVisionTest}
-                disabled={visionTesting || !visionIsConfigured}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border)] text-[var(--fg)] text-sm font-medium hover:bg-[var(--surface-warm-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                {visionTesting ? <Loader2 size={16} className="animate-spin" /> : <TestTube2 size={16} />}
-                {t('vision.test')}
-              </button>
-              {visionIsConfigured && (
-                <button
-                  onClick={handleVisionDelete}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-300 text-red-500 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-950/20 transition-all"
-                >
-                  <Trash2 size={16} />
-                  {t('common.delete')}
-                </button>
-              )}
-            </div>
-
-            {visionTestResult && (
-              <div className={`flex items-center gap-2 p-3 rounded-xl text-sm ${
-                visionTestResult.success
-                  ? 'bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400'
-                  : 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400'
-              }`}>
-                {visionTestResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                {visionTestResult.message}
-              </div>
-            )}
-
-            {visionIsConfigured && (
-              <div className="flex items-center gap-2 px-4 py-3 bg-[var(--accent-indigo)]/5 rounded-xl">
-                <Eye size={16} className="text-[var(--accent-indigo)]" />
-                <p className="text-sm text-[var(--fg)]">
-                  {t('vision.currentModel')}: <span className="font-medium">{visionCurrentModel}</span>
-                </p>
-              </div>
-            )}
-
-            <p className="text-xs text-[var(--muted)] pt-2">{t('vision.noConfig')}</p>
-          </div>
-        </div>
+        <VisionConfigPanel onBack={() => setVisionPage(false)} />
       )}
 
       {/* 搜索框 + 标签筛选 */}
@@ -810,291 +573,6 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
         title={confirmDialog.title}
         message={confirmDialog.message}
       />
-    </div>
-  );
-}
-
-/**
- * 配置编辑器子组件（带 Modal 包装）
- * 用于新增/编辑配置的表单
- */
-function ConfigEditor({ config, isCreating, onSave, onCancel }: ConfigEditorProps) {
-  const { t } = useLocale();
-  const [formData, setFormData] = useState<Partial<LLMConfig>>({ ...config });
-  const [models, setModels] = useState<ModelInfo[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [useCustomModel, setUseCustomModel] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (formData.model) {
-      if (models.length > 0) setUseCustomModel(!models.some(m => m.id === formData.model));
-      else setUseCustomModel(true);
-    }
-  }, [models, formData.model]);
-
-  /** 从 API 加载可用模型列表 */
-  const handleLoadModels = async () => {
-    if (!formData.type || !formData.baseUrl) {
-      setError(t('config.fillRequired'));
-      return;
-    }
-    // 非 Ollama 需要 API Key
-    if (formData.type !== 'ollama' && !formData.apiKey) {
-      setError(t('config.fillRequired'));
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      let modelsData: ModelInfo[];
-      if (formData.type === 'ollama') {
-        // Ollama 使用专用检测端点
-        const res = await fetch('/api/ollama/detect', { method: 'POST' });
-        const data = await res.json();
-        if (!data.detected) throw new Error(data.error || '未检测到 Ollama 服务');
-        modelsData = data.models;
-      } else {
-        // 使用 POST 请求避免 API Key 出现在 URL 中
-        const response = await fetch('/api/models', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: formData.type, baseUrl: formData.baseUrl, apiKey: formData.apiKey }),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || t('config.loadModelFailed'));
-        modelsData = data.models;
-      }
-      setModels(modelsData);
-    } catch (err) {
-      setError((err as Error).message);
-      setModels([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /** 保存配置（校验必填字段） */
-  const handleSave = () => {
-    if (!formData.name || !formData.type || !formData.baseUrl || !formData.model) {
-      setError(t('config.fillAllRequired'));
-      return;
-    }
-    // Ollama 不需要 API Key
-    if (formData.type !== 'ollama' && !formData.apiKey) {
-      setError(t('config.fillAllRequired'));
-      return;
-    }
-    onSave(formData);
-  };
-
-  const inputClass = "w-full px-4 py-2.5 text-sm bg-[var(--surface-warm-hover)] border border-[var(--surface-warm-hover)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 hover:border-[var(--accent-indigo)]/20 transition-all duration-200";
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative bg-[var(--surface-warm)] backdrop-blur-2xl rounded-3xl border border-[var(--border)] shadow-[0_20px_60px_rgba(28,25,23,0.10)] w-full max-w-md max-h-[78vh] flex flex-col animate-slide-up">
-        {/* Header */}
-        <div className="flex items-center justify-between px-7 pt-6 pb-4 flex-shrink-0">
-          <h2 className="text-lg font-semibold tracking-tight text-[var(--fg)]">
-            {isCreating ? t('config.new') : t('config.edit')}
-          </h2>
-          <button
-            onClick={onCancel}
-            className="w-8 h-8 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Scrollable Body */}
-        <div className="px-7 pb-6 space-y-4 overflow-y-auto scrollbar-hide flex-1 min-h-0">
-          {error && (
-            <div className="px-4 py-3 bg-red-500/10 rounded-xl">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.configName')} <span className="text-red-500">*</span></label>
-            <input
-              id="configName"
-              type="text"
-              value={formData.name || ''}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder={t('config.configNamePlaceholder')}
-              className={inputClass}
-            />
-          </div>
-
-        <div>
-          <label htmlFor="configDescription" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.description')}</label>
-          <textarea
-            id="configDescription"
-            value={formData.description || ''}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            placeholder={t('config.descriptionPlaceholder')}
-            rows={2}
-            className={inputClass}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="configProviderType" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.providerType')} <span className="text-red-500">*</span></label>
-          <Dropdown
-            options={[{ value: 'openai', label: 'OpenAI' }, { value: 'anthropic', label: 'Anthropic' }, { value: 'ollama', label: 'Ollama' }]}
-            value={formData.type || 'openai'}
-            onChange={(v) => {
-              const newType = v as 'openai' | 'anthropic' | 'ollama';
-              const updates: Partial<LLMConfig> = { type: newType, model: '' };
-              if (newType === 'ollama') {
-                // 切换到 Ollama：自动填充默认地址
-                updates.baseUrl = 'http://localhost:11434';
-              } else if (formData.baseUrl === 'http://localhost:11434') {
-                // 从 Ollama 切换到其他：清除 Ollama 地址
-                updates.baseUrl = '';
-              }
-              setFormData({ ...formData, ...updates });
-            }}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="configBaseUrl" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.baseUrl')} <span className="text-red-500">*</span></label>
-          <input
-            id="configBaseUrl"
-            type="text"
-            value={formData.baseUrl || ''}
-            onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
-            placeholder={formData.type === 'openai' ? 'https://api.openai.com/v1' : formData.type === 'ollama' ? 'http://localhost:11434' : 'https://api.anthropic.com/v1'}
-            className={inputClass}
-          />
-        </div>
-
-        {formData.type !== 'ollama' && (
-          <div>
-            <label htmlFor="configApiKey" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.apiKey')} <span className="text-red-500">*</span></label>
-            <input
-              id="configApiKey"
-              type="password"
-              value={formData.apiKey || ''}
-              onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-              placeholder="sk-..."
-              className={inputClass}
-            />
-          </div>
-        )}
-
-        <div>
-          <button
-            onClick={handleLoadModels}
-            disabled={loading}
-            className="w-full px-4 py-2.5 text-sm text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-xl transition-all duration-200 font-medium disabled:opacity-50"
-          >
-            {loading ? t('config.loadingModels') : (formData.type === 'ollama' ? t('config.detectOllama') : t('config.loadModels'))}
-          </button>
-        </div>
-
-        <div>
-          <label htmlFor="configModel" className="block text-sm font-medium text-[var(--fg)] mb-1.5">{t('config.model')} <span className="text-red-500">*</span></label>
-          {models.length > 0 && (
-            <div className="mb-2 flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="modelSelection"
-                  checked={!useCustomModel}
-                  onChange={() => { setUseCustomModel(false); if (models.length > 0) setFormData({ ...formData, model: models[0].id }); }}
-                />
-                <span className="text-sm text-[var(--fg)]">{t('config.selectFromList')}</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="modelSelection"
-                  checked={useCustomModel}
-                  onChange={() => { setUseCustomModel(true); setFormData({ ...formData, model: '' }); }}
-                />
-                <span className="text-sm text-[var(--fg)]">{t('config.manualInput')}</span>
-              </label>
-            </div>
-          )}
-          {models.length > 0 && !useCustomModel && (
-            <Dropdown
-              options={models.map(m => ({ value: m.id, label: m.name }))}
-              value={formData.model || ''}
-              onChange={(v) => setFormData({ ...formData, model: v })}
-            />
-          )}
-          {(useCustomModel || models.length === 0) && (
-            <input
-              id="configModel"
-              type="text"
-              value={formData.model || ''}
-              onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-              placeholder={t('config.modelPlaceholder')}
-              className={inputClass}
-            />
-          )}
-        </div>
-
-        <div>
-          <label htmlFor="configTemperature" className="block text-sm font-medium text-[var(--fg)] mb-1.5">
-            {t('config.temperature')}
-          </label>
-          <div className="flex items-center gap-3">
-            <input
-              id="configTemperature"
-              type="range"
-              min="0"
-              max="2"
-              step="0.1"
-              value={formData.temperature ?? 0.5}
-              onChange={(e) => setFormData({ ...formData, temperature: parseFloat(e.target.value) })}
-              className="flex-1 h-2 bg-[var(--surface-warm-hover)] rounded-lg appearance-none cursor-pointer accent-[var(--accent-indigo)]"
-            />
-            <span className="text-sm font-mono text-[var(--fg)] w-10 text-right">
-              {(formData.temperature ?? 0.5).toFixed(1)}
-            </span>
-          </div>
-          <p className="text-xs text-[var(--muted)] mt-1">{t('config.temperatureHint')}</p>
-        </div>
-
-        <div>
-          <label htmlFor="configMaxTokens" className="block text-sm font-medium text-[var(--fg)] mb-1.5">
-            {t('config.maxTokens')}
-          </label>
-          <input
-            id="configMaxTokens"
-            type="number"
-            min="256"
-            max="200000"
-            step="256"
-            value={formData.maxTokens ?? ''}
-            onChange={(e) => setFormData({ ...formData, maxTokens: e.target.value ? parseInt(e.target.value, 10) : undefined })}
-            placeholder={t('config.maxTokensPlaceholder')}
-            className={inputClass}
-          />
-          <p className="text-xs text-[var(--muted)] mt-1">{t('config.maxTokensHint')}</p>
-        </div>
-        </div>
-
-        {/* Footer - Fixed */}
-        <div className="flex justify-end gap-3 px-7 py-4 border-t border-[var(--surface-warm-hover)] flex-shrink-0">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-sm text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] rounded-xl transition-all duration-200"
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-5 py-2 text-sm text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200 font-medium"
-          >
-            {isCreating ? t('common.create') : t('common.save')}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

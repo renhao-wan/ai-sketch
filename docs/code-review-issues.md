@@ -499,9 +499,13 @@ const newLines = incomingLines.filter(line => {
 ### 🟡 UI-05: LLMSettings.tsx 组件过大（1100+ 行）
 
 - **文件**: `components/settings/LLMSettings.tsx`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 包含 `LLMSettings` 和 `ConfigEditor` 两个组件，管理了 Vision 配置、Ollama 检测、标签管理、配置 CRUD 等多个不相关的功能。
-- **修复建议**: 拆分为 `VisionConfigPanel`、`OllamaBanner`、`ConfigList`、`ConfigEditor` 等子组件。
+- **修复方案**: 拆分为 4 个文件：
+  - `LLMSettings.tsx`（~500 行）— 主容器，保留状态管理和布局编排
+  - `VisionConfigPanel.tsx`（~200 行）— Vision API 配置页面，独立管理自己的 state
+  - `OllamaBanner.tsx`（~40 行）— Ollama 检测提示 Banner，纯展示组件
+  - `ConfigEditor.tsx`（~280 行）— 配置编辑表单，从同一文件提取为独立模块
 
 ---
 
