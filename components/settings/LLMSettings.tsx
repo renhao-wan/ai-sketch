@@ -158,6 +158,7 @@ export function LLMSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
         } catch (err) {
           setError(t('config.deleteFailed') + (err as Error).message);
         }
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
       },
     });
   };
