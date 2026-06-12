@@ -533,9 +533,9 @@ apiKey: rawApiKey && isEncrypted(rawApiKey) ? decrypt(rawApiKey) : rawApiKey,
 ### 🟢 UI-09: HistoryModal 与 ConversationList 代码高度重复
 
 - **文件**: `components/dialogs/HistoryModal.tsx`, `components/ai/ConversationList.tsx`
-- **状态**: `[ ]`
+- **状态**: `[x]` ✅ 已修复
 - **描述**: 搜索、分页加载、标签筛选方面的逻辑高度重复。
-- **修复建议**: 提取共享的 `useConversationList` hook。
+- **修复方案**: 提取 `hooks/useConversationList.ts` 共享 hook，封装会话搜索、分页加载、标签管理、防抖搜索、无限滚动逻辑。HistoryModal 和 ConversationList 改为使用该 hook，各自只保留 UI 渲染逻辑。
 
 ---
 

@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageSquare, ChevronDown, Loader2, Search, X } from 'lucide-react';
-import * as api from '@/lib/api/client';
 import { useLocale } from '@/lib/locales';
+import { useConversationList } from '@/hooks/useConversationList';
 import { timeAgo } from '@/lib/utils/time-ago';
 import TagBadge from '@/components/ui/TagBadge';
 import TagFilter from '@/components/ui/TagFilter';
-import type { Conversation, ConversationTag } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
 interface ConversationListProps {
@@ -15,8 +14,6 @@ interface ConversationListProps {
   onSelect: (id: string) => void;
   onNew: () => void;
 }
-
-const PAGE_SIZE = 20;
 
 const FORMAT_BADGES: Record<DiagramFormat, { label: string; color: string }> = {
   excalidraw: { label: 'EX', color: 'bg-[var(--accent-violet)]/10 text-[var(--accent-violet)]' },
@@ -28,92 +25,30 @@ const FORMAT_BADGES: Record<DiagramFormat, { label: string; color: string }> = {
 export default function ConversationList({ currentId, onSelect, onNew }: ConversationListProps) {
   const { t } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const offsetRef = useRef(0);
 
-  // 标签相关状态
-  const [tags, setTags] = useState<ConversationTag[]>([]);
-  const [conversationTagsMap, setConversationTagsMap] = useState<Record<string, ConversationTag[]>>({});
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-
-  /** 加载会话（首次 or 加载更多） */
-  const loadConversations = useCallback(async (reset: boolean) => {
-    if (isLoading) return;
-    setIsLoading(true);
-    try {
-      const offset = reset ? 0 : offsetRef.current;
-      const result = await api.fetchConversations({
-        limit: PAGE_SIZE,
-        offset,
-        search: searchQuery || undefined,
-        tagId: selectedTagId || undefined,
-      });
-      setConversations(prev => reset ? result.conversations : [...prev, ...result.conversations]);
-      setHasMore(result.hasMore);
-      offsetRef.current = offset + result.conversations.length;
-    } catch (err) {
-      console.error('Failed to load conversations:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isLoading, searchQuery, selectedTagId]);
-
-  /** 打开下拉时重置状态，搜索由下方 effect 统一触发 */
-  useEffect(() => {
-    if (isOpen) {
-      offsetRef.current = 0;
-      setHasMore(true);
-      setSearchQuery('');
-      setSelectedTagId(null);
-    }
-  }, [isOpen]);
-
-  /** 搜索防抖（含标签筛选变化） */
-  useEffect(() => {
-    if (!isOpen) return;
-    const timer = setTimeout(() => {
-      offsetRef.current = 0;
-      setHasMore(true);
-      loadConversations(true);
-    }, 300);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadConversations 不应在依赖中
-  }, [isOpen, searchQuery, selectedTagId]);
-
-  /** 加载所有标签 */
-  useEffect(() => {
-    const loadTags = async () => {
-      try {
-        const convTags = await api.fetchConversationTags();
-        setTags(convTags);
-      } catch (err) {
-        console.error('Failed to load tags:', err);
-      }
-    };
-    loadTags();
-  }, []);
-
-  /** 批量加载当前可见对话的标签 */
-  useEffect(() => {
-    if (!isOpen || conversations.length === 0) return;
-    const ids = conversations.map(c => c.id);
-    api.fetchConversationTagsBatch(ids).then(setConversationTagsMap).catch(() => {});
-  }, [isOpen, conversations]);
+  const {
+    conversations,
+    isLoading,
+    hasMore,
+    searchQuery,
+    setSearchQuery,
+    tags,
+    conversationTagsMap,
+    selectedTagId,
+    setSelectedTagId,
+    loadMore,
+  } = useConversationList({ isActive: isOpen });
 
   /** 滚动到底部时加载更多 */
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el || isLoading || !hasMore) return;
-    // 距底部 40px 时触发
     if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) {
-      loadConversations(false);
+      loadMore();
     }
-  }, [isLoading, hasMore, loadConversations]);
+  }, [isLoading, hasMore, loadMore]);
 
   const current = conversations.find(c => c.id === currentId);
 
@@ -205,7 +140,6 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
                           <div className="flex items-center gap-2 text-[11px] text-[var(--muted)]">
                             <span>{conv.messageCount} {t('conversation.messages')}</span>
                             <span>{timeAgo(conv.updatedAt, t)}</span>
-                            {/* 标签圆点 */}
                             {convTags.length > 0 && (
                               <span className="flex items-center gap-0.5">
                                 {convTags.slice(0, 4).map(tag => (
@@ -218,7 +152,6 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
                       </div>
                     );
                   })}
-                  {/* 底部加载指示器 */}
                   {isLoading && (
                     <div className="flex items-center justify-center py-3">
                       <Loader2 size={16} className="animate-spin text-[var(--muted)]" />

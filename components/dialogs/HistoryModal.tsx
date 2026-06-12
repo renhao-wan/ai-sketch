@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import * as api from '@/lib/api/client';
+import { useCallback } from 'react';
 import ScrollToTop from '@/components/ui/ScrollToTop';
 import Dropdown from '@/components/ui/Dropdown';
 import { useLocale } from '@/lib/locales';
+import { useConversationList } from '@/hooks/useConversationList';
 import { Clock, ArrowRight, Search } from 'lucide-react';
 import TagBadge from '@/components/ui/TagBadge';
 import TagFilter from '@/components/ui/TagFilter';
-import type { Conversation, ConversationTag } from '@/lib/types';
+import type { Conversation } from '@/lib/types';
 
 interface HistoryModalProps {
   isOpen: boolean;
@@ -16,116 +16,34 @@ interface HistoryModalProps {
   onApply?: (conversation: Conversation) => void;
 }
 
-const PAGE_SIZE = 20;
-
 /** 历史记录弹窗 — 快速浏览和恢复会话 */
 export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalProps) {
   const { t } = useLocale();
-  const [items, setItems] = useState<Conversation[]>([]);
 
-  // Search, sort, pagination state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'updated_at' | 'created_at'>('updated_at');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [totalCount, setTotalCount] = useState(0);
-  const pageRef = useRef(0);
-
-  // Tag state
-  const [tags, setTags] = useState<ConversationTag[]>([]);
-  const [conversationTagsMap, setConversationTagsMap] = useState<Record<string, ConversationTag[]>>({});
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-
-  /** Load conversations with search/sort/pagination support */
-  const loadConversations = async (reset = false, pageNum = 0) => {
-    try {
-      const offset = pageNum * PAGE_SIZE;
-      const result = await api.fetchConversations({
-        search: searchQuery || undefined,
-        sort: sortBy,
-        order: sortOrder,
-        limit: PAGE_SIZE,
-        offset,
-        tagId: selectedTagId || undefined,
-      });
-
-      if (reset) {
-        setItems(result.conversations);
-      } else {
-        setItems(prev => [...prev, ...result.conversations]);
-      }
-
-      setTotalCount(result.total);
-      setHasMore(result.hasMore);
-    } catch (err) {
-      console.error('Failed to load conversations:', err);
-    }
-  };
-
-  // Reset state when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setSearchQuery('');
-      setSortBy('updated_at');
-      setSortOrder('desc');
-      setSelectedTagId(null);
-    }
-  }, [isOpen]);
-
-  // Debounced load on open/search/sort/tag changes
-  useEffect(() => {
-    if (!isOpen) return;
-    const timer = setTimeout(() => {
-      pageRef.current = 0;
-      setHasMore(true);
-      loadConversations(true, 0);
-    }, 300);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, searchQuery, sortBy, sortOrder, selectedTagId]);
-
-  /** Load all conversation tags */
-  useEffect(() => {
-    if (!isOpen) return;
-    const loadTags = async () => {
-      try {
-        const convTags = await api.fetchConversationTags();
-        setTags(convTags);
-      } catch (err) {
-        console.error('Failed to load tags:', err);
-      }
-    };
-    loadTags();
-  }, [isOpen]);
-
-  /** 批量加载当前可见对话的标签 */
-  useEffect(() => {
-    if (!isOpen || items.length === 0) return;
-    const ids = items.map(c => c.id);
-    api.fetchConversationTagsBatch(ids).then(setConversationTagsMap).catch(() => {});
-  }, [isOpen, items]);
-
-  /** Infinite scroll: load next page when near bottom */
-  const loadMore = useCallback(async () => {
-    if (isLoadingMore || !hasMore) return;
-    setIsLoadingMore(true);
-    try {
-      const nextPage = pageRef.current + 1;
-      await loadConversations(false, nextPage);
-      pageRef.current = nextPage;
-    } finally {
-      setIsLoadingMore(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoadingMore, hasMore]);
+  const {
+    conversations: items,
+    isLoading,
+    hasMore,
+    totalCount,
+    searchQuery,
+    setSearchQuery,
+    tags,
+    conversationTagsMap,
+    selectedTagId,
+    setSelectedTagId,
+    loadMore,
+  } = useConversationList({
+    isActive: isOpen,
+    sortBy: 'updated_at',
+    sortOrder: 'desc',
+  });
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollHeight - scrollTop - clientHeight < 50 && hasMore && !isLoadingMore) {
+    if (scrollHeight - scrollTop - clientHeight < 50 && hasMore && !isLoading) {
       loadMore();
     }
-  }, [hasMore, isLoadingMore, loadMore]);
+  }, [hasMore, isLoading, loadMore]);
 
   const handleApply = (item: Conversation) => { onApply?.(item); onClose(); };
 
@@ -167,26 +85,6 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
               tags={tags}
               selectedTagId={selectedTagId}
               onChange={setSelectedTagId}
-            />
-          </div>
-
-          {/* Sort Dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-[var(--muted)]">{t('conversation.sortBy')}:</span>
-            <Dropdown
-              options={[
-                { value: 'updated_at-desc', label: t('conversation.recentlyUpdated') },
-                { value: 'updated_at-asc', label: t('conversation.oldestUpdated') },
-                { value: 'created_at-desc', label: t('conversation.recentlyCreated') },
-                { value: 'created_at-asc', label: t('conversation.oldestCreated') },
-              ]}
-              value={`${sortBy}-${sortOrder}`}
-              onChange={(v) => {
-                const [sort, order] = v.split('-');
-                setSortBy((sort || 'updated_at') as 'updated_at' | 'created_at');
-                setSortOrder((order || 'desc') as 'asc' | 'desc');
-              }}
-              className="!py-1.5 !px-3 !text-xs !rounded-lg"
             />
           </div>
         </div>
@@ -235,7 +133,7 @@ export default function HistoryModal({ isOpen, onClose, onApply }: HistoryModalP
             {hasMore && items.length > 0 && (
               <div className="px-4 py-3 text-center">
                 <span className="text-xs text-[var(--muted)]">
-                  {isLoadingMore ? t('conversation.loading') : t('conversation.loadMore')}
+                  {isLoading ? t('conversation.loading') : t('conversation.loadMore')}
                 </span>
               </div>
             )}
