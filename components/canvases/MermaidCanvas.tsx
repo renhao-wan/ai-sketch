@@ -141,9 +141,12 @@ export default function MermaidCanvas({ code, isStreaming, exportRef }: MermaidC
     // eslint-disable-next-line react-hooks/exhaustive-deps -- initMermaid 和 mermaidInstance 是模块级变量，不需要作为依赖
   }, [code, initMermaid, mermaidInstance, handleFitToView, t]);
 
-  // 渲染 Mermaid 图表（合理用例，需要在 effect 中处理错误）
+  // 渲染 Mermaid 图表（流结束后一次性渲染）
   useEffect(() => {
     if (!containerRef.current) return;
+
+    // 流式期间不渲染，等流结束后一次性渲染
+    if (isStreaming) return;
 
     // 空代码时清空容器
     if (!code) {
@@ -169,7 +172,7 @@ export default function MermaidCanvas({ code, isStreaming, exportRef }: MermaidC
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- renderDiagram 是 useCallback 包裹的函数，不需要作为依赖
-  }, [code, t]);
+  }, [code, t, isStreaming]);
 
   // 注册导出函数
   useEffect(() => {

@@ -211,16 +211,16 @@ export function useGeneration(options: UseGenerationOptions) {
               firstContentTime = performance.now();
               console.log(`[Generation] First content in ${Math.round(firstContentTime - sendTime)}ms`);
             }
+            // 侧边栏消息流式更新（代码文本实时显示）
             opts.onCodeUpdate(stripped);
-            opts.streamRendererRef.current?.feed(stripped);
             opts.onMessagesUpdate(prev => prev.map(m =>
               m.id === optimisticAssistantMsg.id ? { ...m, content: stripped } : m
             ));
+            // 画布不流式渲染，等流结束后一次性渲染
           },
           onRetry: () => {
-            // 重试时清空画布和已累积的代码，准备接收新内容
+            // 重试时清空代码，准备接收新内容
             opts.onCodeUpdate('');
-            opts.streamRendererRef.current?.reset();
             opts.onMessagesUpdate(prev => prev.map(m =>
               m.id === optimisticAssistantMsg.id ? { ...m, content: '' } : m
             ));
@@ -236,9 +236,8 @@ export function useGeneration(options: UseGenerationOptions) {
       // 后处理
       const optimizedCode = postProcessCode(accumulatedCode, opts.format);
       opts.onCodeUpdate(optimizedCode);
-      opts.streamRendererRef.current?.reset();
 
-      // 验证并应用
+      // 验证并应用（一次性渲染到画布）
       const strategy = getStrategy(opts.format);
       const result = strategy.validate(optimizedCode);
       if (result.valid) {

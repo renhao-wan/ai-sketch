@@ -6,7 +6,6 @@ import '@excalidraw/excalidraw/index.css';
 import type { ExcalidrawElement } from '@/lib/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import type { CanvasExportHandle } from './DiagramCanvas';
-import { extractCompleteElements } from '@/lib/diagram/json-repair';
 import { getExcalidrawBackgroundColor } from '@/lib/utils/theme-utils';
 import { useNotification } from '@/lib/contexts/NotificationContext';
 import { useLocale } from '@/lib/locales';
@@ -144,7 +143,7 @@ interface Props {
   exportRef?: React.MutableRefObject<CanvasExportHandle | null>;
 }
 
-export default function ExcalidrawCanvas({ elements, isStreaming, streamRendererRef, exportRef }: Props) {
+export default function ExcalidrawCanvas({ elements, isStreaming, exportRef }: Props) {
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const [apiReady, setApiReady] = useState(false);
   const [convertFn, setConvertFn] = useState<ConvertFn | null>(null);
@@ -157,38 +156,7 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
     return JSON.stringify(elements);
   }, [elements]);
 
-  const consumedRef = useRef(0);
-  const allRawRef = useRef<unknown[]>([]);
-  const idMapRef = useRef(new Map<string, Record<string, unknown>>());
-  const convertedIdsRef = useRef(new Set<string>());
-  const sceneRef = useRef<ExcalidrawSceneElement[]>([]);
-  const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const failedElementsRef = useRef<Array<{ id: string; error: string }>>([]);
-
-  /** 重置流式渲染状态 */
-  const resetStreamRefs = useCallback(() => {
-    consumedRef.current = 0;
-    allRawRef.current = [];
-    idMapRef.current = new Map();
-    convertedIdsRef.current = new Set();
-    sceneRef.current = [];
-    failedElementsRef.current = [];
-    if (updateTimerRef.current) {
-      clearTimeout(updateTimerRef.current);
-      updateTimerRef.current = null;
-    }
-  }, []);
-
-  /** 延迟更新场景（debounce） */
-  const scheduleSceneUpdate = useCallback(() => {
-    if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
-    updateTimerRef.current = setTimeout(() => {
-      if (apiRef.current && sceneRef.current.length > 0) {
-        apiRef.current.updateScene({ elements: [...sceneRef.current] as any });
-      }
-      updateTimerRef.current = null;
-    }, STREAM_CONFIG.UPDATE_DEBOUNCE_MS);
-  }, []);
 
   useEffect(() => {
     loadConvertFn()
@@ -247,77 +215,13 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
     appState: { viewBackgroundColor: getExcalidrawBackgroundColor(), currentItemFontFamily: 1 },
   }), []);
 
-  useEffect(() => {
-    if (isStreaming) {
-      resetStreamRefs();
-    }
-  }, [isStreaming, resetStreamRefs]);
-
-  // Streaming feed — 逐个元素更新（使用 debounce 批量更新）
-  useEffect(() => {
-    if (!streamRendererRef) return;
-
-    streamRendererRef.current = {
-      feed: (buffer: string) => {
-        if (!convertFn || !apiRef.current) return;
-
-        const { elements: newRaw, consumed } = extractCompleteElements(buffer, consumedRef.current);
-        if (newRaw.length === 0) return;
-        consumedRef.current = consumed;
-
-        let hasNewElements = false;
-
-        for (const el of newRaw) {
-          const rec = el as Record<string, unknown>;
-          const elType = rec.type as string;
-          if (!elType || !VALID.has(elType)) continue;
-          const id = rec.id as string;
-          if (!id || convertedIdsRef.current.has(id)) continue;
-
-          allRawRef.current.push(el);
-          idMapRef.current.set(id, rec);
-
-          let prepared: ExcalidrawElement = el as ExcalidrawElement;
-          if (ARROW_TYPES.has(elType)) {
-            const result = positionArrow(rec, idMapRef.current);
-            if (!result) continue; // 目标不全，跳过
-            prepared = result as unknown as ExcalidrawElement;
-          }
-
-          try {
-            const converted = convertFn([prepared], { regenerateIds: false });
-            sceneRef.current.push(...converted);
-            convertedIdsRef.current.add(id);
-            hasNewElements = true;
-          } catch (e) {
-            // 收集失败的元素，而不是静默跳过
-            failedElementsRef.current.push({
-              id,
-              error: (e as Error).message || '未知错误',
-            });
-            console.warn(`[ExcalidrawCanvas] 元素转换失败: ${id}`, e);
-          }
-        }
-
-        // 使用 debounce 批量更新场景
-        if (hasNewElements && sceneRef.current.length > 0) {
-          scheduleSceneUpdate();
-        }
-      },
-      reset: () => {
-        resetStreamRefs();
-      },
-    };
-  }, [convertFn, streamRendererRef, resetStreamRefs, scheduleSceneUpdate]);
-
-  // Final render after stream ends
+  // 流结束后一次性渲染
   useEffect(() => {
     if (isStreaming || !convertFn || !apiRef.current || !apiReady) return;
 
     // 空元素时清空画布
     if (!elements?.length) {
       apiRef.current.updateScene({ elements: [] });
-      resetStreamRefs();
       return;
     }
 
@@ -374,9 +278,8 @@ export default function ExcalidrawCanvas({ elements, isStreaming, streamRenderer
       );
     }
 
-    resetStreamRefs();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elementsHash, isStreaming, convertFn, resetStreamRefs, showNotification, t, apiReady]);
+  }, [elementsHash, isStreaming, convertFn, showNotification, t, apiReady]);
 
   return (
     <div className="w-full h-full canvas-grid-bg">
