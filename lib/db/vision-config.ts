@@ -4,6 +4,7 @@
  */
 
 import { getDb, requestSave } from './index';
+import { encrypt, decrypt, isEncrypted } from './crypto';
 
 export interface VisionConfig {
   id: string;
@@ -20,6 +21,7 @@ const DEFAULT_ID = 'default';
 /**
  * 获取 Vision API 配置
  * 如果未配置，返回 null
+ * API Key 自动解密（兼容旧的明文存储）
  */
 export async function getVisionConfig(): Promise<VisionConfig | null> {
   const db = await getDb();
@@ -29,11 +31,13 @@ export async function getVisionConfig(): Promise<VisionConfig | null> {
   if (stmt.step()) {
     const row = stmt.getAsObject();
     stmt.free();
+    const rawApiKey = row.api_key as string;
     return {
       id: row.id as string,
       apiType: row.api_type as 'openai' | 'anthropic',
       baseUrl: row.base_url as string,
-      apiKey: row.api_key as string,
+      // 兼容旧的明文存储：仅在已加密时解密
+      apiKey: rawApiKey && isEncrypted(rawApiKey) ? decrypt(rawApiKey) : rawApiKey,
       model: row.model as string,
       createdAt: row.created_at as number,
       updatedAt: row.updated_at as number,
@@ -46,17 +50,19 @@ export async function getVisionConfig(): Promise<VisionConfig | null> {
 
 /**
  * 保存 Vision API 配置（upsert）
+ * API Key 以 AES-256-GCM 加密存储
  */
 export async function saveVisionConfig(config: Omit<VisionConfig, 'id' | 'createdAt' | 'updatedAt'>): Promise<VisionConfig> {
   const db = await getDb();
   const now = Math.floor(Date.now() / 1000);
+  const encryptedKey = encrypt(config.apiKey);
 
   db.run(
     `INSERT INTO vision_config (id, api_type, base_url, api_key, model, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET api_type = ?, base_url = ?, api_key = ?, model = ?, updated_at = ?`,
-    [DEFAULT_ID, config.apiType, config.baseUrl, config.apiKey, config.model, now, now,
-     config.apiType, config.baseUrl, config.apiKey, config.model, now],
+    [DEFAULT_ID, config.apiType, config.baseUrl, encryptedKey, config.model, now, now,
+     config.apiType, config.baseUrl, encryptedKey, config.model, now],
   );
 
   requestSave();
@@ -65,7 +71,7 @@ export async function saveVisionConfig(config: Omit<VisionConfig, 'id' | 'create
     id: DEFAULT_ID,
     apiType: config.apiType,
     baseUrl: config.baseUrl,
-    apiKey: config.apiKey,
+    apiKey: config.apiKey, // 返回明文给调用方
     model: config.model,
     createdAt: now,
     updatedAt: now,

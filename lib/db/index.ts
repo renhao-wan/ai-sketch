@@ -1,16 +1,7 @@
 import initSqlJs, { Database } from 'sql.js';
 import fs from 'fs';
 import path from 'path';
-
-// 动态获取数据库路径
-function getDbPath(): string {
-  // 优先使用环境变量（Electron 模式）
-  if (process.env.AI_SKETCH_DB_PATH) {
-    return process.env.AI_SKETCH_DB_PATH;
-  }
-  // 默认路径（Web 模式）
-  return path.join(process.cwd(), 'data', 'ai-sketch.db');
-}
+import { getDbPath } from './paths';
 
 const DB_PATH = getDbPath();
 
@@ -40,7 +31,8 @@ async function initDb(): Promise<Database> {
     isNew = true;
   }
 
-  db.run('PRAGMA journal_mode = WAL');
+  // 注意: journal_mode = WAL 对 sql.js WASM 内存数据库无效（no-op），
+  // 真正的持久化通过 db.export() + 原子写入完成。保留此行仅为兼容性。
   db.run('PRAGMA foreign_keys = ON');
 
   db.run(`
@@ -216,7 +208,11 @@ export async function getDb(): Promise<Database> {
 }
 
 /**
- * 将内存数据库持久化到磁盘
+ * 将内存数据库持久化到磁盘（异步 + 原子写入）
+ * 使用 write-to-temp-then-rename 模式确保写入的原子性：
+ * - 先写入临时文件，再通过 rename 覆盖目标文件
+ * - rename 在大多数文件系统上是原子操作，避免写入过程中崩溃导致数据库损坏
+ * 使用异步 I/O 避免阻塞事件循环
  * 写入失败时标记 isDirty 以便后续重试，不抛出异常以避免阻塞业务
  */
 export function saveToDisk(): void {
@@ -227,8 +223,19 @@ export function saveToDisk(): void {
       fs.mkdirSync(dir, { recursive: true });
     }
     const data = dbInstance.export();
-    fs.writeFileSync(DB_PATH, Buffer.from(data));
-    isDirty = false;
+    const tmpPath = DB_PATH + '.tmp';
+    // 使用异步写入避免阻塞事件循环，通过 rename 保证原子性
+    fs.promises.writeFile(tmpPath, Buffer.from(data))
+      .then(() => fs.promises.rename(tmpPath, DB_PATH))
+      .then(() => {
+        isDirty = false;
+      })
+      .catch((e) => {
+        isDirty = true;
+        console.error('[DB] 持久化失败，数据将在下次成功写入时保存:', e);
+        // 清理可能残留的临时文件
+        fs.promises.unlink(tmpPath).catch(() => {});
+      });
   } catch (e) {
     isDirty = true;
     console.error('[DB] 持久化失败，数据将在下次成功写入时保存:', e);
@@ -250,18 +257,43 @@ export function requestSave(): void {
 }
 
 /**
+ * 将内存数据库同步持久化到磁盘（仅在应用退出时使用）
+ * 使用 write-to-temp-then-rename 原子写入模式
+ * 注意: 使用同步 I/O 阻塞事件循环，仅在 Electron app.quit 流程中调用
+ */
+export function saveToDiskSync(): void {
+  if (!dbInstance) return;
+  try {
+    const dir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const data = dbInstance.export();
+    const tmpPath = DB_PATH + '.tmp';
+    fs.writeFileSync(tmpPath, Buffer.from(data));
+    fs.renameSync(tmpPath, DB_PATH);
+    isDirty = false;
+  } catch (e) {
+    isDirty = true;
+    console.error('[DB] 同步持久化失败:', e);
+    // 清理可能残留的临时文件
+    try { fs.unlinkSync(DB_PATH + '.tmp'); } catch { /* ignore */ }
+  }
+}
+
+/**
  * 关闭数据库连接，释放 WASM 内存
- * 在 Electron 应用退出前调用
+ * 在 Electron 应用退出前调用，使用同步写入确保数据不丢失
  */
 export function closeDb(): void {
   if (!dbInstance) return;
   try {
-    // 取消防抖定时器，立即持久化
+    // 取消防抖定时器，立即同步持久化
     if (saveTimer) {
       clearTimeout(saveTimer);
       saveTimer = null;
     }
-    saveToDisk();
+    saveToDiskSync();
     dbInstance.close();
   } catch (e) {
     console.error('[DB] 关闭数据库时出错:', e);

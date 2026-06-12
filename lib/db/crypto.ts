@@ -6,6 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { getKeyPath } from './paths';
 
 const ALGORITHM = 'aes-256-gcm';
 const KEY_LENGTH = 32; // 256 bits
@@ -14,12 +15,18 @@ const AUTH_TAG_LENGTH = 16;
 
 /** 获取或创建加密密钥 */
 function getOrCreateKey(): Buffer {
-  // 从 DB_PATH 推导密钥文件路径
-  const dbPath = getDbPath();
-  const keyPath = dbPath + '.key';
+  const keyPath = getKeyPath();
 
   if (fs.existsSync(keyPath)) {
-    return fs.readFileSync(keyPath);
+    const key = fs.readFileSync(keyPath);
+    // 校验密钥文件长度，防止文件损坏或被截断
+    if (key.length !== KEY_LENGTH) {
+      throw new Error(
+        `[Crypto] 密钥文件长度异常: 期望 ${KEY_LENGTH} 字节，实际 ${key.length} 字节。` +
+        `请删除密钥文件 ${keyPath} 后重新启动应用以生成新密钥。`
+      );
+    }
+    return key;
   }
 
   // 首次运行，生成随机密钥
@@ -28,16 +35,10 @@ function getOrCreateKey(): Buffer {
     fs.mkdirSync(dir, { recursive: true });
   }
   const key = crypto.randomBytes(KEY_LENGTH);
-  fs.writeFileSync(keyPath, key, { mode: 0o600 }); // 仅 owner 可读写
+  // 注意: mode 0o600 在 Windows 上无效（Windows 使用 ACL 权限管理）。
+  // Windows 用户应确保数据目录的 NTFS 权限正确配置。
+  fs.writeFileSync(keyPath, key, { mode: 0o600 });
   return key;
-}
-
-/** 获取数据库路径（复用 index.ts 的逻辑） */
-function getDbPath(): string {
-  if (process.env.AI_SKETCH_DB_PATH) {
-    return process.env.AI_SKETCH_DB_PATH;
-  }
-  return path.join(process.cwd(), 'data', 'ai-sketch.db');
 }
 
 /** 加密明文，返回格式: iv:authTag:ciphertext（均为 hex） */
@@ -73,10 +74,17 @@ export function decrypt(ciphertext: string): string {
   return decrypted;
 }
 
-/** 判断字符串是否已加密（格式: hex:hex:hex） */
+/**
+ * 判断字符串是否已加密（格式: iv:authTag:ciphertext，均为 hex）
+ * 严格校验 IV（16 字节 = 32 hex 字符）和 AuthTag（16 字节 = 32 hex 字符）的长度，
+ * 避免误判合法的 API Key（如某些网关 key 恰好符合 hex:hex:hex 格式）
+ */
 export function isEncrypted(value: string): boolean {
   if (typeof value !== 'string') return false;
   const parts = value.split(':');
   if (parts.length !== 3) return false;
-  return parts.every(p => /^[0-9a-f]+$/i.test(p) && p.length > 0);
+  // IV: 16 bytes = 32 hex chars; AuthTag: 16 bytes = 32 hex chars; Ciphertext: 至少 1 个 hex 字符
+  return /^[0-9a-f]{32}$/i.test(parts[0]) &&
+         /^[0-9a-f]{32}$/i.test(parts[1]) &&
+         /^[0-9a-f]+$/i.test(parts[2]) && parts[2].length > 0;
 }

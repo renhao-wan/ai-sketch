@@ -54,7 +54,7 @@ describe('ExcalidrawStrategy', () => {
 
   describe('validate', () => {
     it('有效 JSON 数组应返回 valid', () => {
-      const result = excalidrawStrategy.validate('[{"type":"rectangle"}]');
+      const result = excalidrawStrategy.validate('[{"type":"rectangle","x":0,"y":0}]');
       expect(result.valid).toBe(true);
     });
 

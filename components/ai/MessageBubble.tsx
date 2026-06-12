@@ -38,7 +38,7 @@ function highlightText(text: string, query: string): React.ReactNode {
 }
 
 /** 用户消息内容，长文本自动收起 */
-const USER_TEXT_LIMIT = 300;
+const USER_TEXT_LIMIT = 50;
 
 function UserContent({ content, highlightQuery }: { content: string; highlightQuery?: string }) {
   const [expanded, setExpanded] = useState(false);

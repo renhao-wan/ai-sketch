@@ -26,9 +26,24 @@ afterAll(() => {
 const { encrypt, decrypt, isEncrypted } = await import('./crypto');
 
 describe('isEncrypted', () => {
+  // IV: 16 bytes = 32 hex chars; AuthTag: 16 bytes = 32 hex chars
+  const validIV = 'a'.repeat(32);
+  const validAuthTag = 'b'.repeat(32);
+  const validCiphertext = 'cdef0123456789ab';
+
   it('应识别有效的加密格式', () => {
-    expect(isEncrypted('abc123:def456:789abc')).toBe(true);
-    expect(isEncrypted('a1b2c3:d4e5f6:7890ab')).toBe(true);
+    // IV 和 AuthTag 各 32 个 hex 字符（16 字节），ciphertext 至少 1 个 hex 字符
+    expect(isEncrypted(`${validIV}:${validAuthTag}:${validCiphertext}`)).toBe(true);
+    expect(isEncrypted('a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4:d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1:7890ab')).toBe(true);
+  });
+
+  it('应拒绝 IV 或 AuthTag 长度不正确的字符串', () => {
+    // IV 只有 6 个字符（应为 32）
+    expect(isEncrypted('abc123:def4567890abcdef4567890abcdef4567:789abc')).toBe(false);
+    // AuthTag 只有 6 个字符（应为 32）
+    expect(isEncrypted(`${validIV}:def456:789abc`)).toBe(false);
+    // IV 和 AuthTag 都太短
+    expect(isEncrypted('abc123:def456:789abc')).toBe(false);
   });
 
   it('应拒绝非加密格式', () => {
@@ -40,13 +55,13 @@ describe('isEncrypted', () => {
   });
 
   it('应拒绝含非 hex 字符的字符串', () => {
-    expect(isEncrypted('xyz:abc:def')).toBe(false);
-    expect(isEncrypted('abc:de ghi:jkl')).toBe(false);
+    expect(isEncrypted(`xyz${'a'.repeat(29)}:${validAuthTag}:${validCiphertext}`)).toBe(false);
+    expect(isEncrypted(`${validIV}:de ghi${'a'.repeat(26)}:${validCiphertext}`)).toBe(false);
   });
 
   it('应拒绝空段', () => {
-    expect(isEncrypted('abc::def')).toBe(false);
-    expect(isEncrypted(':abc:def')).toBe(false);
+    expect(isEncrypted(`${validIV}::${validCiphertext}`)).toBe(false);
+    expect(isEncrypted(`:${validAuthTag}:${validCiphertext}`)).toBe(false);
   });
 
   it('应拒绝非字符串输入', () => {

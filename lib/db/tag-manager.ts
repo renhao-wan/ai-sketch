@@ -1,6 +1,7 @@
 import { getDb, requestSave } from './index';
 import { withTransaction } from './transaction';
 import { generateId } from '@/lib/utils';
+import { isEncrypted, decrypt } from './crypto';
 import type { ConversationTag, ConfigTag, Conversation, LLMConfig } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 
@@ -340,12 +341,13 @@ class TagManager {
       stmt.bind([tagId]);
       while (stmt.step()) {
         const row = stmt.getAsObject() as Record<string, unknown>;
+        const rawApiKey = row.api_key as string;
         configs.push({
           id: row.id as string,
           name: row.name as string,
           type: row.type as 'openai' | 'anthropic' | 'ollama',
           baseUrl: row.base_url as string,
-          apiKey: row.api_key as string,
+          apiKey: rawApiKey && isEncrypted(rawApiKey) ? decrypt(rawApiKey) : rawApiKey,
           model: row.model as string,
           description: row.description as string,
           isActive: (row.is_active as number) === 1,

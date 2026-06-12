@@ -355,7 +355,7 @@ class ConfigManager {
   async setPreference(key: string, value: string): Promise<void> {
     const db = await getDb();
     db.run('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)', [key, value]);
-    await requestSave();
+    requestSave();
   }
 
   /** 获取代理配置 */
@@ -375,7 +375,7 @@ class ConfigManager {
     const db = await getDb();
     db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('proxy_url', ?)", [proxyUrl]);
     db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('proxy_enabled', ?)", [proxyEnabled ? 'true' : 'false']);
-    await requestSave();
+    requestSave();
   }
 
   /** 获取 LLM 失败重试次数（默认 2，即最多 3 次尝试） */
