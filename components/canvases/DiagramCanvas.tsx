@@ -59,7 +59,7 @@ export default function DiagramCanvas({ format, data, isStreaming, streamBuffer,
               <div className="absolute inset-0 rounded-full border-2 border-[var(--accent-violet)]/20" />
               <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[var(--accent-violet)] animate-spin" />
             </div>
-            <span className="text-sm font-medium text-[var(--fg)]">{t('canvas.generating')}</span>
+            <span className="text-sm font-medium text-[var(--fg)]">{t('common.loading')}</span>
           </div>
         </div>
       )}

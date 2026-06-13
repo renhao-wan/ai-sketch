@@ -35,7 +35,7 @@ export default function FloatingAIActions({ onAction, loadingAction, disabled }:
           const isLoading = loadingAction === action.id;
           const Icon = isLoading ? Loader2 : action.icon;
           return (
-            <Tooltip key={action.id} content={isLoading ? t('aiAction.loading') : t(action.labelKey)} side="left">
+            <Tooltip key={action.id} content={isLoading ? t('common.loading') : t(action.labelKey)} side="left">
               <button
                 onClick={() => onAction?.(action.id)}
                 disabled={disabled || !!loadingAction}

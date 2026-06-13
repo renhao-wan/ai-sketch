@@ -227,7 +227,7 @@ export default function AIPromptBox() {
               className="h-9 px-5 flex items-center gap-2 bg-[var(--btn-primary)] text-[var(--btn-primary-text)] text-sm font-medium rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
             >
               {isGenerating ? (
-                <><Loader2 size={15} className="animate-spin" /><span>{t('prompt.generating')}</span></>
+                <><Loader2 size={15} className="animate-spin" /><span>{t('common.loading')}</span></>
               ) : (
                 <><Sparkles size={15} /><span>{t('prompt.generate')}</span></>
               )}
