@@ -295,7 +295,41 @@ class ConfigManager {
       for (const configData of importedConfigs) {
         const validation = this.validateConfig(configData);
         if (validation.isValid) {
-          await this.createConfig({ ...configData, isActive: false });
+          // 检测 API Key 是否已加密
+          // 如果已加密，直接存储（createConfig 会再次加密，所以需要特殊处理）
+          const apiKey = configData.apiKey || '';
+          const needsEncryption = !isEncrypted(apiKey);
+
+          if (needsEncryption) {
+            // 未加密的 Key，正常创建（createConfig 会加密）
+            await this.createConfig({ ...configData, isActive: false });
+          } else {
+            // 已加密的 Key，直接插入数据库（跳过 createConfig 的加密步骤）
+            const db = await getDb();
+            const id = this.generateId();
+            const now = Date.now();
+
+            withTransaction(db, () => {
+              db.run(
+                `INSERT INTO llm_configs (id, name, type, base_url, api_key, model, description, is_active, temperature, max_tokens, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                  id,
+                  configData.name || '导入的配置',
+                  configData.type || 'openai',
+                  configData.baseUrl || '',
+                  apiKey, // 直接使用已加密的 Key
+                  configData.model || '',
+                  configData.description || '',
+                  0,
+                  configData.temperature ?? 0.5,
+                  configData.maxTokens ?? 16384,
+                  now,
+                  now,
+                ],
+              );
+            });
+          }
           importCount++;
         }
       }
@@ -306,7 +340,30 @@ class ConfigManager {
   }
 
   async exportConfigs(): Promise<string> {
-    const configs = await this.getAllConfigs();
+    // 直接从数据库读取原始数据，API Key 保持加密状态
+    const db = await getDb();
+    const stmt = db.prepare('SELECT id, name, type, base_url, api_key, model, description, temperature, max_tokens, created_at, updated_at FROM llm_configs ORDER BY created_at DESC');
+    const configs: Record<string, unknown>[] = [];
+    try {
+      while (stmt.step()) {
+        const row = stmt.getAsObject() as Record<string, unknown>;
+        configs.push({
+          id: row.id,
+          name: row.name,
+          type: row.type,
+          baseUrl: row.base_url,
+          apiKey: row.api_key, // 保持加密状态
+          model: row.model,
+          description: row.description,
+          temperature: row.temperature,
+          maxTokens: row.max_tokens,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        });
+      }
+    } finally {
+      stmt.free();
+    }
     return JSON.stringify(configs, null, 2);
   }
 
