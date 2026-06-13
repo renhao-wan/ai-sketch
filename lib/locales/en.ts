@@ -587,11 +587,4 @@ export const en: TranslationDict = {
   'generation.mode.fastDesc': 'Single-step generation, fast',
   'generation.mode.autoDesc': 'Auto-select based on complexity',
   'generation.mode.qualityDesc': 'Multi-pass + self-check, highest quality',
-  'generation.progress.step': 'Step {current}/{total}',
-  'generation.progress.planning': 'Loading...',
-  'generation.progress.generating': 'Loading...',
-  'generation.progress.checking': 'Loading...',
-  'generation.progress.fixing': 'Loading...',
-  'generation.critique.passed': 'Validation passed',
-  'generation.critique.failed': 'Issues found, fixing...',
 };

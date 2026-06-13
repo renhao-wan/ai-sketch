@@ -15,8 +15,6 @@ interface MessageBubbleProps {
   onCopy?: () => void;
   onExport?: () => void;
   onShowDiagram?: () => void;
-  /** 高质量模式的生成进度 */
-  progress?: { step: number; totalSteps: number; message: string } | null;
 }
 
 /** 将文本中匹配搜索关键词的子串用 <mark> 高亮 */
@@ -63,7 +61,7 @@ function UserContent({ content, highlightQuery }: { content: string; highlightQu
   );
 }
 
-const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, highlightQuery, onRegenerate, onCopy, onExport, onShowDiagram, progress }: MessageBubbleProps) {
+const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, highlightQuery, onRegenerate, onCopy, onExport, onShowDiagram }: MessageBubbleProps) {
   const { t } = useLocale();
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
@@ -171,26 +169,6 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, 
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent-indigo)] animate-pulse" />
                 )}
               </div>
-
-              {/* 高质量模式进度条 */}
-              {progress && isStreaming && (
-                <div className="mb-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] text-[var(--muted)]">
-                      🎯 {t('generation.progress.step' as Parameters<typeof t>[0])
-                        .replace('{current}', String(progress.step))
-                        .replace('{total}', String(progress.totalSteps))}
-                    </span>
-                    <span className="text-[11px] text-[var(--muted)]">{progress.message}</span>
-                  </div>
-                  <div className="w-full h-1 rounded-full bg-[var(--surface-warm-hover)] overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-[var(--accent-indigo)] transition-all duration-500"
-                      style={{ width: `${Math.round((progress.step / progress.totalSteps) * 100)}%` }}
-                    />
-                  </div>
-                </div>
-              )}
 
               {/* 收起状态：显示友好的提示卡片 */}
               {!expanded ? (

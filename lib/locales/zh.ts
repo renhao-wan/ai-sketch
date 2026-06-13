@@ -585,13 +585,6 @@ export const zh = {
   'generation.mode.fastDesc': '单步生成，速度快',
   'generation.mode.autoDesc': '根据复杂度自动选择',
   'generation.mode.qualityDesc': '多轮生成 + 自检，质量最高',
-  'generation.progress.step': '步骤 {current}/{total}',
-  'generation.progress.planning': 'Loading...',
-  'generation.progress.generating': 'Loading...',
-  'generation.progress.checking': 'Loading...',
-  'generation.progress.fixing': 'Loading...',
-  'generation.critique.passed': '校验通过',
-  'generation.critique.failed': '发现问题，正在修复...',
 } as const;
 
 export type TranslationKey = keyof typeof zh;

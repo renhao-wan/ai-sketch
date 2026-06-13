@@ -17,10 +17,6 @@ export interface SSECallbacks {
   onError?: (error: string) => void;
   /** 收到重试事件（服务端正在重试 LLM 调用） */
   onRetry?: (attempt: number, maxRetries: number) => void;
-  /** 收到进度事件（高质量模式的步骤进度） */
-  onProgress?: (step: number, totalSteps: number, message: string) => void;
-  /** 收到自检事件（高质量模式的 Critic 结果） */
-  onCritique?: (passed: boolean, issues: string[]) => void;
 }
 
 /** SSE 消费结果 */
@@ -79,10 +75,6 @@ export async function consumeSSEStream(
         } else if (parsed.type === 'result' && parsed.content) {
           // 最终结果事件（服务端已处理，如去除代码围栏）
           callbacks.onResult?.(parsed.content as string);
-        } else if (parsed.type === 'progress' && typeof parsed.step === 'number' && typeof parsed.totalSteps === 'number') {
-          callbacks.onProgress?.(parsed.step, parsed.totalSteps, (parsed.message as string) || '');
-        } else if (parsed.type === 'critique' && typeof parsed.passed === 'boolean' && Array.isArray(parsed.issues)) {
-          callbacks.onCritique?.(parsed.passed, parsed.issues);
         } else if (parsed.type === 'error') {
           throw new Error(parsed.error as string);
         } else if (parsed.content) {

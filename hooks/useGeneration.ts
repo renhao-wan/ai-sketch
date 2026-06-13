@@ -24,10 +24,6 @@ interface UseGenerationOptions {
   onChartTypeUpdate?: (chartType: string) => void;
   /** 生成模式 */
   generationMode?: 'fast' | 'auto' | 'quality';
-  /** 收到进度事件 */
-  onProgress?: (step: number, totalSteps: number, message: string) => void;
-  /** 收到自检事件 */
-  onCritique?: (passed: boolean, issues: string[]) => void;
 }
 
 /**
@@ -61,8 +57,6 @@ async function consumeStream(
     onMeta?: (convId: string) => void;
     onContent: (code: string) => void;
     onRetry?: () => void;
-    onProgress?: (step: number, totalSteps: number, message: string) => void;
-    onCritique?: (passed: boolean, issues: string[]) => void;
   },
   t: (key: TranslationKey) => string,
 ): Promise<StreamResult> {
@@ -90,8 +84,6 @@ async function consumeStream(
       },
       onContent: callbacks.onContent,
       onRetry: callbacks.onRetry,
-      onProgress: callbacks.onProgress,
-      onCritique: callbacks.onCritique,
     },
   );
 
@@ -225,8 +217,6 @@ export function useGeneration(options: UseGenerationOptions) {
               m.id === optimisticAssistantMsg.id ? { ...m, content: '' } : m
             ));
           },
-          onProgress: opts.onProgress,
-          onCritique: opts.onCritique,
         },
         t,
       );

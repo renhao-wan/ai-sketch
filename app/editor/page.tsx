@@ -101,7 +101,6 @@ function EditorContent() {
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
   const [generationMode, setGenerationMode] = useState<GenerationMode>('auto');
-  const [generationProgress, setGenerationProgress] = useState<{ step: number; totalSteps: number; message: string } | null>(null);
 
   // Refs
   const pendingInitRef = useRef<import('@/lib/utils/init-data').InitData | null>(null);
@@ -195,21 +194,7 @@ function EditorContent() {
     },
     onChartTypeUpdate: setCurrentChartType,
     generationMode,
-    onProgress: (step, totalSteps, message) => {
-      setGenerationProgress({ step, totalSteps, message });
-    },
-    onCritique: () => {
-      // 校验完成后清除进度
-      setGenerationProgress(null);
-    },
   });
-
-  // 生成结束时清除进度
-  useEffect(() => {
-    if (!generation.isStreaming) {
-      setGenerationProgress(null);
-    }
-  }, [generation.isStreaming]);
 
   // AI 操作 Hook
   const aiActions = useAIActions({
@@ -448,7 +433,6 @@ function EditorContent() {
             onCollapsedChange={setIsPanelCollapsed}
             generationMode={generationMode}
             onGenerationModeChange={setGenerationMode}
-            generationProgress={generationProgress}
           />
 
           {/* 分割线折叠按钮 */}

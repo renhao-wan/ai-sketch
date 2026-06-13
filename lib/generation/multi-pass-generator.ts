@@ -9,7 +9,7 @@ import { getStrategy } from '@/lib/strategies/registry';
 import { extractFirstJsonObject } from '@/lib/diagram/json-repair';
 import type { LLMConfig, LLMMessage } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
-import type { GenerationPlan, ProgressEvent, CritiqueEvent } from './types';
+import type { GenerationPlan } from './types';
 import { ruleCheck, llmCritique } from './critic';
 
 /** SSE 事件发送器 */
@@ -26,8 +26,6 @@ export async function executeMultiPass(
   signal?: AbortSignal,
 ): Promise<string> {
   const strategy = getStrategy(format);
-  const totalSteps = plan.steps.length + 1; // 步骤 + critic（repair 为动态追加）
-  let currentStep = 0;
   let accumulatedCode = '';
 
   // 按依赖顺序执行步骤
@@ -35,16 +33,6 @@ export async function executeMultiPass(
 
   for (let i = 0; i < plan.steps.length; i++) {
     const step = plan.steps[i];
-    currentStep++;
-
-    // 发送进度事件
-    const progressEvent: ProgressEvent = {
-      type: 'progress',
-      step: currentStep,
-      totalSteps,
-      message: getStepMessage(step.type, step.description),
-    };
-    sendEvent(`data: ${JSON.stringify(progressEvent)}\n\n`);
 
     // 构建步骤的 LLM 消息
     const stepMessages = buildStepMessages(
@@ -86,36 +74,10 @@ export async function executeMultiPass(
   accumulatedCode = strategy.optimize(accumulatedCode);
 
   // Critic 规则校验
-  currentStep++;
-  const critiqueProgress: ProgressEvent = {
-    type: 'progress',
-    step: currentStep,
-    totalSteps,
-    message: '检查代码质量...',
-  };
-  sendEvent(`data: ${JSON.stringify(critiqueProgress)}\n\n`);
-
   const ruleResult = ruleCheck(accumulatedCode, format);
-  const critiqueEvent: CritiqueEvent = {
-    type: 'critique',
-    passed: ruleResult.passed,
-    issues: ruleResult.issues,
-  };
-  sendEvent(`data: ${JSON.stringify(critiqueEvent)}\n\n`);
 
   // 如果规则校验失败，尝试 LLM 评审 + 修复
   if (!ruleResult.passed && ruleResult.severity === 'error') {
-    currentStep++;
-    // 动态追加 repair 步骤
-    const repairTotalSteps = totalSteps + 1;
-    const repairProgress: ProgressEvent = {
-      type: 'progress',
-      step: currentStep,
-      totalSteps: repairTotalSteps,
-      message: '修复问题...',
-    };
-    sendEvent(`data: ${JSON.stringify(repairProgress)}\n\n`);
-
     const maxRetries = await configManager.getMaxRetries();
     let lastError: unknown = null;
     let currentRuleResult = ruleResult;
@@ -333,15 +295,4 @@ ${incoming}
   // 后处理
   const processed = strategy.postProcess(mergedCode);
   return strategy.optimize(processed);
-}
-
-/** 获取步骤的用户友好描述 */
-function getStepMessage(type: string, description: string): string {
-  const shortDesc = description.length > 30 ? description.substring(0, 30) + '...' : description;
-  switch (type) {
-    case 'nodes': return `生成节点: ${shortDesc}`;
-    case 'connections': return `添加连线: ${shortDesc}`;
-    case 'style': return `优化样式: ${shortDesc}`;
-    default: return shortDesc;
-  }
 }

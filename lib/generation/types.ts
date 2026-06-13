@@ -28,18 +28,3 @@ export interface CritiqueResult {
   issues: string[];
   severity: 'error' | 'warning';
 }
-
-/** 多轮生成的进度事件（通过 SSE 发送给前端） */
-export interface ProgressEvent {
-  type: 'progress';
-  step: number;
-  totalSteps: number;
-  message: string;
-}
-
-/** 自检事件（通过 SSE 发送给前端） */
-export interface CritiqueEvent {
-  type: 'critique';
-  passed: boolean;
-  issues: string[];
-}
