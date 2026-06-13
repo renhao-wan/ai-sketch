@@ -49,8 +49,8 @@ Planner（1 次 LLM 调用）
   ↓
 Multi-pass Generator（按步骤执行，每步 1 次 LLM 调用）
   → Step 1: 生成节点
-  → Step 2: 添加连线
-  → Step 3: 样式优化
+  → Step 2: 添加连线（混合合并策略）
+  → Step 3: 样式优化（混合合并策略）
   ↓
 Critic 规则校验（不消耗 token）
   → 检查 JSON/XML 语法、元素重叠、连线断开、边界越界等
@@ -59,6 +59,8 @@ Critic 规则校验（不消耗 token）
   └── 失败 → LLM 评审 + 修复（1 次 LLM 调用）
               → 重新校验 → 输出修复后的代码（或当前最佳结果）
 ```
+
+**用户反馈**：与快速模式完全一致，统一显示 Loading...，多轮生成过程在后台静默执行
 
 ### Planner 输出格式
 
@@ -95,15 +97,29 @@ Planner 调用 LLM 输出结构化 JSON 计划：
 
 **实现**：`lib/generation/planner.ts`
 
-### 代码合并策略
+### 代码合并策略（混合策略）
 
-多轮生成中，每步的输出需要合并到累积代码。不同格式使用不同的合并策略：
+多轮生成中，每步的输出需要合并到累积代码。采用三层混合策略：
+
+```
+1. 规则合并（快、省 token）
+   ├─ 成功 → 返回结果
+   └─ 失败 ↓
+2. LLM 合并（语义理解、处理 ID 冲突）
+   ├─ 成功 → 返回结果
+   └─ 失败 ↓
+3. 兜底方案（返回最后一步的输出）
+```
+
+**规则合并**（不同格式使用不同策略）：
 
 | 格式 | 合并方式 |
 |------|----------|
 | Excalidraw | JSON 数组合并（`[...existing, ...incoming]`） |
 | Mermaid | 代码行追加（跳过重复的声明行） |
 | Draw.io | 提取 `<mxCell>` 标签，插入到 `</root>` 之前 |
+
+**LLM 合并**：当规则合并失败或结果校验未通过时，调用 LLM 进行语义合并，自动处理 ID 冲突
 
 **实现**：`lib/generation/multi-pass-generator.ts`
 
@@ -142,19 +158,15 @@ Planner 调用 LLM 输出结构化 JSON 计划：
 - 非自动模式时按钮有 indigo 高亮
 - 位于输入框底部操作栏，发送按钮左侧
 
-### SSE 事件
+### 用户反馈
 
-高质量模式新增两种 SSE 事件类型：
+三种模式统一使用 **Loading...** 作为加载状态，高质量模式的多轮生成过程在后台静默执行，用户无感知。
 
-```typescript
-// 进度事件
-{ type: 'progress', step: number, totalSteps: number, message: string }
-
-// 校验事件
-{ type: 'critique', passed: boolean, issues: string[] }
-```
-
-事件链路：`multi-pass-generator.ts` → SSE → `sse-consumer.ts` → `useGeneration.ts` → `page.tsx`
+SSE 事件类型：
+- `meta`：会话 ID
+- `content`：内容 chunk（流式）
+- `retry`：重试通知
+- `error`：错误信息
 
 ### 状态管理
 
