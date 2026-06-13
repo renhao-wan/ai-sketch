@@ -33,7 +33,6 @@ export const en: TranslationDict = {
   'prompt.placeholder': 'Describe the diagram you want to create...',
   'prompt.placeholderAttachment': 'Additional instructions (optional)...',
   'prompt.generate': 'Generate',
-  'prompt.generating': 'Generating...',
   'prompt.attachments': 'Attachments',
   'prompt.uploadFile': 'Upload File',
   'prompt.uploadImage': 'Upload Image',
@@ -252,7 +251,6 @@ export const en: TranslationDict = {
   'aiAction.simplify': 'AI Simplify',
   'aiAction.explain': 'AI Explain',
   'aiAction.noCode': 'Please generate a diagram first',
-  'aiAction.loading': 'AI processing...',
 
   // Floating Toolbar
   'toolbar.select': 'Select',
@@ -280,7 +278,6 @@ export const en: TranslationDict = {
 
   // Diagram Canvas
   'canvas.emptyState': 'Describe a diagram and AI will generate it',
-  'canvas.generating': 'AI is generating diagram...',
 
   // Excalidraw Canvas
 

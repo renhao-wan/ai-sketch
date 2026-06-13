@@ -31,7 +31,6 @@ export const zh = {
   'prompt.placeholder': '描述你想要创建的图表...',
   'prompt.placeholderAttachment': '补充指令（可选）...',
   'prompt.generate': '生成',
-  'prompt.generating': '生成中...',
   'prompt.attachments': '附件',
   'prompt.uploadFile': '上传文件',
   'prompt.uploadImage': '上传图片',
@@ -250,7 +249,6 @@ export const zh = {
   'aiAction.simplify': 'AI 简化',
   'aiAction.explain': 'AI 解释',
   'aiAction.noCode': '请先生成图表',
-  'aiAction.loading': 'AI 处理中...',
 
   // Floating Toolbar
   'toolbar.select': '选择',
@@ -278,7 +276,6 @@ export const zh = {
 
   // Diagram Canvas
   'canvas.emptyState': '描述图表内容，AI 将为你生成',
-  'canvas.generating': 'AI 正在生成图表...',
 
   // Excalidraw Canvas
 
