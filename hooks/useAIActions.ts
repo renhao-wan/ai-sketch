@@ -102,7 +102,7 @@ export function useAIActions(options: UseAIActionsOptions) {
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       console.error('AI action error:', error);
-      options.onNotification(t('aiAction.loading'), (error as Error).message, 'error');
+      options.onNotification(t('error.title'), (error as Error).message, 'error');
     } finally {
       setAiActionLoading(null);
       options.abortControllerRef.current = null;
