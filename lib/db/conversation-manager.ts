@@ -10,8 +10,8 @@ interface ConversationRow {
   title: string;
   chart_type: string;
   format: string;
-  config_name: string | null;
-  config_model: string | null;
+  config_name: string | undefined;
+  config_model: string | undefined;
   current_code: string;
   message_count: number;
   created_at: number;

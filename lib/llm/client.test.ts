@@ -36,6 +36,7 @@ describe('LLM Client', () => {
     it('无效 baseUrl 应抛出错误', async () => {
       const { callLLM } = await import('./client');
       const config = {
+        name: 'test',
         type: 'openai' as const,
         baseUrl: 'invalid',
         apiKey: 'key',
@@ -49,6 +50,7 @@ describe('LLM Client', () => {
     it('无效 URL 应返回连接失败', async () => {
       const { testConnection } = await import('./client');
       const config = {
+        name: 'test',
         type: 'openai' as const,
         baseUrl: 'invalid-url',
         apiKey: 'key',

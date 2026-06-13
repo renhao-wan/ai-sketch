@@ -23,6 +23,16 @@ function rowToTag<T extends BaseTag>(row: Record<string, unknown>): T {
   } as T;
 }
 
+/** 将数据库行转换为对话标签对象 */
+function rowToConversationTag(row: Record<string, unknown>): ConversationTag {
+  return rowToTag<ConversationTag>(row);
+}
+
+/** 将数据库行转换为配置标签对象 */
+function rowToConfigTag(row: Record<string, unknown>): ConfigTag {
+  return rowToTag<ConfigTag>(row);
+}
+
 /** 通用标签 CRUD 操作工厂 */
 function createTagCRUD<T extends BaseTag>(tableName: string) {
   return {

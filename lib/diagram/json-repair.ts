@@ -23,7 +23,7 @@ async function loadJsonRepair(): Promise<((input: string) => string) | null> {
     // 使用动态 import 加载可选依赖
     // 已在 next.config.mjs 的 serverExternalPackages 中配置
     const mod = await import('jsonrepair');
-    jsonRepairLib = (mod.jsonrepair || mod.default || null) as ((input: string) => string) | null;
+    jsonRepairLib = (mod.jsonrepair || (mod as Record<string, unknown>).default || null) as ((input: string) => string) | null;
   } catch {
     // not installed; proceed without it
     jsonRepairLib = null;
