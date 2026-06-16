@@ -54,7 +54,6 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
   const [isResettingPreferences, setIsResettingPreferences] = useState(false);
   const [isClearingConversations, setIsClearingConversations] = useState(false);
   const [isClearingConfigs, setIsClearingConfigs] = useState(false);
-  const [isClearingCache, setIsClearingCache] = useState(false);
   const [isResettingAll, setIsResettingAll] = useState(false);
   const [isClearingAllCache, setIsClearingAllCache] = useState(false);
   const [isClearingExpired, setIsClearingExpired] = useState(false);
@@ -111,11 +110,10 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
   /** 加载所有统计数据 */
   const loadStats = useCallback(async () => {
     try {
-      const [convResult, configResult, statsResult, ttlResult] = await Promise.all([
+      const [convResult, configResult, statsResult] = await Promise.all([
         api.fetchConversationCount(),
         api.fetchConfigs(),
         api.fetchCacheStats(),
-        api.fetchCacheTtl(),
       ]);
       setConversationCount(convResult.count);
       setConfigCount(configResult.configs.length);
@@ -126,7 +124,7 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
       setMisses(statsResult.misses);
       setHitRate(statsResult.hitRate);
       setTtlDays(statsResult.ttlDays);
-      setTtlInput(ttlResult.ttlDays);
+      setTtlInput(statsResult.ttlDays);
     } catch (err) {
       console.error('Failed to load storage stats:', err);
     } finally {
@@ -208,27 +206,6 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
     });
   };
 
-  const handleClearCacheFromData = () => {
-    setConfirmDialog({
-      isOpen: true,
-      title: t('settings.clearCacheTitle'),
-      message: t('settings.clearCacheConfirm'),
-      onConfirm: async () => {
-        setIsClearingCache(true);
-        try {
-          await api.clearCache();
-          await loadStats();
-          showNotification('', t('settings.clearCacheSuccess'), 'success');
-        } catch (err) {
-          console.error('Clear cache failed:', err);
-          showNotification('', t('settings.operationFailed'), 'error');
-        } finally {
-          setIsClearingCache(false);
-        }
-      },
-    });
-  };
-
   const handleResetAll = () => {
     setConfirmDialog({
       isOpen: true,
@@ -261,6 +238,10 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
           setConversationCount(0);
           setConfigCount(0);
           setCacheEntries(0);
+          setTotalSizeBytes(0);
+          setHits(0);
+          setMisses(0);
+          setHitRate(0);
           showNotification('', t('settings.resetAllSuccess'), 'success');
         } catch (err) {
           console.error('Reset all failed:', err);
@@ -341,7 +322,7 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
     }
   };
 
-  const isAnyOperationInProgress = isResettingPreferences || isClearingConversations || isClearingConfigs || isClearingCache || isResettingAll || isClearingAllCache || isClearingExpired || isClearingByConfig || isSavingTtl;
+  const isAnyOperationInProgress = isResettingPreferences || isClearingConversations || isClearingConfigs || isResettingAll || isClearingAllCache || isClearingExpired || isClearingByConfig || isSavingTtl;
 
   return (
     <div className="space-y-8">
@@ -649,12 +630,12 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
               </div>
             </div>
             <button
-              onClick={handleClearCacheFromData}
+              onClick={handleClearAllCache}
               disabled={isAnyOperationInProgress || cacheEntries === 0}
               className="flex items-center justify-center gap-1.5 w-24 py-2 text-sm font-medium text-amber-500 bg-amber-500/10 hover:bg-amber-500/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Zap size={14} className={isClearingCache ? 'animate-pulse' : ''} />
-              <span>{isClearingCache ? t('common.loading') : t('settings.clearCache')}</span>
+              <Zap size={14} className={isClearingAllCache ? 'animate-pulse' : ''} />
+              <span>{isClearingAllCache ? t('common.loading') : t('settings.clearCache')}</span>
             </button>
           </div>
 

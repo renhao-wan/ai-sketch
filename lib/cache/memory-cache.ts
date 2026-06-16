@@ -125,15 +125,38 @@ export class MemoryCache<T = string> {
     return this.cache.size;
   }
 
-  /** 估算值的体积（字节） */
+  /** 估算值的 UTF-8 字节长度（与 SQLite 存储一致） */
   private estimateSize(value: T): number {
     if (typeof value === 'string') {
-      // 字符串：每个字符约 2 字节（JS 使用 UTF-16）
-      return value.length * 2;
+      // 计算 UTF-8 字节长度：ASCII 1字节，中文 3字节
+      let bytes = 0;
+      for (let i = 0; i < value.length; i++) {
+        const code = value.charCodeAt(i);
+        if (code <= 0x7F) {
+          bytes += 1;
+        } else if (code <= 0x7FF) {
+          bytes += 2;
+        } else {
+          bytes += 3;
+        }
+      }
+      return bytes;
     }
     // 其他类型：JSON 序列化后估算
     try {
-      return JSON.stringify(value).length * 2;
+      const str = JSON.stringify(value);
+      let bytes = 0;
+      for (let i = 0; i < str.length; i++) {
+        const code = str.charCodeAt(i);
+        if (code <= 0x7F) {
+          bytes += 1;
+        } else if (code <= 0x7FF) {
+          bytes += 2;
+        } else {
+          bytes += 3;
+        }
+      }
+      return bytes;
     } catch {
       return 100; // 保底估算
     }

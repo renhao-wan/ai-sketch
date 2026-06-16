@@ -11,7 +11,7 @@
  */
 
 import { MemoryCache } from '@/lib/cache/memory-cache';
-import { getDb, requestSave } from './index';
+import { getDb, getDbSync, requestSave, onBeforeClose } from './index';
 
 // ── 接口定义 ──
 
@@ -84,6 +84,15 @@ class CacheManager {
   /** loadStats 是否已执行 */
   private statsLoaded = false;
 
+  /** loadStats Promise 缓存，避免竞态条件 */
+  private loadStatsPromise: Promise<void> | null = null;
+
+  /** 自上次持久化以来的 get() 调用次数，用于定期持久化 */
+  private opsSinceLastPersist = 0;
+
+  /** 持久化间隔（每 N 次 get() 操作持久化一次） */
+  private readonly PERSIST_INTERVAL = 3;
+
   // ── 公开 API ──
 
   /**
@@ -91,10 +100,16 @@ class CacheManager {
    * 命中时更新统计和 L2 使用时间；L2 命中时回填 L1
    */
   async get(cacheKey: string): Promise<string | null> {
+    // 确保历史统计已加载（首次调用时从 DB 加载）
+    if (!this.statsLoaded) {
+      await this.ensureStatsLoaded();
+    }
+
     // L1 查找
     const l1Value = this.l1.get(cacheKey);
     if (l1Value !== undefined) {
       this.hits++;
+      this.maybePersistStats();
       return l1Value;
     }
 
@@ -111,6 +126,7 @@ class CacheManager {
 
     if (!entry) {
       this.misses++;
+      this.maybePersistStats();
       return null;
     }
 
@@ -121,6 +137,7 @@ class CacheManager {
       db.run('DELETE FROM response_cache WHERE id = ?', [cacheKey]);
       requestSave();
       this.misses++;
+      this.maybePersistStats();
       return null;
     }
 
@@ -135,6 +152,7 @@ class CacheManager {
     this.l1.set(cacheKey, entry.response);
 
     this.hits++;
+    this.maybePersistStats();
     return entry.response;
   }
 
@@ -147,6 +165,11 @@ class CacheManager {
     response: string,
     metadata: { configName: string; model: string },
   ): Promise<void> {
+    // 确保历史统计已加载
+    if (!this.statsLoaded) {
+      await this.ensureStatsLoaded();
+    }
+
     // 写入 L1（附带 metadata 以便按配置精确清除）
     this.l1.set(cacheKey, response, { configName: metadata.configName, model: metadata.model });
 
@@ -215,11 +238,15 @@ class CacheManager {
     return promise;
   }
 
-  /** 清空所有缓存（L1 + L2） */
+  /** 清空所有缓存（L1 + L2）并重置统计 */
   async clearAll(): Promise<void> {
     this.l1.clear();
+    this.hits = 0;
+    this.misses = 0;
     const db = await getDb();
     db.run('DELETE FROM response_cache');
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('cache_hits', '0')");
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('cache_misses', '0')");
     requestSave();
   }
 
@@ -259,7 +286,15 @@ class CacheManager {
     const count = result.length > 0 ? (result[0].values[0][0] as number) : 0;
 
     // 清除 L1 避免命中原已过期的条目
+    // L1 清空后，之前的 L1 命中统计变得无意义，重置以保持一致性
     this.l1.clear();
+    this.hits = 0;
+    this.misses = 0;
+
+    // 持久化重置后的统计（fire-and-forget）
+    this.persistStatsAsync().catch(e => {
+      console.error('[Cache] Failed to persist stats after clearExpired:', e);
+    });
 
     requestSave();
     return count;
@@ -268,14 +303,14 @@ class CacheManager {
   /** 获取缓存统计信息（首次调用时自动从 DB 加载历史统计） */
   async getStats(): Promise<CacheStats> {
     if (!this.statsLoaded) {
-      await this.loadStats();
-      this.statsLoaded = true;
+      await this.ensureStatsLoaded();
     }
 
     const db = await getDb();
 
+    // 使用 LENGTH(response) 直接计算 UTF-8 字节长度，避免 CAST 行为不确定
     const stmt = db.prepare(
-      'SELECT COUNT(*) as entries, COALESCE(SUM(LENGTH(CAST(response AS BLOB))), 0) as total_size FROM response_cache',
+      'SELECT COUNT(*) as entries, COALESCE(SUM(LENGTH(response)), 0) as total_size FROM response_cache',
     );
     let entries = 0;
     let totalSizeBytes = 0;
@@ -324,15 +359,78 @@ class CacheManager {
 
     const hitsStmt = db.prepare("SELECT value FROM meta WHERE key = 'cache_hits'");
     if (hitsStmt.step()) {
-      this.hits = parseInt((hitsStmt.getAsObject() as Record<string, unknown>).value as string, 10) || 0;
+      const dbHits = parseInt((hitsStmt.getAsObject() as Record<string, unknown>).value as string, 10) || 0;
+      // 使用较大值：首次加载时内存为 0，直接使用 DB 值
+      // 如果内存已有值（本次会话增量），取较大值保留历史累计
+      this.hits = Math.max(this.hits, dbHits);
     }
     hitsStmt.free();
 
     const missesStmt = db.prepare("SELECT value FROM meta WHERE key = 'cache_misses'");
     if (missesStmt.step()) {
-      this.misses = parseInt((missesStmt.getAsObject() as Record<string, unknown>).value as string, 10) || 0;
+      const dbMisses = parseInt((missesStmt.getAsObject() as Record<string, unknown>).value as string, 10) || 0;
+      this.misses = Math.max(this.misses, dbMisses);
     }
     missesStmt.free();
+  }
+
+  /**
+   * 确保统计已加载（带 Promise 缓存，避免竞态条件）
+   * 多个并发调用只会执行一次 loadStats()
+   */
+  private async ensureStatsLoaded(): Promise<void> {
+    if (this.statsLoaded) return;
+
+    if (!this.loadStatsPromise) {
+      this.loadStatsPromise = this.loadStats().then(() => {
+        this.statsLoaded = true;
+        this.loadStatsPromise = null;
+      }).catch((err) => {
+        this.loadStatsPromise = null;
+        throw err;
+      });
+    }
+
+    await this.loadStatsPromise;
+  }
+
+  /**
+   * 定期持久化统计到 DB
+   * 每 N 次 get() 操作后自动调用，避免频繁写入
+   * 使用 fire-and-forget 模式，不阻塞主流程
+   */
+  private maybePersistStats(): void {
+    this.opsSinceLastPersist++;
+    if (this.opsSinceLastPersist >= this.PERSIST_INTERVAL) {
+      this.opsSinceLastPersist = 0;
+      // fire-and-forget：不 await，让持久化在后台执行
+      this.persistStatsAsync().catch(e => {
+        console.error('[Cache] Background persist failed:', e);
+      });
+    }
+  }
+
+  /** 异步持久化统计到 DB */
+  private async persistStatsAsync(): Promise<void> {
+    const db = await getDb();
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('cache_hits', ?)", [String(this.hits)]);
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('cache_misses', ?)", [String(this.misses)]);
+    requestSave();
+  }
+
+  /**
+   * 强制持久化统计到 DB（同步版本，用于应用退出时调用）
+   * 确保即使未达到持久化间隔，统计数据也不会丢失
+   */
+  flushStatsSync(): void {
+    try {
+      const db = getDbSync();
+      if (!db) return;
+      db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('cache_hits', ?)", [String(this.hits)]);
+      db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('cache_misses', ?)", [String(this.misses)]);
+    } catch (e) {
+      console.error('[Cache] Failed to flush stats synchronously:', e);
+    }
   }
 
   // ── 内部方法 ──
@@ -352,8 +450,8 @@ class CacheManager {
     // 1. 删除过期条目
     db.run('DELETE FROM response_cache WHERE created_at < ?', [now - ttlMs]);
 
-    // 2. 检查总体积
-    const sizeStmt = db.prepare('SELECT COALESCE(SUM(LENGTH(CAST(response AS BLOB))), 0) as total_size FROM response_cache');
+    // 2. 检查总体积（使用 LENGTH(response) 直接计算 UTF-8 字节长度）
+    const sizeStmt = db.prepare('SELECT COALESCE(SUM(LENGTH(response)), 0) as total_size FROM response_cache');
     let totalSize = 0;
     if (sizeStmt.step()) {
       totalSize = (sizeStmt.getAsObject() as Record<string, unknown>).total_size as number;
@@ -368,7 +466,7 @@ class CacheManager {
       while (totalSize > lowThreshold) {
         // 查询本批最旧条目的体积
         const batchStmt = db.prepare(
-          'SELECT COALESCE(SUM(LENGTH(CAST(response AS BLOB))), 0) as batch_size FROM (SELECT response FROM response_cache ORDER BY last_used_at ASC LIMIT 10)',
+          'SELECT COALESCE(SUM(LENGTH(response)), 0) as batch_size FROM (SELECT response FROM response_cache ORDER BY last_used_at ASC LIMIT 10)',
         );
         let batchSize = 0;
         if (batchStmt.step()) {
@@ -398,8 +496,18 @@ class CacheManager {
 /**
  * 全局缓存管理器单例
  *
- * 注意：loadStats() 会在应用启动时由统计 API 端点自动调用，
- * 无需手动调用；getStats() 内部也会做懒加载保障。
+ * 注意：
+ * - loadStats() 会在首次调用 getStats() 或 get() 时自动执行（懒加载）
+ * - get() 操作的统计会定期持久化到 meta 表（每 3 次操作）
+ * - clearAll() 会同时重置内存和 DB 中的统计
+ * - 统计采用累加模式，避免覆盖历史数据
+ * - 应用退出时会自动刷新统计到 DB
  */
 export const cacheManager = new CacheManager();
+
+// 注册应用退出前的清理回调，确保统计数据不丢失
+onBeforeClose(() => {
+  cacheManager.flushStatsSync();
+});
+
 export default CacheManager;

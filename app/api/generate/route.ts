@@ -261,9 +261,9 @@ export async function POST(request: Request) {
       effectiveMode = 'quality';
     }
 
-    // ── 检查缓存（仅对非图片输入、非重新生成的请求生效）──
-    // Vision 模式不缓存（带图片），降级模式可缓存（纯文本）
-    const shouldCache = !processedImages && !regenerate;
+    // ── 检查缓存（仅对非图片输入、非重新生成、非编辑模式的请求生效）──
+    // Vision 模式不缓存（带图片），降级模式可缓存（纯文本），编辑模式不缓存
+    const shouldCache = !processedImages && !regenerate && !editMode;
     let cacheKeyValue: string | null = null;
 
     if (shouldCache) {
