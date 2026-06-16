@@ -721,3 +721,5 @@ div.mxRubberband {
   max-height: 200px;
   object-fit: contain;
 }
+
+/* Monaco Editor 滚动条由 CodeEditor.tsx 自定义滚动条替代 */

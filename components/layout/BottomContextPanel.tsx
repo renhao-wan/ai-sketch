@@ -276,7 +276,7 @@ export default function BottomContextPanel({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto px-4 pb-3 scrollbar-thin">
+      <div className={`flex-1 px-4 pb-3 ${activeTab === 'code' ? 'overflow-hidden' : 'overflow-auto scrollbar-thin'}`}>
         {activeTab === 'code' && children ? (
           children
         ) : activeTab === 'code' && generatedCode ? (
