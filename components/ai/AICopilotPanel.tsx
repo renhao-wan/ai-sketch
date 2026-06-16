@@ -9,6 +9,8 @@ import {
   ChevronDown,
   Sparkles,
   X,
+  MessageSquare,
+  MessagesSquare,
 } from 'lucide-react';
 import ChartTypeSelect from '@/components/editor/ChartTypeSelect';
 import { useFileUpload } from '@/hooks/useFileUpload';
@@ -70,6 +72,9 @@ interface AICopilotPanelProps {
   /** 生成模式 */
   generationMode?: GenerationMode;
   onGenerationModeChange?: (mode: GenerationMode) => void;
+  /** 上下文开关 */
+  contextEnabled?: boolean;
+  onContextEnabledChange?: (enabled: boolean) => void;
 }
 
 export default function AICopilotPanel({
@@ -94,6 +99,8 @@ export default function AICopilotPanel({
   onCollapsedChange,
   generationMode = 'auto',
   onGenerationModeChange,
+  contextEnabled = true,
+  onContextEnabledChange,
 }: AICopilotPanelProps) {
   const { t } = useLocale();
   const [isCollapsedLocal, setIsCollapsedLocal] = useState(false);
@@ -489,6 +496,19 @@ export default function AICopilotPanel({
             </button>
           </Tooltip>
           <div className="flex-1" />
+          <Tooltip content={contextEnabled ? t('copilot.contextOn') : t('copilot.contextOff')} side="top">
+            <button
+              onClick={() => onContextEnabledChange?.(!contextEnabled)}
+              disabled={isGenerating}
+              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 disabled:opacity-40 ${
+                contextEnabled
+                  ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
+                  : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+              }`}
+            >
+              {contextEnabled ? <MessagesSquare size={15} /> : <MessageSquare size={15} />}
+            </button>
+          </Tooltip>
           <GenerationModeToggle
             value={generationMode}
             onChange={(m) => onGenerationModeChange?.(m)}

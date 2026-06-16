@@ -24,6 +24,8 @@ interface UseGenerationOptions {
   onChartTypeUpdate?: (chartType: string) => void;
   /** 生成模式 */
   generationMode?: 'fast' | 'auto' | 'quality';
+  /** 是否启用上下文（默认 true） */
+  contextEnabled?: boolean;
 }
 
 /**
@@ -178,6 +180,7 @@ export function useGeneration(options: UseGenerationOptions) {
           sourceType,
           regenerate,
           mode: opts.generationMode || 'auto',
+          skipContext: opts.contextEnabled === false,
         }),
         signal: controller.signal,
       });

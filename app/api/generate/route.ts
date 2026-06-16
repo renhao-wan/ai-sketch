@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     perfMark('Total');
 
     perfMark('Parse Request');
-    const { configId, config: configBody, userInput, chartType, format, conversationId, sourceType: frontendSourceType, regenerate: regen, mode: requestMode } = await request.json() as {
+    const { configId, config: configBody, userInput, chartType, format, conversationId, sourceType: frontendSourceType, regenerate: regen, mode: requestMode, skipContext } = await request.json() as {
       configId?: string;
       config?: LLMConfig;
       userInput: string | { text?: string; image?: ImageData; images?: ImageData[] };
@@ -68,6 +68,7 @@ export async function POST(request: Request) {
       sourceType?: string;
       regenerate?: boolean;
       mode?: GenerationMode;
+      skipContext?: boolean;
     };
     const generationMode: GenerationMode = requestMode || 'auto';
     regenerate = regen ?? false;
@@ -191,7 +192,9 @@ export async function POST(request: Request) {
 
     // ── Build LLM messages with context ──
     perfMark('Build Context');
-    const contextMessages = await conversationManager.buildContextMessages(activeConversationId);
+    const contextMessages = skipContext
+      ? []
+      : await conversationManager.buildContextMessages(activeConversationId);
 
     // Build the new user message for LLM
     let newUserMessage: LLMMessage;

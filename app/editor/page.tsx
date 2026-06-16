@@ -101,6 +101,7 @@ function EditorContent() {
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
   const [generationMode, setGenerationMode] = useState<GenerationMode>('auto');
+  const [contextEnabled, setContextEnabled] = useState(true);
 
   // Refs
   const pendingInitRef = useRef<import('@/lib/utils/init-data').InitData | null>(null);
@@ -194,6 +195,7 @@ function EditorContent() {
     },
     onChartTypeUpdate: setCurrentChartType,
     generationMode,
+    contextEnabled,
   });
 
   // AI 操作 Hook
@@ -433,6 +435,8 @@ function EditorContent() {
             onCollapsedChange={setIsPanelCollapsed}
             generationMode={generationMode}
             onGenerationModeChange={setGenerationMode}
+            contextEnabled={contextEnabled}
+            onContextEnabledChange={setContextEnabled}
           />
 
           {/* 分割线折叠按钮 */}

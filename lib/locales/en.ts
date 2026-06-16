@@ -71,6 +71,8 @@ export const en: TranslationDict = {
   'copilot.send': 'Send',
   'copilot.generate': 'Generate',
   'copilot.config': 'Config',
+  'copilot.contextOn': 'Context enabled',
+  'copilot.contextOff': 'Context disabled (current message only)',
   'copilot.more': 'More',
   'copilot.manageTags': 'Manage Tags',
   'copilot.tags': 'Tags',
