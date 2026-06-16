@@ -88,6 +88,8 @@ export const zh = {
   'export.png': '导出 PNG 图片',
   'export.svg': '导出 SVG 矢量图',
   'export.code': '导出代码文件',
+  'export.pdf': '导出 PDF 文档',
+  'export.md': '导出 Markdown',
 
   // Code Editor
 

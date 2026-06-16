@@ -90,6 +90,8 @@ export const en: TranslationDict = {
   'export.png': 'Export as PNG',
   'export.svg': 'Export as SVG',
   'export.code': 'Export Code File',
+  'export.pdf': 'Export as PDF',
+  'export.md': 'Export Markdown',
 
   // Code Editor
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, type ReactNode, type MouseEvent } from 'react';
-import { ChevronDown, ChevronUp, Code2, Sparkles, Copy, Download, Check, Image, FileCode } from 'lucide-react';
+import { ChevronDown, ChevronUp, Code2, Sparkles, Copy, Download, Check, Image, FileCode, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
@@ -57,13 +57,16 @@ export default function BottomContextPanel({
     };
   }, []);
 
+  const activeTab = controlledTab ?? internalTab;
+
   const handleCopy = useCallback(() => {
-    if (!generatedCode) return;
-    navigator.clipboard.writeText(generatedCode);
+    const text = activeTab === 'explain' ? explanation : generatedCode;
+    if (!text) return;
+    navigator.clipboard.writeText(text);
     setCopied(true);
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => setCopied(false), 1500);
-  }, [generatedCode]);
+  }, [activeTab, generatedCode, explanation]);
 
   const handleExport = useCallback(() => {
     if (!generatedCode) return;
@@ -77,6 +80,34 @@ export default function BottomContextPanel({
     URL.revokeObjectURL(url);
   }, [generatedCode, format]);
 
+  /** 导出 AI 解释为 Markdown 文件 */
+  const handleExportMd = useCallback(() => {
+    if (!explanation) return;
+    const blob = new Blob([explanation], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'explanation.md';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [explanation]);
+
+  /** 导出 AI 解释为 PDF 文件（使用 jsPDF 原生 API，不依赖 html2canvas） */
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const handleExportPdf = useCallback(async () => {
+    if (!explanation || exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      const { exportMarkdownToPdf } = await import('@/lib/utils/export-pdf');
+      await exportMarkdownToPdf(explanation);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+    } finally {
+      setExportingPdf(false);
+    }
+  }, [explanation, exportingPdf]);
+
   // 点击外部关闭导出菜单
   useEffect(() => {
     if (!showExportMenu) return;
@@ -88,8 +119,6 @@ export default function BottomContextPanel({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showExportMenu]);
-
-  const activeTab = controlledTab ?? internalTab;
 
   const handleTabChange = (tab: string) => {
     if (onTabChange) {
@@ -167,7 +196,7 @@ export default function BottomContextPanel({
           ))}
         </div>
         <div className="flex items-center gap-0.5">
-          {activeTab === 'code' && generatedCode && (
+          {(activeTab === 'code' ? generatedCode : explanation) && (
             <>
               <Tooltip content={t('copilot.copy')} side="top">
                 <button
@@ -187,29 +216,51 @@ export default function BottomContextPanel({
                   </button>
                 </Tooltip>
                 {showExportMenu && (
-                  <div className="absolute bottom-full right-0 mb-1 w-44 bg-[var(--surface-warm)] backdrop-blur-xl rounded-xl border border-[var(--border)] shadow-[0_10px_40px_rgba(28,25,23,0.10)] overflow-hidden animate-slide-up" style={{ zIndex: 9999 }}>
-                    <button
-                      onClick={() => { onExportAs?.('png'); setShowExportMenu(false); }}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-[var(--fg)] hover:bg-[var(--accent-indigo)]/5 transition-colors"
-                    >
-                      {/* eslint-disable-next-line jsx-a11y/alt-text -- lucide Image 是 SVG 图标，不是 <img> */}
-                      <Image size={14} className="text-[var(--muted)]" />
-                      {t('export.png')}
-                    </button>
-                    <button
-                      onClick={() => { onExportAs?.('svg'); setShowExportMenu(false); }}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-[var(--fg)] hover:bg-[var(--accent-indigo)]/5 transition-colors"
-                    >
-                      <FileCode size={14} className="text-[var(--muted)]" />
-                      {t('export.svg')}
-                    </button>
-                    <button
-                      onClick={() => { onExportAs?.('code'); setShowExportMenu(false); }}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-[var(--fg)] hover:bg-[var(--accent-indigo)]/5 transition-colors border-t border-[var(--border)]"
-                    >
-                      <Code2 size={14} className="text-[var(--muted)]" />
-                      {t('export.code')}
-                    </button>
+                  <div className="absolute bottom-full right-0 mb-1 w-44 bg-[var(--surface-warm-solid)] rounded-xl border border-[var(--border)] shadow-[0_10px_40px_rgba(28,25,23,0.15)] overflow-hidden animate-slide-up" style={{ zIndex: 9999 }}>
+                    {activeTab === 'code' ? (
+                      <>
+                        <button
+                          onClick={() => { onExportAs?.('png'); setShowExportMenu(false); }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-[var(--fg)] hover:bg-[var(--accent-indigo)]/5 transition-colors"
+                        >
+                          {/* eslint-disable-next-line jsx-a11y/alt-text -- lucide Image 是 SVG 图标，不是 <img> */}
+                          <Image size={14} className="text-[var(--muted)]" />
+                          {t('export.png')}
+                        </button>
+                        <button
+                          onClick={() => { onExportAs?.('svg'); setShowExportMenu(false); }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-[var(--fg)] hover:bg-[var(--accent-indigo)]/5 transition-colors"
+                        >
+                          <FileCode size={14} className="text-[var(--muted)]" />
+                          {t('export.svg')}
+                        </button>
+                        <button
+                          onClick={() => { onExportAs?.('code'); setShowExportMenu(false); }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-[var(--fg)] hover:bg-[var(--accent-indigo)]/5 transition-colors border-t border-[var(--border)]"
+                        >
+                          <Code2 size={14} className="text-[var(--muted)]" />
+                          {t('export.code')}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => { handleExportPdf(); setShowExportMenu(false); }}
+                          disabled={exportingPdf}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-[var(--fg)] hover:bg-[var(--accent-indigo)]/5 transition-colors disabled:opacity-50"
+                        >
+                          <FileText size={14} className="text-[var(--muted)]" />
+                          {exportingPdf ? '...' : t('export.pdf')}
+                        </button>
+                        <button
+                          onClick={() => { handleExportMd(); setShowExportMenu(false); }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-[var(--fg)] hover:bg-[var(--accent-indigo)]/5 transition-colors"
+                        >
+                          <FileCode size={14} className="text-[var(--muted)]" />
+                          {t('export.md')}
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
