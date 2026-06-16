@@ -42,11 +42,7 @@ export default function GenerationModeToggle({ value, onChange, disabled }: Gene
           type="button"
           onClick={() => !disabled && setOpen(prev => !prev)}
           disabled={disabled}
-          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 disabled:opacity-40 ${
-            value !== 'auto'
-              ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]'
-              : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-          }`}
+          className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 disabled:opacity-40 bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]"
         >
           <CurrentIcon size={15} />
         </button>

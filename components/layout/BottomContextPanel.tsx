@@ -14,7 +14,7 @@ import type { TranslationKey } from '@/lib/locales';
 import type { ExportFormat } from '@/lib/utils/export-diagram';
 
 import 'katex/dist/katex.min.css';
-import 'highlight.js/styles/github-dark.min.css';
+import 'highlight.js/styles/github.min.css';
 
 const TABS: { id: string; labelKey: TranslationKey; icon: typeof Code2 }[] = [
   { id: 'code', labelKey: 'panel.generatedCode', icon: Code2 },
@@ -238,8 +238,8 @@ export default function BottomContextPanel({
             prose-h1:text-base prose-h2:text-sm prose-h3:text-xs
             prose-p:my-1 prose-p:leading-relaxed
             prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5
-            prose-code:bg-[var(--surface-warm-hover)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:font-mono
-            prose-pre:bg-[var(--surface-warm-hover)] prose-pre:rounded-lg prose-pre:p-3 prose-pre:my-2
+            prose-code:bg-[var(--surface-warm-hover)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:font-mono prose-code:text-[var(--fg)]
+            prose-pre:bg-[var(--surface-warm-hover)] prose-pre:text-[var(--fg)] prose-pre:rounded-lg prose-pre:p-3 prose-pre:my-2
             prose-blockquote:border-l-2 prose-blockquote:border-[var(--accent-indigo)] prose-blockquote:pl-3 prose-blockquote:my-2 prose-blockquote:text-[var(--muted)]
             prose-strong:text-[var(--fg)] prose-strong:font-semibold
             prose-a:text-[var(--accent-indigo)] prose-a:underline
