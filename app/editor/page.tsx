@@ -437,6 +437,7 @@ function EditorContent() {
             onGenerationModeChange={setGenerationMode}
             contextEnabled={contextEnabled}
             onContextEnabledChange={setContextEnabled}
+            onEditMessage={(id, content) => generation.editAndResend(id, content, conversation.messages, currentChartType)}
           />
 
           {/* 分割线折叠按钮 */}

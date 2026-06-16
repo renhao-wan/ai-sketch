@@ -73,6 +73,7 @@ export const en: TranslationDict = {
   'copilot.config': 'Config',
   'copilot.contextOn': 'Context enabled',
   'copilot.contextOff': 'Context disabled (current message only)',
+  'copilot.editMessage': 'Edit message',
   'copilot.more': 'More',
   'copilot.manageTags': 'Manage Tags',
   'copilot.tags': 'Tags',

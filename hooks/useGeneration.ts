@@ -138,6 +138,7 @@ export function useGeneration(options: UseGenerationOptions) {
     chartType: string;
     sourceType: string;
     regenerate?: boolean;
+    editMode?: boolean;
     optimisticUserMsg?: ConversationMessage;
     optimisticAssistantMsg: ConversationMessage;
   }): Promise<void> => {
@@ -147,6 +148,7 @@ export function useGeneration(options: UseGenerationOptions) {
       chartType,
       sourceType,
       regenerate = false,
+      editMode = false,
       optimisticUserMsg,
       optimisticAssistantMsg,
     } = params;
@@ -179,6 +181,7 @@ export function useGeneration(options: UseGenerationOptions) {
           conversationId: opts.conversationId,
           sourceType,
           regenerate,
+          editMode,
           mode: opts.generationMode || 'auto',
           skipContext: opts.contextEnabled === false,
         }),
@@ -371,6 +374,80 @@ export function useGeneration(options: UseGenerationOptions) {
     });
   }, [isGenerating, executeGeneration]);
 
+  /** 编辑最后一条用户消息：删除旧 user+assistant，当作新消息发送 */
+  const editAndResend = useCallback(async (messageId: string, newContent: string, messages: ConversationMessage[], chartType: string = 'auto') => {
+    if (isGenerating) return;
+    const opts = optionsRef.current;
+    if (!opts.conversationId) return;
+    if (!isConfigValid(opts.config)) {
+      opts.onConfigReminder();
+      return;
+    }
+
+    // 验证 messageId 确实是最后一条用户消息
+    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+    if (!lastUserMsg || lastUserMsg.id !== messageId) {
+      console.warn('[EditAndResend] messageId does not match last user message');
+      return;
+    }
+
+    // 更新图表类型状态
+    opts.onChartTypeUpdate?.(chartType);
+
+    // 创建新的乐观消息
+    const optimisticUserMsg: ConversationMessage = {
+      id: generateId(),
+      conversationId: opts.conversationId,
+      role: 'user',
+      content: newContent,
+      sourceType: 'text',
+      createdAt: Date.now(),
+    };
+
+    const optimisticAssistantMsg: ConversationMessage = {
+      id: generateId(),
+      conversationId: opts.conversationId,
+      role: 'assistant',
+      content: '',
+      sourceType: 'text',
+      createdAt: Date.now(),
+    };
+
+    // 单次状态更新：删除旧消息 + 添加新消息
+    opts.onMessagesUpdate(prev => {
+      let result = prev;
+      // 删除最后一条 assistant
+      const lastAssistantIdx = [...result].reverse().findIndex(m => m.role === 'assistant');
+      if (lastAssistantIdx !== -1) {
+        const idx = result.length - 1 - lastAssistantIdx;
+        result = [...result.slice(0, idx), ...result.slice(idx + 1)];
+      }
+      // 删除最后一条 user
+      const lastUserIdx = [...result].reverse().findIndex(m => m.role === 'user');
+      if (lastUserIdx !== -1) {
+        const idx = result.length - 1 - lastUserIdx;
+        result = [...result.slice(0, idx), ...result.slice(idx + 1)];
+      }
+      // 添加新消息
+      return [...result, optimisticUserMsg, optimisticAssistantMsg];
+    });
+
+    // 调用 generate API，editMode=true 让服务端删除旧消息并保存新消息
+    try {
+      await executeGeneration({
+        userInput: newContent,
+        chartType,
+        sourceType: 'text',
+        editMode: true,
+        optimisticUserMsg,
+        optimisticAssistantMsg,
+      });
+    } catch (error) {
+      console.error('[EditAndResend] Generation failed:', error);
+      // executeGeneration 内部已处理错误状态，此处仅捕获防止未处理的 Promise rejection
+    }
+  }, [isGenerating, executeGeneration]);
+
   return {
     isGenerating,
     isStreaming,
@@ -379,6 +456,7 @@ export function useGeneration(options: UseGenerationOptions) {
     cancelGeneration,
     sendMessage,
     regenerate,
+    editAndResend,
     abortControllerRef,
     isStreamingRef,
   };

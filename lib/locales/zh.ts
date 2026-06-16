@@ -71,6 +71,7 @@ export const zh = {
   'copilot.config': '配置',
   'copilot.contextOn': '上下文已开启',
   'copilot.contextOff': '上下文已关闭（仅当前消息）',
+  'copilot.editMessage': '编辑消息',
   'copilot.more': '更多',
   'copilot.manageTags': '管理标签',
   'copilot.tags': '标签',

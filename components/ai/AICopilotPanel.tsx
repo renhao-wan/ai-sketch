@@ -75,6 +75,8 @@ interface AICopilotPanelProps {
   /** 上下文开关 */
   contextEnabled?: boolean;
   onContextEnabledChange?: (enabled: boolean) => void;
+  /** 编辑消息 */
+  onEditMessage?: (messageId: string, newContent: string) => void;
 }
 
 export default function AICopilotPanel({
@@ -101,6 +103,7 @@ export default function AICopilotPanel({
   onGenerationModeChange,
   contextEnabled = true,
   onContextEnabledChange,
+  onEditMessage,
 }: AICopilotPanelProps) {
   const { t } = useLocale();
   const [isCollapsedLocal, setIsCollapsedLocal] = useState(false);
@@ -343,6 +346,9 @@ export default function AICopilotPanel({
             const isLastAssistant = msg.role === 'assistant' && idx === messages.length - 1;
             const isAssistant = msg.role === 'assistant';
             const isMsgStreaming = isStreaming && msg.role === 'assistant' && msg.id === messages[messages.length - 1]?.id;
+            // 最后一条用户消息：角色为 user，且是数组中最后一条 user 消息
+            const isLastUser = msg.role === 'user' && !isGenerating && !isMsgStreaming && onEditMessage
+              && !messages.slice(idx + 1).some(m => m.role === 'user');
             return (
               <MessageBubble
                 key={msg.id}
@@ -352,6 +358,7 @@ export default function AICopilotPanel({
                 onCopy={isAssistant && !isMsgStreaming ? () => navigator.clipboard.writeText(msg.content) : undefined}
                 onExport={isAssistant && !isMsgStreaming ? () => exportMessage(msg.content) : undefined}
                 onShowDiagram={isAssistant && !isMsgStreaming ? () => onShowDiagram(msg.content) : undefined}
+                onEdit={isLastUser ? (newContent) => onEditMessage(msg.id, newContent) : undefined}
               />
             );
           })}

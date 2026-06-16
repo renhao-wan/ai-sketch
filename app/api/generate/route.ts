@@ -53,12 +53,13 @@ export async function POST(request: Request) {
   let activeConversationId: string | null = null;
   let isNewConversation = false;
   let regenerate = false;
+  let editMode = false;
 
   try {
     perfMark('Total');
 
     perfMark('Parse Request');
-    const { configId, config: configBody, userInput, chartType, format, conversationId, sourceType: frontendSourceType, regenerate: regen, mode: requestMode, skipContext } = await request.json() as {
+    const { configId, config: configBody, userInput, chartType, format, conversationId, sourceType: frontendSourceType, regenerate: regen, editMode: edit, mode: requestMode, skipContext } = await request.json() as {
       configId?: string;
       config?: LLMConfig;
       userInput: string | { text?: string; image?: ImageData; images?: ImageData[] };
@@ -67,11 +68,13 @@ export async function POST(request: Request) {
       conversationId?: string;
       sourceType?: string;
       regenerate?: boolean;
+      editMode?: boolean;
       mode?: GenerationMode;
       skipContext?: boolean;
     };
     const generationMode: GenerationMode = requestMode || 'auto';
     regenerate = regen ?? false;
+    editMode = edit ?? false;
     activeConversationId = conversationId || null;
     perfEnd('Parse Request');
 
@@ -153,7 +156,18 @@ export async function POST(request: Request) {
     const sourceType = frontendSourceType || (processedImages ? 'image' : 'text');
 
     if (regenerate) {
+      // 重试：只删除旧 assistant，保留原有 user 消息
       await conversationManager.deleteLastAssistantMessage(activeConversationId!);
+    } else if (editMode) {
+      // 编辑模式：删除旧 assistant + user，然后保存新 user
+      await conversationManager.deleteLastAssistantMessage(activeConversationId!);
+      await conversationManager.deleteLastMessage(activeConversationId!);
+      await conversationManager.addMessage({
+        conversationId: activeConversationId,
+        role: 'user',
+        content: userContent,
+        sourceType: 'text',
+      });
     } else {
       if (processedImages) {
         // Vision 模式：存原始 base64
