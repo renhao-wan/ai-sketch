@@ -1148,7 +1148,7 @@ export default function DrawioCanvas({ code, exportRef }: DrawioCanvasProps) {
           <p className="text-sm font-medium text-red-500 mb-3">{t('drawio.renderError')}</p>
           <p className="text-xs text-red-400/80 mb-4">{error}</p>
           {code && (
-            <pre className="text-[11px] text-[var(--muted)] bg-[var(--surface)]/50 rounded-lg p-3 overflow-auto max-h-64 whitespace-pre-wrap break-all font-mono">
+            <pre className="text-[11px] text-[var(--muted)] bg-[var(--surface-warm)]/50 rounded-lg p-3 overflow-auto max-h-64 whitespace-pre-wrap break-all font-mono">
               {code}
             </pre>
           )}

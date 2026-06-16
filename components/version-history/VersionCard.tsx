@@ -37,7 +37,7 @@ export default function VersionCard({ id, versionNumber, createdAt, isCurrent, s
     >
       {/* 版本标题 */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-[var(--text)]">
+        <span className="text-sm font-medium text-[var(--fg)]">
           {t('versionHistory.version')} {versionNumber}
           <span className="text-xs text-[var(--muted)] ml-2">{formatTime(createdAt)}</span>
         </span>

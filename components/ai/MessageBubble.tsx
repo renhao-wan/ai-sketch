@@ -46,6 +46,7 @@ function UserContent({ content, highlightQuery }: { content: string; highlightQu
     return <p className="whitespace-pre-wrap break-words">{highlightText(content, highlightQuery || '')}</p>;
   }
 
+  // 用户气泡背景是紫色（accent-indigo），按钮文字用白色系确保可见
   return (
     <div>
       <p className="whitespace-pre-wrap break-words">
@@ -53,7 +54,7 @@ function UserContent({ content, highlightQuery }: { content: string; highlightQu
       </p>
       <button
         onClick={() => setExpanded(prev => !prev)}
-        className="mt-1 text-[11px] text-[var(--accent-indigo)] hover:text-[var(--accent-indigo)]/80 transition-colors"
+        className="mt-1 text-[11px] text-white/80 hover:text-white transition-colors cursor-pointer"
       >
         {expanded ? '收起' : '展开全部'}
       </button>

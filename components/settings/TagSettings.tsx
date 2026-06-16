@@ -256,7 +256,7 @@ export function TagSettings({ isVisible = true }: { isVisible?: boolean } = {}) 
             placeholder={t('tags.namePlaceholder')}
             maxLength={20}
             autoFocus
-            className="w-full px-3 py-2.5 text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30"
+            className="w-full px-3 py-2.5 text-sm bg-[var(--surface-warm)] border border-[var(--border)] rounded-xl text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30"
           />
 
           <div>

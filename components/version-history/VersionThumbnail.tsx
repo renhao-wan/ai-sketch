@@ -20,7 +20,7 @@ export default function VersionThumbnail({ svg, loading, versionNumber }: Versio
 
   if (loading) {
     return (
-      <div className="w-full h-40 rounded-lg bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center">
+      <div className="w-full h-40 rounded-lg bg-[var(--surface-warm)] border border-[var(--border)] flex items-center justify-center">
         <Loader2 size={20} className="animate-spin text-[var(--muted)]" />
       </div>
     );
@@ -37,7 +37,7 @@ export default function VersionThumbnail({ svg, loading, versionNumber }: Versio
   }
 
   return (
-    <div className="w-full h-40 rounded-lg bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center">
+    <div className="w-full h-40 rounded-lg bg-[var(--surface-warm)] border border-[var(--border)] flex items-center justify-center">
       <span className="text-xs text-[var(--muted)]">{t('versionHistory.noThumbnail')}</span>
     </div>
   );
