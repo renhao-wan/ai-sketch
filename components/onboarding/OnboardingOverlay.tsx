@@ -157,7 +157,7 @@ export function OnboardingOverlay() {
             left: targetRect.left - 4,
             width: targetRect.width + 8,
             height: targetRect.height + 8,
-            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
+            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.3)',
             borderRadius: '8px',
           }}
           onClick={(e) => e.stopPropagation()}
