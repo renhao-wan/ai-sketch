@@ -25,7 +25,7 @@ export interface OnboardingStep {
 }
 
 /**
- * 核心流程步骤（core 模式，7 步）
+ * 核心流程步骤（core 模式，5 步）
  * 介绍核心链路：首页输入 → 编辑器查看
  */
 export const CORE_STEPS: OnboardingStep[] = [
@@ -34,24 +34,6 @@ export const CORE_STEPS: OnboardingStep[] = [
     target: '#onboarding-ai-prompt-box',
     titleKey: 'onboarding.steps.home-input.title',
     contentKey: 'onboarding.steps.home-input.content',
-    placement: 'bottom',
-    mode: 'core',
-    page: 'home',
-  },
-  {
-    id: 'home-generate',
-    target: '#onboarding-generate-button',
-    titleKey: 'onboarding.steps.home-generate.title',
-    contentKey: 'onboarding.steps.home-generate.content',
-    placement: 'bottom',
-    mode: 'core',
-    page: 'home',
-  },
-  {
-    id: 'navigate-to-editor',
-    target: '#onboarding-generate-button',
-    titleKey: 'onboarding.steps.navigate-to-editor.title',
-    contentKey: 'onboarding.steps.navigate-to-editor.content',
     placement: 'bottom',
     mode: 'core',
     page: 'home',
@@ -111,27 +93,6 @@ export const FULL_STEPS: OnboardingStep[] = [
     groupTitleKey: 'onboarding.groups.home',
     page: 'home',
   },
-  {
-    id: 'full-home-generate',
-    target: '#onboarding-generate-button',
-    titleKey: 'onboarding.steps.home-generate.title',
-    contentKey: 'onboarding.steps.home-generate.content',
-    placement: 'bottom',
-    mode: 'full',
-    group: 'home',
-    page: 'home',
-  },
-  {
-    id: 'full-navigate-to-editor',
-    target: '#onboarding-generate-button',
-    titleKey: 'onboarding.steps.navigate-to-editor.title',
-    contentKey: 'onboarding.steps.navigate-to-editor.content',
-    placement: 'bottom',
-    mode: 'full',
-    group: 'home',
-    page: 'home',
-  },
-
   // AI 对话区组
   {
     id: 'full-editor-chat',
