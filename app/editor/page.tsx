@@ -343,7 +343,6 @@ function EditorContent() {
             currentChartType={currentChartType}
             currentFormat={format}
             onFormatChange={(f) => { setFormat(f); dispatchGenResult({ type: 'CLEAR' }); }}
-            onExport={handleExport}
             onRegenerate={() => generation.regenerate(conversation.messages, currentChartType)}
             onShowDiagram={handleShowDiagram}
             apiError={generation.apiError}
@@ -351,7 +350,6 @@ function EditorContent() {
             panelWidth={panelWidth}
             onPanelWidthChange={handlePanelWidthChange}
             collapsed={isPanelCollapsed}
-            onCollapsedChange={setIsPanelCollapsed}
             generationMode={generationMode}
             onGenerationModeChange={setGenerationMode}
             contextEnabled={contextEnabled}

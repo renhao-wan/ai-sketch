@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import {
   Send,
   Paperclip,
@@ -25,10 +25,13 @@ import type { GenerationMode } from '@/lib/generation/types';
 interface ChatInputProps {
   hasMessages: boolean;
   isGenerating: boolean;
+  /** 外部输入同步（如从首页预填充、恢复历史） */
+  currentInput?: string;
   currentFormat: DiagramFormat;
   currentChartType: string;
+  /** 用于切换对话时重新同步 chartType */
+  conversationId?: string | null;
   onFormatChange: (format: DiagramFormat) => void;
-  onChartTypeChange: (type: string) => void;
   onSendMessage: (message: string | { text: string; images: unknown[] }, chartType: string, source: SourceType) => void;
   onCancel: () => void;
   /** 生成模式 */
@@ -42,10 +45,11 @@ interface ChatInputProps {
 export default function ChatInput({
   hasMessages,
   isGenerating,
+  currentInput,
   currentFormat,
   currentChartType,
+  conversationId,
   onFormatChange,
-  onChartTypeChange,
   onSendMessage,
   onCancel,
   generationMode = 'auto',
@@ -54,11 +58,13 @@ export default function ChatInput({
   onContextEnabledChange,
 }: ChatInputProps) {
   const { t } = useLocale();
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState(currentInput || '');
   const [chartType, setChartType] = useState(currentChartType || 'auto');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const prevInputRef = useRef(currentInput);
+  const prevChartTypeRef = useRef(currentChartType);
 
   const { attachments, payload, attachStatus, attachError, notification, closeNotification, handleFiles, clearAttachments, removeAttachment, canSend, getSourceType } = useFileUpload({ diagramFormat: currentFormat });
   const { isDragging, dragHandlers } = useDragAndDrop(handleFiles);
@@ -80,11 +86,24 @@ export default function ChatInput({
     };
   }, [attachments]);
 
-  // 同步外部 chartType 变化
+  // 从 props 同步 currentInput 到 prompt（带防抖 guard）
+  useEffect(() => {
+    if (currentInput !== undefined && currentInput !== prevInputRef.current) {
+      prevInputRef.current = currentInput;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPrompt(currentInput);
+    }
+  }, [currentInput]);
+
+  // 同步外部 chartType 变化（含 conversationId 依赖，切换对话时重新同步）
   useEffect(() => {
     const newChartType = currentChartType || 'auto';
-    setChartType(newChartType);
-  }, [currentChartType]);
+    if (newChartType !== prevChartTypeRef.current) {
+      prevChartTypeRef.current = newChartType;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setChartType(newChartType);
+    }
+  }, [currentChartType, conversationId]);
 
   // 自动调整 textarea 高度
   useEffect(() => {
@@ -139,7 +158,7 @@ export default function ChatInput({
       {/* Format & Chart Type */}
       <div className="px-4 pt-3 pb-1 space-y-2">
         <FormatSelector value={currentFormat} onChange={onFormatChange} className="w-full" />
-        <ChartTypeSelect value={chartType} onChange={onChartTypeChange} format={currentFormat} />
+        <ChartTypeSelect value={chartType} onChange={setChartType} format={currentFormat} />
       </div>
 
       {/* Text Input */}

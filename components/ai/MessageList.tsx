@@ -12,6 +12,8 @@ interface MessageListProps {
   conversationId: string | null;
   isStreaming: boolean;
   isGenerating: boolean;
+  /** 用于折叠展开后自动滑底 */
+  isCollapsed?: boolean;
   onRegenerate: () => void;
   onShowDiagram: (content: string) => void;
   onEditMessage?: (messageId: string, newContent: string) => void;
@@ -22,6 +24,7 @@ export default function MessageList({
   conversationId,
   isStreaming,
   isGenerating,
+  isCollapsed = false,
   onRegenerate,
   onShowDiagram,
   onEditMessage,
@@ -31,6 +34,7 @@ export default function MessageList({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
   const prevConvRef = useRef(conversationId);
+  const prevCollapsedRef = useRef(isCollapsed);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
   // 滑底判断：是否在底部附近（阈值为容器高度的 20%）
@@ -88,6 +92,22 @@ export default function MessageList({
       container.scrollTop = container.scrollHeight;
     });
   }, [conversationId]);
+
+  // 折叠→展开时强制滑底（双层 rAF 确保 DOM 布局稳定）
+  useEffect(() => {
+    const wasCollapsed = prevCollapsedRef.current;
+    prevCollapsedRef.current = isCollapsed;
+
+    if (wasCollapsed && !isCollapsed && messages.length > 0) {
+      const container = messagesContainerRef.current;
+      if (!container) return;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          container.scrollTop = container.scrollHeight;
+        });
+      });
+    }
+  }, [isCollapsed, messages.length]);
 
   const hasMessages = messages.length > 0;
 

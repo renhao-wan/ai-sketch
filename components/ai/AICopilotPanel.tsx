@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, type MouseEvent } from 'react';
+import { useCallback, type MouseEvent } from 'react';
 import { X } from 'lucide-react';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
@@ -19,7 +19,6 @@ interface AICopilotPanelProps {
   currentChartType: string;
   currentFormat: DiagramFormat;
   onFormatChange: (format: DiagramFormat) => void;
-  onExport: () => void;
   onRegenerate: () => void;
   onShowDiagram: (content: string) => void;
   apiError: string | null;
@@ -28,6 +27,7 @@ interface AICopilotPanelProps {
   onPanelWidthChange?: (width: number) => void;
   /** 从外部控制面板折叠状态 */
   collapsed?: boolean;
+  /** @deprecated 折叠状态已由父组件通过 collapsed prop 控制 */
   onCollapsedChange?: (collapsed: boolean) => void;
   /** 生成模式 */
   generationMode?: GenerationMode;
@@ -50,7 +50,6 @@ export default function AICopilotPanel({
   currentChartType,
   currentFormat,
   onFormatChange,
-  onExport,
   onRegenerate,
   onShowDiagram,
   apiError,
@@ -58,22 +57,13 @@ export default function AICopilotPanel({
   panelWidth = 360,
   onPanelWidthChange,
   collapsed: collapsedProp,
-  onCollapsedChange,
   generationMode = 'auto',
   onGenerationModeChange,
   contextEnabled = true,
   onContextEnabledChange,
   onEditMessage,
 }: AICopilotPanelProps) {
-  const [isCollapsedLocal, setIsCollapsedLocal] = useState(false);
-  const isCollapsed = collapsedProp ?? isCollapsedLocal;
-  const setIsCollapsed = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
-    setIsCollapsedLocal(prev => {
-      const next = typeof value === 'function' ? value(prev) : value;
-      onCollapsedChange?.(next);
-      return next;
-    });
-  }, [onCollapsedChange]);
+  const isCollapsed = collapsedProp ?? false;
 
   const handleResizeStart = useCallback((e: MouseEvent) => {
     if (!onPanelWidthChange) return;
@@ -131,6 +121,7 @@ export default function AICopilotPanel({
         conversationId={conversationId}
         isStreaming={isStreaming}
         isGenerating={isGenerating}
+        isCollapsed={isCollapsed}
         onRegenerate={onRegenerate}
         onShowDiagram={onShowDiagram}
         onEditMessage={onEditMessage}
@@ -140,10 +131,11 @@ export default function AICopilotPanel({
       <ChatInput
         hasMessages={hasMessages}
         isGenerating={isGenerating}
+        currentInput={currentInput}
         currentFormat={currentFormat}
         currentChartType={currentChartType}
+        conversationId={conversationId}
         onFormatChange={onFormatChange}
-        onChartTypeChange={() => {}}
         onSendMessage={onSendMessage}
         onCancel={onCancel}
         generationMode={generationMode}
