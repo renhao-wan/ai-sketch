@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocale, type TranslationKey } from '@/lib/locales';
 import { AppIcon } from '@/components/layout/TopBar';
-import { User, Code2, FileText, Shield, ExternalLink, RefreshCw, Download, Check, ArrowUpCircle } from 'lucide-react';
+import { User, Code2, FileText, Shield, ExternalLink, RefreshCw, Download, Check, ArrowUpCircle, BookOpen } from 'lucide-react';
+import { useOnboarding } from '@/components/onboarding/useOnboarding';
 import { useUpdate } from '@/hooks/useUpdate';
 import { useNotification } from '@/lib/contexts/NotificationContext';
 
@@ -47,6 +48,7 @@ export function AboutSettings() {
   const { t } = useLocale();
   const { isElectron, status, info, progress, error, checkForUpdates, downloadUpdate, installUpdate } = useUpdate();
   const { showNotification } = useNotification();
+  const { startOnboarding } = useOnboarding();
   const mounted = useMounted();
   const checkingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [localChecking, setLocalChecking] = useState(false);
@@ -97,6 +99,33 @@ export function AboutSettings() {
         <p className="text-[var(--fg)] leading-relaxed">
           {t('about.defaultDescription')}
         </p>
+      </section>
+
+      {/* 引导与帮助 */}
+      <section className="space-y-4">
+        <h3 className="text-lg font-semibold text-[var(--fg)] mb-4 flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-[var(--accent-indigo)]" />
+          {t('onboarding.settings.title')}
+        </h3>
+
+        <div className="p-4 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-[var(--fg)]">
+                {t('onboarding.settings.restart')}
+              </h4>
+              <p className="text-sm text-[var(--muted)] mt-1">
+                {t('onboarding.settings.restartDesc')}
+              </p>
+            </div>
+            <button
+              onClick={() => startOnboarding('full')}
+              className="px-4 py-2 text-sm font-medium text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-lg hover:bg-[var(--btn-primary-hover)] transition-colors"
+            >
+              {t('onboarding.settings.restart')}
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* 版本更新 */}
