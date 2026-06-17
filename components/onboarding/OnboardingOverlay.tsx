@@ -36,13 +36,12 @@ export function OnboardingOverlay() {
   const updateTargetRect = useCallback(() => {
     if (!currentStepData) {
       setTargetRect(null);
-      return;
+      return false;
     }
 
     const element = document.querySelector(currentStepData.target);
     if (!element) {
-      setTargetRect(null);
-      return;
+      return false;
     }
 
     const rect = element.getBoundingClientRect();
@@ -52,16 +51,42 @@ export function OnboardingOverlay() {
       width: rect.width,
       height: rect.height,
     });
+    return true;
   }, [currentStepData]);
 
   /**
-   * 监听目标元素位置变化
+   * 监听目标元素位置变化（带重试机制）
    */
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive || !currentStepData) return;
 
-    // 延迟调用避免在 effect 中直接 setState
-    requestAnimationFrame(updateTargetRect);
+    let retryTimer: ReturnType<typeof setInterval> | null = null;
+    let retryCount = 0;
+    const maxRetries = 30; // 最多重试 30 次（3 秒）
+    const retryInterval = 100;
+
+    // 尝试查找目标元素，如果不存在则重试
+    const tryUpdate = () => {
+      const found = updateTargetRect();
+      if (!found && retryCount < maxRetries) {
+        retryCount++;
+        if (!retryTimer) {
+          retryTimer = setInterval(() => {
+            const found = updateTargetRect();
+            retryCount++;
+            if (found || retryCount >= maxRetries) {
+              if (retryTimer) {
+                clearInterval(retryTimer);
+                retryTimer = null;
+              }
+            }
+          }, retryInterval);
+        }
+      }
+    };
+
+    // 首次尝试
+    requestAnimationFrame(tryUpdate);
 
     // 监听滚动和 resize
     const handleUpdate = () => {
@@ -72,24 +97,26 @@ export function OnboardingOverlay() {
     window.addEventListener('resize', handleUpdate);
 
     return () => {
+      if (retryTimer) {
+        clearInterval(retryTimer);
+      }
       window.removeEventListener('scroll', handleUpdate, true);
       window.removeEventListener('resize', handleUpdate);
     };
-  }, [isActive, updateTargetRect]);
+  }, [isActive, currentStepData, updateTargetRect]);
 
   if (!isActive || !currentStepData) return null;
+
+  // 目标元素还未找到，只显示遮罩（等待重试机制找到元素）
+  const isWaitingForTarget = !targetRect;
 
   /**
    * 计算提示框位置（带边界检测）
    */
   const getTooltipPosition = (): CSSProperties => {
     if (!targetRect) {
-      // 目标元素不存在，居中显示
-      return {
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-      };
+      // 目标元素不存在，不显示提示框
+      return { display: 'none' };
     }
 
     const gap = 12; // 提示框与目标的间距

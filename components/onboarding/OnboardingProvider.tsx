@@ -116,41 +116,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     checkOnboardingStatus();
   }, []);
 
-  // 步骤变化时滚动到目标元素（支持跨页面导航后等待元素出现）
-  useEffect(() => {
-    if (!state.isActive || state.steps.length === 0) return;
-
-    const currentStepData = state.steps[state.currentStep];
-    if (!currentStepData) return;
-
-    // 尝试查找并滚动到目标元素，如果不存在则重试
-    let retryCount = 0;
-    const maxRetries = 20; // 最多重试 20 次
-    const retryInterval = 100; // 每次间隔 100ms
-
-    const tryScrollToTarget = () => {
-      const targetElement = document.querySelector(currentStepData.target);
-      if (targetElement) {
-        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return true;
-      }
-      return false;
-    };
-
-    // 首次尝试
-    if (tryScrollToTarget()) return;
-
-    // 如果目标元素不存在，设置重试机制（处理跨页面导航的情况）
-    const timer = setInterval(() => {
-      retryCount++;
-      if (tryScrollToTarget() || retryCount >= maxRetries) {
-        clearInterval(timer);
-      }
-    }, retryInterval);
-
-    return () => clearInterval(timer);
-  }, [state.isActive, state.currentStep, state.steps]);
-
   /**
    * 开始引导
    */
