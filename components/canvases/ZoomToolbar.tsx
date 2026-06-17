@@ -17,7 +17,7 @@ interface ZoomToolbarProps {
 export default function ZoomToolbar({ scale, onZoomIn, onZoomOut, onFitToView }: ZoomToolbarProps) {
   const { t } = useLocale();
   return (
-    <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-[var(--bg-glass)] backdrop-blur-sm rounded-lg border border-[var(--border)] shadow-[var(--shadow-soft)] p-1">
+    <div id="onboarding-zoom-toolbar" className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-[var(--bg-glass)] backdrop-blur-sm rounded-lg border border-[var(--border)] shadow-[var(--shadow-soft)] p-1">
       <button onClick={onZoomOut} className="p-1.5 hover:bg-[var(--surface-warm-hover)] rounded transition-colors group" title={t('toolbar.zoomOut')}>
         <ZoomOut size={14} className="text-[var(--muted)] group-hover:text-[var(--fg)] transition-colors" />
       </button>

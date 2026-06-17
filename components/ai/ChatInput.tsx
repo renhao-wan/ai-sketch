@@ -157,8 +157,12 @@ export default function ChatInput({
     <div className="border-t border-black/[0.08] bg-black/[0.02] flex-shrink-0">
       {/* Format & Chart Type */}
       <div className="px-4 pt-3 pb-1 space-y-2">
-        <FormatSelector value={currentFormat} onChange={onFormatChange} className="w-full" />
-        <ChartTypeSelect value={chartType} onChange={setChartType} format={currentFormat} />
+        <div id="onboarding-format-selector">
+          <FormatSelector value={currentFormat} onChange={onFormatChange} className="w-full" />
+        </div>
+        <div id="onboarding-chart-type">
+          <ChartTypeSelect value={chartType} onChange={setChartType} format={currentFormat} />
+        </div>
       </div>
 
       {/* Text Input */}
@@ -230,6 +234,7 @@ export default function ChatInput({
           </button>
         </Tooltip>
         <div className="flex-1" />
+        <div id="onboarding-context-toggle">
         <Tooltip content={contextEnabled ? t('copilot.contextOn') : t('copilot.contextOff')} side="top">
           <button
             onClick={() => onContextEnabledChange?.(!contextEnabled)}
@@ -243,11 +248,14 @@ export default function ChatInput({
             {contextEnabled ? <MessagesSquare size={15} /> : <MessageSquare size={15} />}
           </button>
         </Tooltip>
+        </div>
+        <div id="onboarding-generation-mode">
         <GenerationModeToggle
           value={generationMode}
           onChange={(m) => onGenerationModeChange?.(m)}
           disabled={isGenerating}
         />
+        </div>
         {isGenerating ? (
           <button
             onClick={onCancel}

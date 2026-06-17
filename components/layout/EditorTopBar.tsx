@@ -101,6 +101,7 @@ export default function EditorTopBar({
       <div className="flex items-center gap-2.5 min-w-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         <Tooltip content={t('copilot.backHome')} side="bottom">
           <button
+            id="onboarding-back-to-home"
             onClick={onGoHome}
             className="hover:opacity-80 transition-opacity duration-200 relative"
           >
@@ -193,6 +194,7 @@ export default function EditorTopBar({
         {/* 版本历史按钮 */}
         <Tooltip content={t('versionHistory.title')} side="bottom">
           <button
+            id="onboarding-version-history"
             onClick={onVersionHistory}
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
               isVersionDrawerOpen

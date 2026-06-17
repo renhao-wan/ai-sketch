@@ -332,6 +332,7 @@ function EditorContent() {
         {/* 主内容区域：侧边栏 + 画布 */}
         <div className="flex-1 flex min-h-0">
           {/* AI Copilot Panel (Left) */}
+          <div id="onboarding-chat-input">
           <AICopilotPanel
             conversationId={conversation.conversationId}
             messages={conversation.messages}
@@ -356,6 +357,7 @@ function EditorContent() {
             onContextEnabledChange={setContextEnabled}
             onEditMessage={(id, content) => generation.editAndResend(id, content, conversation.messages, currentChartType)}
           />
+          </div>
 
           {/* 分割线折叠按钮 */}
           <div className="relative flex-shrink-0 w-3 flex items-center justify-center group cursor-pointer" onClick={() => setIsPanelCollapsed(prev => !prev)}>
@@ -381,11 +383,12 @@ function EditorContent() {
             />
 
             {/* Canvas */}
-            <div className="flex-1 relative">
+            <div id="onboarding-diagram-canvas" className="flex-1 relative">
               <DiagramCanvas format={format} data={renderData} isStreaming={generation.isStreaming} streamRendererRef={streamRendererRef} exportRef={canvasExportRef} />
             </div>
 
             {/* Bottom Context Panel */}
+            <div id="onboarding-code-editor">
             <BottomContextPanel
               generatedCode={generatedCode}
               explanation={aiActions.aiExplanation}
@@ -406,6 +409,7 @@ function EditorContent() {
                 language={strategy.codeLanguage}
               />
             </BottomContextPanel>
+            </div>
           </div>
         </div>
       </div>

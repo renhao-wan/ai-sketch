@@ -37,6 +37,7 @@ export default function FloatingAIActions({ onAction, loadingAction, disabled }:
           return (
             <Tooltip key={action.id} content={isLoading ? t('common.loading') : t(action.labelKey)} side="left">
               <button
+                id={`onboarding-ai-action-${action.id}`}
                 onClick={() => onAction?.(action.id)}
                 disabled={disabled || !!loadingAction}
                 className={`group relative w-10 h-10 flex items-center justify-center rounded-2xl backdrop-blur-xl bg-[var(--bg-glass)] border border-[var(--border)] shadow-[0_4px_20px_rgba(28,25,23,0.05)] transition-all duration-300 ${
