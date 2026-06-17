@@ -21,7 +21,7 @@ export interface OnboardingStep {
   /** 分组标题（国际化 key，分组第一步显示） */
   groupTitleKey?: TranslationKey;
   /** 步骤所在的页面 */
-  page: 'home' | 'editor';
+  page: 'home' | 'editor' | 'settings';
 }
 
 /**
@@ -95,11 +95,11 @@ export const CORE_STEPS: OnboardingStep[] = [
 ];
 
 /**
- * 完整流程步骤（full 模式，约 18 步）
- * 分组介绍所有功能
+ * 完整流程步骤（full 模式）
+ * 覆盖整个系统：首页、编辑器、设置
  */
 export const FULL_STEPS: OnboardingStep[] = [
-  // 首页组
+  // ==================== 首页组 ====================
   {
     id: 'full-home-input',
     target: '#onboarding-ai-prompt-box',
@@ -122,6 +122,46 @@ export const FULL_STEPS: OnboardingStep[] = [
     page: 'home',
   },
   {
+    id: 'full-home-templates',
+    target: '#onboarding-templates',
+    titleKey: 'onboarding.steps.home-templates.title',
+    contentKey: 'onboarding.steps.home-templates.content',
+    placement: 'top',
+    mode: 'full',
+    group: 'home',
+    page: 'home',
+  },
+  {
+    id: 'full-home-recent',
+    target: '#onboarding-recent',
+    titleKey: 'onboarding.steps.home-recent.title',
+    contentKey: 'onboarding.steps.home-recent.content',
+    placement: 'top',
+    mode: 'full',
+    group: 'home',
+    page: 'home',
+  },
+  {
+    id: 'full-home-history',
+    target: '#onboarding-history-btn',
+    titleKey: 'onboarding.steps.home-history.title',
+    contentKey: 'onboarding.steps.home-history.content',
+    placement: 'bottom',
+    mode: 'full',
+    group: 'home',
+    page: 'home',
+  },
+  {
+    id: 'full-home-settings',
+    target: '#onboarding-settings-btn',
+    titleKey: 'onboarding.steps.home-settings.title',
+    contentKey: 'onboarding.steps.home-settings.content',
+    placement: 'bottom',
+    mode: 'full',
+    group: 'home',
+    page: 'home',
+  },
+  {
     id: 'full-home-editor-btn',
     target: '#onboarding-editor-btn',
     titleKey: 'onboarding.steps.home-editor-btn.title',
@@ -131,7 +171,8 @@ export const FULL_STEPS: OnboardingStep[] = [
     group: 'home',
     page: 'home',
   },
-  // AI 对话区组
+
+  // ==================== 编辑器 - AI 对话区组 ====================
   {
     id: 'full-editor-chat',
     target: '#onboarding-chat-input',
@@ -184,7 +225,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     page: 'editor',
   },
 
-  // 画布操作区组
+  // ==================== 编辑器 - 画布与代码组 ====================
   {
     id: 'full-canvas',
     target: '#onboarding-diagram-canvas',
@@ -197,73 +238,30 @@ export const FULL_STEPS: OnboardingStep[] = [
     page: 'editor',
   },
   {
-    id: 'full-zoom-toolbar',
-    target: '#onboarding-zoom-toolbar',
-    titleKey: 'onboarding.steps.zoom-toolbar.title',
-    contentKey: 'onboarding.steps.zoom-toolbar.content',
-    placement: 'left',
-    mode: 'full',
-    group: 'canvas',
-    page: 'editor',
-  },
-
-  // 代码编辑区组
-  {
     id: 'full-code-editor',
     target: '#onboarding-code-editor',
     titleKey: 'onboarding.steps.editor-code.title',
     contentKey: 'onboarding.steps.editor-code.content',
     placement: 'top',
     mode: 'full',
-    group: 'code-editor',
-    groupTitleKey: 'onboarding.groups.code-editor',
+    group: 'canvas',
     page: 'editor',
   },
 
-  // 工具栏区组
+  // ==================== 编辑器 - 工具栏组 ====================
   {
-    id: 'full-ai-action-layout',
+    id: 'full-toolbar',
     target: '#onboarding-ai-action-layout',
-    titleKey: 'onboarding.steps.ai-action-layout.title',
-    contentKey: 'onboarding.steps.ai-action-layout.content',
+    titleKey: 'onboarding.steps.toolbar.title',
+    contentKey: 'onboarding.steps.toolbar.content',
     placement: 'left',
     mode: 'full',
     group: 'toolbar',
     groupTitleKey: 'onboarding.groups.toolbar',
     page: 'editor',
   },
-  {
-    id: 'full-ai-action-beautify',
-    target: '#onboarding-ai-action-beautify',
-    titleKey: 'onboarding.steps.ai-action-beautify.title',
-    contentKey: 'onboarding.steps.ai-action-beautify.content',
-    placement: 'left',
-    mode: 'full',
-    group: 'toolbar',
-    page: 'editor',
-  },
-  {
-    id: 'full-ai-action-simplify',
-    target: '#onboarding-ai-action-simplify',
-    titleKey: 'onboarding.steps.ai-action-simplify.title',
-    contentKey: 'onboarding.steps.ai-action-simplify.content',
-    placement: 'left',
-    mode: 'full',
-    group: 'toolbar',
-    page: 'editor',
-  },
-  {
-    id: 'full-ai-action-explain',
-    target: '#onboarding-ai-action-explain',
-    titleKey: 'onboarding.steps.ai-action-explain.title',
-    contentKey: 'onboarding.steps.ai-action-explain.content',
-    placement: 'left',
-    mode: 'full',
-    group: 'toolbar',
-    page: 'editor',
-  },
 
-  // 顶部栏组
+  // ==================== 编辑器 - 顶部栏组 ====================
   {
     id: 'full-export',
     target: '#onboarding-export',
@@ -294,6 +292,49 @@ export const FULL_STEPS: OnboardingStep[] = [
     mode: 'full',
     group: 'top-bar',
     page: 'editor',
+  },
+
+  // ==================== 设置页组 ====================
+  {
+    id: 'full-settings-appearance',
+    target: '#onboarding-settings-appearance',
+    titleKey: 'onboarding.steps.settings-appearance.title',
+    contentKey: 'onboarding.steps.settings-appearance.content',
+    placement: 'right',
+    mode: 'full',
+    group: 'settings',
+    groupTitleKey: 'onboarding.groups.settings',
+    page: 'settings',
+  },
+  {
+    id: 'full-settings-llm',
+    target: '#onboarding-settings-llm',
+    titleKey: 'onboarding.steps.settings-llm.title',
+    contentKey: 'onboarding.steps.settings-llm.content',
+    placement: 'right',
+    mode: 'full',
+    group: 'settings',
+    page: 'settings',
+  },
+  {
+    id: 'full-settings-network',
+    target: '#onboarding-settings-network',
+    titleKey: 'onboarding.steps.settings-network.title',
+    contentKey: 'onboarding.steps.settings-network.content',
+    placement: 'right',
+    mode: 'full',
+    group: 'settings',
+    page: 'settings',
+  },
+  {
+    id: 'full-settings-shortcuts',
+    target: '#onboarding-settings-shortcuts',
+    titleKey: 'onboarding.steps.settings-shortcuts.title',
+    contentKey: 'onboarding.steps.settings-shortcuts.content',
+    placement: 'right',
+    mode: 'full',
+    group: 'settings',
+    page: 'settings',
   },
 ];
 

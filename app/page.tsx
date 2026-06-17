@@ -70,6 +70,7 @@ export default function HomePage() {
           </Tooltip>
           <Tooltip content={t('home.history')} side="bottom">
             <button
+              id="onboarding-history-btn"
               onClick={() => setIsHistoryOpen(true)}
               className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
             >
@@ -78,6 +79,7 @@ export default function HomePage() {
           </Tooltip>
           <Tooltip content={t('home.settings')} side="bottom">
             <button
+              id="onboarding-settings-btn"
               onClick={() => router.push('/settings')}
               className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
             >
@@ -114,7 +116,7 @@ export default function HomePage() {
           </div>
 
           {/* Quick Templates */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
+          <div id="onboarding-templates" className="flex flex-wrap items-center justify-center gap-2 mb-8">
             {[
               { key: 'home.template.microservice', label: t('home.template.microservice') },
               { key: 'home.template.login', label: t('home.template.login') },
@@ -136,7 +138,7 @@ export default function HomePage() {
           </div>
 
           {/* Recent Items — 固定高度容器，避免数据加载后布局跳动 */}
-          <div className="h-9 flex flex-wrap items-center justify-center gap-2">
+          <div id="onboarding-recent" className="h-9 flex flex-wrap items-center justify-center gap-2">
             {recentItems.length > 0 ? (
               <div className="animate-fade-in flex flex-wrap items-center justify-center gap-2">
                 <span className="text-[11px] text-[var(--muted)]/50 mr-1">{t('home.recent')}</span>

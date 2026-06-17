@@ -69,8 +69,13 @@ const DEFAULT_STATE: OnboardingState = {
 /**
  * 根据步骤页面类型获取对应的路由路径
  */
-function getPagePath(page: 'home' | 'editor'): string {
-  return page === 'home' ? '/' : '/editor';
+function getPagePath(page: 'home' | 'editor' | 'settings'): string {
+  switch (page) {
+    case 'home': return '/';
+    case 'editor': return '/editor';
+    case 'settings': return '/settings';
+    default: return '/';
+  }
 }
 
 /**

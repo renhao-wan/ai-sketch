@@ -31,6 +31,7 @@ export function SettingsSidebar({ activeTab, onTabChange }: SettingsSidebarProps
         {tabs.map(({ key, icon: Icon, labelKey }) => (
           <button
             key={key}
+            id={`onboarding-settings-${key}`}
             onClick={() => onTabChange(key)}
             aria-current={activeTab === key ? 'page' : undefined}
             className={`

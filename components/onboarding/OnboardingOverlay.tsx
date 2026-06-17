@@ -80,62 +80,69 @@ export function OnboardingOverlay() {
   if (!isActive || !currentStepData) return null;
 
   /**
-   * 计算提示框位置（带边界检测）
+   * 计算提示框位置（带智能边界检测）
+   * 当首选位置放不下时，自动尝试其他位置
    */
   const getTooltipPosition = (): CSSProperties => {
     if (!targetRect) {
-      // 目标元素不存在，不显示提示框
       return { display: 'none' };
     }
 
-    const gap = 12; // 提示框与目标的间距
-    const tooltipWidth = 320; // w-80 = 20rem = 320px
-    const tooltipHeight = 180; // 估算高度
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const padding = 16; // 距离视口边缘的最小间距
+    const gap = 12;
+    const tooltipWidth = 320;
+    const tooltipHeight = 180;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const pad = 16;
 
-    let top: number;
-    let left: number;
-    let placement = currentStepData.placement;
+    // 检查某个位置是否可用
+    const canFit = (pos: { top: number; left: number }) => {
+      return pos.top >= pad && pos.top + tooltipHeight <= vh - pad &&
+             pos.left >= pad && pos.left + tooltipWidth <= vw - pad;
+    };
 
-    // 根据首选 placement 计算初始位置
-    switch (placement) {
-      case 'top':
-        top = targetRect.top - gap - tooltipHeight;
-        left = targetRect.left + targetRect.width / 2 - tooltipWidth / 2;
-        break;
-      case 'bottom':
-        top = targetRect.top + targetRect.height + gap;
-        left = targetRect.left + targetRect.width / 2 - tooltipWidth / 2;
-        break;
-      case 'left':
-        top = targetRect.top + targetRect.height / 2 - tooltipHeight / 2;
-        left = targetRect.left - gap - tooltipWidth;
-        break;
-      case 'right':
-        top = targetRect.top + targetRect.height / 2 - tooltipHeight / 2;
-        left = targetRect.left + targetRect.width + gap;
-        break;
-      default:
-        top = targetRect.top + targetRect.height + gap;
-        left = targetRect.left + targetRect.width / 2 - tooltipWidth / 2;
+    // 计算各个方向的位置
+    const positions: Record<string, { top: number; left: number }> = {
+      top: {
+        top: targetRect.top - gap - tooltipHeight,
+        left: targetRect.left + targetRect.width / 2 - tooltipWidth / 2,
+      },
+      bottom: {
+        top: targetRect.top + targetRect.height + gap,
+        left: targetRect.left + targetRect.width / 2 - tooltipWidth / 2,
+      },
+      left: {
+        top: targetRect.top + targetRect.height / 2 - tooltipHeight / 2,
+        left: targetRect.left - gap - tooltipWidth,
+      },
+      right: {
+        top: targetRect.top + targetRect.height / 2 - tooltipHeight / 2,
+        left: targetRect.left + targetRect.width + gap,
+      },
+    };
+
+    // 优先使用首选位置，如果放不下则按优先级尝试其他位置
+    const preferred = currentStepData.placement;
+    const fallbacks: Record<string, string[]> = {
+      top: ['bottom', 'left', 'right'],
+      bottom: ['top', 'left', 'right'],
+      left: ['right', 'top', 'bottom'],
+      right: ['left', 'top', 'bottom'],
+    };
+
+    let finalPos = positions[preferred];
+    if (!canFit(finalPos)) {
+      for (const fallback of fallbacks[preferred]) {
+        if (canFit(positions[fallback])) {
+          finalPos = positions[fallback];
+          break;
+        }
+      }
     }
 
-    // 边界检测：如果提示框超出视口，调整位置
-    // 水平边界
-    if (left < padding) {
-      left = padding;
-    } else if (left + tooltipWidth > viewportWidth - padding) {
-      left = viewportWidth - tooltipWidth - padding;
-    }
-
-    // 垂直边界
-    if (top < padding) {
-      top = padding;
-    } else if (top + tooltipHeight > viewportHeight - padding) {
-      top = viewportHeight - tooltipHeight - padding;
-    }
+    // 最终兜底：确保不超出视口
+    let top = Math.max(pad, Math.min(finalPos.top, vh - tooltipHeight - pad));
+    let left = Math.max(pad, Math.min(finalPos.left, vw - tooltipWidth - pad));
 
     return {
       top: `${top}px`,

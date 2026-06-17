@@ -1,6 +1,9 @@
 import { getDb, requestSave } from './index';
 import { configManager } from './config-manager';
 
+/** 引导完成状态类型 */
+type OnboardingStatus = 'core' | 'full' | 'skipped';
+
 /**
  * 新手引导状态管理器
  * 使用 meta 表存储引导完成状态
@@ -11,17 +14,18 @@ class OnboardingManager {
 
   /**
    * 获取引导状态
-   * @returns 'core' | 'full' | 'skipped' | null
+   * @returns 当前引导状态，未设置时返回 null
    */
-  async getStatus(): Promise<string | null> {
-    return configManager.getPreference(OnboardingManager.STATUS_KEY);
+  async getStatus(): Promise<OnboardingStatus | null> {
+    const value = await configManager.getPreference(OnboardingManager.STATUS_KEY);
+    return value as OnboardingStatus | null;
   }
 
   /**
    * 设置引导状态
    * @param status - 完成状态：core（快速引导）、full（完整引导）、skipped（跳过）
    */
-  async setStatus(status: 'core' | 'full' | 'skipped'): Promise<void> {
+  async setStatus(status: OnboardingStatus): Promise<void> {
     await configManager.setPreference(OnboardingManager.STATUS_KEY, status);
     await configManager.setPreference(
       OnboardingManager.TIMESTAMP_KEY,
@@ -42,10 +46,14 @@ class OnboardingManager {
    * 重置引导状态（用于重新触发）
    */
   async reset(): Promise<void> {
-    const db = await getDb();
-    db.run('DELETE FROM meta WHERE key = ?', [OnboardingManager.STATUS_KEY]);
-    db.run('DELETE FROM meta WHERE key = ?', [OnboardingManager.TIMESTAMP_KEY]);
-    requestSave();
+    try {
+      const db = await getDb();
+      db.run('DELETE FROM meta WHERE key = ?', [OnboardingManager.STATUS_KEY]);
+      db.run('DELETE FROM meta WHERE key = ?', [OnboardingManager.TIMESTAMP_KEY]);
+      requestSave();
+    } catch (error) {
+      console.error('Failed to reset onboarding status:', error);
+    }
   }
 }
 
