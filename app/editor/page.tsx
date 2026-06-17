@@ -332,7 +332,7 @@ function EditorContent() {
         {/* 主内容区域：侧边栏 + 画布 */}
         <div className="flex-1 flex min-h-0">
           {/* AI Copilot Panel (Left) */}
-          <div id="onboarding-chat-input">
+          <div id="onboarding-chat-input" className="contents">
           <AICopilotPanel
             conversationId={conversation.conversationId}
             messages={conversation.messages}
@@ -383,12 +383,12 @@ function EditorContent() {
             />
 
             {/* Canvas */}
-            <div id="onboarding-diagram-canvas" className="flex-1 relative">
+            <div id="onboarding-diagram-canvas" className="contents">
               <DiagramCanvas format={format} data={renderData} isStreaming={generation.isStreaming} streamRendererRef={streamRendererRef} exportRef={canvasExportRef} />
             </div>
 
             {/* Bottom Context Panel */}
-            <div id="onboarding-code-editor">
+            <div id="onboarding-code-editor" className="contents">
             <BottomContextPanel
               generatedCode={generatedCode}
               explanation={aiActions.aiExplanation}
