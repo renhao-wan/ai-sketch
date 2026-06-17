@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from 'react';
 import { useRouter } from 'next/navigation';
-import { onboardingManager } from '@/lib/db/onboarding-manager';
 import { getStepsByMode, type OnboardingStep } from './steps';
 
 /**
@@ -75,6 +74,18 @@ function getPagePath(page: 'home' | 'editor'): string {
 }
 
 /**
+ * 通过 API 设置引导状态
+ * @param status - 完成状态：core（快速引导）、full（完整引导）、skipped（跳过）
+ */
+async function setOnboardingStatus(status: 'core' | 'full' | 'skipped'): Promise<void> {
+  await fetch('/api/configs/actions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'set-preference', key: 'onboarding_completed', value: status }),
+  });
+}
+
+/**
  * 引导 Provider 组件
  */
 export function OnboardingProvider({ children }: { children: ReactNode }) {
@@ -85,12 +96,18 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       try {
-        const isCompleted = await onboardingManager.isCompleted();
+        const res = await fetch('/api/configs/actions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get-preference', key: 'onboarding_completed' }),
+        });
+        const data = await res.json();
+        const isCompleted = data.value !== null && data.value !== undefined;
         if (!isCompleted) {
           setState((prev) => ({ ...prev, showWelcome: true }));
         }
       } catch (error) {
-        console.error('检查引导状态失败:', error);
+        console.error('Failed to check onboarding status:', error);
       } finally {
         setState((prev) => ({ ...prev, isLoading: false }));
       }
@@ -149,6 +166,22 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // 跨页面导航：步骤变化时检测是否需要切换路由
+  useEffect(() => {
+    if (!state.isActive || state.steps.length === 0) return;
+
+    const currentStepData = state.steps[state.currentStep];
+    if (!currentStepData) return;
+
+    const currentPath = window.location.pathname;
+    const targetPath = getPagePath(currentStepData.page);
+
+    // 如果当前页面不是目标页面，执行路由跳转
+    if (currentPath !== targetPath) {
+      router.push(targetPath);
+    }
+  }, [state.isActive, state.currentStep, state.steps, router]);
+
   /**
    * 下一步
    */
@@ -159,7 +192,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       // 检查是否完成
       if (nextIndex >= prev.steps.length) {
         // 完成引导
-        onboardingManager.setStatus(prev.mode).catch(console.error);
+        setOnboardingStatus(prev.mode).catch(console.error);
         return {
           ...prev,
           isActive: false,
@@ -168,18 +201,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      const currentStepData = prev.steps[prev.currentStep];
-      const nextStepData = prev.steps[nextIndex];
-
-      // 检查是否需要切换页面
-      if (currentStepData.page !== nextStepData.page) {
-        const targetPath = getPagePath(nextStepData.page);
-        router.push(targetPath);
-      }
-
       return { ...prev, currentStep: nextIndex };
     });
-  }, [router]);
+  }, []);
 
   /**
    * 上一步
@@ -187,26 +211,15 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const prevStep = useCallback(() => {
     setState((prev) => {
       if (prev.currentStep <= 0) return prev;
-
-      const prevStepIndex = prev.currentStep - 1;
-      const currentStepData = prev.steps[prev.currentStep];
-      const prevStepData = prev.steps[prevStepIndex];
-
-      // 检查是否需要切换页面
-      if (currentStepData.page !== prevStepData.page) {
-        const targetPath = getPagePath(prevStepData.page);
-        router.push(targetPath);
-      }
-
-      return { ...prev, currentStep: prevStepIndex };
+      return { ...prev, currentStep: prev.currentStep - 1 };
     });
-  }, [router]);
+  }, []);
 
   /**
    * 跳过引导
    */
   const skip = useCallback(() => {
-    onboardingManager.setStatus('skipped').catch(console.error);
+    setOnboardingStatus('skipped').catch(console.error);
     setState({
       ...DEFAULT_STATE,
       isLoading: false,
@@ -217,7 +230,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
    * 完成引导
    */
   const finish = useCallback(() => {
-    onboardingManager.setStatus(state.mode).catch(console.error);
+    setOnboardingStatus(state.mode).catch(console.error);
     setState({
       ...DEFAULT_STATE,
       isLoading: false,

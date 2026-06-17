@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, type CSSProperties } from 'react';
 import { useLocale } from '@/lib/locales';
 import { useOnboarding } from './useOnboarding';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -80,9 +80,9 @@ export function OnboardingOverlay() {
   if (!isActive || !currentStepData) return null;
 
   /**
-   * 计算提示框位置
+   * 计算提示框位置（带边界检测）
    */
-  const getTooltipPosition = () => {
+  const getTooltipPosition = (): CSSProperties => {
     if (!targetRect) {
       // 目标元素不存在，居中显示
       return {
@@ -93,41 +93,59 @@ export function OnboardingOverlay() {
     }
 
     const gap = 12; // 提示框与目标的间距
-    const tooltipWidth = 320;
-    const tooltipHeight = 200; // 估算高度
+    const tooltipWidth = 320; // w-80 = 20rem = 320px
+    const tooltipHeight = 180; // 估算高度
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const padding = 16; // 距离视口边缘的最小间距
 
-    switch (currentStepData.placement) {
+    let top: number;
+    let left: number;
+    let placement = currentStepData.placement;
+
+    // 根据首选 placement 计算初始位置
+    switch (placement) {
       case 'top':
-        return {
-          top: targetRect.top - gap,
-          left: targetRect.left + targetRect.width / 2,
-          transform: 'translate(-50%, -100%)',
-        };
+        top = targetRect.top - gap - tooltipHeight;
+        left = targetRect.left + targetRect.width / 2 - tooltipWidth / 2;
+        break;
       case 'bottom':
-        return {
-          top: targetRect.top + targetRect.height + gap,
-          left: targetRect.left + targetRect.width / 2,
-          transform: 'translate(-50%, 0)',
-        };
+        top = targetRect.top + targetRect.height + gap;
+        left = targetRect.left + targetRect.width / 2 - tooltipWidth / 2;
+        break;
       case 'left':
-        return {
-          top: targetRect.top + targetRect.height / 2,
-          left: targetRect.left - gap,
-          transform: 'translate(-100%, -50%)',
-        };
+        top = targetRect.top + targetRect.height / 2 - tooltipHeight / 2;
+        left = targetRect.left - gap - tooltipWidth;
+        break;
       case 'right':
-        return {
-          top: targetRect.top + targetRect.height / 2,
-          left: targetRect.left + targetRect.width + gap,
-          transform: 'translate(0, -50%)',
-        };
+        top = targetRect.top + targetRect.height / 2 - tooltipHeight / 2;
+        left = targetRect.left + targetRect.width + gap;
+        break;
       default:
-        return {
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-        };
+        top = targetRect.top + targetRect.height + gap;
+        left = targetRect.left + targetRect.width / 2 - tooltipWidth / 2;
     }
+
+    // 边界检测：如果提示框超出视口，调整位置
+    // 水平边界
+    if (left < padding) {
+      left = padding;
+    } else if (left + tooltipWidth > viewportWidth - padding) {
+      left = viewportWidth - tooltipWidth - padding;
+    }
+
+    // 垂直边界
+    if (top < padding) {
+      top = padding;
+    } else if (top + tooltipHeight > viewportHeight - padding) {
+      top = viewportHeight - tooltipHeight - padding;
+    }
+
+    return {
+      top: `${top}px`,
+      left: `${left}px`,
+      transform: 'none',
+    };
   };
 
   const tooltipStyle = getTooltipPosition();
