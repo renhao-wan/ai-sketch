@@ -1,3 +1,5 @@
+import type { TranslationKey } from '@/lib/locales';
+
 /**
  * 引导步骤数据结构
  */
@@ -7,9 +9,9 @@ export interface OnboardingStep {
   /** CSS 选择器，高亮目标元素 */
   target: string;
   /** 提示框标题（国际化 key） */
-  titleKey: string;
+  titleKey: TranslationKey;
   /** 提示框内容（国际化 key） */
-  contentKey: string;
+  contentKey: TranslationKey;
   /** 提示框位置 */
   placement: 'top' | 'bottom' | 'left' | 'right';
   /** 分组标识（full 模式用） */
@@ -17,7 +19,7 @@ export interface OnboardingStep {
   /** 属于哪个模式 */
   mode: 'core' | 'full';
   /** 分组标题（国际化 key，分组第一步显示） */
-  groupTitleKey?: string;
+  groupTitleKey?: TranslationKey;
 }
 
 /**
