@@ -22,17 +22,9 @@ import FormatSelector from '@/components/editor/FormatSelector';
 import Tooltip from '@/components/ui/Tooltip';
 import type { SourceType, ConversationMessage } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
+import { detectCodeFormat } from '@/lib/utils/detect-code-format';
 import GenerationModeToggle from './GenerationModeToggle';
 import type { GenerationMode } from '@/lib/generation/types';
-
-/** 从代码内容检测图表格式 */
-function detectCodeFormat(code: string): DiagramFormat {
-  const trimmed = code.trim();
-  if (trimmed.startsWith('<')) return 'drawio';
-  if (trimmed.startsWith('[')) return 'excalidraw';
-  if (trimmed.startsWith('{') && trimmed.includes('"elements"')) return 'excalidraw';
-  return 'mermaid';
-}
 
 /** 导出消息内容为文件 */
 function exportMessage(content: string) {
