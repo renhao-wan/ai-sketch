@@ -26,9 +26,9 @@ AI Sketch 支持三种类型的 LLM API：
 |------|------|------|
 | 配置名称 | ✅ | 自定义名称，便于识别 |
 | 描述 | ❌ | 可选的描述信息 |
-| 提供商类型 | ✅ | 选择 `OpenAI` 或 `Anthropic` |
+| 提供商类型 | ✅ | 选择 `OpenAI`、`Anthropic` 或 `Ollama` |
 | Base URL | ✅ | API 基础地址 |
-| API Key | ✅ | API 密钥 |
+| API Key | ⚠️ | API 密钥（Ollama 可留空） |
 | 模型 | ✅ | 模型名称 |
 
 ### 步骤 3：测试连接
@@ -161,7 +161,7 @@ python -m vllm.entrypoints.openai.api_server \
 | 提供商类型 | `Anthropic` |
 | Base URL | `https://api.anthropic.com/v1` |
 | API Key | `sk-ant-...` |
-| 模型 | `claude-3-5-sonnet-20241022`、`claude-3-opus-20240229`、`claude-3-haiku-20240307` |
+| 模型 | `claude-sonnet-4-20250514`、`claude-opus-4-20250514`、`claude-haiku-4-5-20251001` |
 
 **注意事项**：
 - Anthropic API 不支持 `/models` 端点，需要手动输入模型名称

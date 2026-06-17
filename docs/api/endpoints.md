@@ -10,21 +10,77 @@
 
 ## 接口列表
 
+### 核心接口
+
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | POST | `/api/generate` | 流式生成图表代码 |
 | POST | `/api/ai-action` | AI 操作（美化、布局、简化、解释） |
+
+### 对话管理
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
 | GET | `/api/conversations` | 获取对话列表 |
-| DELETE | `/api/conversations` | 删除对话 |
+| DELETE | `/api/conversations` | 批量删除对话 |
 | GET | `/api/conversations/[id]` | 获取单个对话详情 |
 | DELETE | `/api/conversations/[id]` | 删除单个对话 |
 | GET | `/api/conversations/count` | 获取对话数量 |
+| POST | `/api/conversations/[id]/tags` | 为对话添加标签 |
+| DELETE | `/api/conversations/[id]/tags` | 移除对话标签 |
+| POST | `/api/conversations/tags/batch` | 批量操作对话标签 |
+
+### LLM 配置
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
 | GET | `/api/configs` | 获取 LLM 配置列表 |
-| POST | `/api/configs` | 创建配置或测试连接 |
+| POST | `/api/configs` | 创建配置 |
 | PUT | `/api/configs/[id]` | 更新配置 |
 | DELETE | `/api/configs/[id]` | 删除配置 |
-| POST | `/api/configs/actions` | 配置操作（设置活跃配置） |
+| POST | `/api/configs/actions` | 配置操作（设置活跃、克隆） |
+| POST | `/api/configs/test` | 测试连接 |
+| POST | `/api/configs/[id]/tags` | 为配置添加标签 |
+| DELETE | `/api/configs/[id]/tags` | 移除配置标签 |
+| POST | `/api/configs/tags/batch` | 批量操作配置标签 |
+
+### 标签管理
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/conversation-tags` | 获取对话标签列表 |
+| POST | `/api/conversation-tags` | 创建对话标签 |
+| PUT | `/api/conversation-tags/[id]` | 更新对话标签 |
+| DELETE | `/api/conversation-tags/[id]` | 删除对话标签 |
+| GET | `/api/config-tags` | 获取配置标签列表 |
+| POST | `/api/config-tags` | 创建配置标签 |
+| PUT | `/api/config-tags/[id]` | 更新配置标签 |
+| DELETE | `/api/config-tags/[id]` | 删除配置标签 |
+
+### 模型与缓存
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
 | GET | `/api/models` | 获取可用模型列表 |
+| GET | `/api/cache/stats` | 获取缓存统计 |
+| POST | `/api/cache/clear` | 清除缓存 |
+| GET | `/api/cache/ttl` | 获取缓存 TTL |
+| PUT | `/api/cache/ttl` | 设置缓存 TTL |
+
+### Vision API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/vision/config` | 获取 Vision API 配置 |
+| PUT | `/api/vision/config` | 更新 Vision API 配置 |
+| POST | `/api/vision/test` | 测试 Vision API 连接 |
+
+### 其他
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/ollama/detect` | 检测本地 Ollama 服务 |
+| GET | `/api/system-font` | 获取系统字体 |
 
 ---
 

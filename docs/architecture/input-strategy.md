@@ -10,7 +10,7 @@
 ┌─────────────────────────────────────────────────────────┐
 │                   InputStrategy（接口）                   │
 ├─────────────────────────────────────────────────────────┤
-│  sourceType: InputSourceType    // 输入源类型            │
+│  sourceType: SourceType         // 输入源类型            │
 │  canHandle(file): boolean       // 是否能处理该文件      │
 │  validate(input): ValidationResult                      │
 │  process(input): Promise<unknown>                       │
@@ -101,8 +101,8 @@ export class InputOrchestrator {
   resolve(file: File): InputStrategy | null;
   validateAll(files: File[]): ValidationResult;
   processAll(files: File[]): Promise<ProcessedItem[]>;
-  merge(items: ProcessedItem[], userPrompt: string, chartType: string): MessagePayload;
-  handleFiles(files: File[], userPrompt: string, chartType: string): Promise<OrchestrationResult>;
+  merge(items: ProcessedItem[], userPrompt: string, chartType: string, diagramFormat?: DiagramFormat): MessagePayload;
+  handleFiles(files: File[], userPrompt: string, chartType: string, diagramFormat?: DiagramFormat): Promise<OrchestrationResult>;
 }
 ```
 

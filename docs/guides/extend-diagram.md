@@ -421,10 +421,10 @@ export type SourceType = 'text' | 'file' | 'image' | 'video';
 编辑 `lib/diagram/constants.ts`：
 
 ```typescript
-export const CHART_TYPES = [
+export const CHART_TYPES = {
   // ...现有类型
-  { id: 'newchart', name: '新图表类型', icon: '✨' },
-];
+  newchart: '新图表类型',
+} as const;
 ```
 
 ### 步骤 2：更新提示词
@@ -481,7 +481,7 @@ export type AIActionType = 'beautify' | 'layout' | 'simplify' | 'explain' | 'new
 
 ### 步骤 2：实现提示词
 
-编辑 `lib/prompts/ai-actions.ts`：
+编辑 `lib/prompts/ai-actions/index.ts`：
 
 ```typescript
 export function getActionSystemPrompt(action: AIActionType, format: DiagramFormat): string {
@@ -506,7 +506,7 @@ export function getActionUserPrompt(action: AIActionType, code: string, format: 
 
 ### 步骤 3：更新 UI 组件
 
-编辑 `components/ai/FloatingActions.tsx`：
+编辑 `components/ai/FloatingAIActions.tsx`：
 
 ```typescript
 const actions = [

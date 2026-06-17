@@ -32,10 +32,10 @@ export const configManager = new ConfigManager();
 ```
 
 **应用**:
-- `configManager` — LLM 配置管理
-- `conversationManager` — 会话管理
-- `cacheManager` — 响应缓存管理
-- `proxyManager` — 代理配置管理
+- `configManager` — LLM 配置管理（`lib/db/config-manager.ts`）
+- `conversationManager` — 会话管理（`lib/db/conversation-manager.ts`）
+- `cacheManager` — 响应缓存管理（`lib/db/cache-manager.ts`）
+- `proxyManager` — 代理配置管理（`lib/llm/proxy-manager.ts`）
 
 **优点**:
 - 全局唯一实例，避免状态不一致
@@ -52,21 +52,27 @@ export const configManager = new ConfigManager();
 
 ```typescript
 // lib/strategies/registry.ts
+import { excalidrawStrategy } from './excalidraw-strategy';
+import { mermaidStrategy } from './mermaid-strategy';
+import { drawioStrategy } from './drawio-strategy';
+
 const strategies: Record<DiagramFormat, DiagramStrategy> = {
-  excalidraw: new ExcalidrawStrategy(),
-  mermaid: new MermaidStrategy(),
-  drawio: new DrawioStrategy(),
+  excalidraw: excalidrawStrategy,
+  mermaid: mermaidStrategy,
+  drawio: drawioStrategy,
 };
 
 export function getStrategy(format: DiagramFormat): DiagramStrategy {
-  return strategies[format];
+  const strategy = strategies[format];
+  if (!strategy) throw new Error(`Unknown diagram format: ${format}`);
+  return strategy;
 }
 ```
 
 **应用**:
 - `getStrategy(format)` — 获取图表策略
 - `getProvider(type)` — 获取 LLM Provider
-- `getInputStrategy(mimeType)` — 获取输入策略
+- `orchestrator.resolve(file)` — 获取输入策略（通过编排器）
 
 **优点**:
 - 解耦创建逻辑和使用逻辑
@@ -135,7 +141,7 @@ const result = strategy.validate(processed);
 export interface LLMProvider {
   readonly type: string;
   buildRequestHeaders(apiKey: string): Record<string, string>;
-  buildRequestBody(model: string, messages: LLMMessage[]): object;
+  buildRequestBody(model: string, messages: LLMMessage[], temperature?: number, maxTokens?: number): object;
   getEndpoint(baseUrl: string): string;
   getSSEExtractors(): SSEExtractors;
   processMessage(message: LLMMessage): unknown;
@@ -247,16 +253,38 @@ export async function POST(request: Request) {
 ```typescript
 // lib/db/transaction.ts
 export function withTransaction(db: Database, fn: () => void, persist = true): void {
-  db.run('BEGIN');
+  const isNested = transactionDepth > 0;
+  const savepointName = `sp_${transactionDepth}`;
+
+  transactionDepth++;
   try {
-    fn();                    // 可变的业务逻辑
-    db.run('COMMIT');
+    if (isNested) {
+      db.run(`SAVEPOINT ${savepointName}`);
+    } else {
+      db.run('BEGIN');
+    }
+
+    fn();                    // 可变的业务逻辑（必须是同步函数）
+
+    if (isNested) {
+      db.run(`RELEASE SAVEPOINT ${savepointName}`);
+    } else {
+      db.run('COMMIT');
+    }
   } catch (e) {
-    db.run('ROLLBACK');
+    if (isNested) {
+      try { db.run(`ROLLBACK TO SAVEPOINT ${savepointName}`); } catch { /* ignore */ }
+    } else {
+      try { db.run('ROLLBACK'); } catch { /* ignore */ }
+    }
     throw e;
+  } finally {
+    transactionDepth--;
   }
-  if (persist) {
-    saveToDisk();
+
+  // 仅在最外层事务提交后持久化
+  if (persist && transactionDepth === 0) {
+    requestSave();
   }
 }
 ```
@@ -331,10 +359,11 @@ export function useConversation(options: UseConversationOptions) {
 
 **应用**:
 - `useConversation` — 会话管理
+- `useConversationList` — 会话列表
 - `useGeneration` — 代码生成
 - `useAIActions` — AI 操作
 - `useShortcuts` — 快捷键
-- `useNotification` — 通知
+- `useFileUpload` — 文件上传
 
 **优点**:
 - 逻辑复用
@@ -399,16 +428,25 @@ const conversation = useConversation({
 | `lib/llm/providers/anthropic.ts` | Anthropic Provider 实现 |
 | `lib/llm/providers/ollama.ts` | Ollama Provider 实现 |
 | `lib/llm/providers/registry.ts` | Provider 注册表 |
+| `lib/llm/client.ts` | LLM 客户端（统一调用入口） |
+| `lib/llm/proxy-manager.ts` | 代理配置管理 |
+| `lib/llm/vision-models.ts` | Vision 模型匹配列表 |
+| `lib/llm/vision-proxy.ts` | Vision API 代理（三层降级） |
 
 ### 数据库模式
 
 | 文件 | 说明 |
 |------|------|
-| `lib/db/index.ts` | 数据库初始化（单例） |
+| `lib/db/index.ts` | 数据库初始化（单例），提供 `getDb()`、`getDbSync()`、`saveToDisk()`、`requestSave()`、`closeDb()`、`onBeforeClose()` 等函数 |
 | `lib/db/config-manager.ts` | 配置管理器（单例） |
 | `lib/db/conversation-manager.ts` | 会话管理器（单例） |
 | `lib/db/cache-manager.ts` | 缓存管理器（单例） |
 | `lib/db/transaction.ts` | 事务辅助函数（模板方法） |
+| `lib/db/crypto.ts` | API Key 加密/解密（AES-256-GCM） |
+| `lib/db/paths.ts` | 数据库路径管理 |
+| `lib/db/tag-manager.ts` | 标签管理器 |
+| `lib/db/validation.ts` | 数据验证工具 |
+| `lib/db/vision-config.ts` | Vision API 配置管理 |
 
 ### API 模式
 
@@ -417,17 +455,21 @@ const conversation = useConversation({
 | `lib/api/with-error-handling.ts` | 错误处理装饰器 |
 | `lib/api/sse-parser.ts` | SSE 解析器（中介者） |
 | `lib/api/sse-consumer.ts` | SSE 消费者 |
+| `lib/api/config-validator.ts` | 配置验证工具 |
+| `lib/api/client.ts` | 客户端 API 封装 |
 
 ### Hooks 模式
 
 | 文件 | 说明 |
 |------|------|
 | `hooks/useConversation.ts` | 会话管理 Hook |
+| `hooks/useConversationList.ts` | 会话列表 Hook |
 | `hooks/useGeneration.ts` | 代码生成 Hook |
 | `hooks/useAIActions.ts` | AI 操作 Hook |
 | `hooks/useShortcuts.ts` | 快捷键 Hook |
-| `hooks/useNotification.ts` | 通知 Hook |
+| `hooks/useFileUpload.ts` | 文件上传 Hook |
+| `hooks/useDragAndDrop.ts` | 拖放 Hook |
 
 ---
 
-*最后更新：2026-06-04*
+*最后更新：2026-06-17*

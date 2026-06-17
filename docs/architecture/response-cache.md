@@ -133,7 +133,7 @@ async getOrFetch(cacheKey, fetcher, metadata) {
 | 删除 LLM 配置 | 该配置相关的所有缓存 | `ConfigManager.deleteConfig()` |
 | 更新配置（model 或 name 变更） | 旧配置相关的缓存 | `ConfigManager.updateConfig()` |
 
-失效逻辑在事务外执行（避免 sql.js 事务中的 async 操作），通过 `CacheInvalidator` 调用 `CacheManager.clearByConfig()`。
+失效逻辑在事务外执行（避免 sql.js 事务中的 async 操作），直接调用 `CacheManager.clearByConfig()`。
 
 ### 手动失效
 
@@ -195,8 +195,8 @@ async getOrFetch(cacheKey, fetcher, metadata) {
 | `app/api/cache/stats/route.ts` | 缓存统计 API |
 | `app/api/cache/clear/route.ts` | 缓存清理 API |
 | `app/api/cache/ttl/route.ts` | TTL 配置 API |
-| `components/settings/CacheSettings.tsx` | 缓存管理 UI |
+| `components/settings/StorageSettings.tsx` | 缓存管理 UI（集成在存储管理中） |
 
 ---
 
-*最后更新：2026-06-09*
+*最后更新：2026-06-17*

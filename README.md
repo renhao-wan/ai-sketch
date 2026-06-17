@@ -24,11 +24,13 @@ AI Sketch 是一个基于 LLM 的图表生成 Web 应用，支持通过自然语
 - 🤖 **AI 图表生成** — 通过自然语言描述生成流程图、架构图、ER 图、时序图等 22 种图表类型
 - 🎨 **多格式支持** — Excalidraw JSON、Mermaid、Draw.io XML 三种输出格式
 - ⚡ **流式生成** — SSE 实时流式返回，边生成边渲染
+- 🎯 **生成模式** — 快速/自动/高质量三种模式，自动模式根据复杂度智能选择
 - 💬 **多轮对话** — 支持上下文感知的连续对话，逐步完善图表
 - 📝 **代码编辑** — 内置 Monaco Editor，支持直接编辑生成的代码
-- 🖼️ **图片识别** — 支持上传图片，AI 自动转换为图表代码
+- 🖼️ **图片识别** — 支持上传图片，AI 自动转换为图表代码（支持 Vision 模型、Vision API、OCR 三层降级）
 - 🌐 **国际化** — 支持中文和英文界面
 - 🖥️ **桌面应用** — 基于 Electron 的跨平台桌面客户端（Windows/macOS/Linux）
+- 📦 **响应缓存** — L1/L2 分层缓存，重复请求秒级响应
 
 ## 🚀 快速开始
 
@@ -52,12 +54,13 @@ pnpm install
 
 首次启动后，进入设置页面（`/settings`）配置 LLM 服务：
 
-- **OpenAI 兼容接口** — 支持任意 OpenAI API 兼容的服务商（如 DeepSeek、Moonshot、Ollama 等）
+- **OpenAI 兼容接口** — 支持任意 OpenAI API 兼容的服务商（如 DeepSeek、Moonshot、vLLM 等）
 - **Anthropic API** — 支持 Claude 系列模型
+- **Ollama** — 支持本地部署的 Ollama 模型（无需 API Key）
 
 配置项包括：
 - API Base URL
-- API Key
+- API Key（Ollama 可留空）
 - 模型名称
 
 ### 启动开发服务器
@@ -116,7 +119,8 @@ ai-sketch/
 │   │   ├── generate/             # 核心 SSE 流式生成
 │   │   ├── conversations/        # 对话 CRUD
 │   │   ├── configs/              # LLM 配置管理
-│   │   └── models/               # 模型列表
+│   │   ├── models/               # 模型列表
+│   │   └── cache/                # 缓存管理 API
 │   ├── editor/                   # 主编辑器页面
 │   ├── settings/                 # 设置页面
 │   ├── layout.tsx                # 根布局
@@ -131,10 +135,12 @@ ai-sketch/
 │   └── ui/                       # 通用 UI 组件
 ├── lib/                          # 核心库
 │   ├── api/                      # 客户端 API 封装
+│   ├── cache/                    # L1 内存缓存 + 缓存键生成
 │   ├── db/                       # SQLite 数据库
 │   ├── diagram/                  # 图表处理工具
+│   ├── generation/               # 生成引擎（Planner/Critic/多轮生成）
 │   ├── input-strategies/         # 输入类型策略模式
-│   ├── llm/                      # LLM 客户端
+│   ├── llm/                      # LLM 客户端 + Provider
 │   ├── locales/                  # 国际化
 │   ├── prompts/                  # LLM 提示词
 │   ├── strategies/               # 图表格式策略模式

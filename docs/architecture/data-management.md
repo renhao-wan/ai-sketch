@@ -37,10 +37,10 @@
 
 | 表 | 内容 | key 示例 |
 |----|------|---------|
-| `llm_configs` | LLM 提供商配置 | — |
+| `llm_configs` | LLM 提供商配置（含 `temperature`、`max_tokens` 字段） | — |
 | `meta` | 全局设置键值对 | `active_config_id`、`proxy_url`、`proxy_enabled`、`llm_max_retries`、`preference_locale`、`preference_theme`、`preference_glow_enabled`、`cache_ttl_days`、`cache_hits`、`cache_misses` |
 | `conversations` | 对话记录 | — |
-| `messages` | 对话消息 | — |
+| `messages` | 对话消息（含 `image_data`、`image_mime_type` 字段） | — |
 | `response_cache` | AI 响应缓存（L2 持久层，100MB 上限，可配置 TTL，7 天默认） | — |
 | `vision_config` | Vision API 配置 | — |
 | `conversation_tags` | 对话标签 | — |

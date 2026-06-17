@@ -246,16 +246,31 @@ strategy.createExportBlob(code)  → 创建 Blob
 每种格式支持多种图表类型，定义在 `lib/diagram/constants.ts`：
 
 ```typescript
-export const CHART_TYPES = [
-  { id: 'flowchart', name: '流程图' },
-  { id: 'sequence', name: '时序图' },
-  { id: 'class', name: '类图' },
-  { id: 'er', name: 'ER 图' },
-  { id: 'gantt', name: '甘特图' },
-  { id: 'mindmap', name: '思维导图' },
-  { id: 'architecture', name: '架构图' },
-  // ...更多类型
-];
+export const CHART_TYPES = {
+  auto: '自动',
+  flowchart: '流程图',
+  mindmap: '思维导图',
+  orgchart: '组织架构图',
+  sequence: '时序图',
+  class: 'UML类图',
+  er: 'ER图',
+  gantt: '甘特图',
+  timeline: '时间线',
+  tree: '树形图',
+  network: '网络拓扑图',
+  architecture: '架构图',
+  dataflow: '数据流图',
+  state: '状态图',
+  swimlane: '泳道图',
+  concept: '概念图',
+  fishbone: '鱼骨图',
+  swot: 'SWOT分析图',
+  pyramid: '金字塔图',
+  funnel: '漏斗图',
+  venn: '韦恩图',
+  matrix: '矩阵图',
+  infographic: '信息图',
+} as const;
 ```
 
 策略根据图表类型生成不同的提示词：

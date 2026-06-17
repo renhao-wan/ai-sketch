@@ -148,4 +148,3 @@ type ImageProcessResult =
 
 - [输入类型策略模式](./input-strategy.md) — 文件和图片的输入策略接口
 - [响应缓存](./response-cache.md) — 缓存机制（Vision 模式不缓存，降级模式可缓存）
-- [优化路线图](../future/optimization-roadmap.md) — 待优化问题列表

@@ -71,7 +71,7 @@ pnpm electron:build
 6. 重新安装，验证是全新安装
 
 **卸载逻辑说明：**
-- 卸载脚本位于 `build/uninstaller.nsh`
+- 卸载脚本位于 `electron/resources/uninstaller.nsh`
 - 使用 NSIS `MessageBox` 弹出确认对话框
 - 用户选择"是"时删除以下目录：
   - `%APPDATA%\ai-sketch`
