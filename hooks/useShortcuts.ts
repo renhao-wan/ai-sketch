@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Shortcut } from '@/lib/types/shortcuts';
 
-/** 默认快捷键定义 */
+/** 默认快捷键定义 — actionId 映射到 ShortcutActions 的回调 */
 const DEFAULT_SHORTCUTS: Shortcut[] = [
   // 页面导航
   {
@@ -12,6 +12,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     description: '返回首页',
     descriptionKey: 'shortcuts.goHome',
     scope: 'global',
+    actionId: 'goHome',
   },
   {
     id: 'new-conversation',
@@ -19,6 +20,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     description: '新建对话',
     descriptionKey: 'shortcuts.newConversation',
     scope: 'global',
+    actionId: 'newConversation',
   },
   {
     id: 'open-history',
@@ -26,6 +28,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     description: '历史记录',
     descriptionKey: 'shortcuts.openHistory',
     scope: 'global',
+    actionId: 'openHistory',
   },
   // 设置页面
   {
@@ -34,6 +37,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     description: '打开设置',
     descriptionKey: 'shortcuts.openSettings',
     scope: 'global',
+    actionId: 'openSettings',
   },
   {
     id: 'open-appearance',
@@ -41,6 +45,8 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     description: '外观设置',
     descriptionKey: 'shortcuts.openAppearance',
     scope: 'global',
+    actionId: 'openSettings',
+    actionParam: 'appearance',
   },
   {
     id: 'open-llm',
@@ -48,6 +54,8 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     description: 'LLM 配置',
     descriptionKey: 'shortcuts.openLLM',
     scope: 'global',
+    actionId: 'openSettings',
+    actionParam: 'llm',
   },
   {
     id: 'open-conversations',
@@ -55,6 +63,8 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     description: '会话管理',
     descriptionKey: 'shortcuts.openConversations',
     scope: 'global',
+    actionId: 'openSettings',
+    actionParam: 'conversations',
   },
   {
     id: 'open-tags',
@@ -62,6 +72,8 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     description: '标签管理',
     descriptionKey: 'shortcuts.openTags',
     scope: 'global',
+    actionId: 'openSettings',
+    actionParam: 'tags',
   },
   {
     id: 'open-storage',
@@ -69,6 +81,8 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     description: '存储管理',
     descriptionKey: 'shortcuts.openStorage',
     scope: 'global',
+    actionId: 'openSettings',
+    actionParam: 'storage',
   },
   {
     id: 'open-shortcuts',
@@ -76,6 +90,8 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     description: '快捷键设置',
     descriptionKey: 'shortcuts.openShortcuts',
     scope: 'global',
+    actionId: 'openSettings',
+    actionParam: 'shortcuts',
   },
   {
     id: 'open-network',
@@ -83,6 +99,8 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     description: '网络设置',
     descriptionKey: 'shortcuts.openNetwork',
     scope: 'global',
+    actionId: 'openSettings',
+    actionParam: 'network',
   },
   {
     id: 'open-about',
@@ -90,8 +108,46 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     description: '关于应用',
     descriptionKey: 'shortcuts.openAbout',
     scope: 'global',
+    actionId: 'openSettings',
+    actionParam: 'about',
   },
-  // 编辑操作
+  // 格式切换
+  {
+    id: 'switch-excalidraw',
+    keys: ['Alt', '1'],
+    description: '切换到 Excalidraw',
+    descriptionKey: 'shortcuts.switchExcalidraw',
+    scope: 'editor',
+    actionId: 'switchFormat',
+    actionParam: 'excalidraw',
+  },
+  {
+    id: 'switch-mermaid',
+    keys: ['Alt', '2'],
+    description: '切换到 Mermaid',
+    descriptionKey: 'shortcuts.switchMermaid',
+    scope: 'editor',
+    actionId: 'switchFormat',
+    actionParam: 'mermaid',
+  },
+  {
+    id: 'switch-drawio',
+    keys: ['Alt', '3'],
+    description: '切换到 Draw.io',
+    descriptionKey: 'shortcuts.switchDrawio',
+    scope: 'editor',
+    actionId: 'switchFormat',
+    actionParam: 'drawio',
+  },
+  {
+    id: 'open-version-history',
+    keys: ['Alt', 'V'],
+    description: '版本历史',
+    descriptionKey: 'shortcuts.openVersionHistory',
+    scope: 'global',
+    actionId: 'openVersionHistory',
+  },
+  // 编辑操作（浏览器原生处理，仅用于展示）
   {
     id: 'send-message',
     keys: ['Ctrl', 'Enter'],
@@ -141,36 +197,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     descriptionKey: 'shortcuts.selectAll',
     scope: 'global',
   },
-  // 格式切换
-  {
-    id: 'switch-excalidraw',
-    keys: ['Alt', '1'],
-    description: '切换到 Excalidraw',
-    descriptionKey: 'shortcuts.switchExcalidraw',
-    scope: 'editor',
-  },
-  {
-    id: 'switch-mermaid',
-    keys: ['Alt', '2'],
-    description: '切换到 Mermaid',
-    descriptionKey: 'shortcuts.switchMermaid',
-    scope: 'editor',
-  },
-  {
-    id: 'switch-drawio',
-    keys: ['Alt', '3'],
-    description: '切换到 Draw.io',
-    descriptionKey: 'shortcuts.switchDrawio',
-    scope: 'editor',
-  },
-  {
-    id: 'open-version-history',
-    keys: ['Alt', 'V'],
-    description: '版本历史',
-    descriptionKey: 'shortcuts.openVersionHistory',
-    scope: 'global',
-  },
-  // 窗口控制
+  // 窗口控制（仅 Electron）
   {
     id: 'window-minimize',
     keys: ['Alt', 'F9'],
@@ -226,102 +253,35 @@ interface ShortcutActions {
   onOpenVersionHistory?: () => void;
 }
 
+/** 动作 ID → 回调映射（构建一次，复用于每次按键） */
+function buildActionMap(actions: ShortcutActions): Record<string, (param?: string) => void> {
+  return {
+    goHome: () => actions.onGoHome?.(),
+    newConversation: () => actions.onNewConversation?.(),
+    openHistory: () => actions.onOpenHistory?.(),
+    openSettings: (param) => actions.onOpenSettings?.(param),
+    switchFormat: (param) => actions.onSwitchFormat?.(param as 'excalidraw' | 'mermaid' | 'drawio'),
+    openVersionHistory: () => actions.onOpenVersionHistory?.(),
+  };
+}
+
+/** 仅需自定义处理的快捷键（带 actionId 且含 Alt 的组合键） */
+const CUSTOM_SHORTCUTS = DEFAULT_SHORTCUTS.filter(s => s.actionId && s.keys.some(k => k.toLowerCase() === 'alt'));
+
 export function useShortcuts(actions?: ShortcutActions) {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 注册全局快捷键
+  // 注册全局快捷键 — 数据驱动，遍历 CUSTOM_SHORTCUTS 替代硬编码 if-else
   useEffect(() => {
     if (!actions) return;
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // 忽略在输入框中的快捷键（除了 Alt 组合键）
-      const target = event.target as HTMLElement;
-      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+    const actionMap = buildActionMap(actions);
 
-      // Alt 组合键在任何地方都生效
-      if (event.altKey) {
-        // 页面导航
-        if (matchKeys(event, ['Alt', 'H'])) {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      for (const shortcut of CUSTOM_SHORTCUTS) {
+        if (matchKeys(event, shortcut.keys)) {
           event.preventDefault();
-          actions.onGoHome?.();
-          return;
-        }
-        if (matchKeys(event, ['Alt', 'N'])) {
-          event.preventDefault();
-          actions.onNewConversation?.();
-          return;
-        }
-        if (matchKeys(event, ['Alt', 'I'])) {
-          event.preventDefault();
-          actions.onOpenHistory?.();
-          return;
-        }
-        // 设置页面
-        if (matchKeys(event, ['Alt', 'S'])) {
-          event.preventDefault();
-          actions.onOpenSettings?.();
-          return;
-        }
-        if (matchKeys(event, ['Alt', 'O'])) {
-          event.preventDefault();
-          actions.onOpenSettings?.('appearance');
-          return;
-        }
-        if (matchKeys(event, ['Alt', 'M'])) {
-          event.preventDefault();
-          actions.onOpenSettings?.('llm');
-          return;
-        }
-        if (matchKeys(event, ['Alt', 'K'])) {
-          event.preventDefault();
-          actions.onOpenSettings?.('network');
-          return;
-        }
-        if (matchKeys(event, ['Alt', 'C'])) {
-          event.preventDefault();
-          actions.onOpenSettings?.('conversations');
-          return;
-        }
-        if (matchKeys(event, ['Alt', 'T'])) {
-          event.preventDefault();
-          actions.onOpenSettings?.('tags');
-          return;
-        }
-        if (matchKeys(event, ['Alt', 'D'])) {
-          event.preventDefault();
-          actions.onOpenSettings?.('storage');
-          return;
-        }
-        if (matchKeys(event, ['Alt', 'B'])) {
-          event.preventDefault();
-          actions.onOpenSettings?.('shortcuts');
-          return;
-        }
-        if (matchKeys(event, ['Alt', 'A'])) {
-          event.preventDefault();
-          actions.onOpenSettings?.('about');
-          return;
-        }
-        // 格式切换
-        if (matchKeys(event, ['Alt', '1'])) {
-          event.preventDefault();
-          actions.onSwitchFormat?.('excalidraw');
-          return;
-        }
-        if (matchKeys(event, ['Alt', '2'])) {
-          event.preventDefault();
-          actions.onSwitchFormat?.('mermaid');
-          return;
-        }
-        if (matchKeys(event, ['Alt', '3'])) {
-          event.preventDefault();
-          actions.onSwitchFormat?.('drawio');
-          return;
-        }
-        // 版本历史
-        if (matchKeys(event, ['Alt', 'V'])) {
-          event.preventDefault();
-          actions.onOpenVersionHistory?.();
+          actionMap[shortcut.actionId!]?.(shortcut.actionParam);
           return;
         }
       }

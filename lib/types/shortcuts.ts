@@ -10,6 +10,10 @@ export interface Shortcut {
   description: string;
   descriptionKey: string;
   scope: ShortcutScope;
+  /** 数据驱动的动作标识，映射到 ShortcutActions 中的回调 */
+  actionId?: string;
+  /** 动作参数（如设置页 Tab 名、格式名称等） */
+  actionParam?: string;
   action?: () => void;
 }
 
