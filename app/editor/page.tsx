@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useReducer, useMemo, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, useReducer, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -14,8 +14,7 @@ import { useNotification } from '@/lib/contexts/NotificationContext';
 import DiagramCanvas from '@/components/canvases/DiagramCanvas';
 import type { CanvasExportHandle } from '@/components/canvases/DiagramCanvas';
 import type { StreamRendererRef } from '@/components/canvases/ExcalidrawCanvas';
-import { downloadBlob, getFileExtension, getMimeType, type ExportFormat } from '@/lib/utils/export-diagram';
-import * as api from '@/lib/api/client';
+import type { ExportFormat } from '@/lib/utils/export-diagram';
 import { isConfigValid } from '@/lib/api/config-validator';
 import { getStrategy } from '@/lib/strategies/registry';
 import { consumeInitData } from '@/lib/utils/init-data';
@@ -24,7 +23,9 @@ import { useShortcuts } from '@/hooks/useShortcuts';
 import { useConversation } from '@/hooks/useConversation';
 import { useGeneration } from '@/hooks/useGeneration';
 import { useAIActions } from '@/hooks/useAIActions';
-import type { LLMConfig } from '@/lib/types';
+import { useEditorConfig } from '@/hooks/useEditorConfig';
+import { useEditorExport } from '@/hooks/useEditorExport';
+import { useVersionHistory } from '@/hooks/useVersionHistory';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 import { detectCodeFormat } from '@/lib/utils/detect-code-format';
 import type { GenerationMode } from '@/lib/generation/types';
@@ -34,31 +35,14 @@ const ConfigSelector = dynamic(() => import('@/components/dialogs/ConfigSelector
 const BottomContextPanel = dynamic(() => import('@/components/layout/BottomContextPanel'), { ssr: false });
 const VersionHistoryDrawer = dynamic(() => import('@/components/version-history/VersionHistoryDrawer'), { ssr: false });
 
-// --- Reducer 类型定义 ---
+// --- 生成结果 Reducer ---
 
-/** 配置状态 */
-interface ConfigState {
-  config: LLMConfig | null;
-  loaded: boolean;
-}
-type ConfigAction =
-  | { type: 'SET_CONFIG'; payload: LLMConfig | null }
-  | { type: 'LOADED' };
-
-function configReducer(state: ConfigState, action: ConfigAction): ConfigState {
-  switch (action.type) {
-    case 'SET_CONFIG': return { ...state, config: action.payload };
-    case 'LOADED': return { ...state, loaded: true };
-    default: return state;
-  }
-}
-
-/** 生成结果状态 */
 interface GenerationResultState {
   code: string;
   renderData: unknown;
   jsonError: string | null;
 }
+
 type GenerationResultAction =
   | { type: 'SET_CODE'; payload: string }
   | { type: 'SET_RENDER_DATA'; payload: unknown }
@@ -79,15 +63,14 @@ function EditorContent() {
   const router = useRouter();
   const { t } = useLocale();
 
-  // 配置状态（reducer）
-  const [configState, dispatchConfig] = useReducer(configReducer, { config: null, loaded: false });
-  const { config, loaded: configLoaded } = configState;
+  // 配置管理
+  const { config, configLoaded, handleConfigSelect } = useEditorConfig();
 
-  // 生成结果状态（reducer）
+  // 生成结果状态（reducer，与 generation hook 紧耦合）
   const [genResult, dispatchGenResult] = useReducer(generationResultReducer, { code: '', renderData: null, jsonError: null });
   const { code: generatedCode, renderData, jsonError } = genResult;
 
-  // 独立状态（useState）
+  // 独立状态
   const [format, setFormat] = useState<DiagramFormat>('excalidraw');
   const [isConfigManagerOpen, setIsConfigManagerOpen] = useState(false);
   const [isApplyingCode, setIsApplyingCode] = useState(false);
@@ -97,8 +80,6 @@ function EditorContent() {
   const [bottomPanelTab, setBottomPanelTab] = useState('code');
   const [panelWidth, setPanelWidth] = useState(360);
   const [isElectron, setIsElectron] = useState(false);
-  const [versionDrawerOpen, setVersionDrawerOpen] = useState(false);
-  const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
   const [generationMode, setGenerationMode] = useState<GenerationMode>('auto');
   const [contextEnabled, setContextEnabled] = useState(true);
@@ -113,7 +94,7 @@ function EditorContent() {
   const isFirstFormatRef = useRef(true);
   const skipFormatClearRef = useRef(false);
 
-  // 检测是否在 Electron 环境中
+  // 检测 Electron 环境
   useEffect(() => {
     setIsElectron(!!window.electronAPI?.window);
   }, []);
@@ -123,25 +104,6 @@ function EditorContent() {
     setPanelWidth(Math.min(Math.max(w, minWidth), 600));
   }, [isElectron]);
 
-  // 加载配置
-  const loadConfig = useCallback(async () => {
-    try {
-      const data = await api.fetchConfigs();
-      if (data.activeConfigId) {
-        const active = data.configs.find(c => c.id === data.activeConfigId);
-        if (active) dispatchConfig({ type: 'SET_CONFIG', payload: active });
-      }
-    } catch (err) {
-      console.error('Failed to load config:', err);
-    } finally {
-      dispatchConfig({ type: 'LOADED' });
-    }
-  }, []);
-
-  useEffect(() => {
-    loadConfig();
-  }, [loadConfig]);
-
   // 会话管理 Hook
   const conversation = useConversation({
     onFormatChange: (f) => setFormat(f),
@@ -150,33 +112,35 @@ function EditorContent() {
     onError: (msg) => generation.setApiError(msg),
   });
 
-  // 版本列表：从 messages 中提取 assistant 消息，推断每个版本的格式
-  const versions = useMemo(() =>
-    conversation.messages
-      .filter(msg => msg.role === 'assistant')
-      .map((msg, index) => ({
-        id: msg.id,
-        versionNumber: index + 1,
-        createdAt: msg.createdAt,
-        code: msg.content,
-        format: detectCodeFormat(msg.content),
-      })),
-    [conversation.messages]
-  );
-
-  // 稳定的版本 ID 列表，避免引用变化导致 effect 频繁触发
-  const versionsKey = useMemo(() =>
-    conversation.messages
-      .filter(msg => msg.role === 'assistant')
-      .map(msg => msg.id)
-      .join(','),
-    [conversation.messages]
-  );
-
-  // 版本列表变化时清空当前版本选择
-  useEffect(() => {
-    setCurrentVersionId(null);
-  }, [versionsKey]);
+  // 版本历史
+  const {
+    versions,
+    versionDrawerOpen,
+    currentVersionId,
+    handleSelectVersion,
+    handleCloseVersionDrawer,
+    toggleVersionDrawer,
+  } = useVersionHistory({
+    messages: conversation.messages,
+    onShowDiagram: (content) => {
+      const detectedFormat = detectCodeFormat(content);
+      if (detectedFormat !== format) {
+        skipFormatClearRef.current = true;
+        setFormat(detectedFormat);
+      }
+      const strat = getStrategy(detectedFormat);
+      const processed = strat.postProcess(content);
+      const optimized = strat.optimize(processed);
+      dispatchGenResult({ type: 'SET_CODE', payload: optimized });
+      const result = strat.validate(optimized);
+      if (result.valid) {
+        dispatchGenResult({ type: 'SET_RENDER_DATA', payload: result.data });
+        dispatchGenResult({ type: 'SET_JSON_ERROR', payload: null });
+      } else {
+        dispatchGenResult({ type: 'SET_JSON_ERROR', payload: result.error });
+      }
+    },
+  });
 
   // 代码生成 Hook
   const generation = useGeneration({
@@ -205,12 +169,21 @@ function EditorContent() {
     generatedCode,
     abortControllerRef: generation.abortControllerRef,
     onCodeUpdate: (code) => dispatchGenResult({ type: 'SET_CODE', payload: code }),
-    onExplanationUpdate: (exp) => {}, // 已在 Hook 内部处理
+    onExplanationUpdate: () => {},
     onBottomPanelTabChange: setBottomPanelTab,
     onRenderDataUpdate: (data) => dispatchGenResult({ type: 'SET_RENDER_DATA', payload: data }),
     onJsonErrorUpdate: (err) => dispatchGenResult({ type: 'SET_JSON_ERROR', payload: err }),
     onNotification: showNotification,
   });
+
+  // 导出逻辑
+  const { handleExport, handleExportAs } = useEditorExport({
+    format,
+    generatedCode,
+    canvasExportRef,
+  });
+
+  const strategy = getStrategy(format);
 
   // 格式切换时清空代码
   useEffect(() => {
@@ -219,8 +192,6 @@ function EditorContent() {
     dispatchGenResult({ type: 'CLEAR' });
     streamRendererRef.current?.reset();
   }, [format]);
-
-  const strategy = getStrategy(format);
 
   // Load conversation from sessionStorage on mount
   useEffect(() => {
@@ -290,10 +261,6 @@ function EditorContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config, configLoaded]);
 
-  const handleConfigSelect = (selectedConfig: LLMConfig | null) => {
-    if (selectedConfig) dispatchConfig({ type: 'SET_CONFIG', payload: selectedConfig });
-  };
-
   // 注册快捷键
   useShortcuts({
     onGoHome: () => router.push('/'),
@@ -303,10 +270,8 @@ function EditorContent() {
     },
     onOpenSettings: (tab) => router.push(tab ? `/settings?tab=${tab}` : '/settings'),
     onSwitchFormat: (f) => { setFormat(f); dispatchGenResult({ type: 'CLEAR' }); },
-    onOpenVersionHistory: () => setVersionDrawerOpen(prev => !prev),
+    onOpenVersionHistory: toggleVersionDrawer,
   });
-
-
 
   const handleShowDiagram = useCallback((content: string) => {
     const detectedFormat = detectCodeFormat(content);
@@ -327,17 +292,6 @@ function EditorContent() {
     }
   }, [format]);
 
-  const handleSelectVersion = useCallback((versionId: string) => {
-    const msg = conversation.messages.find(m => m.id === versionId);
-    if (!msg) return;
-    handleShowDiagram(msg.content);
-    setCurrentVersionId(versionId);
-  }, [conversation.messages, handleShowDiagram]);
-
-  const handleCloseVersionDrawer = useCallback(() => {
-    setVersionDrawerOpen(false);
-  }, []);
-
   const handleApplyCode = async () => {
     setIsApplyingCode(true);
     try {
@@ -355,41 +309,6 @@ function EditorContent() {
     }
   };
 
-  const handleExport = useCallback(() => {
-    const blob = strategy.createExportBlob(generatedCode);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `diagram.${strategy.fileExtension}`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [strategy, generatedCode]);
-
-  /** 导出为 PNG/SVG/代码文件 */
-  const handleExportAs = useCallback(async (exportFormat: ExportFormat) => {
-    // 代码文件导出使用原有逻辑
-    if (exportFormat === 'code') {
-      handleExport();
-      return;
-    }
-
-    // PNG/SVG 导出需要画布支持
-    if (!canvasExportRef.current) {
-      showNotification(t('notification.exportFailed'), t('notification.exportNotSupported'), 'error');
-      return;
-    }
-
-    try {
-      const blob = await canvasExportRef.current.exportAs(exportFormat);
-      const ext = getFileExtension(exportFormat, format);
-      const mime = getMimeType(exportFormat);
-      const finalBlob = exportFormat === 'png' ? blob : new Blob([blob], { type: mime });
-      downloadBlob(finalBlob, `diagram.${ext}`);
-    } catch (e) {
-      showNotification(t('notification.exportFailed'), (e as Error).message, 'error');
-    }
-  }, [format, handleExport, showNotification, t]);
-
   return (
     <>
       <div className="h-full flex flex-col relative overflow-hidden bg-[var(--bg)] noise-overlay">
@@ -406,7 +325,7 @@ function EditorContent() {
           onNewConversation={conversation.newConversation}
           onOpenConfig={() => setIsConfigManagerOpen(true)}
           isConfigOpen={isConfigManagerOpen}
-          onVersionHistory={() => setVersionDrawerOpen(prev => !prev)}
+          onVersionHistory={toggleVersionDrawer}
           isVersionDrawerOpen={versionDrawerOpen}
         />
 
