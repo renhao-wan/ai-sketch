@@ -147,11 +147,17 @@ export function OnboardingOverlay() {
   const tooltipStyle = getTooltipPosition();
 
   return (
-    <div className="fixed inset-0 z-[90] pointer-events-none">
-      {/* 高亮区域（挖空）+ 遮罩层 */}
-      {targetRect ? (
+    <div className="fixed inset-0 z-[90]">
+      {/* 全屏遮罩层 - 阻止所有点击 */}
+      <div
+        className="absolute inset-0 bg-black/50"
+        onClick={(e) => e.preventDefault()}
+      />
+
+      {/* 高亮区域（挖空） */}
+      {targetRect && (
         <div
-          className="absolute pointer-events-none"
+          className="absolute"
           style={{
             top: targetRect.top - 4,
             left: targetRect.left - 4,
@@ -160,18 +166,19 @@ export function OnboardingOverlay() {
             boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
             borderRadius: '8px',
           }}
+          onClick={(e) => e.stopPropagation()}
         >
           {/* 高亮边框 */}
           <div className="absolute inset-0 rounded-lg ring-2 ring-[var(--accent-indigo)] ring-offset-2 ring-offset-[var(--surface)]" />
+          {/* 透明遮罩 - 阻止点击穿透 */}
+          <div className="absolute inset-0 cursor-default" />
         </div>
-      ) : (
-        <div className="absolute inset-0 bg-black/50 pointer-events-auto" />
       )}
 
       {/* 提示框 - 使用 key 强制重新挂载以触发动画 */}
       <div
         key={currentStep}
-        className="absolute pointer-events-auto animate-fade-in"
+        className="absolute animate-fade-in"
         style={{
           top: tooltipStyle.top,
           left: tooltipStyle.left,
