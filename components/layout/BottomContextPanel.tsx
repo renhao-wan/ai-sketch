@@ -209,6 +209,7 @@ export default function BottomContextPanel({
               <div className="relative" ref={exportMenuRef}>
                 <Tooltip content={t('copilot.export')} side="top">
                   <button
+                    id="onboarding-export"
                     onClick={() => setShowExportMenu(!showExportMenu)}
                     className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
                   >
