@@ -25,8 +25,8 @@ export interface OnboardingStep {
 }
 
 /**
- * 核心流程步骤（core 模式，5 步）
- * 介绍核心链路：首页输入 → 编辑器查看
+ * 核心流程步骤（core 模式，7 步）
+ * 介绍核心链路：首页输入 → 发送 → 进入编辑器 → 编辑器功能
  */
 export const CORE_STEPS: OnboardingStep[] = [
   {
@@ -34,6 +34,24 @@ export const CORE_STEPS: OnboardingStep[] = [
     target: '#onboarding-ai-prompt-box',
     titleKey: 'onboarding.steps.home-input.title',
     contentKey: 'onboarding.steps.home-input.content',
+    placement: 'bottom',
+    mode: 'core',
+    page: 'home',
+  },
+  {
+    id: 'home-send',
+    target: '#onboarding-send-btn',
+    titleKey: 'onboarding.steps.home-send.title',
+    contentKey: 'onboarding.steps.home-send.content',
+    placement: 'bottom',
+    mode: 'core',
+    page: 'home',
+  },
+  {
+    id: 'home-editor-btn',
+    target: '#onboarding-editor-btn',
+    titleKey: 'onboarding.steps.home-editor-btn.title',
+    contentKey: 'onboarding.steps.home-editor-btn.content',
     placement: 'bottom',
     mode: 'core',
     page: 'home',
@@ -91,6 +109,26 @@ export const FULL_STEPS: OnboardingStep[] = [
     mode: 'full',
     group: 'home',
     groupTitleKey: 'onboarding.groups.home',
+    page: 'home',
+  },
+  {
+    id: 'full-home-send',
+    target: '#onboarding-send-btn',
+    titleKey: 'onboarding.steps.home-send.title',
+    contentKey: 'onboarding.steps.home-send.content',
+    placement: 'bottom',
+    mode: 'full',
+    group: 'home',
+    page: 'home',
+  },
+  {
+    id: 'full-home-editor-btn',
+    target: '#onboarding-editor-btn',
+    titleKey: 'onboarding.steps.home-editor-btn.title',
+    contentKey: 'onboarding.steps.home-editor-btn.content',
+    placement: 'bottom',
+    mode: 'full',
+    group: 'home',
     page: 'home',
   },
   // AI 对话区组
