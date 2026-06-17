@@ -619,6 +619,8 @@ export const en: TranslationDict = {
   'onboarding.steps.home-input.content': 'Enter your diagram description here. Supports both Chinese and English. More detailed descriptions produce better results.',
   'onboarding.steps.home-generate.title': 'Generate Button',
   'onboarding.steps.home-generate.content': 'Click the generate button or press Enter, and AI will create a diagram based on your description.',
+  'onboarding.steps.navigate-to-editor.title': 'Enter Editor',
+  'onboarding.steps.navigate-to-editor.content': 'Click to enter the editor page, where you can view the generated diagram, chat with AI, and edit code.',
   'onboarding.steps.editor-chat.title': 'AI Chat Panel',
   'onboarding.steps.editor-chat.content': 'Chat with AI here to refine your request, ask for modifications, or inquire about the diagram.',
   'onboarding.steps.editor-canvas.title': 'Canvas Area',

@@ -20,10 +20,12 @@ export interface OnboardingStep {
   mode: 'core' | 'full';
   /** 分组标题（国际化 key，分组第一步显示） */
   groupTitleKey?: TranslationKey;
+  /** 步骤所在的页面 */
+  page: 'home' | 'editor';
 }
 
 /**
- * 核心流程步骤（core 模式，6 步）
+ * 核心流程步骤（core 模式，7 步）
  * 介绍核心链路：首页输入 → 编辑器查看
  */
 export const CORE_STEPS: OnboardingStep[] = [
@@ -34,6 +36,7 @@ export const CORE_STEPS: OnboardingStep[] = [
     contentKey: 'onboarding.steps.home-input.content',
     placement: 'bottom',
     mode: 'core',
+    page: 'home',
   },
   {
     id: 'home-generate',
@@ -42,6 +45,16 @@ export const CORE_STEPS: OnboardingStep[] = [
     contentKey: 'onboarding.steps.home-generate.content',
     placement: 'bottom',
     mode: 'core',
+    page: 'home',
+  },
+  {
+    id: 'navigate-to-editor',
+    target: '#onboarding-generate-button',
+    titleKey: 'onboarding.steps.navigate-to-editor.title',
+    contentKey: 'onboarding.steps.navigate-to-editor.content',
+    placement: 'bottom',
+    mode: 'core',
+    page: 'home',
   },
   {
     id: 'editor-chat',
@@ -50,6 +63,7 @@ export const CORE_STEPS: OnboardingStep[] = [
     contentKey: 'onboarding.steps.editor-chat.content',
     placement: 'right',
     mode: 'core',
+    page: 'editor',
   },
   {
     id: 'editor-canvas',
@@ -58,6 +72,7 @@ export const CORE_STEPS: OnboardingStep[] = [
     contentKey: 'onboarding.steps.editor-canvas.content',
     placement: 'left',
     mode: 'core',
+    page: 'editor',
   },
   {
     id: 'editor-code',
@@ -66,6 +81,7 @@ export const CORE_STEPS: OnboardingStep[] = [
     contentKey: 'onboarding.steps.editor-code.content',
     placement: 'top',
     mode: 'core',
+    page: 'editor',
   },
   {
     id: 'editor-back',
@@ -74,6 +90,7 @@ export const CORE_STEPS: OnboardingStep[] = [
     contentKey: 'onboarding.steps.editor-back.content',
     placement: 'bottom',
     mode: 'core',
+    page: 'editor',
   },
 ];
 
@@ -92,6 +109,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     mode: 'full',
     group: 'home',
     groupTitleKey: 'onboarding.groups.home',
+    page: 'home',
   },
   {
     id: 'full-home-generate',
@@ -101,6 +119,17 @@ export const FULL_STEPS: OnboardingStep[] = [
     placement: 'bottom',
     mode: 'full',
     group: 'home',
+    page: 'home',
+  },
+  {
+    id: 'full-navigate-to-editor',
+    target: '#onboarding-generate-button',
+    titleKey: 'onboarding.steps.navigate-to-editor.title',
+    contentKey: 'onboarding.steps.navigate-to-editor.content',
+    placement: 'bottom',
+    mode: 'full',
+    group: 'home',
+    page: 'home',
   },
 
   // AI 对话区组
@@ -113,6 +142,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     mode: 'full',
     group: 'ai-chat',
     groupTitleKey: 'onboarding.groups.ai-chat',
+    page: 'editor',
   },
   {
     id: 'full-format-selector',
@@ -122,6 +152,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     placement: 'bottom',
     mode: 'full',
     group: 'ai-chat',
+    page: 'editor',
   },
   {
     id: 'full-chart-type',
@@ -131,6 +162,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     placement: 'bottom',
     mode: 'full',
     group: 'ai-chat',
+    page: 'editor',
   },
   {
     id: 'full-generation-mode',
@@ -140,6 +172,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     placement: 'bottom',
     mode: 'full',
     group: 'ai-chat',
+    page: 'editor',
   },
   {
     id: 'full-context-toggle',
@@ -149,6 +182,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     placement: 'bottom',
     mode: 'full',
     group: 'ai-chat',
+    page: 'editor',
   },
 
   // 画布操作区组
@@ -161,6 +195,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     mode: 'full',
     group: 'canvas',
     groupTitleKey: 'onboarding.groups.canvas',
+    page: 'editor',
   },
   {
     id: 'full-zoom-toolbar',
@@ -170,6 +205,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     placement: 'left',
     mode: 'full',
     group: 'canvas',
+    page: 'editor',
   },
 
   // 代码编辑区组
@@ -182,6 +218,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     mode: 'full',
     group: 'code-editor',
     groupTitleKey: 'onboarding.groups.code-editor',
+    page: 'editor',
   },
 
   // 工具栏区组
@@ -194,6 +231,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     mode: 'full',
     group: 'toolbar',
     groupTitleKey: 'onboarding.groups.toolbar',
+    page: 'editor',
   },
   {
     id: 'full-ai-action-beautify',
@@ -203,6 +241,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     placement: 'left',
     mode: 'full',
     group: 'toolbar',
+    page: 'editor',
   },
   {
     id: 'full-ai-action-simplify',
@@ -212,6 +251,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     placement: 'left',
     mode: 'full',
     group: 'toolbar',
+    page: 'editor',
   },
   {
     id: 'full-ai-action-explain',
@@ -221,6 +261,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     placement: 'left',
     mode: 'full',
     group: 'toolbar',
+    page: 'editor',
   },
 
   // 顶部栏组
@@ -233,6 +274,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     mode: 'full',
     group: 'top-bar',
     groupTitleKey: 'onboarding.groups.top-bar',
+    page: 'editor',
   },
   {
     id: 'full-version-history',
@@ -242,6 +284,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     placement: 'bottom',
     mode: 'full',
     group: 'top-bar',
+    page: 'editor',
   },
   {
     id: 'full-back-to-home',
@@ -251,6 +294,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     placement: 'bottom',
     mode: 'full',
     group: 'top-bar',
+    page: 'editor',
   },
 ];
 

@@ -617,6 +617,8 @@ export const zh = {
   'onboarding.steps.home-input.content': '在这里输入你想要生成的图表描述，支持中英文，描述越详细生成效果越好。',
   'onboarding.steps.home-generate.title': '生成按钮',
   'onboarding.steps.home-generate.content': '点击生成按钮或按 Enter 键，AI 将根据你的描述生成图表。',
+  'onboarding.steps.navigate-to-editor.title': '进入编辑器',
+  'onboarding.steps.navigate-to-editor.content': '点击后将进入编辑器页面，在那里你可以查看生成的图表、与 AI 对话、编辑代码。',
   'onboarding.steps.editor-chat.title': 'AI 对话区',
   'onboarding.steps.editor-chat.content': '在这里与 AI 对话，可以继续描述需求、要求修改、或询问图表相关内容。',
   'onboarding.steps.editor-canvas.title': '画布区域',

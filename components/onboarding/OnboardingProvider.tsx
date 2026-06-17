@@ -156,60 +156,58 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
    * 下一步
    */
   const nextStep = useCallback(() => {
-    setState((prev) => {
-      const nextIndex = prev.currentStep + 1;
+    // 先在 setState 外部检测是否需要跨页面导航
+    const currentIndex = state.currentStep;
+    const nextIndex = currentIndex + 1;
 
-      // 检查是否完成
-      if (nextIndex >= prev.steps.length) {
-        // 完成引导
-        setOnboardingStatus(prev.mode).catch(console.error);
-        return {
-          ...prev,
-          isActive: false,
-          currentStep: 0,
-          steps: [],
-        };
-      }
+    // 检查是否完成
+    if (nextIndex >= state.steps.length) {
+      setOnboardingStatus(state.mode).catch(console.error);
+      setState({
+        ...DEFAULT_STATE,
+        isLoading: false,
+      });
+      return;
+    }
 
-      const currentStepData = prev.steps[prev.currentStep];
-      const nextStepData = prev.steps[nextIndex];
+    const currentStepData = state.steps[currentIndex];
+    const nextStepData = state.steps[nextIndex];
 
-      // 检查是否需要跨页面导航
-      if (currentStepData.page !== nextStepData.page) {
-        // 先触发路由跳转，等页面加载完成后再更新步骤
-        const targetPath = getPagePath(nextStepData.page);
-        router.push(targetPath);
-        setPendingStep(nextIndex);
-        return prev; // 暂不更新 currentStep
-      }
+    // 检查是否需要跨页面导航
+    if (currentStepData.page !== nextStepData.page) {
+      // 触发路由跳转，设置 pendingStep，等页面加载完成后再更新步骤
+      const targetPath = getPagePath(nextStepData.page);
+      setPendingStep(nextIndex);
+      router.push(targetPath);
+      return;
+    }
 
-      return { ...prev, currentStep: nextIndex };
-    });
-  }, [router]);
+    // 同页面，直接更新步骤
+    setState((prev) => ({ ...prev, currentStep: nextIndex }));
+  }, [state, router]);
 
   /**
    * 上一步
    */
   const prevStep = useCallback(() => {
-    setState((prev) => {
-      if (prev.currentStep <= 0) return prev;
+    if (state.currentStep <= 0) return;
 
-      const prevStepIndex = prev.currentStep - 1;
-      const currentStepData = prev.steps[prev.currentStep];
-      const prevStepData = prev.steps[prevStepIndex];
+    const prevStepIndex = state.currentStep - 1;
+    const currentStepData = state.steps[state.currentStep];
+    const prevStepData = state.steps[prevStepIndex];
 
-      // 检查是否需要跨页面导航
-      if (currentStepData.page !== prevStepData.page) {
-        // 先触发路由跳转，等页面加载完成后再更新步骤
-        const targetPath = getPagePath(prevStepData.page);
-        router.push(targetPath);
-        setPendingStep(prevStepIndex);
-        return prev; // 暂不更新 currentStep
-      }
+    // 检查是否需要跨页面导航
+    if (currentStepData.page !== prevStepData.page) {
+      // 触发路由跳转，设置 pendingStep，等页面加载完成后再更新步骤
+      const targetPath = getPagePath(prevStepData.page);
+      setPendingStep(prevStepIndex);
+      router.push(targetPath);
+      return;
+    }
 
-      return { ...prev, currentStep: prevStepIndex };
-    });
-  }, [router]);
+    // 同页面，直接更新步骤
+    setState((prev) => ({ ...prev, currentStep: prevStepIndex }));
+  }, [state, router]);
 
   /**
    * 跳过引导
