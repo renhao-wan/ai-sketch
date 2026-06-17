@@ -148,11 +148,8 @@ export function OnboardingOverlay() {
 
   return (
     <div className="fixed inset-0 z-[90] pointer-events-none">
-      {/* 遮罩层 */}
-      <div className="absolute inset-0 bg-black/50 pointer-events-auto" />
-
-      {/* 高亮区域（挖空） */}
-      {targetRect && (
+      {/* 高亮区域（挖空）+ 遮罩层 */}
+      {targetRect ? (
         <div
           className="absolute pointer-events-none"
           style={{
@@ -167,6 +164,8 @@ export function OnboardingOverlay() {
           {/* 高亮边框 */}
           <div className="absolute inset-0 rounded-lg ring-2 ring-[var(--accent-indigo)] ring-offset-2 ring-offset-[var(--surface)]" />
         </div>
+      ) : (
+        <div className="absolute inset-0 bg-black/50 pointer-events-auto" />
       )}
 
       {/* 提示框 - 使用 key 强制重新挂载以触发动画 */}
