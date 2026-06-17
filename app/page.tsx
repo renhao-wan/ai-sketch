@@ -60,6 +60,7 @@ export default function HomePage() {
         >
           <Tooltip content={t('home.enterEditor')} side="bottom">
             <button
+              id="onboarding-generate-button"
               onClick={() => router.push('/editor')}
               className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5 hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors duration-150"
             >
@@ -108,7 +109,7 @@ export default function HomePage() {
           </div>
 
           {/* Prompt Box */}
-          <div className="mb-6">
+          <div id="onboarding-ai-prompt-box" className="mb-6">
             <AIPromptBox />
           </div>
 
