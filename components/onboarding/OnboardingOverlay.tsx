@@ -36,12 +36,13 @@ export function OnboardingOverlay() {
   const updateTargetRect = useCallback(() => {
     if (!currentStepData) {
       setTargetRect(null);
-      return false;
+      return;
     }
 
     const element = document.querySelector(currentStepData.target);
     if (!element) {
-      return false;
+      setTargetRect(null);
+      return;
     }
 
     const rect = element.getBoundingClientRect();
@@ -51,42 +52,16 @@ export function OnboardingOverlay() {
       width: rect.width,
       height: rect.height,
     });
-    return true;
   }, [currentStepData]);
 
   /**
-   * 监听目标元素位置变化（带重试机制）
+   * 监听目标元素位置变化
    */
   useEffect(() => {
     if (!isActive || !currentStepData) return;
 
-    let retryTimer: ReturnType<typeof setInterval> | null = null;
-    let retryCount = 0;
-    const maxRetries = 30; // 最多重试 30 次（3 秒）
-    const retryInterval = 100;
-
-    // 尝试查找目标元素，如果不存在则重试
-    const tryUpdate = () => {
-      const found = updateTargetRect();
-      if (!found && retryCount < maxRetries) {
-        retryCount++;
-        if (!retryTimer) {
-          retryTimer = setInterval(() => {
-            const found = updateTargetRect();
-            retryCount++;
-            if (found || retryCount >= maxRetries) {
-              if (retryTimer) {
-                clearInterval(retryTimer);
-                retryTimer = null;
-              }
-            }
-          }, retryInterval);
-        }
-      }
-    };
-
-    // 首次尝试
-    requestAnimationFrame(tryUpdate);
+    // 计算位置
+    updateTargetRect();
 
     // 监听滚动和 resize
     const handleUpdate = () => {
@@ -97,18 +72,12 @@ export function OnboardingOverlay() {
     window.addEventListener('resize', handleUpdate);
 
     return () => {
-      if (retryTimer) {
-        clearInterval(retryTimer);
-      }
       window.removeEventListener('scroll', handleUpdate, true);
       window.removeEventListener('resize', handleUpdate);
     };
   }, [isActive, currentStepData, updateTargetRect]);
 
   if (!isActive || !currentStepData) return null;
-
-  // 目标元素还未找到，只显示遮罩（等待重试机制找到元素）
-  const isWaitingForTarget = !targetRect;
 
   /**
    * 计算提示框位置（带边界检测）

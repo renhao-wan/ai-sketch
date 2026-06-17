@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { getStepsByMode, type OnboardingStep } from './steps';
 
 /**
@@ -90,7 +90,9 @@ async function setOnboardingStatus(status: 'core' | 'full' | 'skipped'): Promise
  */
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<OnboardingState>(DEFAULT_STATE);
+  const [pendingStep, setPendingStep] = useState<number | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
   // 初始化：检查是否需要显示欢迎弹窗
   useEffect(() => {
@@ -131,21 +133,24 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // 跨页面导航：步骤变化时检测是否需要切换路由
+  // 路由变化时，如果有待处理的步骤跳转，应用它
   useEffect(() => {
-    if (!state.isActive || state.steps.length === 0) return;
+    if (pendingStep === null || !state.isActive) return;
 
-    const currentStepData = state.steps[state.currentStep];
-    if (!currentStepData) return;
-
-    const currentPath = window.location.pathname;
-    const targetPath = getPagePath(currentStepData.page);
-
-    // 如果当前页面不是目标页面，执行路由跳转
-    if (currentPath !== targetPath) {
-      router.push(targetPath);
+    const targetStep = state.steps[pendingStep];
+    if (!targetStep) {
+      setPendingStep(null);
+      return;
     }
-  }, [state.isActive, state.currentStep, state.steps, router]);
+
+    const targetPath = getPagePath(targetStep.page);
+
+    // 当页面加载完成后（pathname 匹配目标路径），应用步骤跳转
+    if (pathname === targetPath) {
+      setState((prev) => ({ ...prev, currentStep: pendingStep }));
+      setPendingStep(null);
+    }
+  }, [pathname, pendingStep, state.isActive, state.steps]);
 
   /**
    * 下一步
@@ -166,9 +171,21 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         };
       }
 
+      const currentStepData = prev.steps[prev.currentStep];
+      const nextStepData = prev.steps[nextIndex];
+
+      // 检查是否需要跨页面导航
+      if (currentStepData.page !== nextStepData.page) {
+        // 先触发路由跳转，等页面加载完成后再更新步骤
+        const targetPath = getPagePath(nextStepData.page);
+        router.push(targetPath);
+        setPendingStep(nextIndex);
+        return prev; // 暂不更新 currentStep
+      }
+
       return { ...prev, currentStep: nextIndex };
     });
-  }, []);
+  }, [router]);
 
   /**
    * 上一步
@@ -176,9 +193,23 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const prevStep = useCallback(() => {
     setState((prev) => {
       if (prev.currentStep <= 0) return prev;
-      return { ...prev, currentStep: prev.currentStep - 1 };
+
+      const prevStepIndex = prev.currentStep - 1;
+      const currentStepData = prev.steps[prev.currentStep];
+      const prevStepData = prev.steps[prevStepIndex];
+
+      // 检查是否需要跨页面导航
+      if (currentStepData.page !== prevStepData.page) {
+        // 先触发路由跳转，等页面加载完成后再更新步骤
+        const targetPath = getPagePath(prevStepData.page);
+        router.push(targetPath);
+        setPendingStep(prevStepIndex);
+        return prev; // 暂不更新 currentStep
+      }
+
+      return { ...prev, currentStep: prevStepIndex };
     });
-  }, []);
+  }, [router]);
 
   /**
    * 跳过引导
