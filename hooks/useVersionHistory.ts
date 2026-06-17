@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { detectCodeFormat } from '@/lib/utils/detect-code-format';
 import type { ConversationMessage } from '@/lib/types';
 import type { VersionItem } from '@/components/version-history/VersionHistoryDrawer';
@@ -28,19 +28,13 @@ export function useVersionHistory({ messages, onShowDiagram }: UseVersionHistory
     [messages]
   );
 
-  // 稳定的版本 ID 列表，避免引用变化导致 effect 频繁触发
-  const versionsKey = useMemo(() =>
-    messages
-      .filter(msg => msg.role === 'assistant')
-      .map(msg => msg.id)
-      .join(','),
-    [messages]
-  );
-
   // 版本列表变化时清空当前版本选择
-  useEffect(() => {
-    setCurrentVersionId(null);
-  }, [versionsKey]);
+  // 使用 useMemo 派生有效值，避免在 effect 中调用 setState
+  const effectiveVersionId = useMemo(() => {
+    if (!currentVersionId) return null;
+    const exists = versions.some(v => v.id === currentVersionId);
+    return exists ? currentVersionId : null;
+  }, [currentVersionId, versions]);
 
   const handleSelectVersion = useCallback((versionId: string) => {
     const msg = messages.find(m => m.id === versionId);
@@ -60,7 +54,7 @@ export function useVersionHistory({ messages, onShowDiagram }: UseVersionHistory
   return {
     versions,
     versionDrawerOpen,
-    currentVersionId,
+    currentVersionId: effectiveVersionId,
     handleSelectVersion,
     handleCloseVersionDrawer,
     toggleVersionDrawer,

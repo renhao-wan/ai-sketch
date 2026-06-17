@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useLocale } from '@/lib/locales';
 import { useOnboarding } from './useOnboarding';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 /**
  * 目标元素位置信息
@@ -25,7 +25,6 @@ export function OnboardingOverlay() {
     useOnboarding();
 
   const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
 
   const currentStepData = steps[currentStep];
   const isFirstStep = currentStep === 0;
@@ -61,7 +60,8 @@ export function OnboardingOverlay() {
   useEffect(() => {
     if (!isActive) return;
 
-    updateTargetRect();
+    // 延迟调用避免在 effect 中直接 setState
+    requestAnimationFrame(updateTargetRect);
 
     // 监听滚动和 resize
     const handleUpdate = () => {
@@ -71,24 +71,11 @@ export function OnboardingOverlay() {
     window.addEventListener('scroll', handleUpdate, true);
     window.addEventListener('resize', handleUpdate);
 
-    // 延迟显示，等待动画
-    const timer = setTimeout(() => setIsVisible(true), 50);
-
     return () => {
       window.removeEventListener('scroll', handleUpdate, true);
       window.removeEventListener('resize', handleUpdate);
-      clearTimeout(timer);
     };
   }, [isActive, updateTargetRect]);
-
-  /**
-   * 切换步骤时的动画
-   */
-  useEffect(() => {
-    setIsVisible(false);
-    const timer = setTimeout(() => setIsVisible(true), 50);
-    return () => clearTimeout(timer);
-  }, [currentStep]);
 
   if (!isActive || !currentStepData) return null;
 
@@ -168,13 +155,10 @@ export function OnboardingOverlay() {
         </div>
       )}
 
-      {/* 提示框 */}
+      {/* 提示框 - 使用 key 强制重新挂载以触发动画 */}
       <div
-        className={`absolute pointer-events-auto transition-all duration-300 ${
-          isVisible
-            ? 'opacity-100 translate-y-0'
-            : 'opacity-0 translate-y-2'
-        }`}
+        key={currentStep}
+        className="absolute pointer-events-auto animate-fade-in"
         style={{
           top: tooltipStyle.top,
           left: tooltipStyle.left,

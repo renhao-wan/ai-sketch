@@ -7,7 +7,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useRouter } from 'next/navigation';
 import { onboardingManager } from '@/lib/db/onboarding-manager';
 import { getStepsByMode, type OnboardingStep } from './steps';
 
@@ -70,7 +69,6 @@ const DEFAULT_STATE: OnboardingState = {
  * 引导 Provider 组件
  */
 export function OnboardingProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const [state, setState] = useState<OnboardingState>(DEFAULT_STATE);
 
   // 初始化：检查是否需要显示欢迎弹窗
@@ -141,7 +139,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
       return { ...prev, currentStep: nextStep };
     });
-  }, [router]);
+  }, []);
 
   /**
    * 上一步
