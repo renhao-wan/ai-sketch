@@ -148,14 +148,8 @@ export function OnboardingOverlay() {
 
   return (
     <div className="fixed inset-0 z-[90]">
-      {/* 全屏遮罩层 - 阻止所有点击 */}
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={(e) => e.preventDefault()}
-      />
-
-      {/* 高亮区域（挖空） */}
-      {targetRect && (
+      {/* 高亮区域（挖空）- 使用 boxShadow 创建遮罩效果 */}
+      {targetRect ? (
         <div
           className="absolute"
           style={{
@@ -173,6 +167,12 @@ export function OnboardingOverlay() {
           {/* 透明遮罩 - 阻止点击穿透 */}
           <div className="absolute inset-0 cursor-default" />
         </div>
+      ) : (
+        /* 目标元素未找到时显示全屏遮罩 */
+        <div
+          className="absolute inset-0 bg-black/50"
+          onClick={(e) => e.preventDefault()}
+        />
       )}
 
       {/* 提示框 - 使用 key 强制重新挂载以触发动画 */}
