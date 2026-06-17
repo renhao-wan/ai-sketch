@@ -4,9 +4,11 @@ import {
   createContext,
   useCallback,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from 'react';
+import { useRouter } from 'next/navigation';
 import { onboardingManager } from '@/lib/db/onboarding-manager';
 import { getStepsByMode, type OnboardingStep } from './steps';
 
@@ -66,10 +68,18 @@ const DEFAULT_STATE: OnboardingState = {
 };
 
 /**
+ * 根据步骤页面类型获取对应的路由路径
+ */
+function getPagePath(page: 'home' | 'editor'): string {
+  return page === 'home' ? '/' : '/editor';
+}
+
+/**
  * 引导 Provider 组件
  */
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<OnboardingState>(DEFAULT_STATE);
+  const router = useRouter();
 
   // 初始化：检查是否需要显示欢迎弹窗
   useEffect(() => {
@@ -88,6 +98,41 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
     checkOnboardingStatus();
   }, []);
+
+  // 步骤变化时滚动到目标元素（支持跨页面导航后等待元素出现）
+  useEffect(() => {
+    if (!state.isActive || state.steps.length === 0) return;
+
+    const currentStepData = state.steps[state.currentStep];
+    if (!currentStepData) return;
+
+    // 尝试查找并滚动到目标元素，如果不存在则重试
+    let retryCount = 0;
+    const maxRetries = 20; // 最多重试 20 次
+    const retryInterval = 100; // 每次间隔 100ms
+
+    const tryScrollToTarget = () => {
+      const targetElement = document.querySelector(currentStepData.target);
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return true;
+      }
+      return false;
+    };
+
+    // 首次尝试
+    if (tryScrollToTarget()) return;
+
+    // 如果目标元素不存在，设置重试机制（处理跨页面导航的情况）
+    const timer = setInterval(() => {
+      retryCount++;
+      if (tryScrollToTarget() || retryCount >= maxRetries) {
+        clearInterval(timer);
+      }
+    }, retryInterval);
+
+    return () => clearInterval(timer);
+  }, [state.isActive, state.currentStep, state.steps]);
 
   /**
    * 开始引导
@@ -109,10 +154,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
    */
   const nextStep = useCallback(() => {
     setState((prev) => {
-      const nextStep = prev.currentStep + 1;
+      const nextIndex = prev.currentStep + 1;
 
       // 检查是否完成
-      if (nextStep >= prev.steps.length) {
+      if (nextIndex >= prev.steps.length) {
         // 完成引导
         onboardingManager.setStatus(prev.mode).catch(console.error);
         return {
@@ -123,23 +168,18 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      // 检查是否需要切换页面
       const currentStepData = prev.steps[prev.currentStep];
-      const nextStepData = prev.steps[nextStep];
+      const nextStepData = prev.steps[nextIndex];
 
-      // 如果目标元素不存在，自动跳过
-      const targetElement = document.querySelector(nextStepData.target);
-      if (!targetElement) {
-        // 继续尝试下一步
-        return { ...prev, currentStep: nextStep };
+      // 检查是否需要切换页面
+      if (currentStepData.page !== nextStepData.page) {
+        const targetPath = getPagePath(nextStepData.page);
+        router.push(targetPath);
       }
 
-      // 滚动到目标元素
-      targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-      return { ...prev, currentStep: nextStep };
+      return { ...prev, currentStep: nextIndex };
     });
-  }, []);
+  }, [router]);
 
   /**
    * 上一步
@@ -149,17 +189,18 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       if (prev.currentStep <= 0) return prev;
 
       const prevStepIndex = prev.currentStep - 1;
+      const currentStepData = prev.steps[prev.currentStep];
       const prevStepData = prev.steps[prevStepIndex];
 
-      // 滚动到目标元素
-      const targetElement = document.querySelector(prevStepData.target);
-      if (targetElement) {
-        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // 检查是否需要切换页面
+      if (currentStepData.page !== prevStepData.page) {
+        const targetPath = getPagePath(prevStepData.page);
+        router.push(targetPath);
       }
 
       return { ...prev, currentStep: prevStepIndex };
     });
-  }, []);
+  }, [router]);
 
   /**
    * 跳过引导
@@ -190,15 +231,18 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({ ...prev, showWelcome: false }));
   }, []);
 
-  const contextValue: OnboardingContextValue = {
-    ...state,
-    startOnboarding,
-    nextStep,
-    prevStep,
-    skip,
-    finish,
-    closeWelcome,
-  };
+  const contextValue: OnboardingContextValue = useMemo(
+    () => ({
+      ...state,
+      startOnboarding,
+      nextStep,
+      prevStep,
+      skip,
+      finish,
+      closeWelcome,
+    }),
+    [state, startOnboarding, nextStep, prevStep, skip, finish, closeWelcome]
+  );
 
   return (
     <OnboardingContext.Provider value={contextValue}>
