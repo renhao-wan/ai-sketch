@@ -137,8 +137,8 @@ export default function HomePage() {
 
           {/* Recent Items — 固定高度容器，避免数据加载后布局跳动 */}
           <div className="h-9 flex flex-wrap items-center justify-center gap-2">
-            {recentItems.length > 0 && (
-              <>
+            {recentItems.length > 0 ? (
+              <div className="animate-fade-in flex flex-wrap items-center justify-center gap-2">
                 <span className="text-[11px] text-[var(--muted)]/50 mr-1">{t('home.recent')}</span>
                 {recentItems.slice(0, 3).map((item) => (
                   <button
@@ -151,8 +151,8 @@ export default function HomePage() {
                     <span className="text-[var(--muted)]/40">{timeAgo(item.updatedAt, t)}</span>
                   </button>
                 ))}
-              </>
-            )}
+              </div>
+            ) : null}
           </div>
         </div>
       </main>
