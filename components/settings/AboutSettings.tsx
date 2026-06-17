@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLocale, type TranslationKey } from '@/lib/locales';
 import { AppIcon } from '@/components/layout/TopBar';
 import { User, Code2, FileText, Shield, ExternalLink, RefreshCw, Download, Check, ArrowUpCircle, BookOpen } from 'lucide-react';
@@ -46,6 +47,7 @@ function useMounted() {
 
 export function AboutSettings() {
   const { t } = useLocale();
+  const router = useRouter();
   const { isElectron, status, info, progress, error, checkForUpdates, downloadUpdate, installUpdate } = useUpdate();
   const { showNotification } = useNotification();
   const { startOnboarding } = useOnboarding();
@@ -119,7 +121,10 @@ export function AboutSettings() {
               </p>
             </div>
             <button
-              onClick={() => startOnboarding('full')}
+              onClick={() => {
+                router.push('/');
+                setTimeout(() => startOnboarding('full'), 300);
+              }}
               className="px-4 py-2 text-sm font-medium text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-lg hover:bg-[var(--btn-primary-hover)] transition-colors"
             >
               {t('onboarding.settings.restart')}
