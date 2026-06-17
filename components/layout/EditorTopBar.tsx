@@ -109,17 +109,19 @@ export default function EditorTopBar({
             <div className="relative"><AppIcon size={22} /></div>
           </button>
         </Tooltip>
-        <ConversationList
-          currentId={conversationId}
-          onSelect={onLoadConversation}
-          onNew={onNewConversation}
-        />
+        <div id="onboarding-conversation-list">
+          <ConversationList
+            currentId={conversationId}
+            onSelect={onLoadConversation}
+            onNew={onNewConversation}
+          />
+        </div>
       </div>
 
       {/* 右侧：标签 + 配置 + 版本历史 + 窗口控制 */}
       <div className="flex items-center gap-1 flex-shrink-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         {/* 标签按钮 */}
-        <div className="relative">
+        <div id="onboarding-tag-btn" className="relative">
           <Tooltip content={t('copilot.tags')} side="bottom">
             <button
               ref={tagBtnRef}
@@ -180,6 +182,7 @@ export default function EditorTopBar({
         {/* 配置按钮 */}
         <Tooltip content={t('copilot.config')} side="bottom">
           <button
+            id="onboarding-config-btn"
             onClick={onOpenConfig}
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
               isConfigOpen
