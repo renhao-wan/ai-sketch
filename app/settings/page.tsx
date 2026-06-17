@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useLocale, type TranslationKey } from '@/lib/locales';
 import { useShortcuts } from '@/hooks/useShortcuts';
+import { useOnboarding } from '@/components/onboarding';
 import { SettingsSidebar, SettingsTab } from '@/components/settings/SettingsSidebar';
 import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
 import { NetworkSettings } from '@/components/settings/NetworkSettings';
@@ -39,6 +40,21 @@ export default function SettingsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
   const [shortcutsSearchQuery, setShortcutsSearchQuery] = useState('');
+
+  // 监听引导步骤变化，自动切换 tab
+  const { isActive, currentStep, steps } = useOnboarding();
+  useEffect(() => {
+    if (!isActive || !steps[currentStep]) return;
+    const target = steps[currentStep].target;
+    // 根据 target 判断应该切换到哪个 tab
+    if (target.includes('settings-appearance')) setActiveTab('appearance');
+    else if (target.includes('settings-llm')) setActiveTab('llm');
+    else if (target.includes('settings-tags')) setActiveTab('tags');
+    else if (target.includes('settings-storage')) setActiveTab('storage');
+    else if (target.includes('settings-shortcuts')) setActiveTab('shortcuts');
+    else if (target.includes('settings-network')) setActiveTab('network');
+    else if (target.includes('settings-about')) setActiveTab('about');
+  }, [isActive, currentStep, steps]);
 
   // 注册快捷键
   useShortcuts({
