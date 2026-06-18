@@ -213,51 +213,6 @@ export async function POST(request: Request) {
       : await conversationManager.buildContextMessages(activeConversationId);
     perfEnd('Build Context');
 
-    // ── 判断实际执行的模式（缓存 key 需要包含 effectiveMode）──
-    let effectiveMode: Exclude<GenerationMode, 'auto'> = 'fast';
-    if (generationMode === 'auto') {
-      effectiveMode = assessComplexity(userContent, diagramFormat);
-      console.log(`[Generate] Auto mode resolved to: ${effectiveMode}`);
-    } else if (generationMode === 'quality') {
-      effectiveMode = 'quality';
-    }
-
-    // ── 检查缓存（仅对非图片输入、非重新生成、非编辑模式的请求生效）──
-    // Vision 模式不缓存（带图片），降级模式可缓存（纯文本），编辑模式不缓存
-    const shouldCache = !processedImages && !regenerate && !editMode;
-    let cacheKeyValue: string | null = null;
-
-    if (shouldCache) {
-      const contextHash = contextMessages.length > 1
-        ? await buildContextHash(contextMessages)
-        : undefined;
-
-      const promptForCache = imageDescription
-        ? `[图片内容]\n${imageDescription}\n\n${userContent}`
-        : userContent;
-
-      cacheKeyValue = await buildCacheKey({
-        prompt: strategy.getUserPrompt(promptForCache, chartType),
-        format: diagramFormat,
-        chartType,
-        model: config.model,
-        configName: config.name || config.type,
-        contextHash,
-        mode: effectiveMode,
-      });
-    }
-    let cachedResponse: string | null = null;
-
-    if (cacheKeyValue) {
-      perfMark('Cache Lookup');
-      cachedResponse = await cacheManager.get(cacheKeyValue);
-      perfEnd('Cache Lookup');
-
-      if (cachedResponse) {
-        console.log('[Generate] Cache hit');
-      }
-    }
-
     // ── SSE stream ──
     const encoder = new TextEncoder();
     let accumulatedCode = '';
@@ -275,6 +230,43 @@ export async function POST(request: Request) {
     // ── 需求提取（缓存未命中且无图片输入时调用）──
     let extractedRequirement: string;
 
+    // 先检查缓存（使用原始输入作为缓存键的一部分）
+    const shouldCache = !processedImages && !regenerate && !editMode;
+    let cacheKeyValue: string | null = null;
+
+    if (shouldCache) {
+      const contextHash = contextMessages.length > 1
+        ? await buildContextHash(contextMessages)
+        : undefined;
+
+      const promptForCache = imageDescription
+        ? `[图片内容]\n${imageDescription}\n\n${userContent}`
+        : userContent;
+
+      // 使用 'auto' 作为临时模式，缓存查找时不区分 fast/quality
+      cacheKeyValue = await buildCacheKey({
+        prompt: strategy.getUserPrompt(promptForCache, chartType),
+        format: diagramFormat,
+        chartType,
+        model: config.model,
+        configName: config.name || config.type,
+        contextHash,
+        mode: 'auto',
+      });
+    }
+    let cachedResponse: string | null = null;
+
+    if (cacheKeyValue) {
+      perfMark('Cache Lookup');
+      cachedResponse = await cacheManager.get(cacheKeyValue);
+      perfEnd('Cache Lookup');
+
+      if (cachedResponse) {
+        console.log('[Generate] Cache hit');
+      }
+    }
+
+    // 需求提取（缓存未命中且无图片输入时调用）
     if (cachedResponse || processedImages || imageDescription) {
       // 缓存命中或图片输入，跳过需求提取
       extractedRequirement = '';  // 不会被使用
@@ -290,6 +282,17 @@ export async function POST(request: Request) {
         extractedRequirement = userContent;
       }
       perfEnd('Requirement Extraction');
+    }
+
+    // ── 判断实际执行的模式（基于提取后的需求进行评估）──
+    let effectiveMode: Exclude<GenerationMode, 'auto'> = 'fast';
+    if (generationMode === 'auto') {
+      // 使用提取后的需求进行复杂度评估（如果有），否则使用原始输入
+      const inputForAssessment = extractedRequirement || userContent;
+      effectiveMode = assessComplexity(inputForAssessment, diagramFormat);
+      console.log(`[Generate] Auto mode resolved to: ${effectiveMode}`);
+    } else if (generationMode === 'quality') {
+      effectiveMode = 'quality';
     }
 
     // ── Build LLM messages with context（使用提取后的需求）──
