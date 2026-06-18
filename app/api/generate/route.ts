@@ -271,11 +271,11 @@ export async function POST(request: Request) {
     request.signal?.addEventListener('abort', onAbort, { once: true });
     timeoutController.signal.addEventListener('abort', onAbort, { once: true });
 
-    // ── 需求提取（缓存未命中时调用）──
+    // ── 需求提取（缓存未命中且无图片输入时调用）──
     let extractedRequirement: string;
 
-    if (cachedResponse) {
-      // 缓存命中，跳过需求提取
+    if (cachedResponse || processedImages || imageDescription) {
+      // 缓存命中或图片输入，跳过需求提取
       extractedRequirement = '';  // 不会被使用
     } else {
       // 缓存未命中，调用需求提取 LLM
