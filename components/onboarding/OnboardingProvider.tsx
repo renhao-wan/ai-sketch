@@ -99,10 +99,21 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // 初始化：检查是否需要显示欢迎弹窗
+  // 初始化：检查是否需要显示欢迎弹窗或启动引导
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       try {
+        // 检查是否有重新引导的标记
+        const restartMode = sessionStorage.getItem('onboarding-restart');
+        if (restartMode) {
+          sessionStorage.removeItem('onboarding-restart');
+          // 延迟一下确保页面加载完成
+          setTimeout(() => {
+            startOnboarding(restartMode as 'core' | 'full');
+          }, 100);
+          return;
+        }
+
         const res = await fetch('/api/configs/actions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

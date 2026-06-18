@@ -122,8 +122,9 @@ export function AboutSettings() {
             </div>
             <button
               onClick={() => {
+                // 设置标记，首页加载完成后启动引导
+                sessionStorage.setItem('onboarding-restart', 'full');
                 router.push('/');
-                setTimeout(() => startOnboarding('full'), 300);
               }}
               className="px-4 py-2 text-sm font-medium text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-lg hover:bg-[var(--btn-primary-hover)] transition-colors"
             >
