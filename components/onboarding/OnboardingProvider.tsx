@@ -223,7 +223,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       ...DEFAULT_STATE,
       isLoading: false,
     });
-  }, []);
+    // 返回首页
+    router.push('/');
+  }, [router]);
 
   /**
    * 完成引导
@@ -234,7 +236,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       ...DEFAULT_STATE,
       isLoading: false,
     });
-  }, [state.mode]);
+    // 返回首页
+    router.push('/');
+  }, [state.mode, router]);
 
   /**
    * 关闭欢迎弹窗

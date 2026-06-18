@@ -684,6 +684,6 @@ export const en: TranslationDict = {
   'onboarding.steps.version-history.content': 'View and restore previously generated versions for comparison and rollback.',
 
   'onboarding.settings.title': 'Guide & Help',
-  'onboarding.settings.restart': 'Restart Full Guide',
+  'onboarding.settings.restart': 'Restart Guide',
   'onboarding.settings.restartDesc': 'Experience the full onboarding flow again',
 };

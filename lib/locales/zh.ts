@@ -682,7 +682,7 @@ export const zh = {
   'onboarding.steps.version-history.content': '查看和恢复之前生成的版本，方便对比和回退。',
 
   'onboarding.settings.title': '引导与帮助',
-  'onboarding.settings.restart': '重新查看完整引导',
+  'onboarding.settings.restart': '重新引导',
   'onboarding.settings.restartDesc': '重新体验完整的新手引导流程',
 } as const;
 
