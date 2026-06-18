@@ -51,6 +51,10 @@ export async function extractRequirements(
   config: LLMConfig,
   signal?: AbortSignal,
 ): Promise<string> {
+  if (!userInput || !userInput.trim()) {
+    throw new Error('用户输入不能为空');
+  }
+
   const messages: LLMMessage[] = [
     { role: 'system', content: EXTRACTION_SYSTEM_PROMPT },
     { role: 'user', content: userInput },
