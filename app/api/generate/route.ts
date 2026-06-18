@@ -8,12 +8,11 @@ import { getStrategy } from '@/lib/strategies/registry';
 import type { LLMConfig, LLMMessage, ImageData } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 import { processImages } from '@/lib/llm/vision-proxy';
-import { assessComplexity } from '@/lib/generation/complexity-assessor';
 import { generatePlan } from '@/lib/generation/planner';
 import { executeMultiPass } from '@/lib/generation/multi-pass-generator';
 import type { GenerationMode } from '@/lib/generation/types';
 import { isRetryableError } from '@/lib/utils/error';
-import { extractRequirements } from '@/lib/generation/requirement-extractor';
+import { extractRequirements, type ExtractionResult } from '@/lib/generation/requirement-extractor';
 
 /** 生成失败后清理脏数据：新建会话删除整个会话，已有会话删除刚添加的消息 */
 async function cleanupOnFailure(
@@ -229,6 +228,7 @@ export async function POST(request: Request) {
 
     // ── 需求提取（缓存未命中且无图片输入时调用）──
     let extractedRequirement: string;
+    let extractionResult: ExtractionResult | null = null;
 
     // 先检查缓存（使用原始输入作为缓存键的一部分）
     const shouldCache = !processedImages && !regenerate && !editMode;
@@ -270,27 +270,35 @@ export async function POST(request: Request) {
     if (cachedResponse || processedImages || imageDescription) {
       // 缓存命中或图片输入，跳过需求提取
       extractedRequirement = '';  // 不会被使用
+      extractionResult = null;
     } else {
       // 缓存未命中，调用需求提取 LLM
       perfMark('Requirement Extraction');
       try {
-        extractedRequirement = await extractRequirements(userContent, config, combinedController.signal);
-        console.log(`[Generate] Requirement extracted, length: ${extractedRequirement.length}`);
+        extractionResult = await extractRequirements(userContent, config, combinedController.signal);
+        extractedRequirement = extractionResult.requirement;
+        console.log(`[Generate] Requirement extracted, length: ${extractedRequirement.length}, complexity: ${extractionResult.complexity}`);
       } catch (error) {
         console.error('[Generate] 需求提取失败，降级使用原始输入:', error);
         // 降级：直接使用用户原始输入
         extractedRequirement = userContent;
+        extractionResult = null;
       }
       perfEnd('Requirement Extraction');
     }
 
-    // ── 判断实际执行的模式（基于提取后的需求进行评估）──
+    // ── 判断实际执行的模式（基于 LLM 的复杂度评估）──
     let effectiveMode: Exclude<GenerationMode, 'auto'> = 'fast';
     if (generationMode === 'auto') {
-      // 使用提取后的需求进行复杂度评估（如果有），否则使用原始输入
-      const inputForAssessment = extractedRequirement || userContent;
-      effectiveMode = assessComplexity(inputForAssessment, diagramFormat);
-      console.log(`[Generate] Auto mode resolved to: ${effectiveMode}`);
+      if (extractionResult) {
+        // 使用 LLM 的复杂度评估
+        effectiveMode = extractionResult.complexity === 'complex' ? 'quality' : 'fast';
+        console.log(`[Generate] Auto mode resolved to: ${effectiveMode} (based on LLM assessment: ${extractionResult.complexity})`);
+      } else {
+        // 降级：使用简单长度判断
+        effectiveMode = userContent.length >= 500 ? 'quality' : 'fast';
+        console.log(`[Generate] Auto mode resolved to: ${effectiveMode} (fallback: length=${userContent.length})`);
+      }
     } else if (generationMode === 'quality') {
       effectiveMode = 'quality';
     }
