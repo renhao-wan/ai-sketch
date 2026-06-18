@@ -1,9 +1,9 @@
 'use client';
 
-import { Square, Circle, Diamond, Type, ArrowRight, Trash2, Pencil, MousePointer } from 'lucide-react';
+import { Square, Circle, Diamond, Type, ArrowRight, Trash2, Pencil, MousePointer, Hand } from 'lucide-react';
 import { useLocale, type TranslationKey } from '@/lib/locales';
 
-export type DrawioTool = 'select' | 'rectangle' | 'ellipse' | 'diamond' | 'text' | 'arrow';
+export type DrawioTool = 'select' | 'hand' | 'rectangle' | 'ellipse' | 'diamond' | 'text' | 'arrow';
 
 interface DrawioToolbarProps {
   activeTool: DrawioTool;
@@ -15,6 +15,7 @@ interface DrawioToolbarProps {
 
 const shapeTools: { tool: DrawioTool; icon: typeof Square; labelKey: TranslationKey }[] = [
   { tool: 'select', icon: MousePointer, labelKey: 'drawio.tool.select' },
+  { tool: 'hand', icon: Hand, labelKey: 'drawio.tool.hand' },
   { tool: 'rectangle', icon: Square, labelKey: 'drawio.tool.rectangle' },
   { tool: 'ellipse', icon: Circle, labelKey: 'drawio.tool.ellipse' },
   { tool: 'diamond', icon: Diamond, labelKey: 'drawio.tool.diamond' },

@@ -11,7 +11,7 @@ import type { Cell, CellStyle, Graph, FitPlugin, ModelXmlSerializer } from '@max
 import type { CanvasExportHandle } from './DiagramCanvas';
 
 // ── 类型定义 ──
-type DrawioTool = 'select' | 'rectangle' | 'ellipse' | 'diamond' | 'text' | 'arrow';
+type DrawioTool = 'select' | 'hand' | 'rectangle' | 'ellipse' | 'diamond' | 'text' | 'arrow';
 
 interface DrawioCanvasProps {
   code: string;
@@ -205,6 +205,11 @@ export default function DrawioCanvas({ code, exportRef }: DrawioCanvasProps) {
     previewCell: null as Cell | null,
     arrowSource: null as Cell | null,
     selectionBox: null as HTMLDivElement | null,
+    // 手形工具拖拽状态
+    handDragStartX: 0,
+    handDragStartY: 0,
+    handTranslateStartX: 0,
+    handTranslateStartY: 0,
   });
 
   // 同步 ref 和 state
@@ -400,6 +405,19 @@ export default function DrawioCanvas({ code, exportRef }: DrawioCanvasProps) {
             return;
           }
 
+          // 手形工具：开始拖拽画布
+          if (tool === 'hand') {
+            e.stopPropagation();
+            ds.isDrawing = true;
+            ds.handDragStartX = e.clientX;
+            ds.handDragStartY = e.clientY;
+            const translate = graphInstance.getView().getTranslate();
+            ds.handTranslateStartX = translate.x;
+            ds.handTranslateStartY = translate.y;
+            container.style.cursor = 'grabbing';
+            return;
+          }
+
           // 非选择工具：阻止 maxgraph 处理
           e.stopPropagation();
           ds.isDrawing = true;
@@ -494,6 +512,18 @@ export default function DrawioCanvas({ code, exportRef }: DrawioCanvasProps) {
             return;
           }
 
+          // 手形工具：拖拽画布
+          if (tool === 'hand') {
+            const scale = graphInstance.getView().getScale();
+            const dx = (e.clientX - ds.handDragStartX) / scale;
+            const dy = (e.clientY - ds.handDragStartY) / scale;
+            graphInstance.getView().setTranslate(
+              ds.handTranslateStartX + dx,
+              ds.handTranslateStartY + dy,
+            );
+            return;
+          }
+
           // 箭头工具：更新预览线
           if (tool === 'arrow') {
             const r = container.getBoundingClientRect();
@@ -542,6 +572,12 @@ export default function DrawioCanvas({ code, exportRef }: DrawioCanvasProps) {
           if (!ds.isDrawing) return;
           ds.isDrawing = false;
           const tool = activeToolRef.current;
+
+          // 手形工具：结束拖拽
+          if (tool === 'hand') {
+            container.style.cursor = 'grab';
+            return;
+          }
 
           // 选择工具：完成框选
           if (tool === 'select') {
@@ -976,6 +1012,9 @@ export default function DrawioCanvas({ code, exportRef }: DrawioCanvasProps) {
     if (tool === 'select') {
       g.setEnabled(true);
       if (containerRef.current) containerRef.current.style.cursor = 'default';
+    } else if (tool === 'hand') {
+      g.setEnabled(false);
+      if (containerRef.current) containerRef.current.style.cursor = 'grab';
     } else {
       g.setEnabled(false);
       if (containerRef.current) containerRef.current.style.cursor = 'crosshair';

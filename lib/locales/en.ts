@@ -293,6 +293,7 @@ export const en: TranslationDict = {
 
   // Draw.io editor (mxGraph)
   'drawio.tool.select': 'Select',
+  'drawio.tool.hand': 'Hand',
   'drawio.tool.rectangle': 'Rectangle',
   'drawio.tool.ellipse': 'Ellipse',
   'drawio.tool.diamond': 'Diamond',

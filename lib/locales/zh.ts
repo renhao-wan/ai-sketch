@@ -291,6 +291,7 @@ export const zh = {
 
   // Draw.io editor (mxGraph)
   'drawio.tool.select': '选择',
+  'drawio.tool.hand': '移动画布',
   'drawio.tool.rectangle': '矩形',
   'drawio.tool.ellipse': '椭圆',
   'drawio.tool.diamond': '菱形',
