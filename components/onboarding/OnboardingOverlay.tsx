@@ -61,6 +61,7 @@ export function OnboardingOverlay() {
     if (!isActive || !currentStepData) return;
 
     // 计算位置
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 需要在 effect 中计算初始位置
     updateTargetRect();
 
     // 监听滚动和 resize

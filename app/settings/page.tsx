@@ -47,13 +47,20 @@ export default function SettingsPage() {
     if (!isActive || !steps[currentStep]) return;
     const target = steps[currentStep].target;
     // 根据 target 判断应该切换到哪个 tab
-    if (target.includes('settings-appearance')) setActiveTab('appearance');
-    else if (target.includes('settings-llm')) setActiveTab('llm');
-    else if (target.includes('settings-tags')) setActiveTab('tags');
-    else if (target.includes('settings-storage')) setActiveTab('storage');
-    else if (target.includes('settings-shortcuts')) setActiveTab('shortcuts');
-    else if (target.includes('settings-network')) setActiveTab('network');
-    else if (target.includes('settings-about')) setActiveTab('about');
+    const tabMap: Record<string, SettingsTab> = {
+      'settings-appearance': 'appearance',
+      'settings-llm': 'llm',
+      'settings-tags': 'tags',
+      'settings-storage': 'storage',
+      'settings-shortcuts': 'shortcuts',
+      'settings-network': 'network',
+      'settings-about': 'about',
+    };
+    const matchedTab = Object.keys(tabMap).find(key => target.includes(key));
+    if (matchedTab) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 响应引导步骤变化，需要同步更新 tab
+      setActiveTab(tabMap[matchedTab]);
+    }
   }, [isActive, currentStep, steps]);
 
   // 注册快捷键
