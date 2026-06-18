@@ -13,6 +13,7 @@ import { generatePlan } from '@/lib/generation/planner';
 import { executeMultiPass } from '@/lib/generation/multi-pass-generator';
 import type { GenerationMode } from '@/lib/generation/types';
 import { isRetryableError } from '@/lib/utils/error';
+import { extractRequirements } from '@/lib/generation/requirement-extractor';
 
 /** 生成失败后清理脏数据：新建会话删除整个会话，已有会话删除刚添加的消息 */
 async function cleanupOnFailure(
@@ -210,47 +211,6 @@ export async function POST(request: Request) {
       ? []
       : await conversationManager.buildContextMessages(activeConversationId);
 
-    // Build the new user message for LLM
-    let newUserMessage: LLMMessage;
-    if (processedImages) {
-      newUserMessage = {
-        role: 'user',
-        content: strategy.getUserPrompt(userContent, chartType),
-        images: processedImages,
-      };
-    } else if (imageDescription) {
-      newUserMessage = {
-        role: 'user',
-        content: strategy.getUserPrompt(
-          `[图片内容]\n${imageDescription}\n\n${userContent}`,
-          chartType,
-        ),
-      };
-    } else {
-      newUserMessage = {
-        role: 'user',
-        content: strategy.getUserPrompt(
-          typeof userInput === 'string' ? userInput : (userInput.text || ''),
-          chartType,
-        ),
-      };
-    }
-
-    // Replace the last user message (raw content) with the strategy-formatted version
-    if (contextMessages.length > 0 && contextMessages[contextMessages.length - 1].role === 'user') {
-      contextMessages[contextMessages.length - 1] = newUserMessage;
-    } else {
-      contextMessages.push(newUserMessage);
-    }
-
-    const systemPrompt = strategy.getSystemPrompt();
-    const fullMessages: LLMMessage[] = [
-      { role: 'system', content: systemPrompt },
-      ...contextMessages,
-    ];
-    perfEnd('Build Context');
-
-    console.log(`[Generate] Messages count: ${fullMessages.length}, System prompt length: ${systemPrompt.length}`);
 
     // ── 判断实际执行的模式（缓存 key 需要包含 effectiveMode）──
     let effectiveMode: Exclude<GenerationMode, 'auto'> = 'fast';
@@ -311,6 +271,72 @@ export async function POST(request: Request) {
     request.signal?.addEventListener('abort', onAbort, { once: true });
     timeoutController.signal.addEventListener('abort', onAbort, { once: true });
 
+    // ── 需求提取（缓存未命中时调用）──
+    let extractedRequirement: string;
+
+    if (cachedResponse) {
+      // 缓存命中，跳过需求提取
+      extractedRequirement = '';  // 不会被使用
+    } else {
+      // 缓存未命中，调用需求提取 LLM
+      perfMark('Requirement Extraction');
+      try {
+        const reqInputText = typeof userInput === 'string' ? userInput : (userInput.text || '');
+        extractedRequirement = await extractRequirements(reqInputText, config, combinedController.signal);
+        console.log(`[Generate] Requirement extracted, length: ${extractedRequirement.length}`);
+      } catch (error) {
+        console.error('[Generate] 需求提取失败，降级使用原始输入:', error);
+        // 降级：直接使用用户原始输入
+        extractedRequirement = typeof userInput === 'string' ? userInput : (userInput.text || '');
+      }
+      perfEnd('Requirement Extraction');
+    }
+
+    // ── Build LLM messages with context（使用提取后的需求）──
+    // Build the new user message for LLM
+    let newUserMessage: LLMMessage;
+    if (processedImages) {
+      newUserMessage = {
+        role: 'user',
+        content: strategy.getUserPrompt(userContent, chartType),
+        images: processedImages,
+      };
+    } else if (imageDescription) {
+      newUserMessage = {
+        role: 'user',
+        content: strategy.getUserPrompt(
+          `[图片内容]\n${imageDescription}\n\n${userContent}`,
+          chartType,
+        ),
+      };
+    } else {
+      // 使用提取后的提示词（如果有），否则使用原始输入
+      const promptForLLM = cachedResponse
+        ? (typeof userInput === 'string' ? userInput : (userInput.text || ''))
+        : (extractedRequirement || (typeof userInput === 'string' ? userInput : (userInput.text || '')));
+
+      newUserMessage = {
+        role: 'user',
+        content: strategy.getUserPrompt(promptForLLM, chartType),
+      };
+    }
+
+    // Replace the last user message (raw content) with the strategy-formatted version
+    if (contextMessages.length > 0 && contextMessages[contextMessages.length - 1].role === 'user') {
+      contextMessages[contextMessages.length - 1] = newUserMessage;
+    } else {
+      contextMessages.push(newUserMessage);
+    }
+
+    const systemPrompt = strategy.getSystemPrompt();
+    const fullMessages: LLMMessage[] = [
+      { role: 'system', content: systemPrompt },
+      ...contextMessages,
+    ];
+    perfEnd('Build Context');
+
+    console.log(`[Generate] Messages count: ${fullMessages.length}, System prompt length: ${systemPrompt.length}`);
+
     perfEnd('Conversation Management');
 
     const stream = new ReadableStream({
@@ -337,11 +363,15 @@ export async function POST(request: Request) {
             }
           } else if (effectiveMode === 'quality') {
             // 高质量模式：多轮生成
-            const plan = await generatePlan(config!, userContent, diagramFormat, contextMessages, combinedController.signal);
+            const promptForQuality = cachedResponse
+              ? userContent
+              : (extractedRequirement || userContent);
+
+            const plan = await generatePlan(config!, promptForQuality, diagramFormat, contextMessages, combinedController.signal);
             console.log(`[Generate] Plan: ${plan.complexity}, ${plan.steps.length} steps, ~${plan.estimatedNodes} nodes`);
 
             optimizedCode = await executeMultiPass(
-              config!, plan, userContent, diagramFormat, contextMessages,
+              config!, plan, promptForQuality, diagramFormat, contextMessages,
               (event) => controller.enqueue(encoder.encode(event)),
               combinedController.signal,
             );
