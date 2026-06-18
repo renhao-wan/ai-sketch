@@ -103,17 +103,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       try {
-        // 检查是否有重新引导的标记
-        const restartMode = sessionStorage.getItem('onboarding-restart');
-        if (restartMode) {
-          sessionStorage.removeItem('onboarding-restart');
-          // 延迟一下确保页面加载完成
-          setTimeout(() => {
-            startOnboarding(restartMode as 'core' | 'full');
-          }, 100);
-          return;
-        }
-
         const res = await fetch('/api/configs/actions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -148,6 +137,15 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       isLoading: false,
     });
   }, []);
+
+  // 检查是否有重新引导的标记（从设置页面跳转过来）
+  useEffect(() => {
+    const restartMode = sessionStorage.getItem('onboarding-restart');
+    if (restartMode && pathname === '/') {
+      sessionStorage.removeItem('onboarding-restart');
+      startOnboarding(restartMode as 'core' | 'full');
+    }
+  }, [pathname, startOnboarding]);
 
   // 路由变化时，如果有待处理的步骤跳转，应用它
   useEffect(() => {
