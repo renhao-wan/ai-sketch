@@ -104,7 +104,25 @@ class ExcalidrawStrategy implements DiagramStrategy {
       if (!arrayStr) return null;
       const rawElements = JSON.parse(arrayStr);
       if (!Array.isArray(rawElements) || rawElements.length === 0) return null;
-      const converted = convertToExcalidrawElements(rawElements, { regenerateIds: true });
+
+      // 确保数值字段是数字类型，避免 toFixed 错误
+      const sanitizedElements = rawElements.map(el => {
+        if (!el || typeof el !== 'object') return el;
+        const sanitized = { ...el };
+        // 转换常见的数值字段
+        const numericFields = ['x', 'y', 'width', 'height', 'angle', 'strokeWidth', 'opacity', 'roundness', 'fontSize', 'baseline'];
+        for (const field of numericFields) {
+          if (field in sanitized && typeof sanitized[field] === 'string') {
+            const num = Number(sanitized[field]);
+            if (!isNaN(num)) {
+              sanitized[field] = num;
+            }
+          }
+        }
+        return sanitized;
+      });
+
+      const converted = convertToExcalidrawElements(sanitizedElements, { regenerateIds: true });
       const svg = await exportToSvg({
         elements: converted,
         appState: { viewBackgroundColor: '#ffffff', exportWithDarkMode: false },
