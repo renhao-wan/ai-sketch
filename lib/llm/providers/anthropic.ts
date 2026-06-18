@@ -1,6 +1,7 @@
 /**
  * Anthropic Provider 实现
  * 支持 Claude 系列模型
+ * 注意：Anthropic API 不支持 structured output，responseFormat 参数会被忽略
  */
 
 import type { LLMMessage } from '@/lib/types';
@@ -22,7 +23,7 @@ export class AnthropicProvider implements LLMProvider {
     };
   }
 
-  buildRequestBody(model: string, messages: LLMMessage[], temperature?: number, maxTokens?: number): object {
+  buildRequestBody(model: string, messages: LLMMessage[], temperature?: number, maxTokens?: number, _responseFormat?: object): object {
     const systemMessage = messages.find(m => m.role === 'system');
     const chatMessages = messages.filter(m => m.role !== 'system');
 

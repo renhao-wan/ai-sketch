@@ -2,6 +2,8 @@
  * 需求提取模块
  * 将用户的任意输入转化为最适合生图的结构化提示词
  * 同时评估图表复杂度，为自动模式提供决策依据
+ *
+ * 使用 structured output 确保 LLM 返回符合要求的 JSON 格式
  */
 
 import type { LLMConfig, LLMMessage } from '@/lib/types';
@@ -15,6 +17,31 @@ export interface ExtractionResult {
   complexity: 'simple' | 'medium' | 'complex';
 }
 
+/** JSON Schema 用于 structured output */
+const EXTRACTION_JSON_SCHEMA = {
+  type: 'json_schema',
+  json_schema: {
+    name: 'extraction_result',
+    strict: true,
+    schema: {
+      type: 'object',
+      properties: {
+        requirement: {
+          type: 'string',
+          description: '提取后的结构化图表描述',
+        },
+        complexity: {
+          type: 'string',
+          enum: ['simple', 'medium', 'complex'],
+          description: '图表复杂度评估',
+        },
+      },
+      required: ['requirement', 'complexity'],
+      additionalProperties: false,
+    },
+  },
+};
+
 /** 需求提取的 System Prompt */
 const EXTRACTION_SYSTEM_PROMPT = `你是一个图表需求分析专家。你的任务是从用户的输入中提取出最适合生成图表的结构化描述，并评估图表的复杂度。
 
@@ -25,11 +52,9 @@ const EXTRACTION_SYSTEM_PROMPT = `你是一个图表需求分析专家。你的�
 - 混合内容（解释性文字 + 结构化信息）
 
 ## 输出要求
-必须返回一个 JSON 对象，包含以下字段：
-{
-  "requirement": "提取后的结构化图表描述",
-  "complexity": "simple" | "medium" | "complex"
-}
+你必须返回一个 JSON 对象，包含以下字段：
+- requirement: 提取后的结构化图表描述（字符串）
+- complexity: 复杂度评估，只能是 "simple"、"medium" 或 "complex"
 
 ## 复杂度评估标准
 - **simple（简单）**：5 个以下节点，简单线性流程，无分支或少量分支
@@ -73,10 +98,11 @@ export async function extractRequirements(
     { role: 'user', content: userInput },
   ];
 
+  // 使用 structured output 确保返回 JSON 格式
   let result = '';
   await callLLM(config, messages, (chunk) => {
     result += chunk;
-  }, signal);
+  }, signal, EXTRACTION_JSON_SCHEMA);
 
   const trimmed = result.trim();
   if (!trimmed) {
@@ -86,23 +112,21 @@ export async function extractRequirements(
   // 解析 JSON 结果
   try {
     const parsed = JSON.parse(trimmed);
-    if (!parsed.requirement || !parsed.complexity) {
-      throw new Error('JSON 缺少必要字段');
+
+    // 验证必要字段
+    if (!parsed.requirement || typeof parsed.requirement !== 'string') {
+      throw new Error('requirement 字段缺失或类型错误');
     }
-    // 验证 complexity 值
-    if (!['simple', 'medium', 'complex'].includes(parsed.complexity)) {
-      throw new Error('complexity 值无效');
+    if (!parsed.complexity || !['simple', 'medium', 'complex'].includes(parsed.complexity)) {
+      throw new Error('complexity 字段缺失或值无效');
     }
+
     return {
       requirement: parsed.requirement,
       complexity: parsed.complexity,
     };
   } catch (error) {
-    console.error('[RequirementExtractor] JSON 解析失败，降级使用原始输出:', error);
-    // 降级：将原始输出作为需求描述，complexity 默认为 medium
-    return {
-      requirement: trimmed,
-      complexity: 'medium',
-    };
+    console.error('[RequirementExtractor] JSON 解析失败:', error);
+    throw new Error(`需求提取失败: ${(error as Error).message}`);
   }
 }

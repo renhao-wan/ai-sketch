@@ -32,8 +32,9 @@ export interface LLMProvider {
    * @param messages 消息列表
    * @param temperature 温度参数，控制输出随机性
    * @param maxTokens 最大输出 token 数
+   * @param responseFormat 可选的响应格式配置（用于 structured output）
    */
-  buildRequestBody(model: string, messages: LLMMessage[], temperature?: number, maxTokens?: number): object;
+  buildRequestBody(model: string, messages: LLMMessage[], temperature?: number, maxTokens?: number, responseFormat?: object): object;
 
   /**
    * 获取 API 端点路径

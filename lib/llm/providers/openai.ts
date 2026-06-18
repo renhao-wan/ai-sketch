@@ -1,6 +1,7 @@
 /**
  * OpenAI Provider 实现
  * 支持 OpenAI 和 OpenAI 兼容的 API（如 Ollama、vLLM 等）
+ * 支持 structured output（response_format）
  */
 
 import type { LLMMessage } from '@/lib/types';
@@ -21,14 +22,21 @@ export class OpenAIProvider implements LLMProvider {
     };
   }
 
-  buildRequestBody(model: string, messages: LLMMessage[], temperature?: number, maxTokens?: number): object {
-    return {
+  buildRequestBody(model: string, messages: LLMMessage[], temperature?: number, maxTokens?: number, responseFormat?: object): object {
+    const body: Record<string, unknown> = {
       model,
       messages: messages.map(m => this.processMessage(m)),
       stream: true,
       max_tokens: maxTokens ?? 16384,
       temperature: temperature ?? 0.5,
     };
+
+    // 添加 structured output 支持
+    if (responseFormat) {
+      body.response_format = responseFormat;
+    }
+
+    return body;
   }
 
   getEndpoint(baseUrl: string): string {

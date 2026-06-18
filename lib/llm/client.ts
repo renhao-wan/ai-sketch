@@ -140,12 +140,18 @@ async function fetchWithRetry(
 /**
  * Call LLM API with streaming support
  * 使用策略模式，通过 provider 类型分发到对应的实现
+ * @param config LLM 配置
+ * @param messages 消息列表
+ * @param onChunk 流式回调
+ * @param signal 中断信号
+ * @param responseFormat 可选的响应格式配置（用于 structured output）
  */
 export async function callLLM(
   config: LLMConfig,
   messages: LLMMessage[],
   onChunk?: (chunk: string) => void,
   signal?: AbortSignal,
+  responseFormat?: object,
 ): Promise<string> {
   const { type, baseUrl, apiKey, model, temperature, maxTokens } = config;
 
@@ -156,7 +162,7 @@ export async function callLLM(
   const provider = getProvider(type);
   const url = provider.getEndpoint(baseUrl);
   const headers = provider.buildRequestHeaders(apiKey);
-  const body = provider.buildRequestBody(model, messages, temperature, maxTokens);
+  const body = provider.buildRequestBody(model, messages, temperature, maxTokens, responseFormat);
   const extractors = provider.getSSEExtractors();
 
   const response = await fetchWithRetry(url, {
