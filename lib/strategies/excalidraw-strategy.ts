@@ -55,7 +55,9 @@ class ExcalidrawStrategy implements DiagramStrategy {
   }
 
   optimize(code: string): string {
-    return optimizeExcalidrawCode(code);
+    let optimized = optimizeExcalidrawCode(code);
+    optimized = cleanupInvalidProperties(optimized);
+    return optimized;
   }
 
   validate(code: string): ValidationResult {
@@ -166,6 +168,63 @@ class ExcalidrawStrategy implements DiagramStrategy {
       console.warn('[ExcalidrawStrategy] 合并失败，保留已有代码:', (e as Error).message);
       return existing;
     }
+  }
+}
+
+/**
+ * 清理无效属性，避免渲染异常
+ * 1. 移除无效的属性键名（以 # 开头的）
+ * 2. 为 text 元素移除不必要的 strokeWidth 和 backgroundColor
+ * 3. 清理空的 label
+ */
+function cleanupInvalidProperties(codeString: string): string {
+  if (!codeString || typeof codeString !== 'string') {
+    return codeString;
+  }
+
+  try {
+    const cleanedCode = codeString.trim();
+    const arrayStr = extractFirstJsonArray(cleanedCode);
+    if (!arrayStr) {
+      return codeString;
+    }
+
+    const elements = JSON.parse(arrayStr) as Record<string, unknown>[];
+    if (!Array.isArray(elements)) {
+      return codeString;
+    }
+
+    const cleanedElements = elements.map(el => {
+      const cleaned = { ...el };
+
+      // 1. 移除无效的属性键名（以 # 开头的）
+      Object.keys(cleaned).forEach(key => {
+        if (key.startsWith('#')) {
+          delete cleaned[key];
+        }
+      });
+
+      // 2. 为 text 元素移除不必要的属性
+      if (cleaned.type === 'text') {
+        delete cleaned.strokeWidth;
+        delete cleaned.backgroundColor;
+      }
+
+      // 3. 清理空的 label
+      if (cleaned.label && typeof cleaned.label === 'object') {
+        const label = cleaned.label as Record<string, unknown>;
+        if (!label.text || (typeof label.text === 'string' && label.text.trim() === '')) {
+          delete cleaned.label;
+        }
+      }
+
+      return cleaned;
+    });
+
+    return JSON.stringify(cleanedElements, null, 2);
+  } catch (error) {
+    console.error('Failed to cleanup invalid properties:', error);
+    return codeString;
   }
 }
 
