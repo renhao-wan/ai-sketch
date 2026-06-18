@@ -176,6 +176,7 @@ class ExcalidrawStrategy implements DiagramStrategy {
  * 1. 移除无效的属性键名（以 # 开头的）
  * 2. 为 text 元素移除不必要的 strokeWidth 和 backgroundColor
  * 3. 清理空的 label
+ * 4. 修复断开的箭头绑定（引用不存在的元素）
  */
 function cleanupInvalidProperties(codeString: string): string {
   if (!codeString || typeof codeString !== 'string') {
@@ -193,6 +194,14 @@ function cleanupInvalidProperties(codeString: string): string {
     if (!Array.isArray(elements)) {
       return codeString;
     }
+
+    // 收集所有元素 ID
+    const elementIds = new Set<string>();
+    elements.forEach(el => {
+      if (el.id && typeof el.id === 'string') {
+        elementIds.add(el.id);
+      }
+    });
 
     const cleanedElements = elements.map(el => {
       const cleaned = { ...el };
@@ -215,6 +224,35 @@ function cleanupInvalidProperties(codeString: string): string {
         const label = cleaned.label as Record<string, unknown>;
         if (!label.text || (typeof label.text === 'string' && label.text.trim() === '')) {
           delete cleaned.label;
+        }
+      }
+
+      // 4. 修复断开的箭头绑定
+      if (cleaned.type === 'arrow' || cleaned.type === 'line') {
+        // 检查 start 绑定
+        if (cleaned.start && typeof cleaned.start === 'object') {
+          const start = cleaned.start as Record<string, unknown>;
+          if (start.id && typeof start.id === 'string' && !elementIds.has(start.id)) {
+            // 引用的元素不存在，移除 id，保留 type
+            delete start.id;
+            if (!start.type) {
+              // 如果没有 type，移除整个 start 绑定
+              delete cleaned.start;
+            }
+          }
+        }
+
+        // 检查 end 绑定
+        if (cleaned.end && typeof cleaned.end === 'object') {
+          const end = cleaned.end as Record<string, unknown>;
+          if (end.id && typeof end.id === 'string' && !elementIds.has(end.id)) {
+            // 引用的元素不存在，移除 id，保留 type
+            delete end.id;
+            if (!end.type) {
+              // 如果没有 type，移除整个 end 绑定
+              delete cleaned.end;
+            }
+          }
         }
       }
 
