@@ -16,7 +16,7 @@ const EXTRACTION_SYSTEM_PROMPT = `你是一个图表需求分析专家。你的�
 - 混合内容（解释性文字 + 结构化信息）
 
 ## 输出要求
-直接输出一个清晰、结构化的图表描述（50-300字），用于指导图表生成。
+直接输出一个清晰、结构化的图表描述，用于指导图表生成。
 
 ## 图表描述的写作规范
 1. **明确实体**：列出图表中的所有节点/元素
@@ -65,5 +65,9 @@ export async function extractRequirements(
     result += chunk;
   }, signal);
 
-  return result.trim();
+  const trimmed = result.trim();
+  if (!trimmed) {
+    throw new Error('LLM 返回内容为空');
+  }
+  return trimmed;
 }

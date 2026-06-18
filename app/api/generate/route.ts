@@ -211,6 +211,7 @@ export async function POST(request: Request) {
     const contextMessages = skipContext
       ? []
       : await conversationManager.buildContextMessages(activeConversationId);
+    perfEnd('Build Context');
 
     // ── 判断实际执行的模式（缓存 key 需要包含 effectiveMode）──
     let effectiveMode: Exclude<GenerationMode, 'auto'> = 'fast';
@@ -310,9 +311,7 @@ export async function POST(request: Request) {
       };
     } else {
       // 使用提取后的提示词（如果有），否则使用原始输入
-      const promptForLLM = cachedResponse
-        ? userContent
-        : (extractedRequirement || userContent);
+      const promptForLLM = extractedRequirement || userContent;
 
       newUserMessage = {
         role: 'user',
@@ -332,8 +331,6 @@ export async function POST(request: Request) {
       { role: 'system', content: systemPrompt },
       ...contextMessages,
     ];
-    perfEnd('Build Context');
-
     console.log(`[Generate] Messages count: ${fullMessages.length}, System prompt length: ${systemPrompt.length}`);
 
     const stream = new ReadableStream({
