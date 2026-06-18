@@ -181,6 +181,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         ...DEFAULT_STATE,
         isLoading: false,
       });
+      // 返回首页
+      router.push('/');
       return;
     }
 
