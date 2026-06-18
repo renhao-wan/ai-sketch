@@ -204,13 +204,13 @@ export async function POST(request: Request) {
         });
       }
     }
+    perfEnd('Conversation Management');
 
     // ── Build LLM messages with context ──
     perfMark('Build Context');
     const contextMessages = skipContext
       ? []
       : await conversationManager.buildContextMessages(activeConversationId);
-
 
     // ── 判断实际执行的模式（缓存 key 需要包含 effectiveMode）──
     let effectiveMode: Exclude<GenerationMode, 'auto'> = 'fast';
@@ -281,13 +281,12 @@ export async function POST(request: Request) {
       // 缓存未命中，调用需求提取 LLM
       perfMark('Requirement Extraction');
       try {
-        const reqInputText = typeof userInput === 'string' ? userInput : (userInput.text || '');
-        extractedRequirement = await extractRequirements(reqInputText, config, combinedController.signal);
+        extractedRequirement = await extractRequirements(userContent, config, combinedController.signal);
         console.log(`[Generate] Requirement extracted, length: ${extractedRequirement.length}`);
       } catch (error) {
         console.error('[Generate] 需求提取失败，降级使用原始输入:', error);
         // 降级：直接使用用户原始输入
-        extractedRequirement = typeof userInput === 'string' ? userInput : (userInput.text || '');
+        extractedRequirement = userContent;
       }
       perfEnd('Requirement Extraction');
     }
@@ -312,8 +311,8 @@ export async function POST(request: Request) {
     } else {
       // 使用提取后的提示词（如果有），否则使用原始输入
       const promptForLLM = cachedResponse
-        ? (typeof userInput === 'string' ? userInput : (userInput.text || ''))
-        : (extractedRequirement || (typeof userInput === 'string' ? userInput : (userInput.text || '')));
+        ? userContent
+        : (extractedRequirement || userContent);
 
       newUserMessage = {
         role: 'user',
@@ -336,8 +335,6 @@ export async function POST(request: Request) {
     perfEnd('Build Context');
 
     console.log(`[Generate] Messages count: ${fullMessages.length}, System prompt length: ${systemPrompt.length}`);
-
-    perfEnd('Conversation Management');
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -363,9 +360,7 @@ export async function POST(request: Request) {
             }
           } else if (effectiveMode === 'quality') {
             // 高质量模式：多轮生成
-            const promptForQuality = cachedResponse
-              ? userContent
-              : (extractedRequirement || userContent);
+            const promptForQuality = extractedRequirement || userContent;
 
             const plan = await generatePlan(config!, promptForQuality, diagramFormat, contextMessages, combinedController.signal);
             console.log(`[Generate] Plan: ${plan.complexity}, ${plan.steps.length} steps, ~${plan.estimatedNodes} nodes`);
