@@ -255,7 +255,7 @@ export function saveToDisk(): void {
 
 /**
  * 请求延迟持久化（防抖模式）
- * 多次写入合并为一次，100ms 内只执行最后一次
+ * 多次写入合并为一次，500ms 内只执行最后一次
  * 适用于所有常规业务写入，避免频繁 I/O 阻塞事件循环
  */
 export function requestSave(): void {
@@ -264,7 +264,7 @@ export function requestSave(): void {
   saveTimer = setTimeout(() => {
     saveTimer = null;
     saveToDisk();
-  }, 100);
+  }, 500);
 }
 
 /**
