@@ -226,62 +226,30 @@ export async function POST(request: Request) {
     request.signal?.addEventListener('abort', onAbort, { once: true });
     timeoutController.signal.addEventListener('abort', onAbort, { once: true });
 
-    // ── 需求提取（缓存未命中且无图片输入时调用）──
-    let extractedRequirement: string;
+    // ── 需求提取（无图片输入时调用）──
+    let requirementForLLM: string;
     let extractionResult: ExtractionResult | null = null;
 
-    // 先检查缓存（使用原始输入作为缓存键的一部分）
-    const shouldCache = !processedImages && !regenerate && !editMode;
-    let cacheKeyValue: string | null = null;
+    // 跳过需求提取的情况：图片输入、重新生成、编辑模式
+    const skipExtraction = processedImages || imageDescription || regenerate || editMode;
 
-    if (shouldCache) {
-      const contextHash = contextMessages.length > 1
-        ? await buildContextHash(contextMessages)
-        : undefined;
-
-      const promptForCache = imageDescription
+    if (skipExtraction) {
+      // 图片输入、重新生成、编辑模式，跳过需求提取
+      requirementForLLM = imageDescription
         ? `[图片内容]\n${imageDescription}\n\n${userContent}`
         : userContent;
-
-      // 使用 'auto' 作为临时模式，缓存查找时不区分 fast/quality
-      cacheKeyValue = await buildCacheKey({
-        prompt: strategy.getUserPrompt(promptForCache, chartType),
-        format: diagramFormat,
-        chartType,
-        model: config.model,
-        configName: config.name || config.type,
-        contextHash,
-        mode: 'auto',
-      });
-    }
-    let cachedResponse: string | null = null;
-
-    if (cacheKeyValue) {
-      perfMark('Cache Lookup');
-      cachedResponse = await cacheManager.get(cacheKeyValue);
-      perfEnd('Cache Lookup');
-
-      if (cachedResponse) {
-        console.log('[Generate] Cache hit');
-      }
-    }
-
-    // 需求提取（缓存未命中且无图片输入时调用）
-    if (cachedResponse || processedImages || imageDescription) {
-      // 缓存命中或图片输入，跳过需求提取
-      extractedRequirement = '';  // 不会被使用
       extractionResult = null;
     } else {
-      // 缓存未命中，调用需求提取 LLM
+      // 调用需求提取 LLM
       perfMark('Requirement Extraction');
       try {
         extractionResult = await extractRequirements(userContent, config, combinedController.signal);
-        extractedRequirement = extractionResult.requirement;
-        console.log(`[Generate] Requirement extracted, length: ${extractedRequirement.length}, complexity: ${extractionResult.complexity}`);
+        requirementForLLM = extractionResult.requirement;
+        console.log(`[Generate] Requirement extracted, length: ${requirementForLLM.length}, complexity: ${extractionResult.complexity}`);
       } catch (error) {
         console.error('[Generate] 需求提取失败，降级使用原始输入:', error);
         // 降级：直接使用用户原始输入
-        extractedRequirement = userContent;
+        requirementForLLM = userContent;
         extractionResult = null;
       }
       perfEnd('Requirement Extraction');
@@ -303,6 +271,36 @@ export async function POST(request: Request) {
       effectiveMode = 'quality';
     }
 
+    // ── 检查缓存（基于提取后的需求和实际模式）──
+    const shouldCache = !processedImages && !regenerate && !editMode;
+    let cacheKeyValue: string | null = null;
+    let cachedResponse: string | null = null;
+
+    if (shouldCache) {
+      const contextHash = contextMessages.length > 1
+        ? await buildContextHash(contextMessages)
+        : undefined;
+
+      // 使用提取后的需求和实际模式计算缓存键
+      cacheKeyValue = await buildCacheKey({
+        prompt: strategy.getUserPrompt(requirementForLLM, chartType),
+        format: diagramFormat,
+        chartType,
+        model: config.model,
+        configName: config.name || config.type,
+        contextHash,
+        mode: effectiveMode,
+      });
+
+      perfMark('Cache Lookup');
+      cachedResponse = await cacheManager.get(cacheKeyValue);
+      perfEnd('Cache Lookup');
+
+      if (cachedResponse) {
+        console.log('[Generate] Cache hit');
+      }
+    }
+
     // ── Build LLM messages with context（使用提取后的需求）──
     // Build the new user message for LLM
     let newUserMessage: LLMMessage;
@@ -312,21 +310,11 @@ export async function POST(request: Request) {
         content: strategy.getUserPrompt(userContent, chartType),
         images: processedImages,
       };
-    } else if (imageDescription) {
-      newUserMessage = {
-        role: 'user',
-        content: strategy.getUserPrompt(
-          `[图片内容]\n${imageDescription}\n\n${userContent}`,
-          chartType,
-        ),
-      };
     } else {
-      // 使用提取后的提示词（如果有），否则使用原始输入
-      const promptForLLM = extractedRequirement || userContent;
-
+      // 使用提取后的需求（requirementForLLM 已在前面设置）
       newUserMessage = {
         role: 'user',
-        content: strategy.getUserPrompt(promptForLLM, chartType),
+        content: strategy.getUserPrompt(requirementForLLM, chartType),
       };
     }
 
@@ -368,13 +356,11 @@ export async function POST(request: Request) {
             }
           } else if (effectiveMode === 'quality') {
             // 高质量模式：多轮生成
-            const promptForQuality = extractedRequirement || userContent;
-
-            const plan = await generatePlan(config!, promptForQuality, diagramFormat, contextMessages, combinedController.signal);
+            const plan = await generatePlan(config!, requirementForLLM, diagramFormat, contextMessages, combinedController.signal);
             console.log(`[Generate] Plan: ${plan.complexity}, ${plan.steps.length} steps, ~${plan.estimatedNodes} nodes`);
 
             optimizedCode = await executeMultiPass(
-              config!, plan, promptForQuality, diagramFormat, contextMessages,
+              config!, plan, requirementForLLM, diagramFormat, contextMessages,
               (event) => controller.enqueue(encoder.encode(event)),
               combinedController.signal,
             );
