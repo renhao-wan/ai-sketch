@@ -5,6 +5,7 @@ import { consumeSSEStream } from '@/lib/api/sse-consumer';
 import { useLocale } from '@/lib/locales';
 import type { LLMConfig } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
+import type { DynamicTab } from '@/components/layout/BottomContextPanel';
 
 interface UseAIActionsOptions {
   config: LLMConfig | null;
@@ -12,8 +13,7 @@ interface UseAIActionsOptions {
   generatedCode: string;
   abortControllerRef: React.MutableRefObject<AbortController | null>;
   onCodeUpdate: (code: string) => void;
-  onExplanationUpdate: (explanation: string) => void;
-  onBottomPanelTabChange: (tab: string) => void;
+  onDynamicTabAdd: (tab: DynamicTab) => void;
   onRenderDataUpdate: (data: unknown) => void;
   onJsonErrorUpdate: (error: string | null) => void;
   onNotification: (title: string, message: string, type: 'info' | 'success' | 'warning' | 'error') => void;
@@ -26,7 +26,6 @@ interface UseAIActionsOptions {
 export function useAIActions(options: UseAIActionsOptions) {
   const { t } = useLocale();
   const [aiActionLoading, setAiActionLoading] = useState<string | null>(null);
-  const [aiExplanation, setAiExplanation] = useState('');
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
@@ -68,11 +67,22 @@ export function useAIActions(options: UseAIActionsOptions) {
       },
     );
 
-    if (actionId === 'explain') {
-      setAiExplanation(accumulatedCode);
-      options.onExplanationUpdate(accumulatedCode);
-      options.onBottomPanelTabChange('explain');
+    // 获取操作信息
+    const actionInfo = getBuiltinActionInfo(actionId);
+
+    if (actionInfo.type === 'explain') {
+      // 解释类型：添加动态 tab
+      const newTab: DynamicTab = {
+        id: `builtin-${actionId}-${Date.now()}`,
+        label: actionInfo.label,
+        icon: actionInfo.icon,
+        content: accumulatedCode,
+        type: 'text',
+        timestamp: Date.now(),
+      };
+      options.onDynamicTabAdd(newTab);
     } else {
+      // 修改类型：更新代码
       const codeToApply = finalResult || accumulatedCode;
       options.onCodeUpdate(codeToApply);
 
@@ -125,18 +135,34 @@ export function useAIActions(options: UseAIActionsOptions) {
       },
     );
 
-    // 自定义操作默认为 modify 类型，更新代码
-    const codeToApply = finalResult || accumulatedCode;
-    options.onCodeUpdate(codeToApply);
+    // 获取自定义操作信息
+    const customAction = await getCustomActionInfo(customActionId);
 
-    const { getStrategy } = await import('@/lib/strategies/registry');
-    const strategy = getStrategy(options.format);
-    const result = strategy.validate(codeToApply);
-    if (result.valid) {
-      options.onRenderDataUpdate(result.data);
-      options.onJsonErrorUpdate(null);
+    if (customAction.action_type === 'explain') {
+      // 解释类型：添加动态 tab
+      const newTab: DynamicTab = {
+        id: `custom-${customActionId}-${Date.now()}`,
+        label: customAction.name,
+        icon: customAction.icon,
+        content: accumulatedCode,
+        type: 'text',
+        timestamp: Date.now(),
+      };
+      options.onDynamicTabAdd(newTab);
     } else {
-      options.onJsonErrorUpdate(result.error);
+      // 修改类型：更新代码
+      const codeToApply = finalResult || accumulatedCode;
+      options.onCodeUpdate(codeToApply);
+
+      const { getStrategy } = await import('@/lib/strategies/registry');
+      const strategy = getStrategy(options.format);
+      const result = strategy.validate(codeToApply);
+      if (result.valid) {
+        options.onRenderDataUpdate(result.data);
+        options.onJsonErrorUpdate(null);
+      } else {
+        options.onJsonErrorUpdate(result.error);
+      }
     }
   }, []);
 
@@ -170,7 +196,31 @@ export function useAIActions(options: UseAIActionsOptions) {
 
   return {
     aiActionLoading,
-    aiExplanation,
     handleAIAction,
   };
+}
+
+// 获取内置操作信息
+function getBuiltinActionInfo(actionId: string) {
+  const actions: Record<string, { label: string; icon: string; type: 'modify' | 'explain' }> = {
+    'layout': { label: '布局优化', icon: 'LayoutGrid', type: 'modify' },
+    'beautify': { label: '美化', icon: 'Palette', type: 'modify' },
+    'simplify': { label: '简化', icon: 'Minimize2', type: 'modify' },
+    'explain': { label: 'AI 解释', icon: 'Sparkles', type: 'explain' },
+  };
+  return actions[actionId] || { label: actionId, icon: 'Zap', type: 'modify' };
+}
+
+// 获取自定义操作信息
+async function getCustomActionInfo(customActionId: string) {
+  try {
+    const response = await fetch(`/api/custom-actions/${customActionId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch custom action');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to get custom action info:', error);
+    return { name: '自定义操作', icon: 'Zap', action_type: 'modify' };
+  }
 }

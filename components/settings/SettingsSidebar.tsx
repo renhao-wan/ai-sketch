@@ -14,10 +14,10 @@ interface SettingsSidebarProps {
 const tabs: { key: SettingsTab; icon: LucideIcon; labelKey: TranslationKey }[] = [
   { key: 'appearance', icon: Palette, labelKey: 'settings.appearance' },
   { key: 'llm', icon: Wand2, labelKey: 'settings.llm' },
-  { key: 'aiActions', icon: Zap, labelKey: 'settings.aiActions' },
   { key: 'conversations', icon: MessageSquare, labelKey: 'settings.conversations' },
   { key: 'tags', icon: Tags, labelKey: 'tags.title' },
   { key: 'storage', icon: HardDrive, labelKey: 'settings.storage' },
+  { key: 'aiActions', icon: Zap, labelKey: 'settings.aiActions' },
   { key: 'shortcuts', icon: Keyboard, labelKey: 'settings.shortcuts' },
   { key: 'network', icon: Globe, labelKey: 'settings.network' },
   { key: 'about', icon: Info, labelKey: 'settings.about' },

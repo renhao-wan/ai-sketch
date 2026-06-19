@@ -29,6 +29,7 @@ import { useVersionHistory } from '@/hooks/useVersionHistory';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 import { detectCodeFormat } from '@/lib/utils/detect-code-format';
 import type { GenerationMode } from '@/lib/generation/types';
+import type { DynamicTab } from '@/components/layout/BottomContextPanel';
 
 // 动态导入重型组件（按需加载）
 const ConfigSelector = dynamic(() => import('@/components/dialogs/ConfigSelector'), { ssr: false });
@@ -83,6 +84,7 @@ function EditorContent() {
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
   const [generationMode, setGenerationMode] = useState<GenerationMode>('auto');
   const [contextEnabled, setContextEnabled] = useState(true);
+  const [dynamicTabs, setDynamicTabs] = useState<DynamicTab[]>([]);
 
   // Refs
   const pendingInitRef = useRef<import('@/lib/utils/init-data').InitData | null>(null);
@@ -162,6 +164,19 @@ function EditorContent() {
     contextEnabled,
   });
 
+  // 动态 Tab 管理
+  const handleDynamicTabAdd = useCallback((tab: DynamicTab) => {
+    setDynamicTabs(prev => [...prev, tab]);
+    setBottomPanelTab(tab.id);
+  }, []);
+
+  const handleRemoveDynamicTab = useCallback((tabId: string) => {
+    setDynamicTabs(prev => prev.filter(tab => tab.id !== tabId));
+    if (bottomPanelTab === tabId) {
+      setBottomPanelTab('code');
+    }
+  }, [bottomPanelTab]);
+
   // AI 操作 Hook
   const aiActions = useAIActions({
     config,
@@ -169,8 +184,7 @@ function EditorContent() {
     generatedCode,
     abortControllerRef: generation.abortControllerRef,
     onCodeUpdate: (code) => dispatchGenResult({ type: 'SET_CODE', payload: code }),
-    onExplanationUpdate: () => {},
-    onBottomPanelTabChange: setBottomPanelTab,
+    onDynamicTabAdd: handleDynamicTabAdd,
     onRenderDataUpdate: (data) => dispatchGenResult({ type: 'SET_RENDER_DATA', payload: data }),
     onJsonErrorUpdate: (err) => dispatchGenResult({ type: 'SET_JSON_ERROR', payload: err }),
     onNotification: showNotification,
@@ -391,11 +405,12 @@ function EditorContent() {
             <div id="onboarding-code-editor" className="flex-shrink-0">
             <BottomContextPanel
               generatedCode={generatedCode}
-              explanation={aiActions.aiExplanation}
               format={format}
               activeTab={bottomPanelTab}
               onTabChange={setBottomPanelTab}
               onExportAs={handleExportAs}
+              dynamicTabs={dynamicTabs}
+              onRemoveTab={handleRemoveDynamicTab}
             >
               <CodeEditor
                 code={generatedCode}
