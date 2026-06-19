@@ -162,20 +162,28 @@ export function AIActionsSettings() {
     );
   };
 
+  // 从画布移除操作
+  const removeFromCanvas = (actionType: 'builtin' | 'custom', actionId: string) => {
+    const newActions = canvasActions.filter(a => !(a.action_type === actionType && a.action_id === actionId));
+    updateCanvasActions(newActions);
+  };
+
+  // 添加到画布
+  const addToCanvas = (actionType: 'builtin' | 'custom', actionId: string) => {
+    if (canvasActions.length >= 4) {
+      showNotification(t('aiActions.maxActions'), '', 'warning');
+      return;
+    }
+    const newActions = [...canvasActions, { action_type: actionType, action_id: actionId, sort_order: canvasActions.length }];
+    updateCanvasActions(newActions);
+  };
+
   // 切换画布操作状态
   const toggleCanvasAction = (actionType: 'builtin' | 'custom', actionId: string, enabled: boolean) => {
     if (enabled) {
-      // 添加到画布
-      if (canvasActions.length >= 4) {
-        showNotification(t('aiActions.maxActions'), '', 'warning');
-        return;
-      }
-      const newActions = [...canvasActions, { action_type: actionType, action_id: actionId, sort_order: canvasActions.length }];
-      updateCanvasActions(newActions);
+      addToCanvas(actionType, actionId);
     } else {
-      // 从画布移除
-      const newActions = canvasActions.filter(a => !(a.action_type === actionType && a.action_id === actionId));
-      updateCanvasActions(newActions);
+      removeFromCanvas(actionType, actionId);
     }
   };
 
@@ -184,13 +192,108 @@ export function AIActionsSettings() {
     return canvasActions.some(a => a.action_type === actionType && a.action_id === actionId);
   };
 
+  // 获取操作名称
+  const getActionName = (action: CanvasAction) => {
+    if (action.action_type === 'builtin') {
+      const builtin = BUILTIN_ACTIONS.find(b => b.id === action.action_id);
+      return builtin ? t(builtin.labelKey as any) : action.action_id;
+    }
+    const custom = customActions.find(c => c.id === action.action_id);
+    return custom?.name || '未知操作';
+  };
+
+  // 获取操作图标
+  const getActionIcon = (action: CanvasAction) => {
+    if (action.action_type === 'builtin') {
+      const builtin = BUILTIN_ACTIONS.find(b => b.id === action.action_id);
+      return builtin?.icon || 'Zap';
+    }
+    const custom = customActions.find(c => c.id === action.action_id);
+    return custom?.icon || 'Zap';
+  };
+
+  // 上移操作
+  const moveActionUp = (index: number) => {
+    if (index === 0) return;
+    const newActions = [...canvasActions];
+    [newActions[index - 1], newActions[index]] = [newActions[index], newActions[index - 1]];
+    updateCanvasActions(newActions);
+  };
+
+  // 下移操作
+  const moveActionDown = (index: number) => {
+    if (index === canvasActions.length - 1) return;
+    const newActions = [...canvasActions];
+    [newActions[index], newActions[index + 1]] = [newActions[index + 1], newActions[index]];
+    updateCanvasActions(newActions);
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center py-8 text-[var(--muted)]">加载中...</div>;
   }
 
   return (
     <div className="space-y-8">
-      {/* 第一栏：内置操作 */}
+      {/* 第一栏：当前启动的操作 */}
+      <div>
+        <h3 className="text-sm font-semibold text-[var(--fg)] mb-2">
+          当前启动的操作
+        </h3>
+        <p className="text-xs text-[var(--muted)] mb-4">
+          画布上显示的操作，最多 4 个，可拖拽排序
+        </p>
+
+        {canvasActions.length === 0 ? (
+          <div className="flex items-center justify-center py-6 px-4 rounded-xl bg-[var(--surface-warm)] border border-dashed border-[var(--border)]">
+            <span className="text-sm text-[var(--muted)]">当前没有启动的操作</span>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {canvasActions.map((action, index) => {
+              const IconComponent = getIconComponent(getActionIcon(action));
+              return (
+                <div
+                  key={`${action.action_type}-${action.action_id}`}
+                  className="flex items-center gap-2 pl-2 pr-1 py-1.5 rounded-lg bg-[var(--surface-warm)] border border-[var(--border)] group hover:border-[var(--accent-indigo)]/30 transition-colors"
+                >
+                  {/* 排序按钮 */}
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => moveActionUp(index)}
+                      disabled={index === 0}
+                      className="w-4 h-4 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronUp size={10} />
+                    </button>
+                    <button
+                      onClick={() => moveActionDown(index)}
+                      disabled={index === canvasActions.length - 1}
+                      className="w-4 h-4 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronDown size={10} />
+                    </button>
+                  </div>
+
+                  <IconComponent size={14} />
+                  <span className="text-xs font-medium text-[var(--fg)]">
+                    {getActionName(action)}
+                  </span>
+
+                  {/* 移除按钮 */}
+                  <button
+                    onClick={() => removeFromCanvas(action.action_type, action.action_id)}
+                    className="w-5 h-5 flex items-center justify-center rounded-full text-[var(--muted)] hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all ml-1"
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* 第二栏：内置操作 */}
       <div>
         <h3 className="text-sm font-semibold text-[var(--fg)] mb-2">
           内置操作
@@ -213,7 +316,7 @@ export function AIActionsSettings() {
         </div>
       </div>
 
-      {/* 第二栏：自定义操作 */}
+      {/* 第三栏：自定义操作 */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-semibold text-[var(--fg)]">
