@@ -3,6 +3,13 @@
  * 提取自多个组件中重复的定义
  */
 
+import {
+  Zap, Star, Heart, Coffee, Music, Camera, Code, Database,
+  FileText, Folder, Globe, Home, Image, Lock, Mail, Map,
+  Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun,
+  Terminal, User, Video, Wifi, Cloud, Download, Upload,
+  LayoutGrid, Palette, Minimize2, Sparkles,
+} from 'lucide-react';
 import type { TranslationKey } from '@/lib/locales';
 
 /** 内置操作定义 */
@@ -37,3 +44,17 @@ export const ICON_OPTIONS = [
 
 /** 图标名称类型 */
 export type IconName = typeof ICON_OPTIONS[number];
+
+/** 图标名称到组件的映射 */
+export const ICON_MAP: Record<string, typeof Zap> = {
+  Zap, Star, Heart, Coffee, Music, Camera, Code, Database,
+  FileText, Folder, Globe, Home, Image, Lock, Mail, Map,
+  Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun,
+  Terminal, User, Video, Wifi, Cloud, Download, Upload,
+  LayoutGrid, Palette, Minimize2, Sparkles,
+};
+
+/** 根据图标名称获取图标组件 */
+export function getIconComponent(iconName: string): typeof Zap {
+  return ICON_MAP[iconName] || Zap;
+}

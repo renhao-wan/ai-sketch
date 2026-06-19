@@ -8,52 +8,12 @@ import {
   Sparkles,
   Loader2,
   Zap,
-  Star,
-  Heart,
-  Coffee,
-  Music,
-  Camera,
-  Code,
-  Database,
-  FileText,
-  Folder,
-  Globe,
-  Home,
-  Image,
-  Lock,
-  Mail,
-  Map as MapIcon,
-  Mic,
-  Moon,
-  Phone,
-  Pin,
-  Search,
-  Settings,
-  Shield,
-  Sun,
-  Terminal,
-  User,
-  Video,
-  Wifi,
-  Cloud,
-  Download,
-  Upload,
 } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 import type { TranslationKey } from '@/lib/locales';
 import type { CanvasAction } from '@/lib/db/custom-action-manager';
-import { BUILTIN_ACTIONS, getBuiltinActionType } from '@/lib/constants/ai-actions';
-
-// 图标映射
-const ICON_MAP: Record<string, typeof Zap> = {
-  LayoutGrid, Palette, Minimize2, Sparkles, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map: MapIcon, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload,
-};
-
-// 获取图标组件
-const getIconComponent = (iconName: string) => {
-  return ICON_MAP[iconName] || Zap;
-};
+import { BUILTIN_ACTIONS, getBuiltinActionType, getIconComponent } from '@/lib/constants/ai-actions';
 
 // 操作信息接口
 export interface ActionInfo {
@@ -80,6 +40,7 @@ export default function FloatingAIActions({ onAction, onActionsLoad, loadingActi
   const loadCanvasActions = useCallback(async () => {
     try {
       const res = await fetch('/api/canvas-actions');
+      if (!res.ok) throw new Error('Failed to load canvas actions');
       const data = await res.json();
       setCanvasActions(data);
 

@@ -57,10 +57,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '自定义操作不存在' }, { status: 404 });
     }
 
-    if (!customAction.enabled) {
-      return NextResponse.json({ error: '该自定义操作已禁用' }, { status: 400 });
-    }
-
     // 获取 LLM 配置
     let config;
     if (configId) {

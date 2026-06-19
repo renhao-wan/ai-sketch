@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, type ReactNode, type MouseEvent } from 'react';
-import { ChevronDown, ChevronUp, Code2, Copy, Download, Check, Image, FileCode, FileText, X, Zap, Star, Heart, Coffee, Music, Camera, Database, Folder, Globe, Home, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Upload, LayoutGrid, Palette, Minimize2, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronUp, Code2, Copy, Download, Check, Image, FileCode, FileText, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
@@ -11,6 +11,7 @@ import rehypeHighlight from 'rehype-highlight';
 import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 import type { ExportFormat } from '@/lib/utils/export-diagram';
+import { getIconComponent } from '@/lib/constants/ai-actions';
 
 import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github.min.css';
@@ -24,14 +25,6 @@ export interface DynamicTab {
   type: 'code' | 'text';
   timestamp: number;
 }
-
-// 获取图标组件
-const getIconComponent = (iconName: string) => {
-  const iconMap: Record<string, typeof Code2> = {
-    Code2, Zap, Star, Heart, Coffee, Music, Camera, Database, Folder, Globe, Home, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Upload, LayoutGrid, Palette, Minimize2, Sparkles,
-  };
-  return iconMap[iconName] || Code2;
-};
 
 // 可用操作接口
 interface AvailableAction {
@@ -415,8 +408,8 @@ export default function BottomContextPanel({
           </div>
         ) : activeTab.startsWith('action-') ? (
           <div className="flex flex-col items-center justify-center h-full text-xs text-[var(--muted)]/50 gap-2">
-            <span>点击上方按钮执行 &ldquo;{getCurrentActionInfo()?.label || '操作'}&rdquo;</span>
-            <span className="text-[var(--muted)]/30">结果将显示在此处</span>
+            <span>{t('panel.clickToExecute', { label: getCurrentActionInfo()?.label || t('panel.action') })}</span>
+            <span className="text-[var(--muted)]/30">{t('panel.resultWillAppear')}</span>
           </div>
         ) : (
           <div className="flex items-center justify-center h-full text-xs text-[var(--muted)]/50">

@@ -4,23 +4,13 @@ import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locales';
 import { useNotification } from '@/lib/contexts/NotificationContext';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { Plus, Trash2, Edit2, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Zap, X } from 'lucide-react';
 import Tooltip from '@/components/ui/Tooltip';
 import ToggleSwitch from '@/components/ui/ToggleSwitch';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
 import { ActionEditor } from '@/components/settings/ActionEditor';
 import type { CustomAction, CanvasAction } from '@/lib/db/custom-action-manager';
-import { BUILTIN_ACTIONS } from '@/lib/constants/ai-actions';
-
-// 图标映射
-const ICON_MAP: Record<string, typeof Zap> = {
-  Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles,
-};
-
-// 获取图标组件
-const getIconComponent = (iconName: string) => {
-  return ICON_MAP[iconName] || Zap;
-};
+import { BUILTIN_ACTIONS, ICON_MAP, getIconComponent } from '@/lib/constants/ai-actions';
 
 // 操作卡片组件
 function ActionCard({
@@ -109,12 +99,18 @@ export function AIActionsSettings() {
         fetch('/api/canvas-actions'),
         fetch('/api/custom-actions'),
       ]);
+
+      if (!canvasRes.ok || !customRes.ok) {
+        throw new Error('Failed to load actions');
+      }
+
       const canvasData = await canvasRes.json();
       const customData = await customRes.json();
       setCanvasActions([...canvasData]);
       setCustomActions([...customData]);
     } catch (error) {
       console.error('Failed to load actions:', error);
+      showNotification(t('error.title'), '加载操作失败', 'error');
     } finally {
       setLoading(false);
     }
@@ -123,13 +119,20 @@ export function AIActionsSettings() {
   // 更新画布操作
   const updateCanvasActions = async (newActions: Omit<CanvasAction, 'id'>[]) => {
     try {
-      await fetch('/api/canvas-actions', {
+      const response = await fetch('/api/canvas-actions', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ actions: newActions }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to update canvas actions');
+      }
+
       await loadData();
     } catch (error) {
+      console.error('Failed to update canvas actions:', error);
+      showNotification(t('error.title'), '更新画布操作失败', 'error');
       console.error('Failed to update canvas actions:', error);
     }
   };

@@ -3,19 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locales';
 import { useNotification } from '@/lib/contexts/NotificationContext';
-import { X, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles } from 'lucide-react';
+import { X } from 'lucide-react';
 import type { CustomAction } from '@/lib/db/custom-action-manager';
-import { ICON_OPTIONS } from '@/lib/constants/ai-actions';
-
-// 图标组件映射
-const ICON_COMPONENTS: Record<string, typeof Zap> = {
-  Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles,
-};
-
-// 获取图标组件
-const getIconComponent = (iconName: string) => {
-  return ICON_COMPONENTS[iconName] || Zap;
-};
+import { ICON_OPTIONS, getIconComponent } from '@/lib/constants/ai-actions';
 
 interface ActionEditorProps {
   action: CustomAction | null;
@@ -59,14 +49,14 @@ export function ActionEditor({ action, onClose, onSave }: ActionEditorProps) {
       }
 
       showNotification(
-        isEditing ? '编辑成功' : '创建成功',
-        `操作"${name.trim()}"已${isEditing ? '更新' : '创建'}`,
+        isEditing ? t('aiActions.editSuccess') : t('aiActions.createSuccess'),
+        t('aiActions.actionSaved', { name: name.trim() }),
         'success'
       );
       onSave();
     } catch (error) {
       console.error('Failed to save action:', error);
-      showNotification('保存失败', (error as Error).message || '操作保存失败，请稍后重试', 'error');
+      showNotification(t('aiActions.saveFailed'), (error as Error).message || t('aiActions.saveFailedMessage'), 'error');
     } finally {
       setSaving(false);
     }
