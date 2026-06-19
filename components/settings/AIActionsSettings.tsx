@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locales';
-import { Plus, GripVertical, Trash2, Edit2, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles } from 'lucide-react';
+import { useNotification } from '@/lib/contexts/NotificationContext';
+import { Plus, GripVertical, Trash2, Edit2, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles, ChevronUp, ChevronDown, X } from 'lucide-react';
 import Tooltip from '@/components/ui/Tooltip';
 import { ActionEditor } from '@/components/settings/ActionEditor';
 import type { CustomAction, CanvasAction } from '@/lib/db/custom-action-manager';
@@ -27,6 +28,7 @@ const BUILTIN_ACTIONS = [
 
 export function AIActionsSettings() {
   const { t } = useLocale();
+  const { showNotification } = useNotification();
   const [canvasActions, setCanvasActions] = useState<CanvasAction[]>([]);
   const [customActions, setCustomActions] = useState<CustomAction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,13 +73,30 @@ export function AIActionsSettings() {
 
   // 删除自定义操作
   const deleteAction = async (id: string) => {
-    if (!confirm(t('aiActions.deleteConfirm'))) return;
     try {
       await fetch(`/api/custom-actions/${id}`, { method: 'DELETE' });
+      showNotification(t('aiActions.deleteAction'), '操作已删除', 'success');
       await loadData();
     } catch (error) {
       console.error('Failed to delete action:', error);
+      showNotification(t('error.title'), '删除操作失败', 'error');
     }
+  };
+
+  // 移除画布操作
+  const removeCanvasAction = (actionType: 'builtin' | 'custom', actionId: string) => {
+    const newActions = canvasActions.filter(a => !(a.action_type === actionType && a.action_id === actionId));
+    updateCanvasActions(newActions);
+  };
+
+  // 添加画布操作
+  const addCanvasAction = (actionType: 'builtin' | 'custom', actionId: string) => {
+    if (canvasActions.length >= 4) {
+      showNotification(t('aiActions.maxActions'), '', 'warning');
+      return;
+    }
+    const newActions = [...canvasActions, { action_type: actionType, action_id: actionId, sort_order: canvasActions.length }];
+    updateCanvasActions(newActions);
   };
 
   // 切换操作显示状态
@@ -85,18 +104,26 @@ export function AIActionsSettings() {
     const exists = canvasActions.find(a => a.action_type === actionType && a.action_id === actionId);
 
     if (exists) {
-      // 移除
-      const newActions = canvasActions.filter(a => !(a.action_type === actionType && a.action_id === actionId));
-      updateCanvasActions(newActions);
+      removeCanvasAction(actionType, actionId);
     } else {
-      // 添加（检查数量限制）
-      if (canvasActions.length >= 4) {
-        alert(t('aiActions.maxActions'));
-        return;
-      }
-      const newActions = [...canvasActions, { action_type: actionType, action_id: actionId, sort_order: canvasActions.length }];
-      updateCanvasActions(newActions);
+      addCanvasAction(actionType, actionId);
     }
+  };
+
+  // 上移操作
+  const moveActionUp = (index: number) => {
+    if (index === 0) return;
+    const newActions = [...canvasActions];
+    [newActions[index - 1], newActions[index]] = [newActions[index], newActions[index - 1]];
+    updateCanvasActions(newActions);
+  };
+
+  // 下移操作
+  const moveActionDown = (index: number) => {
+    if (index === canvasActions.length - 1) return;
+    const newActions = [...canvasActions];
+    [newActions[index], newActions[index + 1]] = [newActions[index + 1], newActions[index]];
+    updateCanvasActions(newActions);
   };
 
   if (loading) {
@@ -127,7 +154,24 @@ export function AIActionsSettings() {
                 key={`${action.action_type}-${action.action_id}`}
                 className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]"
               >
-                <GripVertical size={16} className="text-[var(--muted)] cursor-move" />
+                {/* 排序按钮 */}
+                <div className="flex flex-col gap-0.5">
+                  <button
+                    onClick={() => moveActionUp(index)}
+                    disabled={index === 0}
+                    className="w-5 h-5 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronUp size={12} />
+                  </button>
+                  <button
+                    onClick={() => moveActionDown(index)}
+                    disabled={index === canvasActions.length - 1}
+                    className="w-5 h-5 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronDown size={12} />
+                  </button>
+                </div>
+
                 <IconComponent size={18} />
                 <span className="flex-1 text-sm text-[var(--fg)]">
                   {isBuiltin ? builtin?.name : custom?.name}
@@ -135,9 +179,25 @@ export function AIActionsSettings() {
                 <span className="text-xs text-[var(--muted)] px-2 py-1 rounded bg-[var(--surface-warm-hover)]">
                   {isBuiltin ? t('aiActions.builtin') : t('aiActions.custom')}
                 </span>
+
+                {/* 移除按钮 */}
+                <Tooltip content="从画布移除">
+                  <button
+                    onClick={() => removeCanvasAction(action.action_type, action.action_id)}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </Tooltip>
               </div>
             );
           })}
+
+          {canvasActions.length === 0 && (
+            <div className="text-center py-4 text-[var(--muted)] text-sm">
+              暂无操作，请从下方添加
+            </div>
+          )}
         </div>
       </div>
 
@@ -167,6 +227,7 @@ export function AIActionsSettings() {
           <div className="space-y-2">
             {customActions.map(action => {
               const IconComponent = getIconComponent(action.icon || 'Zap');
+              const isOnCanvas = canvasActions.some(a => a.action_type === 'custom' && a.action_id === action.id);
               return (
                 <div
                   key={action.id}
@@ -199,16 +260,18 @@ export function AIActionsSettings() {
                         <Trash2 size={14} />
                       </button>
                     </Tooltip>
-                    <button
-                      onClick={() => toggleAction('custom', action.id)}
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-                        canvasActions.some(a => a.action_type === 'custom' && a.action_id === action.id)
-                          ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
-                          : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-                      }`}
-                    >
-                      <Zap size={14} />
-                    </button>
+                    <Tooltip content={isOnCanvas ? '从画布移除' : '添加到画布'}>
+                      <button
+                        onClick={() => toggleAction('custom', action.id)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                          isOnCanvas
+                            ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
+                            : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                        }`}
+                      >
+                        <Zap size={14} />
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
               );
