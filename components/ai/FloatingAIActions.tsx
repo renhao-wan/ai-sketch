@@ -130,7 +130,7 @@ export default function FloatingAIActions({ onAction, onActionsLoad, loadingActi
           const custom = map[action.action_id];
           return {
             id: action.action_id,
-            label: custom?.name || '自定义操作',
+            label: custom?.name || t('aiActions.customFallback'),
             icon: custom?.icon || 'Zap',
             type: 'custom' as const,
             actionType: custom?.action_type || 'modify',
@@ -162,7 +162,7 @@ export default function FloatingAIActions({ onAction, onActionsLoad, loadingActi
       return builtin ? t(builtin.labelKey) : action.action_id;
     }
     const custom = customActionsMap[action.action_id];
-    return custom?.name || '自定义操作';
+    return custom?.name || t('aiActions.customFallback');
   };
 
   // 处理点击

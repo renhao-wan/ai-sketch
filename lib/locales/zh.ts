@@ -463,6 +463,7 @@ export const zh = {
   'aiActions.save': '保存',
   'aiActions.cancel': '取消',
   'aiActions.create': '创建',
+  'aiActions.customFallback': '自定义操作',
 
   'settings.about': '关于',
   'settings.aboutDesc': '应用信息与版本详情',

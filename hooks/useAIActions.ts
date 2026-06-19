@@ -29,6 +29,31 @@ export function useAIActions(options: UseAIActionsOptions) {
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
+  // 获取内置操作信息（使用翻译）
+  const getBuiltinActionInfo = useCallback((actionId: string) => {
+    const actions: Record<string, { label: string; icon: string; type: 'modify' | 'explain' }> = {
+      'layout': { label: t('aiAction.layout'), icon: 'LayoutGrid', type: 'modify' },
+      'beautify': { label: t('aiAction.beautify'), icon: 'Palette', type: 'modify' },
+      'simplify': { label: t('aiAction.simplify'), icon: 'Minimize2', type: 'modify' },
+      'explain': { label: t('aiAction.explain'), icon: 'Sparkles', type: 'explain' },
+    };
+    return actions[actionId] || { label: actionId, icon: 'Zap', type: 'modify' };
+  }, [t]);
+
+  // 获取自定义操作信息
+  const getCustomActionInfo = useCallback(async (customActionId: string) => {
+    try {
+      const response = await fetch(`/api/custom-actions/${customActionId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch custom action');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to get custom action info:', error);
+      return { name: t('aiActions.customFallback'), icon: 'Zap', action_type: 'modify' };
+    }
+  }, [t]);
+
   // 执行内置操作
   const executeBuiltinAction = useCallback(async (actionId: string, controller: AbortController) => {
     const options = optionsRef.current;
@@ -96,7 +121,7 @@ export function useAIActions(options: UseAIActionsOptions) {
         options.onJsonErrorUpdate(result.error);
       }
     }
-  }, []);
+  }, [getBuiltinActionInfo]);
 
   // 执行自定义操作
   const executeCustomAction = useCallback(async (customActionId: string, controller: AbortController) => {
@@ -164,7 +189,7 @@ export function useAIActions(options: UseAIActionsOptions) {
         options.onJsonErrorUpdate(result.error);
       }
     }
-  }, []);
+  }, [getCustomActionInfo]);
 
   const handleAIAction = useCallback(async (actionId: string, customActionId?: string) => {
     const options = optionsRef.current;
@@ -198,29 +223,4 @@ export function useAIActions(options: UseAIActionsOptions) {
     aiActionLoading,
     handleAIAction,
   };
-}
-
-// 获取内置操作信息
-function getBuiltinActionInfo(actionId: string) {
-  const actions: Record<string, { label: string; icon: string; type: 'modify' | 'explain' }> = {
-    'layout': { label: '布局优化', icon: 'LayoutGrid', type: 'modify' },
-    'beautify': { label: '美化', icon: 'Palette', type: 'modify' },
-    'simplify': { label: '简化', icon: 'Minimize2', type: 'modify' },
-    'explain': { label: 'AI 解释', icon: 'Sparkles', type: 'explain' },
-  };
-  return actions[actionId] || { label: actionId, icon: 'Zap', type: 'modify' };
-}
-
-// 获取自定义操作信息
-async function getCustomActionInfo(customActionId: string) {
-  try {
-    const response = await fetch(`/api/custom-actions/${customActionId}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch custom action');
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Failed to get custom action info:', error);
-    return { name: '自定义操作', icon: 'Zap', action_type: 'modify' };
-  }
 }

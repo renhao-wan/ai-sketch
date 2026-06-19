@@ -465,6 +465,7 @@ export const en: TranslationDict = {
   'aiActions.save': 'Save',
   'aiActions.cancel': 'Cancel',
   'aiActions.create': 'Create',
+  'aiActions.customFallback': 'Custom Action',
 
   'settings.about': 'About',
   'settings.aboutDesc': 'App information and version details',
