@@ -337,6 +337,16 @@ export const FULL_STEPS: OnboardingStep[] = [
     page: 'settings',
   },
   {
+    id: 'full-settings-ai-actions',
+    target: '#onboarding-settings-aiActions',
+    titleKey: 'onboarding.steps.settings-ai-actions.title',
+    contentKey: 'onboarding.steps.settings-ai-actions.content',
+    placement: 'right',
+    mode: 'full',
+    group: 'settings',
+    page: 'settings',
+  },
+  {
     id: 'full-settings-tags',
     target: '#onboarding-settings-tags',
     titleKey: 'onboarding.steps.settings-tags.title',
