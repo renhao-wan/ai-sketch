@@ -90,6 +90,7 @@ export function ActionEditor({ action, onClose, onSave }: ActionEditorProps) {
       onSave();
     } catch (error) {
       console.error('Failed to save action:', error);
+      showNotification('保存失败', (error as Error).message || '操作保存失败，请稍后重试', 'error');
     } finally {
       setSaving(false);
     }

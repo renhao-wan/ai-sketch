@@ -38,6 +38,20 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: '最多只能显示 4 个操作' }, { status: 400 });
     }
 
+    // 验证每个元素的结构
+    for (let i = 0; i < actions.length; i++) {
+      const action = actions[i];
+      if (!action || typeof action !== 'object') {
+        return NextResponse.json({ error: `参数错误: actions[${i}] 应为对象` }, { status: 400 });
+      }
+      if (!action.action_type || !['builtin', 'custom'].includes(action.action_type)) {
+        return NextResponse.json({ error: `参数错误: actions[${i}].action_type 必须是 builtin 或 custom` }, { status: 400 });
+      }
+      if (!action.action_id || typeof action.action_id !== 'string') {
+        return NextResponse.json({ error: `参数错误: actions[${i}].action_id 必须是非空字符串` }, { status: 400 });
+      }
+    }
+
     await customActionManager.updateCanvasActions(actions);
     return NextResponse.json({ success: true });
   } catch (error) {
