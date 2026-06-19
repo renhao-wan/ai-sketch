@@ -83,14 +83,14 @@ export function AIActionsSettings() {
     }
   };
 
-  // 移除画布操作
-  const removeCanvasAction = (actionType: 'builtin' | 'custom', actionId: string) => {
+  // 从画布移除操作（不删除操作本身）
+  const removeFromCanvas = (actionType: 'builtin' | 'custom', actionId: string) => {
     const newActions = canvasActions.filter(a => !(a.action_type === actionType && a.action_id === actionId));
     updateCanvasActions(newActions);
   };
 
-  // 添加画布操作
-  const addCanvasAction = (actionType: 'builtin' | 'custom', actionId: string) => {
+  // 添加到画布
+  const addToCanvas = (actionType: 'builtin' | 'custom', actionId: string) => {
     if (canvasActions.length >= 4) {
       showNotification(t('aiActions.maxActions'), '', 'warning');
       return;
@@ -99,15 +99,9 @@ export function AIActionsSettings() {
     updateCanvasActions(newActions);
   };
 
-  // 切换操作显示状态
-  const toggleAction = (actionType: 'builtin' | 'custom', actionId: string) => {
-    const exists = canvasActions.find(a => a.action_type === actionType && a.action_id === actionId);
-
-    if (exists) {
-      removeCanvasAction(actionType, actionId);
-    } else {
-      addCanvasAction(actionType, actionId);
-    }
+  // 检查操作是否在画布上
+  const isOnCanvas = (actionType: 'builtin' | 'custom', actionId: string) => {
+    return canvasActions.some(a => a.action_type === actionType && a.action_id === actionId);
   };
 
   // 上移操作
@@ -131,14 +125,14 @@ export function AIActionsSettings() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* 画布操作区域 */}
+    <div className="space-y-8">
+      {/* 第一栏：当前启动的操作 */}
       <div>
         <h3 className="text-sm font-semibold text-[var(--fg)] mb-2">
-          {t('aiActions.canvasActions')}
+          当前启动的操作
         </h3>
         <p className="text-xs text-[var(--muted)] mb-4">
-          {t('aiActions.canvasActionsDesc')}
+          画布上显示的操作，最多 4 个，拖拽调整顺序
         </p>
 
         <div className="space-y-2">
@@ -183,7 +177,7 @@ export function AIActionsSettings() {
                 {/* 移除按钮 */}
                 <Tooltip content="从画布移除">
                   <button
-                    onClick={() => removeCanvasAction(action.action_type, action.action_id)}
+                    onClick={() => removeFromCanvas(action.action_type, action.action_id)}
                     className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <X size={14} />
@@ -201,7 +195,50 @@ export function AIActionsSettings() {
         </div>
       </div>
 
-      {/* 自定义操作区域 */}
+      {/* 第二栏：内置操作 */}
+      <div>
+        <h3 className="text-sm font-semibold text-[var(--fg)] mb-2">
+          内置操作
+        </h3>
+        <p className="text-xs text-[var(--muted)] mb-4">
+          系统内置的操作，不可删除，可添加到画布
+        </p>
+
+        <div className="space-y-2">
+          {BUILTIN_ACTIONS.map(action => {
+            const IconComponent = getIconComponent(action.icon);
+            const onCanvas = isOnCanvas('builtin', action.id);
+            return (
+              <div
+                key={action.id}
+                className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]"
+              >
+                <IconComponent size={18} />
+                <span className="flex-1 text-sm text-[var(--fg)]">
+                  {action.name}
+                </span>
+                <span className="text-xs text-[var(--muted)] px-2 py-1 rounded bg-[var(--surface-warm-hover)]">
+                  {t('aiActions.builtin')}
+                </span>
+                <Tooltip content={onCanvas ? '从画布移除' : '添加到画布'}>
+                  <button
+                    onClick={() => onCanvas ? removeFromCanvas('builtin', action.id) : addToCanvas('builtin', action.id)}
+                    className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                      onCanvas
+                        ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
+                        : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                    }`}
+                  >
+                    <Zap size={14} />
+                  </button>
+                </Tooltip>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 第三栏：自定义操作 */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-semibold text-[var(--fg)]">
@@ -218,6 +255,9 @@ export function AIActionsSettings() {
             {t('aiActions.createAction')}
           </button>
         </div>
+        <p className="text-xs text-[var(--muted)] mb-4">
+          用户创建的操作，可编辑、删除、添加到画布
+        </p>
 
         {customActions.length === 0 ? (
           <div className="text-center py-8 text-[var(--muted)] text-sm">
@@ -227,7 +267,7 @@ export function AIActionsSettings() {
           <div className="space-y-2">
             {customActions.map(action => {
               const IconComponent = getIconComponent(action.icon || 'Zap');
-              const isOnCanvas = canvasActions.some(a => a.action_type === 'custom' && a.action_id === action.id);
+              const onCanvas = isOnCanvas('custom', action.id);
               return (
                 <div
                   key={action.id}
@@ -260,11 +300,11 @@ export function AIActionsSettings() {
                         <Trash2 size={14} />
                       </button>
                     </Tooltip>
-                    <Tooltip content={isOnCanvas ? '从画布移除' : '添加到画布'}>
+                    <Tooltip content={onCanvas ? '从画布移除' : '添加到画布'}>
                       <button
-                        onClick={() => toggleAction('custom', action.id)}
+                        onClick={() => onCanvas ? removeFromCanvas('custom', action.id) : addToCanvas('custom', action.id)}
                         className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-                          isOnCanvas
+                          onCanvas
                             ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
                             : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
                         }`}
