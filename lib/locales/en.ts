@@ -698,6 +698,8 @@ export const en: TranslationDict = {
   'onboarding.steps.settings-appearance.content': 'Customize theme colors, background effects and other appearance options.',
   'onboarding.steps.settings-llm.title': 'LLM Configuration',
   'onboarding.steps.settings-llm.content': 'Configure AI models, supporting OpenAI, Anthropic, Ollama and other interfaces.',
+  'onboarding.steps.settings-conversations.title': 'Conversations',
+  'onboarding.steps.settings-conversations.content': 'Manage conversation history, support search, tag classification and batch operations.',
   'onboarding.steps.settings-ai-actions.title': 'AI Actions',
   'onboarding.steps.settings-ai-actions.content': 'Manage AI actions displayed on canvas, create custom actions.',
   'onboarding.steps.settings-tags.title': 'Tag Management',

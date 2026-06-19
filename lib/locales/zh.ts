@@ -696,6 +696,8 @@ export const zh = {
   'onboarding.steps.settings-appearance.content': '自定义主题颜色、背景效果等外观选项。',
   'onboarding.steps.settings-llm.title': 'LLM 配置',
   'onboarding.steps.settings-llm.content': '配置 AI 模型，支持 OpenAI、Anthropic、Ollama 等多种接口。',
+  'onboarding.steps.settings-conversations.title': '会话管理',
+  'onboarding.steps.settings-conversations.content': '管理对话历史，支持搜索、标签分类和批量操作。',
   'onboarding.steps.settings-ai-actions.title': 'AI 操作',
   'onboarding.steps.settings-ai-actions.content': '管理画布上显示的 AI 操作，可创建自定义操作。',
   'onboarding.steps.settings-tags.title': '标签管理',
