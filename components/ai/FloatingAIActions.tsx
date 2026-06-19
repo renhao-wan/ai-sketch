@@ -22,7 +22,7 @@ import {
   Image,
   Lock,
   Mail,
-  Map,
+  Map as MapIcon,
   Mic,
   Moon,
   Phone,
@@ -46,7 +46,7 @@ import type { CanvasAction } from '@/lib/db/custom-action-manager';
 
 // 图标映射
 const ICON_MAP: Record<string, typeof Zap> = {
-  LayoutGrid, Palette, Minimize2, Sparkles, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload,
+  LayoutGrid, Palette, Minimize2, Sparkles, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map: MapIcon, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload,
 };
 
 // 获取图标组件
@@ -71,7 +71,7 @@ interface FloatingAIActionsProps {
 export default function FloatingAIActions({ onAction, loadingAction, disabled }: FloatingAIActionsProps) {
   const { t } = useLocale();
   const [canvasActions, setCanvasActions] = useState<(CanvasAction & { details?: any })[]>([]);
-  const [customActionsMap, setCustomActionsMap] = useState<Map<string, any>>(new Map());
+  const [customActionsMap, setCustomActionsMap] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
 
   // 加载画布操作
@@ -86,10 +86,10 @@ export default function FloatingAIActions({ onAction, loadingAction, disabled }:
       setCanvasActions(data);
 
       // 构建自定义操作映射
-      const map = new Map<string, any>();
+      const map: Record<string, any> = {};
       data.forEach((action: any) => {
         if (action.action_type === 'custom' && action.details) {
-          map.set(action.action_id, action.details);
+          map[action.action_id] = action.details;
         }
       });
       setCustomActionsMap(map);
@@ -106,7 +106,7 @@ export default function FloatingAIActions({ onAction, loadingAction, disabled }:
       const builtin = BUILTIN_ACTIONS.find(b => b.id === action.action_id);
       return builtin?.icon || Zap;
     }
-    const custom = customActionsMap.get(action.action_id);
+    const custom = customActionsMap[action.action_id];
     return getIconComponent(custom?.icon || 'Zap');
   };
 
@@ -116,7 +116,7 @@ export default function FloatingAIActions({ onAction, loadingAction, disabled }:
       const builtin = BUILTIN_ACTIONS.find(b => b.id === action.action_id);
       return builtin ? t(builtin.labelKey) : action.action_id;
     }
-    const custom = customActionsMap.get(action.action_id);
+    const custom = customActionsMap[action.action_id];
     return custom?.name || '自定义操作';
   };
 
