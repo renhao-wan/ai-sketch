@@ -419,6 +419,7 @@ function EditorContent() {
               onExportAs={handleExportAs}
               dynamicTabs={dynamicTabs}
               onRemoveTab={handleRemoveDynamicTab}
+              availableActions={availableActions}
             >
               <CodeEditor
                 code={generatedCode}
