@@ -143,67 +143,62 @@ export function AIActionsSettings() {
           当前启动的操作
         </h3>
         <p className="text-xs text-[var(--muted)] mb-4">
-          画布上显示的操作，最多 4 个，拖拽调整顺序
+          画布上显示的操作，最多 4 个
         </p>
 
-        <div className="space-y-2">
-          {canvasActions.map((action, index) => {
-            const isBuiltin = action.action_type === 'builtin';
-            const builtin = isBuiltin ? BUILTIN_ACTIONS.find(b => b.id === action.action_id) : null;
-            const custom = !isBuiltin ? customActions.find(c => c.id === action.action_id) : null;
-            const iconName = isBuiltin ? builtin?.icon : (custom?.icon || 'Zap');
-            const IconComponent = getIconComponent(iconName || 'Zap');
+        {canvasActions.length === 0 ? (
+          <div className="flex items-center justify-center py-8 px-4 rounded-xl bg-[var(--surface-warm)] border border-dashed border-[var(--border)]">
+            <span className="text-sm text-[var(--muted)]">当前没有启动的操作</span>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {canvasActions.map((action, index) => {
+              const isBuiltin = action.action_type === 'builtin';
+              const builtin = isBuiltin ? BUILTIN_ACTIONS.find(b => b.id === action.action_id) : null;
+              const custom = !isBuiltin ? customActions.find(c => c.id === action.action_id) : null;
+              const iconName = isBuiltin ? builtin?.icon : (custom?.icon || 'Zap');
+              const IconComponent = getIconComponent(iconName || 'Zap');
 
-            return (
-              <div
-                key={`${action.action_type}-${action.action_id}`}
-                className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]"
-              >
-                {/* 排序按钮 */}
-                <div className="flex flex-col gap-0.5">
-                  <button
-                    onClick={() => moveActionUp(index)}
-                    disabled={index === 0}
-                    className="w-5 h-5 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronUp size={12} />
-                  </button>
-                  <button
-                    onClick={() => moveActionDown(index)}
-                    disabled={index === canvasActions.length - 1}
-                    className="w-5 h-5 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronDown size={12} />
-                  </button>
-                </div>
+              return (
+                <div
+                  key={`${action.action_type}-${action.action_id}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)] group"
+                >
+                  {/* 排序按钮 */}
+                  <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => moveActionUp(index)}
+                      disabled={index === 0}
+                      className="w-4 h-4 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronUp size={10} />
+                    </button>
+                    <button
+                      onClick={() => moveActionDown(index)}
+                      disabled={index === canvasActions.length - 1}
+                      className="w-4 h-4 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronDown size={10} />
+                    </button>
+                  </div>
 
-                <IconComponent size={18} />
-                <span className="flex-1 text-sm text-[var(--fg)]">
-                  {isBuiltin ? builtin?.name : custom?.name}
-                </span>
-                <span className="text-xs text-[var(--muted)] px-2 py-1 rounded bg-[var(--surface-warm-hover)]">
-                  {isBuiltin ? t('aiActions.builtin') : t('aiActions.custom')}
-                </span>
+                  <IconComponent size={16} />
+                  <span className="text-sm text-[var(--fg)]">
+                    {isBuiltin ? builtin?.name : custom?.name}
+                  </span>
 
-                {/* 移除按钮 */}
-                <Tooltip content="从画布移除">
+                  {/* 移除按钮 */}
                   <button
                     onClick={() => removeFromCanvas(action.action_type, action.action_id)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="w-5 h-5 flex items-center justify-center rounded-full text-[var(--muted)] hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
                   >
-                    <X size={14} />
+                    <X size={10} />
                   </button>
-                </Tooltip>
-              </div>
-            );
-          })}
-
-          {canvasActions.length === 0 && (
-            <div className="text-center py-4 text-[var(--muted)] text-sm">
-              暂无操作，请从下方添加
-            </div>
-          )}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* 第二栏：内置操作 */}
