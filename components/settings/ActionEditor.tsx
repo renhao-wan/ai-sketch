@@ -164,7 +164,7 @@ export function ActionEditor({ action, onClose, onSave }: ActionEditorProps) {
                         onClick={() => setIcon(name)}
                         className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
                           icon === name
-                            ? 'bg-[var(--surface-warm-hover)] ring-2 ring-[var(--border)]'
+                            ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] ring-2 ring-[var(--accent-indigo)]'
                             : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
                         }`}
                       >
