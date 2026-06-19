@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locales';
+import { useNotification } from '@/lib/contexts/NotificationContext';
 import { X, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload } from 'lucide-react';
 import type { CustomAction } from '@/lib/db/custom-action-manager';
 
@@ -48,6 +49,7 @@ interface ActionEditorProps {
 
 export function ActionEditor({ action, onClose, onSave }: ActionEditorProps) {
   const { t } = useLocale();
+  const { showNotification } = useNotification();
   const [name, setName] = useState(action?.name || '');
   const [prompt, setPrompt] = useState(action?.prompt || '');
   const [icon, setIcon] = useState(action?.icon || 'Zap');
@@ -80,6 +82,11 @@ export function ActionEditor({ action, onClose, onSave }: ActionEditorProps) {
         throw new Error('保存失败');
       }
 
+      showNotification(
+        isEditing ? '编辑成功' : '创建成功',
+        `操作"${name.trim()}"已${isEditing ? '更新' : '创建'}`,
+        'success'
+      );
       onSave();
     } catch (error) {
       console.error('Failed to save action:', error);
