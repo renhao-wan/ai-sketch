@@ -1,28 +1,53 @@
 import { NextResponse } from 'next/server';
 import { callLLM } from '@/lib/llm/client';
 import { configManager } from '@/lib/db/config-manager';
+import { customActionManager } from '@/lib/db/custom-action-manager';
 import { getActionSystemPrompt, getActionUserPrompt } from '@/lib/prompts/ai-actions';
 import type { AIActionType } from '@/lib/prompts/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 import { stripCodeFences } from '@/lib/diagram/json-repair';
 
+// 系统提示词模板
+const MODIFY_SYSTEM_PROMPT = `你是图表代码优化专家。用户会提供图表代码和优化要求。
+
+【强制规则】
+1. 必须输出完整的图表代码
+2. 禁止输出任何解释、说明或注释
+3. 禁止使用 markdown 代码块包裹
+4. 必须保持与输入相同的代码格式
+5. 直接输出修改后的代码，不要添加任何前缀文字
+
+违反以上规则将导致系统错误。`;
+
+const EXPLAIN_SYSTEM_PROMPT = `你是图表分析专家。用户会提供图表代码和分析要求。
+
+【强制规则】
+1. 必须输出详细的文字说明
+2. 禁止输出任何代码
+3. 必须使用 Markdown 格式
+4. 必须包含图表结构分析、节点说明、流程描述
+5. 使用清晰的中文描述
+
+违反以上规则将导致系统错误。`;
+
 interface AIActionRequest {
   code: string;
   format: DiagramFormat;
-  action: AIActionType;
+  action: AIActionType | 'custom';
+  actionId?: string;
   configId?: string;
 }
 
 export async function POST(request: Request) {
   try {
     const body: AIActionRequest = await request.json();
-    const { code, format, action, configId } = body;
+    const { code, format, action, actionId, configId } = body;
 
     if (!code || !format || !action) {
-      return NextResponse.json({ error: 'Missing required fields: code, format, action' }, { status: 400 });
+      return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
     }
 
-    // Get LLM config
+    // 获取 LLM 配置
     let config;
     if (configId) {
       config = await configManager.getConfig(configId);
@@ -31,16 +56,42 @@ export async function POST(request: Request) {
     }
 
     if (!config) {
-      return NextResponse.json({ error: 'No LLM config found' }, { status: 400 });
+      return NextResponse.json({ error: '未找到 LLM 配置' }, { status: 400 });
     }
 
-    // Build messages
+    // 构建提示词
+    let systemPrompt: string;
+    let userPrompt: string;
+
+    if (action === 'custom' && actionId) {
+      // 自定义操作
+      const customAction = await customActionManager.getById(actionId);
+      if (!customAction) {
+        return NextResponse.json({ error: '自定义操作不存在' }, { status: 404 });
+      }
+
+      systemPrompt = customAction.action_type === 'modify' ? MODIFY_SYSTEM_PROMPT : EXPLAIN_SYSTEM_PROMPT;
+      userPrompt = `${customAction.prompt}\n\n当前图表代码：\n${code}`;
+    } else {
+      // 内置操作
+      systemPrompt = getActionSystemPrompt(action, format);
+      userPrompt = getActionUserPrompt(action, code, format);
+    }
+
+    // 构建消息
     const messages = [
-      { role: 'system' as const, content: getActionSystemPrompt(action, format) },
-      { role: 'user' as const, content: getActionUserPrompt(action, code, format) },
+      { role: 'system' as const, content: systemPrompt },
+      { role: 'user' as const, content: userPrompt },
     ];
 
-    // SSE stream
+    // 确定是否需要去除代码围栏
+    // 对于内置操作：非 explain 类型需要去除
+    // 对于自定义操作：modify 类型需要去除
+    const shouldStripCodeFences = action === 'custom'
+      ? (await customActionManager.getById(actionId!))?.action_type !== 'explain'
+      : action !== 'explain';
+
+    // SSE 流式响应
     const encoder = new TextEncoder();
     const timeoutMs = 5 * 60 * 1000;
     const timeoutController = new AbortController();
@@ -58,9 +109,8 @@ export async function POST(request: Request) {
             controller.enqueue(encoder.encode(data));
           }, combinedController.signal);
 
-          // For non-explain actions, only strip code fences (don't run full postProcess
-          // which would repair/restore content the LLM intentionally removed)
-          if (action !== 'explain') {
+          // 对于非 explain 操作，去除代码围栏
+          if (shouldStripCodeFences) {
             const cleaned = stripCodeFences(result);
             const finalData = `data: ${JSON.stringify({ type: 'result', content: cleaned })}\n\n`;
             controller.enqueue(encoder.encode(finalData));
@@ -76,7 +126,6 @@ export async function POST(request: Request) {
           controller.enqueue(encoder.encode(errorData));
         } finally {
           clearTimeout(timeoutId);
-          // 移除事件监听器，避免内存泄漏
           request.signal?.removeEventListener('abort', onAbort);
           timeoutController.signal.removeEventListener('abort', onAbort);
           controller.close();
