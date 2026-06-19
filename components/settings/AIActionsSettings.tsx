@@ -227,13 +227,13 @@ export function AIActionsSettings() {
           画布上显示的操作，拖拽排序，点击 X 取消
         </p>
 
-        <div className="min-h-[52px] p-2 rounded-xl bg-[var(--surface-warm)] border border-dashed border-[var(--border)]">
+        <div className="h-[60px] p-2 rounded-xl bg-[var(--surface-warm)] border border-dashed border-[var(--border)] overflow-hidden">
           {canvasActions.length === 0 ? (
-            <div className="flex items-center justify-center h-[36px]">
+            <div className="flex items-center justify-center h-full">
               <span className="text-sm text-[var(--muted)]">当前没有启动的操作</span>
             </div>
           ) : (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 h-full items-center">
               {canvasActions.map((action, index) => {
                 const IconComponent = getIconComponent(getActionIcon(action));
                 return (
