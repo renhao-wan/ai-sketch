@@ -123,6 +123,50 @@ async function initDb(): Promise<Database> {
     )
   `);
 
+  // 自定义 AI 操作表
+  db.run(`
+    CREATE TABLE IF NOT EXISTS custom_actions (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      prompt TEXT NOT NULL,
+      icon TEXT DEFAULT 'Zap',
+      action_type TEXT DEFAULT 'modify',
+      enabled INTEGER DEFAULT 1,
+      sort_order INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+  // 画布操作配置表
+  db.run(`
+    CREATE TABLE IF NOT EXISTS canvas_actions (
+      id TEXT PRIMARY KEY,
+      action_type TEXT NOT NULL,
+      action_id TEXT NOT NULL,
+      sort_order INTEGER DEFAULT 0,
+      UNIQUE(action_type, action_id)
+    )
+  `);
+
+  // 插入默认的内置操作
+  const defaultActions = [
+    { id: '1', action_type: 'builtin', action_id: 'layout', sort_order: 0 },
+    { id: '2', action_type: 'builtin', action_id: 'beautify', sort_order: 1 },
+    { id: '3', action_type: 'builtin', action_id: 'simplify', sort_order: 2 },
+    { id: '4', action_type: 'builtin', action_id: 'explain', sort_order: 3 },
+  ];
+
+  for (const action of defaultActions) {
+    db.run(
+      `INSERT OR IGNORE INTO canvas_actions (id, action_type, action_id, sort_order) VALUES (?, ?, ?, ?)`,
+      [action.id, action.action_type, action.action_id, action.sort_order]
+    );
+  }
+
+  db.run('CREATE INDEX IF NOT EXISTS idx_custom_actions_sort ON custom_actions(sort_order)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_canvas_actions_sort ON canvas_actions(sort_order)');
+
   // 标签表
   db.run(`
     CREATE TABLE IF NOT EXISTS conversation_tags (
