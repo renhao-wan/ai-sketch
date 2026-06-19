@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locales';
 import { useNotification } from '@/lib/contexts/NotificationContext';
-import { Plus, GripVertical, Trash2, Edit2, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { Plus, GripVertical, Trash2, Edit2, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles, ChevronUp, ChevronDown, X, ToggleLeft, ToggleRight } from 'lucide-react';
 import Tooltip from '@/components/ui/Tooltip';
 import { ActionEditor } from '@/components/settings/ActionEditor';
 import type { CustomAction, CanvasAction } from '@/lib/db/custom-action-manager';
@@ -71,11 +71,15 @@ export function AIActionsSettings() {
     }
   };
 
-  // 删除自定义操作
-  const deleteAction = async (id: string) => {
+  // 删除自定义操作（带确认）
+  const deleteAction = async (id: string, name: string) => {
+    // 使用简单的确认对话框
+    const confirmed = window.confirm(`确定要删除操作"${name}"吗？此操作不可撤销。`);
+    if (!confirmed) return;
+
     try {
       await fetch(`/api/custom-actions/${id}`, { method: 'DELETE' });
-      showNotification(t('aiActions.deleteAction'), '操作已删除', 'success');
+      showNotification(t('aiActions.deleteAction'), `操作"${name}"已删除`, 'success');
       await loadData();
     } catch (error) {
       console.error('Failed to delete action:', error);
@@ -229,7 +233,7 @@ export function AIActionsSettings() {
                         : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
                     }`}
                   >
-                    <Zap size={14} />
+                    {onCanvas ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                   </button>
                 </Tooltip>
               </div>
@@ -294,7 +298,7 @@ export function AIActionsSettings() {
                     </Tooltip>
                     <Tooltip content={t('aiActions.deleteAction')}>
                       <button
-                        onClick={() => deleteAction(action.id)}
+                        onClick={() => deleteAction(action.id, action.name)}
                         className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-red-500 hover:bg-red-50 transition-colors"
                       >
                         <Trash2 size={14} />
@@ -309,7 +313,7 @@ export function AIActionsSettings() {
                             : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
                         }`}
                       >
-                        <Zap size={14} />
+                        {onCanvas ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                       </button>
                     </Tooltip>
                   </div>
