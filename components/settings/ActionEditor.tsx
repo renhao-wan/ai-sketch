@@ -101,7 +101,7 @@ export function ActionEditor({ action, onClose, onSave }: ActionEditorProps) {
         </div>
 
         {/* 内容 */}
-        <div className="px-6 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+        <div className="px-6 py-4 space-y-4 max-h-[60vh] overflow-y-auto scrollbar-thin">
           {/* 操作名称 */}
           <div>
             <label className="block text-sm font-medium text-[var(--fg)] mb-1.5">
