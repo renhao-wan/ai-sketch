@@ -38,7 +38,6 @@ function ActionCard({
   onToggle,
   onEdit,
   onDelete,
-  isBuiltin = false,
 }: {
   icon: string;
   name: string;
@@ -47,7 +46,6 @@ function ActionCard({
   onToggle: (enabled: boolean) => void;
   onEdit?: () => void;
   onDelete?: () => void;
-  isBuiltin?: boolean;
 }) {
   const { t } = useLocale();
   const IconComponent = getIconComponent(icon);
@@ -61,11 +59,6 @@ function ActionCard({
           <div className="text-xs text-[var(--muted)] truncate">{description}</div>
         )}
       </div>
-      {!isBuiltin && (
-        <span className="text-xs text-[var(--muted)] px-2 py-1 rounded bg-[var(--surface-warm-hover)]">
-          {t('aiActions.custom')}
-        </span>
-      )}
       <div className="flex items-center gap-1">
         {onEdit && (
           <Tooltip content={t('aiActions.editAction')}>
@@ -313,7 +306,6 @@ export function AIActionsSettings() {
               description={action.actionType === 'modify' ? t('aiActions.actionTypeModify') : t('aiActions.actionTypeExplain')}
               enabled={isOnCanvas('builtin', action.id)}
               onToggle={(enabled) => toggleCanvasAction('builtin', action.id, enabled)}
-              isBuiltin
             />
           ))}
         </div>
