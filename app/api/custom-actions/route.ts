@@ -34,3 +34,15 @@ export const POST = withErrorHandling(async (request: Request) => {
 
   return NextResponse.json(action);
 }, '/api/custom-actions POST');
+
+/**
+ * DELETE /api/custom-actions
+ * 删除所有自定义操作
+ */
+export const DELETE = withErrorHandling(async () => {
+  const actions = await customActionManager.getAll();
+  for (const action of actions) {
+    await customActionManager.delete(action.id);
+  }
+  return NextResponse.json({ success: true, deleted: actions.length });
+}, '/api/custom-actions DELETE');

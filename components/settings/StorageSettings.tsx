@@ -225,6 +225,32 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
           }
           await api.clearCache();
           await api.resetMeta();
+
+          // 清除自定义操作数据
+          try {
+            await fetch('/api/custom-actions', { method: 'DELETE' });
+          } catch {
+            // 忽略错误，可能没有自定义操作
+          }
+
+          // 重置画布操作为默认状态（只保留内置操作）
+          try {
+            await fetch('/api/canvas-actions', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                actions: [
+                  { action_type: 'builtin', action_id: 'layout', sort_order: 0 },
+                  { action_type: 'builtin', action_id: 'beautify', sort_order: 1 },
+                  { action_type: 'builtin', action_id: 'simplify', sort_order: 2 },
+                  { action_type: 'builtin', action_id: 'explain', sort_order: 3 },
+                ]
+              }),
+            });
+          } catch {
+            // 忽略错误
+          }
+
           // 优先使用 Electron IPC 重置窗口状态，回退到 API 调用
           if (typeof window !== 'undefined' && 'electronAPI' in window) {
             await (window as unknown as { electronAPI: { resetWindowState: () => Promise<unknown> } }).electronAPI.resetWindowState();
