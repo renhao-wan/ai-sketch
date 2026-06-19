@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locales';
 import { useNotification } from '@/lib/contexts/NotificationContext';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
@@ -41,11 +41,10 @@ function ActionCard({
   onDelete?: () => void;
 }) {
   const { t } = useLocale();
-  const IconComponent = useMemo(() => getIconComponent(icon), [icon]);
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]">
-      <IconComponent size={18} />
+      <IconRenderer icon={icon} />
       <div className="flex-1 min-w-0">
         <div className="text-sm text-[var(--fg)] truncate">{name}</div>
         {description && (
@@ -81,6 +80,12 @@ function ActionCard({
       </div>
     </div>
   );
+}
+
+// 图标渲染组件（避免在渲染期间创建组件）
+function IconRenderer({ icon }: { icon: string }) {
+  const IconComponent = ICON_MAP[icon] || Zap;
+  return <IconComponent size={18} />;
 }
 
 export function AIActionsSettings() {
