@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locales';
 import { useNotification } from '@/lib/contexts/NotificationContext';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { Plus, Trash2, Edit2, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Edit2, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles, ChevronUp, ChevronDown, X } from 'lucide-react';
 import Tooltip from '@/components/ui/Tooltip';
 import ToggleSwitch from '@/components/ui/ToggleSwitch';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
