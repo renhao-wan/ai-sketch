@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locales';
 import { useNotification } from '@/lib/contexts/NotificationContext';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { Plus, GripVertical, Trash2, Edit2, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles, ChevronUp, ChevronDown, X, ToggleLeft, ToggleRight } from 'lucide-react';
 import Tooltip from '@/components/ui/Tooltip';
+import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
 import { ActionEditor } from '@/components/settings/ActionEditor';
 import type { CustomAction, CanvasAction } from '@/lib/db/custom-action-manager';
 
@@ -29,6 +31,7 @@ const BUILTIN_ACTIONS = [
 export function AIActionsSettings() {
   const { t } = useLocale();
   const { showNotification } = useNotification();
+  const { confirmDialog, showConfirm, closeConfirm } = useConfirmDialog();
   const [canvasActions, setCanvasActions] = useState<CanvasAction[]>([]);
   const [customActions, setCustomActions] = useState<CustomAction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,19 +75,22 @@ export function AIActionsSettings() {
   };
 
   // 删除自定义操作（带确认）
-  const deleteAction = async (id: string, name: string) => {
-    // 使用简单的确认对话框
-    const confirmed = window.confirm(`确定要删除操作"${name}"吗？此操作不可撤销。`);
-    if (!confirmed) return;
-
-    try {
-      await fetch(`/api/custom-actions/${id}`, { method: 'DELETE' });
-      showNotification(t('aiActions.deleteAction'), `操作"${name}"已删除`, 'success');
-      await loadData();
-    } catch (error) {
-      console.error('Failed to delete action:', error);
-      showNotification(t('error.title'), '删除操作失败', 'error');
-    }
+  const deleteAction = (id: string, name: string) => {
+    showConfirm(
+      '删除操作',
+      `确定要删除操作"${name}"吗？此操作不可撤销。`,
+      async () => {
+        try {
+          await fetch(`/api/custom-actions/${id}`, { method: 'DELETE' });
+          showNotification(t('aiActions.deleteAction'), `操作"${name}"已删除`, 'success');
+          await loadData();
+        } catch (error) {
+          console.error('Failed to delete action:', error);
+          showNotification(t('error.title'), '删除操作失败', 'error');
+        }
+      },
+      'danger'
+    );
   };
 
   // 从画布移除操作（不删除操作本身）
@@ -339,6 +345,16 @@ export function AIActionsSettings() {
           }}
         />
       )}
+
+      {/* 确认对话框 */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        type={confirmDialog.variant}
+      />
     </div>
   );
 }
