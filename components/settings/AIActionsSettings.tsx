@@ -227,75 +227,72 @@ export function AIActionsSettings() {
           画布上显示的操作，拖拽排序，点击 X 取消
         </p>
 
-        {canvasActions.length === 0 ? (
-          <div className="flex items-center justify-center py-6 px-4 rounded-xl bg-[var(--surface-warm)] border border-dashed border-[var(--border)]">
-            <span className="text-sm text-[var(--muted)]">当前没有启动的操作</span>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {canvasActions.map((action, index) => {
-              const IconComponent = getIconComponent(getActionIcon(action));
-              return (
-                <div
-                  key={`${action.action_type}-${action.action_id}`}
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('text/plain', index.toString());
-                    e.currentTarget.classList.add('opacity-50');
-                  }}
-                  onDragEnd={(e) => {
-                    e.currentTarget.classList.remove('opacity-50');
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.add('border-[var(--accent-indigo)]');
-                  }}
-                  onDragLeave={(e) => {
-                    e.currentTarget.classList.remove('border-[var(--accent-indigo)]');
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.remove('border-[var(--accent-indigo)]');
-                    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                    const toIndex = index;
-                    if (fromIndex !== toIndex) {
-                      const newActions = [...canvasActions];
-                      const [moved] = newActions.splice(fromIndex, 1);
-                      newActions.splice(toIndex, 0, moved);
-                      updateCanvasActions(newActions);
-                    }
-                  }}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)] cursor-grab active:cursor-grabbing hover:border-[var(--accent-indigo)]/30 transition-colors"
-                >
-                  {/* 拖拽手柄 */}
-                  <div className="flex flex-col gap-0.5 text-[var(--muted)]">
-                    <div className="w-4 h-0.5 bg-current rounded-full" />
-                    <div className="w-4 h-0.5 bg-current rounded-full" />
-                    <div className="w-4 h-0.5 bg-current rounded-full" />
-                  </div>
-
-                  {/* 序号 */}
-                  <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]">
-                    <span className="text-xs font-bold">{index + 1}</span>
-                  </div>
-
-                  <IconComponent size={16} className="text-[var(--fg)]" />
-                  <span className="flex-1 text-sm text-[var(--fg)]">
-                    {getActionName(action)}
-                  </span>
-
-                  {/* 取消按钮 */}
-                  <button
-                    onClick={() => removeFromCanvas(action.action_type, action.action_id)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-red-500 hover:bg-red-50 transition-colors"
+        <div className="min-h-[52px] p-2 rounded-xl bg-[var(--surface-warm)] border border-dashed border-[var(--border)]">
+          {canvasActions.length === 0 ? (
+            <div className="flex items-center justify-center h-[36px]">
+              <span className="text-sm text-[var(--muted)]">当前没有启动的操作</span>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {canvasActions.map((action, index) => {
+                const IconComponent = getIconComponent(getActionIcon(action));
+                return (
+                  <div
+                    key={`${action.action_type}-${action.action_id}`}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', index.toString());
+                      e.currentTarget.classList.add('opacity-50');
+                    }}
+                    onDragEnd={(e) => {
+                      e.currentTarget.classList.remove('opacity-50');
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.add('ring-2', 'ring-[var(--accent-indigo)]');
+                    }}
+                    onDragLeave={(e) => {
+                      e.currentTarget.classList.remove('ring-2', 'ring-[var(--accent-indigo)]');
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.remove('ring-2', 'ring-[var(--accent-indigo)]');
+                      const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                      const toIndex = index;
+                      if (fromIndex !== toIndex) {
+                        const newActions = [...canvasActions];
+                        const [moved] = newActions.splice(fromIndex, 1);
+                        newActions.splice(toIndex, 0, moved);
+                        updateCanvasActions(newActions);
+                      }
+                    }}
+                    className="flex items-center gap-1.5 pl-1.5 pr-1 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] cursor-grab active:cursor-grabbing hover:border-[var(--accent-indigo)]/30 transition-colors"
                   >
-                    <X size={14} />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                    {/* 拖拽手柄 */}
+                    <div className="flex flex-col gap-0.5 text-[var(--muted)]">
+                      <div className="w-3 h-0.5 bg-current rounded-full" />
+                      <div className="w-3 h-0.5 bg-current rounded-full" />
+                      <div className="w-3 h-0.5 bg-current rounded-full" />
+                    </div>
+
+                    <IconComponent size={14} className="text-[var(--fg)]" />
+                    <span className="text-xs font-medium text-[var(--fg)] whitespace-nowrap">
+                      {getActionName(action)}
+                    </span>
+
+                    {/* 取消按钮 */}
+                    <button
+                      onClick={() => removeFromCanvas(action.action_type, action.action_id)}
+                      className="w-5 h-5 flex items-center justify-center rounded-full text-[var(--muted)] hover:text-red-500 hover:bg-red-50 transition-colors ml-0.5"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 第二栏：内置操作 */}
