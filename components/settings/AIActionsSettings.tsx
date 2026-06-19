@@ -23,10 +23,10 @@ const getIconComponent = (iconName: string) => {
 
 // 内置操作定义（使用翻译键）
 const BUILTIN_ACTIONS = [
-  { id: 'layout', icon: 'LayoutGrid', labelKey: 'aiAction.layout' },
-  { id: 'beautify', icon: 'Palette', labelKey: 'aiAction.beautify' },
-  { id: 'simplify', icon: 'Minimize2', labelKey: 'aiAction.simplify' },
-  { id: 'explain', icon: 'Sparkles', labelKey: 'aiAction.explain' },
+  { id: 'layout', icon: 'LayoutGrid', labelKey: 'aiAction.layout', actionType: 'modify' as const },
+  { id: 'beautify', icon: 'Palette', labelKey: 'aiAction.beautify', actionType: 'modify' as const },
+  { id: 'simplify', icon: 'Minimize2', labelKey: 'aiAction.simplify', actionType: 'modify' as const },
+  { id: 'explain', icon: 'Sparkles', labelKey: 'aiAction.explain', actionType: 'explain' as const },
 ];
 
 // 操作卡片组件
@@ -310,6 +310,7 @@ export function AIActionsSettings() {
               key={action.id}
               icon={action.icon}
               name={t(action.labelKey as any)}
+              description={action.actionType === 'modify' ? t('aiActions.actionTypeModify') : t('aiActions.actionTypeExplain')}
               enabled={isOnCanvas('builtin', action.id)}
               onToggle={(enabled) => toggleCanvasAction('builtin', action.id, enabled)}
               isBuiltin
