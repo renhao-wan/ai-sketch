@@ -62,6 +62,7 @@ export async function POST(request: Request) {
     // 构建提示词
     let systemPrompt: string;
     let userPrompt: string;
+    let isExplainAction = action === 'explain';
 
     if (action === 'custom' && actionId) {
       // 自定义操作
@@ -72,6 +73,7 @@ export async function POST(request: Request) {
 
       systemPrompt = customAction.action_type === 'modify' ? MODIFY_SYSTEM_PROMPT : EXPLAIN_SYSTEM_PROMPT;
       userPrompt = `${customAction.prompt}\n\n当前图表代码：\n${code}`;
+      isExplainAction = customAction.action_type === 'explain';
     } else {
       // 内置操作
       systemPrompt = getActionSystemPrompt(action, format);
@@ -83,13 +85,6 @@ export async function POST(request: Request) {
       { role: 'system' as const, content: systemPrompt },
       { role: 'user' as const, content: userPrompt },
     ];
-
-    // 确定是否需要去除代码围栏
-    // 对于内置操作：非 explain 类型需要去除
-    // 对于自定义操作：modify 类型需要去除
-    const shouldStripCodeFences = action === 'custom'
-      ? (await customActionManager.getById(actionId!))?.action_type !== 'explain'
-      : action !== 'explain';
 
     // SSE 流式响应
     const encoder = new TextEncoder();
@@ -110,7 +105,7 @@ export async function POST(request: Request) {
           }, combinedController.signal);
 
           // 对于非 explain 操作，去除代码围栏
-          if (shouldStripCodeFences) {
+          if (!isExplainAction) {
             const cleaned = stripCodeFences(result);
             const finalData = `data: ${JSON.stringify({ type: 'result', content: cleaned })}\n\n`;
             controller.enqueue(encoder.encode(finalData));
