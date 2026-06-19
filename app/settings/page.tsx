@@ -52,6 +52,7 @@ export default function SettingsPage() {
     const tabMap: Record<string, SettingsTab> = {
       'settings-appearance': 'appearance',
       'settings-llm': 'llm',
+      'settings-conversations': 'conversations',
       'settings-aiActions': 'aiActions',
       'settings-tags': 'tags',
       'settings-storage': 'storage',
