@@ -69,6 +69,7 @@ export function useAIActions(options: UseAIActionsOptions) {
 
     // 获取操作信息
     const actionInfo = getBuiltinActionInfo(actionId);
+    console.log('执行内置操作:', actionId, '类型:', actionInfo.type);
 
     if (actionInfo.type === 'explain') {
       // 解释类型：添加动态 tab
@@ -80,6 +81,7 @@ export function useAIActions(options: UseAIActionsOptions) {
         type: 'text',
         timestamp: Date.now(),
       };
+      console.log('添加动态 tab:', newTab);
       options.onDynamicTabAdd(newTab);
     } else {
       // 修改类型：更新代码

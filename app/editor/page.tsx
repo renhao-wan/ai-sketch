@@ -166,7 +166,11 @@ function EditorContent() {
 
   // 动态 Tab 管理
   const handleDynamicTabAdd = useCallback((tab: DynamicTab) => {
-    setDynamicTabs(prev => [...prev, tab]);
+    console.log('接收到动态 tab:', tab);
+    setDynamicTabs(prev => {
+      console.log('当前动态 tabs:', prev);
+      return [...prev, tab];
+    });
     setBottomPanelTab(tab.id);
   }, []);
 
