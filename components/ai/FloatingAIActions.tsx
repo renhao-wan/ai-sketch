@@ -8,11 +8,51 @@ import {
   Sparkles,
   Loader2,
   Zap,
+  Star,
+  Heart,
+  Coffee,
+  Music,
+  Camera,
+  Code,
+  Database,
+  FileText,
+  Folder,
+  Globe,
+  Home,
+  Image,
+  Lock,
+  Mail,
+  Map,
+  Mic,
+  Moon,
+  Phone,
+  Pin,
+  Search,
+  Settings,
+  Shield,
+  Sun,
+  Terminal,
+  User,
+  Video,
+  Wifi,
+  Cloud,
+  Download,
+  Upload,
 } from 'lucide-react';
 import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 import type { TranslationKey } from '@/lib/locales';
 import type { CanvasAction } from '@/lib/db/custom-action-manager';
+
+// 图标映射
+const ICON_MAP: Record<string, typeof Zap> = {
+  LayoutGrid, Palette, Minimize2, Sparkles, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload,
+};
+
+// 获取图标组件
+const getIconComponent = (iconName: string) => {
+  return ICON_MAP[iconName] || Zap;
+};
 
 // 内置操作定义
 const BUILTIN_ACTIONS = [
@@ -66,7 +106,8 @@ export default function FloatingAIActions({ onAction, loadingAction, disabled }:
       const builtin = BUILTIN_ACTIONS.find(b => b.id === action.action_id);
       return builtin?.icon || Zap;
     }
-    return Zap;
+    const custom = customActionsMap.get(action.action_id);
+    return getIconComponent(custom?.icon || 'Zap');
   };
 
   // 获取操作标签

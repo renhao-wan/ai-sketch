@@ -2,15 +2,42 @@
 
 import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locales';
-import { X, Zap } from 'lucide-react';
+import { X, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload } from 'lucide-react';
 import type { CustomAction } from '@/lib/db/custom-action-manager';
 
 // 可选图标列表
 const ICON_OPTIONS = [
-  'Zap', 'Star', 'Heart', 'Coffee', 'Music', 'Camera', 'Code', 'Database',
-  'FileText', 'Folder', 'Globe', 'Home', 'Image', 'Lock', 'Mail', 'Map',
-  'Mic', 'Moon', 'Phone', 'Pin', 'Search', 'Settings', 'Shield', 'Sun',
-  'Terminal', 'User', 'Video', 'Wifi', 'Cloud', 'Download', 'Upload',
+  { name: 'Zap', icon: Zap },
+  { name: 'Star', icon: Star },
+  { name: 'Heart', icon: Heart },
+  { name: 'Coffee', icon: Coffee },
+  { name: 'Music', icon: Music },
+  { name: 'Camera', icon: Camera },
+  { name: 'Code', icon: Code },
+  { name: 'Database', icon: Database },
+  { name: 'FileText', icon: FileText },
+  { name: 'Folder', icon: Folder },
+  { name: 'Globe', icon: Globe },
+  { name: 'Home', icon: Home },
+  { name: 'Image', icon: Image },
+  { name: 'Lock', icon: Lock },
+  { name: 'Mail', icon: Mail },
+  { name: 'Map', icon: Map },
+  { name: 'Mic', icon: Mic },
+  { name: 'Moon', icon: Moon },
+  { name: 'Phone', icon: Phone },
+  { name: 'Pin', icon: Pin },
+  { name: 'Search', icon: Search },
+  { name: 'Settings', icon: Settings },
+  { name: 'Shield', icon: Shield },
+  { name: 'Sun', icon: Sun },
+  { name: 'Terminal', icon: Terminal },
+  { name: 'User', icon: User },
+  { name: 'Video', icon: Video },
+  { name: 'Wifi', icon: Wifi },
+  { name: 'Cloud', icon: Cloud },
+  { name: 'Download', icon: Download },
+  { name: 'Upload', icon: Upload },
 ];
 
 interface ActionEditorProps {
@@ -101,9 +128,6 @@ export function ActionEditor({ action, onClose, onSave }: ActionEditorProps) {
               rows={4}
               className="w-full px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)] text-sm resize-none"
             />
-            <p className="mt-1.5 text-xs text-[var(--muted)]">
-              {actionType === 'modify' ? t('aiActions.promptTipModify') : t('aiActions.promptTipExplain')}
-            </p>
           </div>
 
           {/* 高级设置 */}
@@ -123,17 +147,17 @@ export function ActionEditor({ action, onClose, onSave }: ActionEditorProps) {
                     {t('aiActions.icon')}
                   </label>
                   <div className="grid grid-cols-10 gap-2">
-                    {ICON_OPTIONS.map(iconName => (
+                    {ICON_OPTIONS.map(({ name, icon: IconComponent }) => (
                       <button
-                        key={iconName}
-                        onClick={() => setIcon(iconName)}
+                        key={name}
+                        onClick={() => setIcon(name)}
                         className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-                          icon === iconName
-                            ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] ring-2 ring-[var(--accent-indigo)]'
+                          icon === name
+                            ? 'bg-[var(--surface-warm-hover)] ring-2 ring-[var(--border)]'
                             : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
                         }`}
                       >
-                        <Zap size={14} />
+                        <IconComponent size={14} />
                       </button>
                     ))}
                   </div>

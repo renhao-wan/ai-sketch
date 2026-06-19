@@ -2,10 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locales';
-import { Plus, GripVertical, Trash2, Edit2, Zap } from 'lucide-react';
+import { Plus, GripVertical, Trash2, Edit2, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles } from 'lucide-react';
 import Tooltip from '@/components/ui/Tooltip';
 import { ActionEditor } from '@/components/settings/ActionEditor';
 import type { CustomAction, CanvasAction } from '@/lib/db/custom-action-manager';
+
+// 图标映射
+const ICON_MAP: Record<string, typeof Zap> = {
+  Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles,
+};
+
+// 获取图标组件
+const getIconComponent = (iconName: string) => {
+  return ICON_MAP[iconName] || Zap;
+};
 
 // 内置操作定义
 const BUILTIN_ACTIONS = [
@@ -109,6 +119,8 @@ export function AIActionsSettings() {
             const isBuiltin = action.action_type === 'builtin';
             const builtin = isBuiltin ? BUILTIN_ACTIONS.find(b => b.id === action.action_id) : null;
             const custom = !isBuiltin ? customActions.find(c => c.id === action.action_id) : null;
+            const iconName = isBuiltin ? builtin?.icon : (custom?.icon || 'Zap');
+            const IconComponent = getIconComponent(iconName || 'Zap');
 
             return (
               <div
@@ -116,7 +128,7 @@ export function AIActionsSettings() {
                 className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]"
               >
                 <GripVertical size={16} className="text-[var(--muted)] cursor-move" />
-                <span className="text-lg">{isBuiltin ? '⚡' : (custom?.icon || 'Zap')}</span>
+                <IconComponent size={18} />
                 <span className="flex-1 text-sm text-[var(--fg)]">
                   {isBuiltin ? builtin?.name : custom?.name}
                 </span>
@@ -153,12 +165,14 @@ export function AIActionsSettings() {
           </div>
         ) : (
           <div className="space-y-2">
-            {customActions.map(action => (
+            {customActions.map(action => {
+              const IconComponent = getIconComponent(action.icon || 'Zap');
+              return (
               <div
                 key={action.id}
                 className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]"
               >
-                <span className="text-lg">{action.icon || 'Zap'}</span>
+                <IconComponent size={18} />
                 <div className="flex-1">
                   <div className="text-sm text-[var(--fg)]">{action.name}</div>
                   <div className="text-xs text-[var(--muted)]">
