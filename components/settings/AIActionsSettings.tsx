@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locales';
 import { useNotification } from '@/lib/contexts/NotificationContext';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { Plus, Trash2, Edit2, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles, X } from 'lucide-react';
 import Tooltip from '@/components/ui/Tooltip';
 import ToggleSwitch from '@/components/ui/ToggleSwitch';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
@@ -212,22 +212,6 @@ export function AIActionsSettings() {
     return custom?.icon || 'Zap';
   };
 
-  // 上移操作
-  const moveActionUp = (index: number) => {
-    if (index === 0) return;
-    const newActions = [...canvasActions];
-    [newActions[index - 1], newActions[index]] = [newActions[index], newActions[index - 1]];
-    updateCanvasActions(newActions);
-  };
-
-  // 下移操作
-  const moveActionDown = (index: number) => {
-    if (index === canvasActions.length - 1) return;
-    const newActions = [...canvasActions];
-    [newActions[index], newActions[index + 1]] = [newActions[index + 1], newActions[index]];
-    updateCanvasActions(newActions);
-  };
-
   if (loading) {
     return <div className="flex items-center justify-center py-8 text-[var(--muted)]">加载中...</div>;
   }
@@ -240,7 +224,7 @@ export function AIActionsSettings() {
           当前启动的操作
         </h3>
         <p className="text-xs text-[var(--muted)] mb-4">
-          画布上显示的操作，最多 4 个，可拖拽排序
+          画布上显示的操作，点击可快速取消
         </p>
 
         {canvasActions.length === 0 ? (
@@ -248,45 +232,24 @@ export function AIActionsSettings() {
             <span className="text-sm text-[var(--muted)]">当前没有启动的操作</span>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {canvasActions.map((action, index) => {
               const IconComponent = getIconComponent(getActionIcon(action));
               return (
-                <div
+                <button
                   key={`${action.action_type}-${action.action_id}`}
-                  className="flex items-center gap-2 pl-2 pr-1 py-1.5 rounded-lg bg-[var(--surface-warm)] border border-[var(--border)] group hover:border-[var(--accent-indigo)]/30 transition-colors"
+                  onClick={() => removeFromCanvas(action.action_type, action.action_id)}
+                  className="flex items-center gap-2 p-3 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)] hover:border-red-300 hover:bg-red-50 transition-all group text-left"
                 >
-                  {/* 排序按钮 */}
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => moveActionUp(index)}
-                      disabled={index === 0}
-                      className="w-4 h-4 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronUp size={10} />
-                    </button>
-                    <button
-                      onClick={() => moveActionDown(index)}
-                      disabled={index === canvasActions.length - 1}
-                      className="w-4 h-4 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronDown size={10} />
-                    </button>
+                  <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)]">
+                    <span className="text-xs font-bold">{index + 1}</span>
                   </div>
-
-                  <IconComponent size={14} />
-                  <span className="text-xs font-medium text-[var(--fg)]">
+                  <IconComponent size={16} className="text-[var(--fg)]" />
+                  <span className="flex-1 text-sm text-[var(--fg)] truncate">
                     {getActionName(action)}
                   </span>
-
-                  {/* 移除按钮 */}
-                  <button
-                    onClick={() => removeFromCanvas(action.action_type, action.action_id)}
-                    className="w-5 h-5 flex items-center justify-center rounded-full text-[var(--muted)] hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all ml-1"
-                  >
-                    <X size={10} />
-                  </button>
-                </div>
+                  <X size={14} className="text-[var(--muted)] group-hover:text-red-500 transition-colors" />
+                </button>
               );
             })}
           </div>
