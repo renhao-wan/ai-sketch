@@ -69,19 +69,17 @@ export function useAIActions(options: UseAIActionsOptions) {
 
     // 获取操作信息
     const actionInfo = getBuiltinActionInfo(actionId);
-    console.log('执行内置操作:', actionId, '类型:', actionInfo.type);
 
     if (actionInfo.type === 'explain') {
-      // 解释类型：添加动态 tab
+      // 解释类型：添加动态 tab（使用 action- 前缀）
       const newTab: DynamicTab = {
-        id: `builtin-${actionId}-${Date.now()}`,
+        id: `action-${actionId}`,
         label: actionInfo.label,
         icon: actionInfo.icon,
         content: accumulatedCode,
         type: 'text',
         timestamp: Date.now(),
       };
-      console.log('添加动态 tab:', newTab);
       options.onDynamicTabAdd(newTab);
     } else {
       // 修改类型：更新代码
@@ -141,9 +139,9 @@ export function useAIActions(options: UseAIActionsOptions) {
     const customAction = await getCustomActionInfo(customActionId);
 
     if (customAction.action_type === 'explain') {
-      // 解释类型：添加动态 tab
+      // 解释类型：添加动态 tab（使用 action- 前缀）
       const newTab: DynamicTab = {
-        id: `custom-${customActionId}-${Date.now()}`,
+        id: `action-${customActionId}`,
         label: customAction.name,
         icon: customAction.icon,
         content: accumulatedCode,

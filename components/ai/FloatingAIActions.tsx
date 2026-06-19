@@ -54,6 +54,17 @@ const getIconComponent = (iconName: string) => {
   return ICON_MAP[iconName] || Zap;
 };
 
+// 获取内置操作类型
+const getBuiltinActionType = (actionId: string): 'modify' | 'explain' => {
+  const typeMap: Record<string, 'modify' | 'explain'> = {
+    'layout': 'modify',
+    'beautify': 'modify',
+    'simplify': 'modify',
+    'explain': 'explain',
+  };
+  return typeMap[actionId] || 'modify';
+};
+
 // 内置操作定义
 const BUILTIN_ACTIONS = [
   { id: 'layout', icon: LayoutGrid, labelKey: 'aiAction.layout' as TranslationKey },
@@ -62,13 +73,23 @@ const BUILTIN_ACTIONS = [
   { id: 'explain', icon: Sparkles, labelKey: 'aiAction.explain' as TranslationKey },
 ];
 
+// 操作信息接口
+export interface ActionInfo {
+  id: string;
+  label: string;
+  icon: string;
+  type: 'builtin' | 'custom';
+  actionType: 'modify' | 'explain';
+}
+
 interface FloatingAIActionsProps {
   onAction?: (actionId: string, customActionId?: string) => void;
+  onActionsLoad?: (actions: ActionInfo[]) => void;
   loadingAction?: string | null;
   disabled?: boolean;
 }
 
-export default function FloatingAIActions({ onAction, loadingAction, disabled }: FloatingAIActionsProps) {
+export default function FloatingAIActions({ onAction, onActionsLoad, loadingAction, disabled }: FloatingAIActionsProps) {
   const { t } = useLocale();
   const [canvasActions, setCanvasActions] = useState<(CanvasAction & { details?: any })[]>([]);
   const [customActionsMap, setCustomActionsMap] = useState<Record<string, any>>({});
@@ -93,6 +114,30 @@ export default function FloatingAIActions({ onAction, loadingAction, disabled }:
         }
       });
       setCustomActionsMap(map);
+
+      // 通知编辑器页面可用的操作列表
+      const actionInfos: ActionInfo[] = data.map((action: any) => {
+        if (action.action_type === 'builtin') {
+          const builtin = BUILTIN_ACTIONS.find(b => b.id === action.action_id);
+          return {
+            id: action.action_id,
+            label: builtin ? t(builtin.labelKey) : action.action_id,
+            icon: builtin?.icon?.name || 'Zap',
+            type: 'builtin' as const,
+            actionType: getBuiltinActionType(action.action_id),
+          };
+        } else {
+          const custom = map[action.action_id];
+          return {
+            id: action.action_id,
+            label: custom?.name || '自定义操作',
+            icon: custom?.icon || 'Zap',
+            type: 'custom' as const,
+            actionType: custom?.action_type || 'modify',
+          };
+        }
+      });
+      onActionsLoad?.(actionInfos);
     } catch (error) {
       console.error('Failed to load canvas actions:', error);
     } finally {

@@ -33,6 +33,15 @@ const getIconComponent = (iconName: string) => {
   return iconMap[iconName] || Code2;
 };
 
+// 可用操作接口
+interface AvailableAction {
+  id: string;
+  label: string;
+  icon: string;
+  type: 'builtin' | 'custom';
+  actionType: 'modify' | 'explain';
+}
+
 interface BottomContextPanelProps {
   generatedCode?: string;
   children?: ReactNode;
@@ -42,6 +51,7 @@ interface BottomContextPanelProps {
   onExportAs?: (format: ExportFormat) => void;
   dynamicTabs?: DynamicTab[];
   onRemoveTab?: (tabId: string) => void;
+  availableActions?: AvailableAction[];
 }
 
 export default function BottomContextPanel({
@@ -53,6 +63,7 @@ export default function BottomContextPanel({
   onExportAs,
   dynamicTabs = [],
   onRemoveTab,
+  availableActions = [],
 }: BottomContextPanelProps) {
   const { t } = useLocale();
   const [isCollapsed, setIsCollapsed] = useState(true);
@@ -78,9 +89,20 @@ export default function BottomContextPanel({
     if (activeTab === 'code') {
       return generatedCode || '';
     }
+    // 查找动态 tab 的内容
     const dynamicTab = dynamicTabs.find(tab => tab.id === activeTab);
     return dynamicTab?.content || '';
   }, [activeTab, generatedCode, dynamicTabs]);
+
+  // 获取当前操作的信息
+  const getCurrentActionInfo = useCallback(() => {
+    if (activeTab === 'code') {
+      return null;
+    }
+    // 从 activeTab 中提取操作 ID
+    const actionId = activeTab.replace('action-', '');
+    return availableActions.find(action => action.id === actionId) || null;
+  }, [activeTab, availableActions]);
 
   // 获取当前 tab 的类型
   const getCurrentTabType = useCallback(() => {
@@ -230,7 +252,30 @@ export default function BottomContextPanel({
             <span>{t('panel.generatedCode')}</span>
           </button>
 
-          {/* 动态 Tab */}
+          {/* 可用操作的 Tab（预先显示） */}
+          {availableActions
+            .filter(action => action.actionType === 'explain')
+            .map((action) => {
+              const hasContent = dynamicTabs.some(tab => tab.id === `action-${action.id}`);
+              return (
+                <button
+                  key={action.id}
+                  onClick={() => handleTabChange(`action-${action.id}`)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
+                    activeTab === `action-${action.id}`
+                      ? 'bg-[var(--accent-indigo)]/8 text-[var(--accent-indigo)] shadow-sm'
+                      : hasContent
+                        ? 'text-[var(--fg)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                        : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                  }`}
+                >
+                  <Code2 size={13} />
+                  <span>{action.label}</span>
+                </button>
+              );
+            })}
+
+          {/* 动态 Tab（已有内容的操作） */}
           {dynamicTabs.map((tab) => (
             <div key={tab.id} className="flex items-center group/tab">
               <button
@@ -366,9 +411,14 @@ export default function BottomContextPanel({
               rehypePlugins={[rehypeKatex, rehypeHighlight]}
             >{currentContent}</ReactMarkdown>
           </div>
+        ) : activeTab.startsWith('action-') ? (
+          <div className="flex flex-col items-center justify-center h-full text-xs text-[var(--muted)]/50 gap-2">
+            <span>点击上方按钮执行 "{getCurrentActionInfo()?.label || '操作'}"</span>
+            <span className="text-[var(--muted)]/30">结果将显示在此处</span>
+          </div>
         ) : (
           <div className="flex items-center justify-center h-full text-xs text-[var(--muted)]/50">
-            {activeTab === 'code' ? t('panel.codeWillAppear') : t('aiAction.noCode')}
+            {t('panel.codeWillAppear')}
           </div>
         )}
       </div>

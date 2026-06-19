@@ -30,6 +30,7 @@ import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 import { detectCodeFormat } from '@/lib/utils/detect-code-format';
 import type { GenerationMode } from '@/lib/generation/types';
 import type { DynamicTab } from '@/components/layout/BottomContextPanel';
+import type { ActionInfo } from '@/components/ai/FloatingAIActions';
 
 // 动态导入重型组件（按需加载）
 const ConfigSelector = dynamic(() => import('@/components/dialogs/ConfigSelector'), { ssr: false });
@@ -85,6 +86,7 @@ function EditorContent() {
   const [generationMode, setGenerationMode] = useState<GenerationMode>('auto');
   const [contextEnabled, setContextEnabled] = useState(true);
   const [dynamicTabs, setDynamicTabs] = useState<DynamicTab[]>([]);
+  const [availableActions, setAvailableActions] = useState<ActionInfo[]>([]);
 
   // Refs
   const pendingInitRef = useRef<import('@/lib/utils/init-data').InitData | null>(null);
@@ -166,11 +168,7 @@ function EditorContent() {
 
   // 动态 Tab 管理
   const handleDynamicTabAdd = useCallback((tab: DynamicTab) => {
-    console.log('接收到动态 tab:', tab);
-    setDynamicTabs(prev => {
-      console.log('当前动态 tabs:', prev);
-      return [...prev, tab];
-    });
+    setDynamicTabs(prev => [...prev, tab]);
     setBottomPanelTab(tab.id);
   }, []);
 
@@ -180,6 +178,11 @@ function EditorContent() {
       setBottomPanelTab('code');
     }
   }, [bottomPanelTab]);
+
+  // 接收可用的操作列表
+  const handleActionsLoad = useCallback((actions: ActionInfo[]) => {
+    setAvailableActions(actions);
+  }, []);
 
   // AI 操作 Hook
   const aiActions = useAIActions({
@@ -396,6 +399,7 @@ function EditorContent() {
             {/* Floating AI Actions */}
             <FloatingAIActions
               onAction={aiActions.handleAIAction}
+              onActionsLoad={handleActionsLoad}
               loadingAction={aiActions.aiActionLoading}
               disabled={generation.isGenerating || !generatedCode}
             />
