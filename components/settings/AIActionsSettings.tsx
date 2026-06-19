@@ -168,50 +168,51 @@ export function AIActionsSettings() {
             {customActions.map(action => {
               const IconComponent = getIconComponent(action.icon || 'Zap');
               return (
-              <div
-                key={action.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]"
-              >
-                <IconComponent size={18} />
-                <div className="flex-1">
-                  <div className="text-sm text-[var(--fg)]">{action.name}</div>
-                  <div className="text-xs text-[var(--muted)]">
-                    {action.action_type === 'modify' ? t('aiActions.actionTypeModify') : t('aiActions.actionTypeExplain')}
+                <div
+                  key={action.id}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]"
+                >
+                  <IconComponent size={18} />
+                  <div className="flex-1">
+                    <div className="text-sm text-[var(--fg)]">{action.name}</div>
+                    <div className="text-xs text-[var(--muted)]">
+                      {action.action_type === 'modify' ? t('aiActions.actionTypeModify') : t('aiActions.actionTypeExplain')}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Tooltip content={t('aiActions.editAction')}>
+                      <button
+                        onClick={() => {
+                          setEditingAction(action);
+                          setShowEditor(true);
+                        }}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content={t('aiActions.deleteAction')}>
+                      <button
+                        onClick={() => deleteAction(action.id)}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </Tooltip>
+                    <button
+                      onClick={() => toggleAction('custom', action.id)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                        canvasActions.some(a => a.action_type === 'custom' && a.action_id === action.id)
+                          ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
+                          : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                      }`}
+                    >
+                      <Zap size={14} />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Tooltip content={t('aiActions.editAction')}>
-                    <button
-                      onClick={() => {
-                        setEditingAction(action);
-                        setShowEditor(true);
-                      }}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                  </Tooltip>
-                  <Tooltip content={t('aiActions.deleteAction')}>
-                    <button
-                      onClick={() => deleteAction(action.id)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-red-500 hover:bg-red-50 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </Tooltip>
-                  <button
-                    onClick={() => toggleAction('custom', action.id)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-                      canvasActions.some(a => a.action_type === 'custom' && a.action_id === action.id)
-                        ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
-                        : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-                    }`}
-                  >
-                    <Zap size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
