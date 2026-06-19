@@ -10,6 +10,7 @@ import ToggleSwitch from '@/components/ui/ToggleSwitch';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
 import { ActionEditor } from '@/components/settings/ActionEditor';
 import type { CustomAction, CanvasAction } from '@/lib/db/custom-action-manager';
+import { BUILTIN_ACTIONS } from '@/lib/constants/ai-actions';
 
 // 图标映射
 const ICON_MAP: Record<string, typeof Zap> = {
@@ -20,14 +21,6 @@ const ICON_MAP: Record<string, typeof Zap> = {
 const getIconComponent = (iconName: string) => {
   return ICON_MAP[iconName] || Zap;
 };
-
-// 内置操作定义（使用翻译键）
-const BUILTIN_ACTIONS = [
-  { id: 'layout', icon: 'LayoutGrid', labelKey: 'aiAction.layout', actionType: 'modify' as const },
-  { id: 'beautify', icon: 'Palette', labelKey: 'aiAction.beautify', actionType: 'modify' as const },
-  { id: 'simplify', icon: 'Minimize2', labelKey: 'aiAction.simplify', actionType: 'modify' as const },
-  { id: 'explain', icon: 'Sparkles', labelKey: 'aiAction.explain', actionType: 'explain' as const },
-];
 
 // 操作卡片组件
 function ActionCard({

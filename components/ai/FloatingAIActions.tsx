@@ -43,6 +43,7 @@ import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 import type { TranslationKey } from '@/lib/locales';
 import type { CanvasAction } from '@/lib/db/custom-action-manager';
+import { BUILTIN_ACTIONS, getBuiltinActionType } from '@/lib/constants/ai-actions';
 
 // 图标映射
 const ICON_MAP: Record<string, typeof Zap> = {
@@ -53,25 +54,6 @@ const ICON_MAP: Record<string, typeof Zap> = {
 const getIconComponent = (iconName: string) => {
   return ICON_MAP[iconName] || Zap;
 };
-
-// 获取内置操作类型
-const getBuiltinActionType = (actionId: string): 'modify' | 'explain' => {
-  const typeMap: Record<string, 'modify' | 'explain'> = {
-    'layout': 'modify',
-    'beautify': 'modify',
-    'simplify': 'modify',
-    'explain': 'explain',
-  };
-  return typeMap[actionId] || 'modify';
-};
-
-// 内置操作定义
-const BUILTIN_ACTIONS = [
-  { id: 'layout', icon: LayoutGrid, iconName: 'LayoutGrid', labelKey: 'aiAction.layout' as TranslationKey },
-  { id: 'beautify', icon: Palette, iconName: 'Palette', labelKey: 'aiAction.beautify' as TranslationKey },
-  { id: 'simplify', icon: Minimize2, iconName: 'Minimize2', labelKey: 'aiAction.simplify' as TranslationKey },
-  { id: 'explain', icon: Sparkles, iconName: 'Sparkles', labelKey: 'aiAction.explain' as TranslationKey },
-];
 
 // 操作信息接口
 export interface ActionInfo {

@@ -3,43 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locales';
 import { useNotification } from '@/lib/contexts/NotificationContext';
-import { X, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload } from 'lucide-react';
+import { X, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles } from 'lucide-react';
 import type { CustomAction } from '@/lib/db/custom-action-manager';
+import { ICON_OPTIONS } from '@/lib/constants/ai-actions';
 
-// 可选图标列表
-const ICON_OPTIONS = [
-  { name: 'Zap', icon: Zap },
-  { name: 'Star', icon: Star },
-  { name: 'Heart', icon: Heart },
-  { name: 'Coffee', icon: Coffee },
-  { name: 'Music', icon: Music },
-  { name: 'Camera', icon: Camera },
-  { name: 'Code', icon: Code },
-  { name: 'Database', icon: Database },
-  { name: 'FileText', icon: FileText },
-  { name: 'Folder', icon: Folder },
-  { name: 'Globe', icon: Globe },
-  { name: 'Home', icon: Home },
-  { name: 'Image', icon: Image },
-  { name: 'Lock', icon: Lock },
-  { name: 'Mail', icon: Mail },
-  { name: 'Map', icon: Map },
-  { name: 'Mic', icon: Mic },
-  { name: 'Moon', icon: Moon },
-  { name: 'Phone', icon: Phone },
-  { name: 'Pin', icon: Pin },
-  { name: 'Search', icon: Search },
-  { name: 'Settings', icon: Settings },
-  { name: 'Shield', icon: Shield },
-  { name: 'Sun', icon: Sun },
-  { name: 'Terminal', icon: Terminal },
-  { name: 'User', icon: User },
-  { name: 'Video', icon: Video },
-  { name: 'Wifi', icon: Wifi },
-  { name: 'Cloud', icon: Cloud },
-  { name: 'Download', icon: Download },
-  { name: 'Upload', icon: Upload },
-];
+// 图标组件映射
+const ICON_COMPONENTS: Record<string, typeof Zap> = {
+  Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles,
+};
+
+// 获取图标组件
+const getIconComponent = (iconName: string) => {
+  return ICON_COMPONENTS[iconName] || Zap;
+};
 
 interface ActionEditorProps {
   action: CustomAction | null;
@@ -159,19 +135,22 @@ export function ActionEditor({ action, onClose, onSave }: ActionEditorProps) {
                     {t('aiActions.icon')}
                   </label>
                   <div className="grid grid-cols-10 gap-2">
-                    {ICON_OPTIONS.map(({ name, icon: IconComponent }) => (
-                      <button
-                        key={name}
-                        onClick={() => setIcon(name)}
-                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-                          icon === name
-                            ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] ring-2 ring-[var(--accent-indigo)]'
-                            : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-                        }`}
-                      >
-                        <IconComponent size={14} />
-                      </button>
-                    ))}
+                    {ICON_OPTIONS.map((iconName) => {
+                      const IconComponent = getIconComponent(iconName);
+                      return (
+                        <button
+                          key={iconName}
+                          onClick={() => setIcon(iconName)}
+                          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                            icon === iconName
+                              ? 'bg-[var(--accent-indigo)]/10 text-[var(--accent-indigo)] ring-2 ring-[var(--accent-indigo)]'
+                              : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                          }`}
+                        >
+                          <IconComponent size={14} />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
