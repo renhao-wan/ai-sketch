@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locales';
 import { useNotification } from '@/lib/contexts/NotificationContext';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { Plus, GripVertical, Trash2, Edit2, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles, ChevronUp, ChevronDown, X, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, GripVertical, Trash2, Edit2, Zap, Star, Heart, Coffee, Music, Camera, Code, Database, FileText, Folder, Globe, Home, Image, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Download, Upload, LayoutGrid, Palette, Minimize2, Sparkles, ChevronUp, ChevronDown, X } from 'lucide-react';
 import Tooltip from '@/components/ui/Tooltip';
+import ToggleSwitch from '@/components/ui/ToggleSwitch';
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog';
 import { ActionEditor } from '@/components/settings/ActionEditor';
 import type { CustomAction, CanvasAction } from '@/lib/db/custom-action-manager';
@@ -230,18 +231,11 @@ export function AIActionsSettings() {
                 <span className="text-xs text-[var(--muted)] px-2 py-1 rounded bg-[var(--surface-warm-hover)]">
                   {t('aiActions.builtin')}
                 </span>
-                <Tooltip content={onCanvas ? '从画布移除' : '添加到画布'}>
-                  <button
-                    onClick={() => onCanvas ? removeFromCanvas('builtin', action.id) : addToCanvas('builtin', action.id)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-                      onCanvas
-                        ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
-                        : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-                    }`}
-                  >
-                    {onCanvas ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-                  </button>
-                </Tooltip>
+                <ToggleSwitch
+                  enabled={onCanvas}
+                  onChange={(enabled) => enabled ? addToCanvas('builtin', action.id) : removeFromCanvas('builtin', action.id)}
+                  size="sm"
+                />
               </div>
             );
           })}
@@ -310,18 +304,11 @@ export function AIActionsSettings() {
                         <Trash2 size={14} />
                       </button>
                     </Tooltip>
-                    <Tooltip content={onCanvas ? '从画布移除' : '添加到画布'}>
-                      <button
-                        onClick={() => onCanvas ? removeFromCanvas('custom', action.id) : addToCanvas('custom', action.id)}
-                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-                          onCanvas
-                            ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
-                            : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-                        }`}
-                      >
-                        {onCanvas ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-                      </button>
-                    </Tooltip>
+                    <ToggleSwitch
+                      enabled={onCanvas}
+                      onChange={(enabled) => enabled ? addToCanvas('custom', action.id) : removeFromCanvas('custom', action.id)}
+                      size="sm"
+                    />
                   </div>
                 </div>
               );
