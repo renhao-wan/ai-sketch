@@ -270,10 +270,20 @@ function handleResult(action: string, actionId: string | undefined, result: any)
     
     if (customAction.action_type === 'modify') {
       // 更新画布
-      updateCanvas(result.code);
+      if (result.code) {
+        updateCanvas(result.code);
+      } else {
+        // AI 返回了文字而不是代码，显示错误提示
+        showError('AI 未返回有效的图表代码，请检查提示词是否要求输出代码');
+      }
     } else {
       // 显示在上下文面板
-      showInPanel(result.text);
+      if (result.text) {
+        showInPanel(result.text);
+      } else {
+        // AI 返回了代码而不是文字，显示错误提示
+        showError('AI 未返回有效的文字说明，请检查提示词是否要求输出说明');
+      }
     }
   } else {
     // 内置操作，使用原有逻辑
