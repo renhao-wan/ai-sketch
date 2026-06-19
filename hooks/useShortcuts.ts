@@ -111,6 +111,15 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     actionId: 'openSettings',
     actionParam: 'about',
   },
+  {
+    id: 'open-ai-actions',
+    keys: ['Alt', 'J'],
+    description: 'AI 操作设置',
+    descriptionKey: 'shortcuts.openAIActions',
+    scope: 'global',
+    actionId: 'openSettings',
+    actionParam: 'aiActions',
+  },
   // 格式切换
   {
     id: 'switch-excalidraw',

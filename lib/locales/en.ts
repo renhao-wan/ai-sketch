@@ -557,6 +557,7 @@ export const en: TranslationDict = {
   'shortcuts.openAppearance': 'Appearance',
   'shortcuts.openHistory': 'History',
   'shortcuts.openVersionHistory': 'Version History',
+  'shortcuts.openAIActions': 'AI Actions Settings',
   'shortcuts.sendMessage': 'Send Message',
   'shortcuts.newline': 'New Line',
   'shortcuts.undo': 'Undo',
