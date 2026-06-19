@@ -252,11 +252,11 @@ export default function BottomContextPanel({
             <span>{t('panel.generatedCode')}</span>
           </button>
 
-          {/* 可用操作的 Tab（预先显示） */}
+          {/* 可用操作的 Tab（预先显示，排除已有内容的操作） */}
           {availableActions
             .filter(action => action.actionType === 'explain')
+            .filter(action => !dynamicTabs.some(tab => tab.id === `action-${action.id}`))
             .map((action) => {
-              const hasContent = dynamicTabs.some(tab => tab.id === `action-${action.id}`);
               const IconComponent = getIconComponent(action.icon);
               return (
                 <button
@@ -265,9 +265,7 @@ export default function BottomContextPanel({
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
                     activeTab === `action-${action.id}`
                       ? 'bg-[var(--accent-indigo)]/8 text-[var(--accent-indigo)] shadow-sm'
-                      : hasContent
-                        ? 'text-[var(--fg)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-                        : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                      : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
                   }`}
                 >
                   <IconComponent size={13} />
