@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocale } from '@/lib/locales';
 import { useNotification } from '@/lib/contexts/NotificationContext';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
@@ -41,7 +41,7 @@ function ActionCard({
   onDelete?: () => void;
 }) {
   const { t } = useLocale();
-  const IconComponent = getIconComponent(icon);
+  const IconComponent = useMemo(() => getIconComponent(icon), [icon]);
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]">

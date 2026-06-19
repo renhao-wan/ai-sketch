@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   LayoutGrid,
   Palette,
@@ -77,12 +77,7 @@ export default function FloatingAIActions({ onAction, onActionsLoad, loadingActi
   const [customActionsMap, setCustomActionsMap] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
 
-  // 加载画布操作
-  useEffect(() => {
-    loadCanvasActions();
-  }, []);
-
-  const loadCanvasActions = async () => {
+  const loadCanvasActions = useCallback(async () => {
     try {
       const res = await fetch('/api/canvas-actions');
       const data = await res.json();
@@ -125,13 +120,18 @@ export default function FloatingAIActions({ onAction, onActionsLoad, loadingActi
     } finally {
       setLoading(false);
     }
-  };
+  }, [t, onActionsLoad]);
+
+  // 加载画布操作
+  useEffect(() => {
+    loadCanvasActions();
+  }, [loadCanvasActions]);
 
   // 获取操作图标
   const getIcon = (action: CanvasAction) => {
     if (action.action_type === 'builtin') {
       const builtin = BUILTIN_ACTIONS.find(b => b.id === action.action_id);
-      return builtin?.icon || Zap;
+      return getIconComponent(builtin?.icon || 'Zap');
     }
     const custom = customActionsMap[action.action_id];
     return getIconComponent(custom?.icon || 'Zap');

@@ -417,7 +417,7 @@ export default function BottomContextPanel({
           </div>
         ) : activeTab.startsWith('action-') ? (
           <div className="flex flex-col items-center justify-center h-full text-xs text-[var(--muted)]/50 gap-2">
-            <span>点击上方按钮执行 "{getCurrentActionInfo()?.label || '操作'}"</span>
+            <span>点击上方按钮执行 &ldquo;{getCurrentActionInfo()?.label || '操作'}&rdquo;</span>
             <span className="text-[var(--muted)]/30">结果将显示在此处</span>
           </div>
         ) : (
