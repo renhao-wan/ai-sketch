@@ -139,16 +139,16 @@ export function AIActionsSettings() {
   // 删除自定义操作（带确认）
   const deleteAction = (id: string, name: string) => {
     showConfirm(
-      '删除操作',
-      `确定要删除操作"${name}"吗？此操作不可撤销。`,
+      t('aiActions.deleteConfirmTitle'),
+      t('aiActions.deleteConfirmMessage', { name }),
       async () => {
         try {
           await fetch(`/api/custom-actions/${id}`, { method: 'DELETE' });
-          showNotification(t('aiActions.deleteAction'), `操作"${name}"已删除`, 'success');
+          showNotification(t('aiActions.deleteAction'), t('aiActions.deleteSuccess', { name }), 'success');
           await loadData();
         } catch (error) {
           console.error('Failed to delete action:', error);
-          showNotification(t('error.title'), '删除操作失败', 'error');
+          showNotification(t('error.title'), t('aiActions.deleteFailed'), 'error');
         }
       },
       'danger'
@@ -192,7 +192,7 @@ export function AIActionsSettings() {
       return builtin ? t(builtin.labelKey as any) : action.action_id;
     }
     const custom = customActions.find(c => c.id === action.action_id);
-    return custom?.name || '未知操作';
+    return custom?.name || t('aiActions.customFallback');
   };
 
   // 获取操作图标
@@ -206,7 +206,7 @@ export function AIActionsSettings() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center py-8 text-[var(--muted)]">加载中...</div>;
+    return <div className="flex items-center justify-center py-8 text-[var(--muted)]">{t('aiActions.loading')}</div>;
   }
 
   return (
@@ -214,16 +214,16 @@ export function AIActionsSettings() {
       {/* 第一栏：当前启动的操作 */}
       <div>
         <h3 className="text-sm font-semibold text-[var(--fg)] mb-2">
-          当前启动的操作
+          {t('aiActions.currentActions')}
         </h3>
         <p className="text-xs text-[var(--muted)] mb-4">
-          画布上显示的操作，拖拽排序，点击 X 取消
+          {t('aiActions.currentActionsDesc')}
         </p>
 
         <div className="h-[60px] p-2 rounded-xl bg-[var(--surface-warm)] border border-dashed border-[var(--border)] overflow-hidden">
           {canvasActions.length === 0 ? (
             <div className="flex items-center justify-center h-full">
-              <span className="text-sm text-[var(--muted)]">当前没有启动的操作</span>
+              <span className="text-sm text-[var(--muted)]">{t('aiActions.noCurrentActions')}</span>
             </div>
           ) : (
             <div className="flex flex-wrap gap-2 h-full items-center">
@@ -291,10 +291,10 @@ export function AIActionsSettings() {
       {/* 第二栏：内置操作 */}
       <div>
         <h3 className="text-sm font-semibold text-[var(--fg)] mb-2">
-          内置操作
+          {t('aiActions.builtinActions')}
         </h3>
         <p className="text-xs text-[var(--muted)] mb-4">
-          系统内置的操作，不可删除
+          {t('aiActions.builtinActionsDesc')}
         </p>
 
         <div className="space-y-2">
@@ -329,7 +329,7 @@ export function AIActionsSettings() {
           </button>
         </div>
         <p className="text-xs text-[var(--muted)] mb-4">
-          用户创建的操作，可编辑、删除
+          {t('aiActions.customActionsDesc')}
         </p>
 
         {customActions.length === 0 ? (
