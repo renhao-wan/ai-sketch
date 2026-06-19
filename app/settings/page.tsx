@@ -14,6 +14,7 @@ import StorageSettings from '@/components/settings/StorageSettings';
 import { KeyboardShortcutsSettings } from '@/components/settings/KeyboardShortcutsSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
 import { TagSettings } from '@/components/settings/TagSettings';
+import { AIActionsSettings } from '@/components/settings/AIActionsSettings';
 import { Search } from 'lucide-react';
 import WindowControls from '@/components/layout/WindowControls';
 import { AppIcon } from '@/components/layout/TopBar';
@@ -22,11 +23,12 @@ import Tooltip from '@/components/ui/Tooltip';
 // 动态导入重型设置组件（按需加载）
 const LLMSettings = dynamic(() => import('@/components/settings/LLMSettings').then(mod => ({ default: mod.LLMSettings })), { ssr: false });
 
-const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'tags', 'network', 'conversations', 'storage', 'shortcuts', 'about'];
+const VALID_TABS: SettingsTab[] = ['appearance', 'llm', 'aiActions', 'tags', 'network', 'conversations', 'storage', 'shortcuts', 'about'];
 
 const tabDescriptions: Record<SettingsTab, TranslationKey> = {
   appearance: 'settings.appearanceDesc',
   llm: 'settings.llmDesc',
+  aiActions: 'settings.aiActionsDesc',
   tags: 'settings.tagsDesc',
   network: 'settings.networkDesc',
   conversations: 'settings.conversationsTabDesc',
@@ -50,6 +52,7 @@ export default function SettingsPage() {
     const tabMap: Record<string, SettingsTab> = {
       'settings-appearance': 'appearance',
       'settings-llm': 'llm',
+      'settings-aiActions': 'aiActions',
       'settings-tags': 'tags',
       'settings-storage': 'storage',
       'settings-shortcuts': 'shortcuts',
@@ -90,6 +93,7 @@ export default function SettingsPage() {
   const tabs: { key: SettingsTab; component: React.ReactNode }[] = [
     { key: 'appearance', component: <AppearanceSettings /> },
     { key: 'llm', component: <LLMSettings isVisible={activeTab === 'llm'} /> },
+    { key: 'aiActions', component: <AIActionsSettings /> },
     { key: 'tags', component: <TagSettings isVisible={activeTab === 'tags'} /> },
     { key: 'network', component: <NetworkSettings /> },
     { key: 'conversations', component: <ConversationSettings /> },
