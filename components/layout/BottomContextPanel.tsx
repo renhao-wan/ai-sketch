@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, type ReactNode, type MouseEvent } from 'react';
-import { ChevronDown, ChevronUp, Code2, Copy, Download, Check, Image, FileCode, FileText, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Code2, Copy, Download, Check, Image, FileCode, FileText, X, Zap, Star, Heart, Coffee, Music, Camera, Database, Folder, Globe, Home, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Upload, LayoutGrid, Palette, Minimize2, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
@@ -28,7 +28,7 @@ export interface DynamicTab {
 // 获取图标组件
 const getIconComponent = (iconName: string) => {
   const iconMap: Record<string, typeof Code2> = {
-    Code2, Sparkles: Code2, // 简化处理，实际需要导入所有图标
+    Code2, Zap, Star, Heart, Coffee, Music, Camera, Database, Folder, Globe, Home, Lock, Mail, Map, Mic, Moon, Phone, Pin, Search, Settings, Shield, Sun, Terminal, User, Video, Wifi, Cloud, Upload, LayoutGrid, Palette, Minimize2, Sparkles,
   };
   return iconMap[iconName] || Code2;
 };
@@ -257,6 +257,7 @@ export default function BottomContextPanel({
             .filter(action => action.actionType === 'explain')
             .map((action) => {
               const hasContent = dynamicTabs.some(tab => tab.id === `action-${action.id}`);
+              const IconComponent = getIconComponent(action.icon);
               return (
                 <button
                   key={action.id}
@@ -269,37 +270,40 @@ export default function BottomContextPanel({
                         : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
                   }`}
                 >
-                  <Code2 size={13} />
+                  <IconComponent size={13} />
                   <span>{action.label}</span>
                 </button>
               );
             })}
 
           {/* 动态 Tab（已有内容的操作） */}
-          {dynamicTabs.map((tab) => (
-            <div key={tab.id} className="flex items-center group/tab">
-              <button
-                onClick={() => handleTabChange(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'bg-[var(--accent-indigo)]/8 text-[var(--accent-indigo)] shadow-sm'
-                    : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-                }`}
-              >
-                <Code2 size={13} />
-                <span>{tab.label}</span>
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemoveTab?.(tab.id);
-                }}
-                className="w-5 h-5 flex items-center justify-center rounded opacity-0 group-hover/tab:opacity-100 text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
-              >
-                <X size={10} />
-              </button>
-            </div>
-          ))}
+          {dynamicTabs.map((tab) => {
+            const IconComponent = getIconComponent(tab.icon);
+            return (
+              <div key={tab.id} className="flex items-center group/tab">
+                <button
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'bg-[var(--accent-indigo)]/8 text-[var(--accent-indigo)] shadow-sm'
+                      : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+                  }`}
+                >
+                  <IconComponent size={13} />
+                  <span>{tab.label}</span>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveTab?.(tab.id);
+                  }}
+                  className="w-5 h-5 flex items-center justify-center rounded opacity-0 group-hover/tab:opacity-100 text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-all duration-200"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         <div className="flex items-center gap-0.5 flex-shrink-0">
