@@ -113,8 +113,8 @@ export function AIActionsSettings() {
       ]);
       const canvasData = await canvasRes.json();
       const customData = await customRes.json();
-      setCanvasActions(canvasData);
-      setCustomActions(customData);
+      setCanvasActions([...canvasData]);
+      setCustomActions([...customData]);
     } catch (error) {
       console.error('Failed to load actions:', error);
     } finally {

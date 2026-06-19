@@ -65,7 +65,7 @@ export function ActionEditor({ action, onClose, onSave }: ActionEditorProps) {
       const url = isEditing ? `/api/custom-actions/${action.id}` : '/api/custom-actions';
       const method = isEditing ? 'PUT' : 'POST';
 
-      await fetch(url, {
+      const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,6 +75,10 @@ export function ActionEditor({ action, onClose, onSave }: ActionEditorProps) {
           action_type: actionType,
         }),
       });
+
+      if (!response.ok) {
+        throw new Error('保存失败');
+      }
 
       onSave();
     } catch (error) {
