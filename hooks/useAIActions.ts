@@ -116,8 +116,8 @@ export function useAIActions(options: UseAIActionsOptions) {
       response.body.getReader(),
       controller.signal,
       {
-        onContent: (stripped) => {
-          // 内容累积
+        onContent: () => {
+          // 内容由 accumulatedCode 自动累积
         },
         onResult: (content) => {
           finalResult = content;
