@@ -67,10 +67,10 @@ const getBuiltinActionType = (actionId: string): 'modify' | 'explain' => {
 
 // 内置操作定义
 const BUILTIN_ACTIONS = [
-  { id: 'layout', icon: LayoutGrid, labelKey: 'aiAction.layout' as TranslationKey },
-  { id: 'beautify', icon: Palette, labelKey: 'aiAction.beautify' as TranslationKey },
-  { id: 'simplify', icon: Minimize2, labelKey: 'aiAction.simplify' as TranslationKey },
-  { id: 'explain', icon: Sparkles, labelKey: 'aiAction.explain' as TranslationKey },
+  { id: 'layout', icon: LayoutGrid, iconName: 'LayoutGrid', labelKey: 'aiAction.layout' as TranslationKey },
+  { id: 'beautify', icon: Palette, iconName: 'Palette', labelKey: 'aiAction.beautify' as TranslationKey },
+  { id: 'simplify', icon: Minimize2, iconName: 'Minimize2', labelKey: 'aiAction.simplify' as TranslationKey },
+  { id: 'explain', icon: Sparkles, iconName: 'Sparkles', labelKey: 'aiAction.explain' as TranslationKey },
 ];
 
 // 操作信息接口
@@ -122,7 +122,7 @@ export default function FloatingAIActions({ onAction, onActionsLoad, loadingActi
           return {
             id: action.action_id,
             label: builtin ? t(builtin.labelKey) : action.action_id,
-            icon: builtin?.icon?.name || 'Zap',
+            icon: builtin?.iconName || 'Zap',
             type: 'builtin' as const,
             actionType: getBuiltinActionType(action.action_id),
           };
