@@ -52,6 +52,21 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
     setPanelPos({ top: rect.bottom + 4, left: rect.left });
   }, [isOpen]);
 
+  // 点击外部关闭
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      // 检查是否点击了面板或触发按钮内部
+      if (containerRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      // 点击了外部，关闭面板
+      setIsOpen(false);
+    };
+    // 使用 click 事件，在 Electron no-drag 区域更可靠
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isOpen]);
 
   // Escape 键关闭
   useEffect(() => {
@@ -86,17 +101,11 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
       </button>
 
       {isOpen && createPortal(
-        <>
-          {/* 透明遮罩层，点击关闭 */}
-          <div
-            className="fixed inset-0 z-[199]"
-            onClick={() => setIsOpen(false)}
-          />
-          <div
-            ref={panelRef}
-            className="fixed z-[200] w-72 bg-[var(--surface-warm-solid)] rounded-2xl border border-[var(--border)] shadow-[0_10px_40px_rgba(28,25,23,0.15)] overflow-hidden animate-slide-up"
-            style={{ top: panelPos.top, left: panelPos.left }}
-          >
+        <div
+          ref={panelRef}
+          className="fixed z-[200] w-72 bg-[var(--surface-warm-solid)] rounded-2xl border border-[var(--border)] shadow-[0_10px_40px_rgba(28,25,23,0.15)] overflow-hidden animate-slide-up"
+          style={{ top: panelPos.top, left: panelPos.left }}
+        >
           {/* New chat button */}
           <button
             onClick={() => { onNew(); setIsOpen(false); }}
@@ -193,8 +202,7 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
               </>
             )}
           </div>
-        </div>
-        </>,
+        </div>,
         document.body,
       )}
     </div>
