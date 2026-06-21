@@ -171,9 +171,9 @@ export const zh = {
   'history.modelPrefix': '模型:',
 
   // Conversation List
-  'conversation.list': '对话列表',
-  'conversation.new': '新建对话',
-  'conversation.empty': '暂无对话',
+  'conversation.list': '会话列表',
+  'conversation.new': '新建会话',
+  'conversation.empty': '暂无会话',
   'conversation.messages': '条消息',
   'conversation.rename': '重命名',
   'conversation.search': '搜索会话',

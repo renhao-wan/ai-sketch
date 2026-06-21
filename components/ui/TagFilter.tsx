@@ -74,6 +74,7 @@ export default function TagFilter({
       ref={menuRef}
       className="fixed z-[200] w-48 bg-[var(--surface-warm)] backdrop-blur-xl rounded-xl border border-[var(--border)] shadow-[0_8px_30px_rgba(28,25,23,0.12)] overflow-hidden animate-slide-up"
       style={{ top: menuPos.top, right: menuPos.right }}
+      onMouseDown={(e) => e.stopPropagation()}  // 阻止冒泡，避免触发父组件的点击外部关闭
     >
       {/* 全部选项 */}
       <button
