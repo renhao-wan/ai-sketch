@@ -39,6 +39,9 @@ export default function EditorTopBar({
 }: EditorTopBarProps) {
   const { t } = useLocale();
 
+  // 会话列表状态
+  const [isConversationListOpen, setIsConversationListOpen] = useState(false);
+
   // 标签选择器状态
   const [showTagSelector, setShowTagSelector] = useState(false);
   const [conversationTags, setConversationTags] = useState<ConversationTag[]>([]);
@@ -92,10 +95,6 @@ export default function EditorTopBar({
     }
   }, [conversationId]);
 
-  // 关闭会话列表（用于点击其他按钮时）
-  const closeConversationList = useCallback(() => {
-    window.dispatchEvent(new CustomEvent('conversation-list-close'));
-  }, []);
 
   return (
     <div
@@ -119,6 +118,8 @@ export default function EditorTopBar({
             currentId={conversationId}
             onSelect={onLoadConversation}
             onNew={onNewConversation}
+            isOpen={isConversationListOpen}
+            onOpenChange={setIsConversationListOpen}
           />
         </div>
       </div>
@@ -130,7 +131,7 @@ export default function EditorTopBar({
           <Tooltip content={t('copilot.tags')} side="bottom">
             <button
               ref={tagBtnRef}
-              onClick={() => { closeConversationList(); setShowTagSelector(prev => !prev); }}
+              onClick={() => { setIsConversationListOpen(false); setShowTagSelector(prev => !prev); }}
               className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
                 showTagSelector
                   ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
@@ -188,7 +189,7 @@ export default function EditorTopBar({
         <Tooltip content={t('copilot.config')} side="bottom">
           <button
             id="onboarding-config-btn"
-            onClick={() => { closeConversationList(); onOpenConfig(); }}
+            onClick={() => { setIsConversationListOpen(false); onOpenConfig(); }}
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
               isConfigOpen
                 ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
@@ -203,7 +204,7 @@ export default function EditorTopBar({
         <Tooltip content={t('versionHistory.title')} side="bottom">
           <button
             id="onboarding-version-history"
-            onClick={() => { closeConversationList(); onVersionHistory(); }}
+            onClick={() => { setIsConversationListOpen(false); onVersionHistory(); }}
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
               isVersionDrawerOpen
                 ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'

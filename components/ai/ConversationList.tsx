@@ -14,6 +14,10 @@ interface ConversationListProps {
   currentId: string | null;
   onSelect: (id: string) => void;
   onNew: () => void;
+  /** 外部控制的开关状态 */
+  isOpen?: boolean;
+  /** 开关状态变化回调 */
+  onOpenChange?: (open: boolean) => void;
 }
 
 const FORMAT_BADGES: Record<DiagramFormat, { label: string; color: string }> = {
@@ -23,9 +27,20 @@ const FORMAT_BADGES: Record<DiagramFormat, { label: string; color: string }> = {
 };
 
 /** 会话列表 — 快速切换当前会话，支持滚动加载更多 */
-export default function ConversationList({ currentId, onSelect, onNew }: ConversationListProps) {
+export default function ConversationList({ currentId, onSelect, onNew, isOpen: isOpenProp, onOpenChange }: ConversationListProps) {
   const { t } = useLocale();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpenState, setIsOpenState] = useState(false);
+
+  // 使用外部控制的状态，如果没有外部控制则使用内部状态
+  const isOpen = isOpenProp !== undefined ? isOpenProp : isOpenState;
+  const setIsOpen = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
+    const newValue = typeof value === 'function' ? value(isOpen) : value;
+    if (onOpenChange) {
+      onOpenChange(newValue);
+    } else {
+      setIsOpenState(newValue);
+    }
+  }, [isOpen, onOpenChange]);
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -65,15 +80,7 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
-
-  // 监听外部关闭事件（用于顶栏其他按钮点击时关闭）
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClose = () => setIsOpen(false);
-    window.addEventListener('conversation-list-close', handleClose);
-    return () => window.removeEventListener('conversation-list-close', handleClose);
-  }, [isOpen]);
+  }, [isOpen, setIsOpen]);
 
   // Escape 键关闭
   useEffect(() => {
@@ -83,7 +90,7 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, setIsOpen]);
 
   /** 滚动到底部时加载更多 */
   const handleScroll = useCallback(() => {
