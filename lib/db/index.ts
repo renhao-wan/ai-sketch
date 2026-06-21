@@ -145,11 +145,12 @@ async function initDb(): Promise<Database> {
     )
   `);
 
-  // 只在表为空时插入默认的内置操作
-  const existingActions = db.exec('SELECT COUNT(*) FROM canvas_actions');
-  const actionCount = existingActions[0]?.values[0]?.[0] as number || 0;
+  // 检查是否已经初始化过（通过 meta 表标记）
+  const initResult = db.exec("SELECT value FROM meta WHERE key = 'canvas_actions_initialized'");
+  const isInitialized = initResult.length > 0 && initResult[0].values.length > 0;
 
-  if (actionCount === 0) {
+  if (!isInitialized) {
+    // 首次初始化，插入默认的内置操作
     const defaultActions = [
       { id: '1', action_type: 'builtin', action_id: 'layout', sort_order: 0 },
       { id: '2', action_type: 'builtin', action_id: 'beautify', sort_order: 1 },
@@ -163,6 +164,9 @@ async function initDb(): Promise<Database> {
         [action.id, action.action_type, action.action_id, action.sort_order]
       );
     }
+
+    // 标记已初始化
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('canvas_actions_initialized', 'true')");
   }
 
   db.run('CREATE INDEX IF NOT EXISTS idx_custom_actions_sort ON custom_actions(sort_order)');
