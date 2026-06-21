@@ -125,7 +125,7 @@ export default function FloatingAIActions({ onAction, onActionsLoad, loadingActi
   const visibleActions = canvasActions.slice(0, 4);
 
   return (
-    <div id="onboarding-toolbar" className="absolute right-4 top-1/2 -translate-y-1/2 z-30">
+    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-30">
       <div className="flex flex-col gap-2">
         {visibleActions.map((action) => {
           const isLoading = loadingAction === (action.action_type === 'builtin' ? action.action_id : `custom-${action.action_id}`);

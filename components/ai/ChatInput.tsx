@@ -157,10 +157,10 @@ export default function ChatInput({
     <div className="border-t border-black/[0.08] bg-black/[0.02] flex-shrink-0">
       {/* Format & Chart Type */}
       <div className="px-4 pt-3 pb-1 space-y-2">
-        <div id="onboarding-format-selector">
+        <div>
           <FormatSelector value={currentFormat} onChange={onFormatChange} className="w-full" />
         </div>
-        <div id="onboarding-chart-type">
+        <div>
           <ChartTypeSelect value={chartType} onChange={setChartType} format={currentFormat} />
         </div>
       </div>
@@ -234,7 +234,7 @@ export default function ChatInput({
           </button>
         </Tooltip>
         <div className="flex-1" />
-        <div id="onboarding-context-toggle">
+        <div>
         <Tooltip content={contextEnabled ? t('copilot.contextOn') : t('copilot.contextOff')} side="top">
           <button
             onClick={() => onContextEnabledChange?.(!contextEnabled)}
@@ -249,7 +249,7 @@ export default function ChatInput({
           </button>
         </Tooltip>
         </div>
-        <div id="onboarding-generation-mode">
+        <div>
         <GenerationModeToggle
           value={generationMode}
           onChange={(m) => onGenerationModeChange?.(m)}
