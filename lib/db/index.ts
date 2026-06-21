@@ -150,7 +150,7 @@ async function initDb(): Promise<Database> {
   const isInitialized = initResult.length > 0 && initResult[0].values.length > 0;
 
   if (!isInitialized) {
-    // 首次初始化，插入默认的内置操作
+    // 首次初始化，插入默认的内置操作（使用 INSERT OR IGNORE 避免重复）
     const defaultActions = [
       { id: '1', action_type: 'builtin', action_id: 'layout', sort_order: 0 },
       { id: '2', action_type: 'builtin', action_id: 'beautify', sort_order: 1 },
@@ -160,7 +160,7 @@ async function initDb(): Promise<Database> {
 
     for (const action of defaultActions) {
       db.run(
-        `INSERT INTO canvas_actions (id, action_type, action_id, sort_order) VALUES (?, ?, ?, ?)`,
+        `INSERT OR IGNORE INTO canvas_actions (id, action_type, action_id, sort_order) VALUES (?, ?, ?, ?)`,
         [action.id, action.action_type, action.action_id, action.sort_order]
       );
     }
