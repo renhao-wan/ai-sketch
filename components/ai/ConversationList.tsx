@@ -193,6 +193,7 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
               </>
             )}
           </div>
+        </div>
         </>,
         document.body,
       )}
