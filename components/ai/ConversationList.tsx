@@ -52,7 +52,7 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
     setPanelPos({ top: rect.bottom + 4, left: rect.left });
   }, [isOpen]);
 
-  // 点击外部关闭
+  // 点击外部关闭（与标签选择器保持一致，使用 mousedown 事件）
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -63,9 +63,16 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
       // 点击了外部，关闭面板
       setIsOpen(false);
     };
-    // 使用 click 事件，在 Electron no-drag 区域更可靠
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  // 监听外部关闭事件（用于顶栏其他按钮点击时关闭）
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClose = () => setIsOpen(false);
+    window.addEventListener('conversation-list-close', handleClose);
+    return () => window.removeEventListener('conversation-list-close', handleClose);
   }, [isOpen]);
 
   // Escape 键关闭

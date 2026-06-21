@@ -92,6 +92,11 @@ export default function EditorTopBar({
     }
   }, [conversationId]);
 
+  // 关闭会话列表（用于点击其他按钮时）
+  const closeConversationList = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('conversation-list-close'));
+  }, []);
+
   return (
     <div
       className="flex items-center justify-between px-6 h-14 bg-[var(--bg-glass)] backdrop-blur-xl border-b border-[var(--border)] flex-shrink-0 relative z-20"
@@ -125,7 +130,7 @@ export default function EditorTopBar({
           <Tooltip content={t('copilot.tags')} side="bottom">
             <button
               ref={tagBtnRef}
-              onClick={() => setShowTagSelector(prev => !prev)}
+              onClick={() => { closeConversationList(); setShowTagSelector(prev => !prev); }}
               className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
                 showTagSelector
                   ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
@@ -183,7 +188,7 @@ export default function EditorTopBar({
         <Tooltip content={t('copilot.config')} side="bottom">
           <button
             id="onboarding-config-btn"
-            onClick={onOpenConfig}
+            onClick={() => { closeConversationList(); onOpenConfig(); }}
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
               isConfigOpen
                 ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
@@ -198,7 +203,7 @@ export default function EditorTopBar({
         <Tooltip content={t('versionHistory.title')} side="bottom">
           <button
             id="onboarding-version-history"
-            onClick={onVersionHistory}
+            onClick={() => { closeConversationList(); onVersionHistory(); }}
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
               isVersionDrawerOpen
                 ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
