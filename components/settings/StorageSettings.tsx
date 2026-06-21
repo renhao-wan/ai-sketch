@@ -240,10 +240,10 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 actions: [
-                  { action_type: 'builtin', action_id: 'layout', sort_order: 0 },
-                  { action_type: 'builtin', action_id: 'beautify', sort_order: 1 },
-                  { action_type: 'builtin', action_id: 'simplify', sort_order: 2 },
-                  { action_type: 'builtin', action_id: 'explain', sort_order: 3 },
+                  { action_type: 'builtin', action_id: 'explain', sort_order: 0 },
+                  { action_type: 'builtin', action_id: 'simplify', sort_order: 1 },
+                  { action_type: 'builtin', action_id: 'beautify', sort_order: 2 },
+                  { action_type: 'builtin', action_id: 'layout', sort_order: 3 },
                 ]
               }),
             });

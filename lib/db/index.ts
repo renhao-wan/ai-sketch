@@ -152,10 +152,10 @@ async function initDb(): Promise<Database> {
   if (!isInitialized) {
     // 首次初始化，插入默认的内置操作（使用 INSERT OR IGNORE 避免重复）
     const defaultActions = [
-      { id: '1', action_type: 'builtin', action_id: 'layout', sort_order: 0 },
-      { id: '2', action_type: 'builtin', action_id: 'beautify', sort_order: 1 },
-      { id: '3', action_type: 'builtin', action_id: 'simplify', sort_order: 2 },
-      { id: '4', action_type: 'builtin', action_id: 'explain', sort_order: 3 },
+      { id: '1', action_type: 'builtin', action_id: 'explain', sort_order: 0 },
+      { id: '2', action_type: 'builtin', action_id: 'simplify', sort_order: 1 },
+      { id: '3', action_type: 'builtin', action_id: 'beautify', sort_order: 2 },
+      { id: '4', action_type: 'builtin', action_id: 'layout', sort_order: 3 },
     ];
 
     for (const action of defaultActions) {
