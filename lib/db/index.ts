@@ -145,19 +145,24 @@ async function initDb(): Promise<Database> {
     )
   `);
 
-  // 插入默认的内置操作
-  const defaultActions = [
-    { id: '1', action_type: 'builtin', action_id: 'layout', sort_order: 0 },
-    { id: '2', action_type: 'builtin', action_id: 'beautify', sort_order: 1 },
-    { id: '3', action_type: 'builtin', action_id: 'simplify', sort_order: 2 },
-    { id: '4', action_type: 'builtin', action_id: 'explain', sort_order: 3 },
-  ];
+  // 只在表为空时插入默认的内置操作
+  const existingActions = db.exec('SELECT COUNT(*) FROM canvas_actions');
+  const actionCount = existingActions[0]?.values[0]?.[0] as number || 0;
 
-  for (const action of defaultActions) {
-    db.run(
-      `INSERT OR IGNORE INTO canvas_actions (id, action_type, action_id, sort_order) VALUES (?, ?, ?, ?)`,
-      [action.id, action.action_type, action.action_id, action.sort_order]
-    );
+  if (actionCount === 0) {
+    const defaultActions = [
+      { id: '1', action_type: 'builtin', action_id: 'layout', sort_order: 0 },
+      { id: '2', action_type: 'builtin', action_id: 'beautify', sort_order: 1 },
+      { id: '3', action_type: 'builtin', action_id: 'simplify', sort_order: 2 },
+      { id: '4', action_type: 'builtin', action_id: 'explain', sort_order: 3 },
+    ];
+
+    for (const action of defaultActions) {
+      db.run(
+        `INSERT INTO canvas_actions (id, action_type, action_id, sort_order) VALUES (?, ?, ?, ?)`,
+        [action.id, action.action_type, action.action_id, action.sort_order]
+      );
+    }
   }
 
   db.run('CREATE INDEX IF NOT EXISTS idx_custom_actions_sort ON custom_actions(sort_order)');
