@@ -14,10 +14,6 @@ interface ConversationListProps {
   currentId: string | null;
   onSelect: (id: string) => void;
   onNew: () => void;
-  /** 外部控制的开关状态 */
-  isOpen?: boolean;
-  /** 开关状态变化回调 */
-  onOpenChange?: (open: boolean) => void;
 }
 
 const FORMAT_BADGES: Record<DiagramFormat, { label: string; color: string }> = {
@@ -27,23 +23,9 @@ const FORMAT_BADGES: Record<DiagramFormat, { label: string; color: string }> = {
 };
 
 /** 会话列表 — 快速切换当前会话，支持滚动加载更多 */
-export default function ConversationList({ currentId, onSelect, onNew, isOpen: isOpenProp, onOpenChange }: ConversationListProps) {
+export default function ConversationList({ currentId, onSelect, onNew }: ConversationListProps) {
   const { t } = useLocale();
-  const [isOpenState, setIsOpenState] = useState(false);
-
-  // 使用外部控制的状态，如果没有外部控制则使用内部状态
-  const isOpen = isOpenProp !== undefined ? isOpenProp : isOpenState;
-
-  // 设置 isOpen 的函数
-  const setIsOpen = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
-    const currentValue = isOpenProp !== undefined ? isOpenProp : isOpenState;
-    const newValue = typeof value === 'function' ? value(currentValue) : value;
-    if (onOpenChange) {
-      onOpenChange(newValue);
-    } else {
-      setIsOpenState(newValue);
-    }
-  }, [isOpenProp, isOpenState, onOpenChange]);
+  const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -70,20 +52,18 @@ export default function ConversationList({ currentId, onSelect, onNew, isOpen: i
     setPanelPos({ top: rect.bottom + 4, left: rect.left });
   }, [isOpen]);
 
-  // 点击外部关闭（与标签选择器保持一致，使用 mousedown 事件）
+  // 点击外部关闭（与项目其他下拉组件保持一致）
   useEffect(() => {
     if (!isOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: globalThis.MouseEvent) => {
       const target = e.target as Node;
-      // 检查是否点击了面板或触发按钮内部
       if (containerRef.current?.contains(target)) return;
       if (panelRef.current?.contains(target)) return;
-      // 点击了外部，关闭面板
       setIsOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, setIsOpen]);
+  }, [isOpen]);
 
   // Escape 键关闭
   useEffect(() => {
@@ -93,7 +73,7 @@ export default function ConversationList({ currentId, onSelect, onNew, isOpen: i
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, setIsOpen]);
+  }, [isOpen]);
 
   /** 滚动到底部时加载更多 */
   const handleScroll = useCallback(() => {
