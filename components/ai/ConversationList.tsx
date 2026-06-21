@@ -61,8 +61,14 @@ export default function ConversationList({ currentId, onSelect, onNew }: Convers
       if (panelRef.current?.contains(target)) return;
       setIsOpen(false);
     };
+    // 同时监听 mousedown 和 click，确保在各种场景下都能关闭
+    // （WebkitAppRegion: 'drag' 会拦截部分鼠标事件）
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
+    };
   }, [isOpen]);
 
   // Escape 键关闭
