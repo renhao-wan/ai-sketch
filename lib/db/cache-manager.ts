@@ -11,7 +11,7 @@
  */
 
 import { MemoryCache } from '@/lib/cache/memory-cache';
-import { getDb, getDbSync, requestSave, onBeforeClose } from './index';
+import { getDb, requestSave } from './index';
 
 // ── 接口定义 ──
 
@@ -419,18 +419,17 @@ class CacheManager {
   }
 
   /**
-   * 强制持久化统计到 DB（同步版本，用于应用退出时调用）
+   * 强制持久化统计到 DB（用于应用退出时调用）
    * 确保即使未达到持久化间隔，统计数据也不会丢失
+   * 使用 fire-and-forget 模式，写入内存 DB 即时完成，后续由 closeDb() 同步持久化到磁盘
    */
-  flushStatsSync(): void {
-    try {
-      const db = getDbSync();
-      if (!db) return;
+  flushStats(): void {
+    getDb().then(db => {
       db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('cache_hits', ?)", [String(this.hits)]);
       db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('cache_misses', ?)", [String(this.misses)]);
-    } catch (e) {
-      console.error('[Cache] Failed to flush stats synchronously:', e);
-    }
+    }).catch(e => {
+      console.error('[Cache] Failed to flush stats:', e);
+    });
   }
 
   // ── 内部方法 ──
@@ -504,10 +503,5 @@ class CacheManager {
  * - 应用退出时会自动刷新统计到 DB
  */
 export const cacheManager = new CacheManager();
-
-// 注册应用退出前的清理回调，确保统计数据不丢失
-onBeforeClose(() => {
-  cacheManager.flushStatsSync();
-});
 
 export default CacheManager;

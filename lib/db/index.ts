@@ -12,9 +12,6 @@ let dbPromise: Promise<Database> | null = null;
 let isDirty = false;
 /** 防抖写入定时器 */
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
-/** 应用退出前的清理回调列表 */
-const beforeCloseCallbacks: Array<() => void> = [];
-
 async function initDb(): Promise<Database> {
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) {
@@ -254,15 +251,6 @@ export async function getDb(): Promise<Database> {
 }
 
 /**
- * 同步获取数据库实例（仅在已初始化后可用）
- * 用于应用退出时的同步操作，避免异步等待
- * 如果数据库未初始化，返回 null
- */
-export function getDbSync(): Database | null {
-  return dbInstance;
-}
-
-/**
  * 将内存数据库持久化到磁盘（原子写入）
  * 使用 write-to-temp-then-rename 模式确保写入的原子性：
  * - 先写入临时文件，再通过 rename 覆盖目标文件
@@ -337,28 +325,19 @@ export function saveToDiskSync(): void {
 }
 
 /**
- * 注册应用退出前的清理回调
- * 回调会在 closeDb() 中、数据库关闭之前被调用
- * 用于刷新缓存统计等需要在退出前同步完成的操作
- */
-export function onBeforeClose(callback: () => void): void {
-  beforeCloseCallbacks.push(callback);
-}
-
-/**
  * 关闭数据库连接，释放 WASM 内存
  * 在 Electron 应用退出前调用，使用同步写入确保数据不丢失
  */
 export function closeDb(): void {
   if (!dbInstance) return;
   try {
-    // 执行退出前的清理回调（如刷新缓存统计）
-    for (const cb of beforeCloseCallbacks) {
-      try {
-        cb();
-      } catch (e) {
-        console.error('[DB] beforeClose callback failed:', e);
-      }
+    // 退出前刷新缓存统计（动态 require 避免循环依赖）
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { cacheManager } = require('./cache-manager');
+      cacheManager.flushStats();
+    } catch (e) {
+      console.error('[DB] Failed to flush cache stats:', e);
     }
 
     // 取消防抖定时器，立即同步持久化
