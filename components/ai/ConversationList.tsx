@@ -33,14 +33,17 @@ export default function ConversationList({ currentId, onSelect, onNew, isOpen: i
 
   // 使用外部控制的状态，如果没有外部控制则使用内部状态
   const isOpen = isOpenProp !== undefined ? isOpenProp : isOpenState;
+
+  // 设置 isOpen 的函数
   const setIsOpen = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
-    const newValue = typeof value === 'function' ? value(isOpen) : value;
+    const currentValue = isOpenProp !== undefined ? isOpenProp : isOpenState;
+    const newValue = typeof value === 'function' ? value(currentValue) : value;
     if (onOpenChange) {
       onOpenChange(newValue);
     } else {
       setIsOpenState(newValue);
     }
-  }, [isOpen, onOpenChange]);
+  }, [isOpenProp, isOpenState, onOpenChange]);
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
