@@ -39,6 +39,10 @@ export async function PUT(request: Request) {
     }
 
     // 验证每个元素的结构
+    const builtinIds = ['layout', 'beautify', 'simplify', 'explain'];
+    const customActions = await customActionManager.getAll();
+    const customIds = new Set(customActions.map(a => a.id));
+
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
       if (!action || typeof action !== 'object') {
@@ -49,6 +53,14 @@ export async function PUT(request: Request) {
       }
       if (!action.action_id || typeof action.action_id !== 'string') {
         return NextResponse.json({ error: `参数错误: actions[${i}].action_id 必须是非空字符串` }, { status: 400 });
+      }
+
+      // 验证 action_id 是否存在
+      if (action.action_type === 'builtin' && !builtinIds.includes(action.action_id)) {
+        return NextResponse.json({ error: `参数错误: 内置操作 "${action.action_id}" 不存在` }, { status: 400 });
+      }
+      if (action.action_type === 'custom' && !customIds.has(action.action_id)) {
+        return NextResponse.json({ error: `参数错误: 自定义操作 "${action.action_id}" 不存在` }, { status: 400 });
       }
     }
 
