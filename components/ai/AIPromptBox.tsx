@@ -222,6 +222,7 @@ export default function AIPromptBox() {
               </button>
             </Tooltip>
             <button
+              id="onboarding-send-btn"
               onClick={handleGenerate}
               disabled={!canGenerate()}
               className="h-9 px-5 flex items-center gap-2 bg-[var(--btn-primary)] text-[var(--btn-primary-text)] text-sm font-medium rounded-xl hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"

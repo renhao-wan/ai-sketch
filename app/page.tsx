@@ -59,6 +59,7 @@ export default function HomePage() {
         >
           <Tooltip content={t('home.enterEditor')} side="bottom">
             <button
+              id="onboarding-editor-btn"
               onClick={() => router.push('/editor')}
               className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5 hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors duration-150"
             >
@@ -68,6 +69,7 @@ export default function HomePage() {
           </Tooltip>
           <Tooltip content={t('home.history')} side="bottom">
             <button
+              id="onboarding-history-btn"
               onClick={() => setIsHistoryOpen(true)}
               className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
             >
@@ -76,6 +78,7 @@ export default function HomePage() {
           </Tooltip>
           <Tooltip content={t('home.settings')} side="bottom">
             <button
+              id="onboarding-settings-btn"
               onClick={() => router.push('/settings')}
               className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
             >
@@ -107,12 +110,12 @@ export default function HomePage() {
           </div>
 
           {/* Prompt Box */}
-          <div className="mb-6">
+          <div id="onboarding-ai-prompt-box" className="mb-6">
             <AIPromptBox />
           </div>
 
           {/* Recent Items — 固定高度容器，避免数据加载后布局跳动 */}
-          <div className="h-9 flex flex-wrap items-center justify-center gap-2">
+          <div id="onboarding-recent" className="h-9 flex flex-wrap items-center justify-center gap-2">
             {recentItems.length > 0 ? (
               <div className="animate-fade-in flex flex-wrap items-center justify-center gap-2">
                 <span className="text-[11px] text-[var(--muted)]/50 mr-1">{t('home.recent')}</span>

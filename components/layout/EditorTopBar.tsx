@@ -101,6 +101,7 @@ export default function EditorTopBar({
       <div className="flex items-center gap-2.5 min-w-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         <Tooltip content={t('copilot.backHome')} side="bottom">
           <button
+            id="onboarding-back-to-home"
             onClick={onGoHome}
             className="hover:opacity-80 transition-opacity duration-200 relative"
           >
@@ -108,7 +109,7 @@ export default function EditorTopBar({
             <div className="relative"><AppIcon size={22} /></div>
           </button>
         </Tooltip>
-        <div>
+        <div id="onboarding-conversation-list">
           <ConversationList
             currentId={conversationId}
             onSelect={onLoadConversation}
@@ -120,7 +121,7 @@ export default function EditorTopBar({
       {/* 右侧：标签 + 配置 + 版本历史 + 窗口控制 */}
       <div className="flex items-center gap-1 flex-shrink-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         {/* 标签按钮 */}
-        <div className="relative">
+        <div id="onboarding-tag-btn" className="relative">
           <Tooltip content={t('copilot.tags')} side="bottom">
             <button
               ref={tagBtnRef}
@@ -181,6 +182,7 @@ export default function EditorTopBar({
         {/* 配置按钮 */}
         <Tooltip content={t('copilot.config')} side="bottom">
           <button
+            id="onboarding-config-btn"
             onClick={onOpenConfig}
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
               isConfigOpen
@@ -195,6 +197,7 @@ export default function EditorTopBar({
         {/* 版本历史按钮 */}
         <Tooltip content={t('versionHistory.title')} side="bottom">
           <button
+            id="onboarding-version-history"
             onClick={onVersionHistory}
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
               isVersionDrawerOpen

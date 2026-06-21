@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useLocale, type TranslationKey } from '@/lib/locales';
 import { useShortcuts } from '@/hooks/useShortcuts';
+import { useOnboarding } from '@/components/onboarding';
 import { SettingsSidebar, SettingsTab } from '@/components/settings/SettingsSidebar';
 import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
 import { NetworkSettings } from '@/components/settings/NetworkSettings';
@@ -41,6 +42,30 @@ export default function SettingsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
   const [shortcutsSearchQuery, setShortcutsSearchQuery] = useState('');
+
+  // 监听引导步骤变化，自动切换 tab
+  const { isActive, currentStep, steps } = useOnboarding();
+  useEffect(() => {
+    if (!isActive || !steps[currentStep]) return;
+    const target = steps[currentStep].target;
+    // 根据 target 判断应该切换到哪个 tab
+    const tabMap: Record<string, SettingsTab> = {
+      'settings-appearance': 'appearance',
+      'settings-llm': 'llm',
+      'settings-conversations': 'conversations',
+      'settings-aiActions': 'aiActions',
+      'settings-tags': 'tags',
+      'settings-storage': 'storage',
+      'settings-shortcuts': 'shortcuts',
+      'settings-network': 'network',
+      'settings-about': 'about',
+    };
+    const matchedTab = Object.keys(tabMap).find(key => target.includes(key));
+    if (matchedTab) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 响应引导步骤变化，需要同步更新 tab
+      setActiveTab(tabMap[matchedTab]);
+    }
+  }, [isActive, currentStep, steps]);
 
   // 注册快捷键
   useShortcuts({
