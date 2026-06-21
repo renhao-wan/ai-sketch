@@ -47,7 +47,6 @@ export const POST = withErrorHandling(async (request: Request) => {
     prompt: prompt.trim(),
     icon: icon || 'Zap',
     action_type: action_type || 'modify',
-    enabled: 1,
     sort_order: 0,
   });
 

@@ -128,7 +128,6 @@ async function initDb(): Promise<Database> {
       prompt TEXT NOT NULL,
       icon TEXT DEFAULT 'Zap',
       action_type TEXT DEFAULT 'modify',
-      enabled INTEGER DEFAULT 1,
       sort_order INTEGER DEFAULT 0,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL

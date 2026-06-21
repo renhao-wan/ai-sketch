@@ -7,7 +7,6 @@ export interface CustomAction {
   prompt: string;
   icon: string;
   action_type: 'modify' | 'explain';
-  enabled: number;
   sort_order: number;
   created_at: number;
   updated_at: number;
@@ -31,10 +30,9 @@ class CustomActionManager {
       prompt: row[2] as string,
       icon: row[3] as string,
       action_type: row[4] as 'modify' | 'explain',
-      enabled: row[5] as number,
-      sort_order: row[6] as number,
-      created_at: row[7] as number,
-      updated_at: row[8] as number,
+      sort_order: row[5] as number,
+      created_at: row[6] as number,
+      updated_at: row[7] as number,
     }));
   }
 
@@ -49,10 +47,9 @@ class CustomActionManager {
       prompt: row[2] as string,
       icon: row[3] as string,
       action_type: row[4] as 'modify' | 'explain',
-      enabled: row[5] as number,
-      sort_order: row[6] as number,
-      created_at: row[7] as number,
-      updated_at: row[8] as number,
+      sort_order: row[5] as number,
+      created_at: row[6] as number,
+      updated_at: row[7] as number,
     };
   }
 
@@ -62,9 +59,9 @@ class CustomActionManager {
     const now = Date.now();
 
     db.run(
-      `INSERT INTO custom_actions (id, name, prompt, icon, action_type, enabled, sort_order, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, data.name, data.prompt, data.icon, data.action_type, data.enabled, data.sort_order, now, now]
+      `INSERT INTO custom_actions (id, name, prompt, icon, action_type, sort_order, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, data.name, data.prompt, data.icon, data.action_type, data.sort_order, now, now]
     );
 
     requestSave();
@@ -93,10 +90,6 @@ class CustomActionManager {
     if (data.action_type !== undefined) {
       fields.push('action_type = ?');
       values.push(data.action_type);
-    }
-    if (data.enabled !== undefined) {
-      fields.push('enabled = ?');
-      values.push(data.enabled);
     }
     if (data.sort_order !== undefined) {
       fields.push('sort_order = ?');
