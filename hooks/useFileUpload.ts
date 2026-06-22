@@ -2,12 +2,11 @@
  * useFileUpload — 统一的文件上传 Hook
  *
  * 封装 InputOrchestrator 调用和附件状态管理，
- * 供 AIPromptBox（首页）和 AICopilotPanel（编辑器）共用。
+ * 供 AICopilotPanel（编辑器）使用。
  *
  * @example
  * const { attachments, payload, handleFiles, clearAttachments, removeAttachment, notification, closeNotification } = useFileUpload();
- * await handleFiles(files, prompt); // 首页场景
- * await handleFiles(files);         // 编辑器场景
+ * await handleFiles(files);
  */
 
 'use client';

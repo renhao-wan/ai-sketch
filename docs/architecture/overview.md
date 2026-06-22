@@ -10,10 +10,10 @@ AI Sketch 采用 Next.js App Router 架构，前后端同构，支持 Web 端和
 ┌─────────────────────────────────────────────────────────────┐
 │                        客户端（浏览器 / Electron）            │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │   首页       │  │   编辑器     │  │      设置页面        │ │
-│  │  page.tsx    │  │ editor/     │  │    settings/        │ │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+│  ┌─────────────────────┐  ┌─────────────────────────────┐  │
+│  │      编辑器          │  │         设置页面            │  │
+│  │    page.tsx          │  │        settings/           │  │
+│  └─────────────────────┘  └─────────────────────────────┘  │
 ├─────────────────────────────────────────────────────────────┤
 │                      React 组件层                           │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐  │
@@ -192,25 +192,23 @@ data: [DONE]
 ## 模块依赖关系
 
 ```
-app/page.tsx（首页）
-    └── components/ai/AIPromptBox.tsx
-        └── lib/api/client.ts（API 客户端）
-            └── app/api/generate/route.ts（API 路由）
-                ├── lib/db/config-manager.ts（配置管理）
-                ├── lib/db/conversation-manager.ts（对话管理）
-                ├── lib/strategies/registry.ts（策略注册表）
-                │   ├── excalidraw-strategy.ts
-                │   ├── mermaid-strategy.ts
-                │   └── drawio-strategy.ts
-                └── lib/llm/client.ts（LLM 客户端）
-
-app/editor/page.tsx（编辑器）
-    ├── components/ai/CopilotPanel.tsx（AI 面板）
+app/page.tsx（编辑器 — 主入口）
+    ├── components/ai/AICopilotPanel.tsx（AI 对话面板）
+    │   └── components/ai/ChatInput.tsx（聊天输入）
     ├── components/canvases/DiagramCanvas.tsx（图表画布）
     │   ├── ExcalidrawCanvas.tsx
     │   ├── MermaidCanvas.tsx
     │   └── DrawioCanvas.tsx
-    └── components/editor/CodeEditor.tsx（代码编辑器）
+    ├── components/editor/CodeEditor.tsx（代码编辑器）
+    └── lib/api/client.ts（API 客户端）
+        └── app/api/generate/route.ts（API 路由）
+            ├── lib/db/config-manager.ts（配置管理）
+            ├── lib/db/conversation-manager.ts（对话管理）
+            ├── lib/strategies/registry.ts（策略注册表）
+            │   ├── excalidraw-strategy.ts
+            │   ├── mermaid-strategy.ts
+            │   └── drawio-strategy.ts
+            └── lib/llm/client.ts（LLM 客户端）
 ```
 
 ## 技术选型

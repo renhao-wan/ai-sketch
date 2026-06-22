@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   GitBranch,
+  Settings,
   Wand2,
   Tag,
 } from 'lucide-react';
@@ -25,6 +26,7 @@ interface EditorTopBarProps {
   isConfigOpen: boolean;
   onVersionHistory: () => void;
   isVersionDrawerOpen: boolean;
+  onOpenSettings: () => void;
 }
 
 export default function EditorTopBar({
@@ -36,6 +38,7 @@ export default function EditorTopBar({
   isConfigOpen,
   onVersionHistory,
   isVersionDrawerOpen,
+  onOpenSettings,
 }: EditorTopBarProps) {
   const { t } = useLocale();
 
@@ -97,8 +100,9 @@ export default function EditorTopBar({
       className="flex items-center justify-between px-6 h-14 bg-[var(--bg-glass)] backdrop-blur-xl border-b border-[var(--border)] flex-shrink-0 relative z-20"
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
-      {/* 左侧：Logo + 会话列表 */}
-      <div className="flex items-center gap-2.5 min-w-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      {/* 左侧：Logo + 会话级操作 */}
+      <div className="flex items-center gap-1 min-w-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        {/* Logo（品牌标识） */}
         <Tooltip content={t('copilot.backHome')} side="bottom">
           <button
             id="onboarding-back-to-home"
@@ -109,6 +113,11 @@ export default function EditorTopBar({
             <div className="relative"><AppIcon size={22} /></div>
           </button>
         </Tooltip>
+
+        {/* 分隔线：品牌标识 vs 功能操作 */}
+        <div className="w-px h-5 bg-[var(--border)] mx-1.5" />
+
+        {/* 会话级操作：会话列表 + 标签 + 版本历史 */}
         <div id="onboarding-conversation-list">
           <ConversationList
             currentId={conversationId}
@@ -116,10 +125,7 @@ export default function EditorTopBar({
             onNew={onNewConversation}
           />
         </div>
-      </div>
 
-      {/* 右侧：标签 + 配置 + 版本历史 + 窗口控制 */}
-      <div className="flex items-center gap-1 flex-shrink-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         {/* 标签按钮 */}
         <div id="onboarding-tag-btn" className="relative">
           <Tooltip content={t('copilot.tags')} side="bottom">
@@ -179,6 +185,24 @@ export default function EditorTopBar({
           )}
         </div>
 
+        {/* 版本历史按钮 */}
+        <Tooltip content={t('versionHistory.title')} side="bottom">
+          <button
+            id="onboarding-version-history"
+            onClick={onVersionHistory}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
+              isVersionDrawerOpen
+                ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
+                : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
+            }`}
+          >
+            <GitBranch size={16} />
+          </button>
+        </Tooltip>
+      </div>
+
+      {/* 右侧（系统级）：配置 + 设置 + 窗口控制 */}
+      <div className="flex items-center gap-1 flex-shrink-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         {/* 配置按钮 */}
         <Tooltip content={t('copilot.config')} side="bottom">
           <button
@@ -194,18 +218,13 @@ export default function EditorTopBar({
           </button>
         </Tooltip>
 
-        {/* 版本历史按钮 */}
-        <Tooltip content={t('versionHistory.title')} side="bottom">
+        {/* 设置按钮 */}
+        <Tooltip content={t('home.settings')} side="bottom">
           <button
-            id="onboarding-version-history"
-            onClick={onVersionHistory}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
-              isVersionDrawerOpen
-                ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10'
-                : 'text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)]'
-            }`}
+            onClick={onOpenSettings}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
           >
-            <GitBranch size={16} />
+            <Settings size={16} />
           </button>
         </Tooltip>
 

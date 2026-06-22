@@ -9,7 +9,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
   {
     id: 'go-home',
     keys: ['Alt', 'H'],
-    description: '返回首页',
+    description: '刷新页面',
     descriptionKey: 'shortcuts.goHome',
     scope: 'global',
     actionId: 'goHome',
@@ -21,14 +21,6 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     descriptionKey: 'shortcuts.newConversation',
     scope: 'global',
     actionId: 'newConversation',
-  },
-  {
-    id: 'open-history',
-    keys: ['Alt', 'I'],
-    description: '历史记录',
-    descriptionKey: 'shortcuts.openHistory',
-    scope: 'global',
-    actionId: 'openHistory',
   },
   // 设置页面
   {
@@ -256,7 +248,6 @@ function matchKeys(event: KeyboardEvent, keys: string[]): boolean {
 interface ShortcutActions {
   onGoHome?: () => void;
   onNewConversation?: () => void;
-  onOpenHistory?: () => void;
   onOpenSettings?: (tab?: string) => void;
   onSwitchFormat?: (format: 'excalidraw' | 'mermaid' | 'drawio') => void;
   onOpenVersionHistory?: () => void;
@@ -267,7 +258,6 @@ function buildActionMap(actions: ShortcutActions): Record<string, (param?: strin
   return {
     goHome: () => actions.onGoHome?.(),
     newConversation: () => actions.onNewConversation?.(),
-    openHistory: () => actions.onOpenHistory?.(),
     openSettings: (param) => actions.onOpenSettings?.(param),
     switchFormat: (param) => actions.onSwitchFormat?.(param as 'excalidraw' | 'mermaid' | 'drawio'),
     openVersionHistory: () => actions.onOpenVersionHistory?.(),

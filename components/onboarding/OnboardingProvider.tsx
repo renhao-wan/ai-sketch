@@ -69,10 +69,9 @@ const DEFAULT_STATE: OnboardingState = {
 /**
  * 根据步骤页面类型获取对应的路由路径
  */
-function getPagePath(page: 'home' | 'editor' | 'settings'): string {
+function getPagePath(page: 'editor' | 'settings'): string {
   switch (page) {
-    case 'home': return '/';
-    case 'editor': return '/editor';
+    case 'editor': return '/';
     case 'settings': return '/settings';
     default: return '/';
   }
@@ -181,8 +180,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         ...DEFAULT_STATE,
         isLoading: false,
       });
-      // 返回首页
-      router.push('/');
       return;
     }
 
@@ -234,9 +231,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       ...DEFAULT_STATE,
       isLoading: false,
     });
-    // 返回首页
-    router.push('/');
-  }, [router]);
+  }, []);
 
   /**
    * 完成引导
@@ -247,9 +242,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       ...DEFAULT_STATE,
       isLoading: false,
     });
-    // 返回首页
-    router.push('/');
-  }, [state.mode, router]);
+  }, [state.mode]);
 
   /**
    * 关闭欢迎弹窗

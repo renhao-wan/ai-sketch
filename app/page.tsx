@@ -1,143 +1,406 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef, useReducer, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Tooltip from '@/components/ui/Tooltip';
 import { AppIcon } from '@/components/layout/TopBar';
-import AIPromptBox from '@/components/ai/AIPromptBox';
+import AICopilotPanel from '@/components/ai/AICopilotPanel';
+import EditorTopBar from '@/components/layout/EditorTopBar';
+import FloatingAIActions from '@/components/ai/FloatingAIActions';
+import CodeEditor from '@/components/editor/CodeEditor';
+import { useNotification } from '@/lib/contexts/NotificationContext';
+import DiagramCanvas from '@/components/canvases/DiagramCanvas';
+import type { CanvasExportHandle } from '@/components/canvases/DiagramCanvas';
+import type { StreamRendererRef } from '@/components/canvases/ExcalidrawCanvas';
+import type { ExportFormat } from '@/lib/utils/export-diagram';
+import { isConfigValid } from '@/lib/api/config-validator';
+import { getStrategy } from '@/lib/strategies/registry';
 import { useLocale } from '@/lib/locales';
 import { useShortcuts } from '@/hooks/useShortcuts';
-import { timeAgo } from '@/lib/utils/time-ago';
-import { Settings, History, FileText, PenTool } from 'lucide-react';
-import * as api from '@/lib/api/client';
-import Tooltip from '@/components/ui/Tooltip';
-import WindowControls from '@/components/layout/WindowControls';
-import type { Conversation } from '@/lib/types';
+import { useConversation } from '@/hooks/useConversation';
+import { useGeneration } from '@/hooks/useGeneration';
+import { useAIActions } from '@/hooks/useAIActions';
+import { useEditorConfig } from '@/hooks/useEditorConfig';
+import { useEditorExport } from '@/hooks/useEditorExport';
+import { useVersionHistory } from '@/hooks/useVersionHistory';
+import type { DiagramFormat } from '@/lib/types/diagram-strategy';
+import { detectCodeFormat } from '@/lib/utils/detect-code-format';
+import type { GenerationMode } from '@/lib/generation/types';
+import type { DynamicTab } from '@/components/layout/BottomContextPanel';
+import type { ActionInfo } from '@/components/ai/FloatingAIActions';
 
-// 动态导入 HistoryModal（模态框，按需加载）
-const HistoryModal = dynamic(() => import('@/components/dialogs/HistoryModal'), { ssr: false });
+// 动态导入重型组件（按需加载）
+const ConfigSelector = dynamic(() => import('@/components/dialogs/ConfigSelector'), { ssr: false });
+const BottomContextPanel = dynamic(() => import('@/components/layout/BottomContextPanel'), { ssr: false });
+const VersionHistoryDrawer = dynamic(() => import('@/components/version-history/VersionHistoryDrawer'), { ssr: false });
 
-export default function HomePage() {
+// --- 生成结果 Reducer ---
+
+interface GenerationResultState {
+  code: string;
+  renderData: unknown;
+  jsonError: string | null;
+}
+
+type GenerationResultAction =
+  | { type: 'SET_CODE'; payload: string }
+  | { type: 'SET_RENDER_DATA'; payload: unknown }
+  | { type: 'SET_JSON_ERROR'; payload: string | null }
+  | { type: 'CLEAR' };
+
+function generationResultReducer(state: GenerationResultState, action: GenerationResultAction): GenerationResultState {
+  switch (action.type) {
+    case 'SET_CODE': return { ...state, code: action.payload };
+    case 'SET_RENDER_DATA': return { ...state, renderData: action.payload };
+    case 'SET_JSON_ERROR': return { ...state, jsonError: action.payload };
+    case 'CLEAR': return { code: '', renderData: null, jsonError: null };
+    default: return state;
+  }
+}
+
+function EditorContent() {
   const router = useRouter();
   const { t } = useLocale();
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [recentItems, setRecentItems] = useState<Conversation[]>([]);
+
+  // 配置管理
+  const { config, configLoaded, handleConfigSelect } = useEditorConfig();
+
+  // 生成结果状态（reducer，与 generation hook 紧耦合）
+  const [genResult, dispatchGenResult] = useReducer(generationResultReducer, { code: '', renderData: null, jsonError: null });
+  const { code: generatedCode, renderData, jsonError } = genResult;
+
+  // 独立状态
+  const [format, setFormat] = useState<DiagramFormat>('excalidraw');
+  const [isConfigManagerOpen, setIsConfigManagerOpen] = useState(false);
+  const [isApplyingCode, setIsApplyingCode] = useState(false);
+  const [currentInput, setCurrentInput] = useState('');
+  const [currentChartType, setCurrentChartType] = useState('auto');
+  const { showNotification } = useNotification();
+  const [bottomPanelTab, setBottomPanelTab] = useState('code');
+  const [panelWidth, setPanelWidth] = useState(360);
+  const [isElectron, setIsElectron] = useState(false);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  const [generationMode, setGenerationMode] = useState<GenerationMode>('auto');
+  const [contextEnabled, setContextEnabled] = useState(true);
+  const [dynamicTabs, setDynamicTabs] = useState<DynamicTab[]>([]);
+  const [availableActions, setAvailableActions] = useState<ActionInfo[]>([]);
+
+  // Refs
+  const streamRendererRef = useRef<StreamRendererRef | null>(null);
+  const canvasExportRef = useRef<CanvasExportHandle | null>(null);
+  const formatRef = useRef(format);
+  useEffect(() => { formatRef.current = format; }, [format]);
+  const isFirstFormatRef = useRef(true);
+  const skipFormatClearRef = useRef(false);
+
+  // 检测 Electron 环境
+  useEffect(() => {
+    setIsElectron(!!window.electronAPI?.window);
+  }, []);
+
+  const handlePanelWidthChange = useCallback((w: number) => {
+    const minWidth = isElectron ? 320 : 280;
+    setPanelWidth(Math.min(Math.max(w, minWidth), 600));
+  }, [isElectron]);
+
+  // 会话管理 Hook
+  const conversation = useConversation({
+    onFormatChange: (f) => setFormat(f),
+    onChartTypeChange: setCurrentChartType,
+    onCodeClear: () => dispatchGenResult({ type: 'CLEAR' }),
+    onError: (msg) => generation.setApiError(msg),
+  });
+
+  // 版本历史
+  const {
+    versions,
+    versionDrawerOpen,
+    currentVersionId,
+    handleSelectVersion,
+    handleCloseVersionDrawer,
+    toggleVersionDrawer,
+  } = useVersionHistory({
+    messages: conversation.messages,
+    onShowDiagram: (content) => {
+      const detectedFormat = detectCodeFormat(content);
+      if (detectedFormat !== format) {
+        skipFormatClearRef.current = true;
+        setFormat(detectedFormat);
+      }
+      const strat = getStrategy(detectedFormat);
+      const processed = strat.postProcess(content);
+      const optimized = strat.optimize(processed);
+      dispatchGenResult({ type: 'SET_CODE', payload: optimized });
+      const result = strat.validate(optimized);
+      if (result.valid) {
+        dispatchGenResult({ type: 'SET_RENDER_DATA', payload: result.data });
+        dispatchGenResult({ type: 'SET_JSON_ERROR', payload: null });
+      } else {
+        dispatchGenResult({ type: 'SET_JSON_ERROR', payload: result.error });
+      }
+    },
+  });
+
+  // 代码生成 Hook
+  const generation = useGeneration({
+    config,
+    format,
+    conversationId: conversation.conversationId,
+    streamRendererRef,
+    onCodeUpdate: (code) => dispatchGenResult({ type: 'SET_CODE', payload: code }),
+    onRenderDataUpdate: (data) => dispatchGenResult({ type: 'SET_RENDER_DATA', payload: data }),
+    onJsonErrorUpdate: (err) => dispatchGenResult({ type: 'SET_JSON_ERROR', payload: err }),
+    onConversationIdUpdate: conversation.setConversationId,
+    onMessagesUpdate: conversation.setMessages,
+    onConfigReminder: () => {
+      showNotification(t('editor.configReminder'), t('editor.pleaseConfigLLM'), 'warning');
+      setIsConfigManagerOpen(true);
+    },
+    onChartTypeUpdate: setCurrentChartType,
+    generationMode,
+    contextEnabled,
+  });
+
+  // 动态 Tab 管理
+  const handleDynamicTabAdd = useCallback((tab: DynamicTab) => {
+    setDynamicTabs(prev => [...prev, tab]);
+    setBottomPanelTab(tab.id);
+  }, []);
+
+  const handleRemoveDynamicTab = useCallback((tabId: string) => {
+    setDynamicTabs(prev => prev.filter(tab => tab.id !== tabId));
+    if (bottomPanelTab === tabId) {
+      setBottomPanelTab('code');
+    }
+  }, [bottomPanelTab]);
+
+  // 接收可用的操作列表
+  const handleActionsLoad = useCallback((actions: ActionInfo[]) => {
+    setAvailableActions(actions);
+  }, []);
+
+  // AI 操作 Hook
+  const aiActions = useAIActions({
+    config,
+    format,
+    generatedCode,
+    abortControllerRef: generation.abortControllerRef,
+    onCodeUpdate: (code) => dispatchGenResult({ type: 'SET_CODE', payload: code }),
+    onDynamicTabAdd: handleDynamicTabAdd,
+    onRenderDataUpdate: (data) => dispatchGenResult({ type: 'SET_RENDER_DATA', payload: data }),
+    onJsonErrorUpdate: (err) => dispatchGenResult({ type: 'SET_JSON_ERROR', payload: err }),
+    onNotification: showNotification,
+  });
+
+  // 导出逻辑
+  const { handleExport, handleExportAs } = useEditorExport({
+    format,
+    generatedCode,
+    canvasExportRef,
+  });
+
+  const strategy = getStrategy(format);
+
+  // 格式切换时清空代码
+  useEffect(() => {
+    if (isFirstFormatRef.current) { isFirstFormatRef.current = false; return; }
+    if (skipFormatClearRef.current) { skipFormatClearRef.current = false; return; }
+    dispatchGenResult({ type: 'CLEAR' });
+    streamRendererRef.current?.reset();
+  }, [format]);
 
   // 注册快捷键
   useShortcuts({
-    onGoHome: () => router.push('/'),
-    onNewConversation: () => router.push('/editor'),
-    onOpenHistory: () => setIsHistoryOpen(true),
+    onGoHome: () => {}, // 已经在首页，无需跳转
+    onNewConversation: () => {
+      conversation.newConversation();
+      setGenerationMode('auto');
+    },
     onOpenSettings: (tab) => router.push(tab ? `/settings?tab=${tab}` : '/settings'),
+    onSwitchFormat: (f) => { setFormat(f); dispatchGenResult({ type: 'CLEAR' }); },
+    onOpenVersionHistory: toggleVersionDrawer,
   });
 
-  useEffect(() => {
-    api.fetchConversations({ limit: 5 })
-      .then(({ conversations }) => setRecentItems(conversations))
-      .catch((err) => console.error('Failed to load conversations:', err));
-  }, []);
+  const handleShowDiagram = useCallback((content: string) => {
+    const detectedFormat = detectCodeFormat(content);
+    if (detectedFormat !== format) {
+      skipFormatClearRef.current = true;
+      setFormat(detectedFormat);
+    }
+    const strat = getStrategy(detectedFormat);
+    const processed = strat.postProcess(content);
+    const optimized = strat.optimize(processed);
+    dispatchGenResult({ type: 'SET_CODE', payload: optimized });
+    const result = strat.validate(optimized);
+    if (result.valid) {
+      dispatchGenResult({ type: 'SET_RENDER_DATA', payload: result.data });
+      dispatchGenResult({ type: 'SET_JSON_ERROR', payload: null });
+    } else {
+      dispatchGenResult({ type: 'SET_JSON_ERROR', payload: result.error });
+    }
+  }, [format]);
 
-  const handleApplyConversation = (item: Conversation) => {
-    sessionStorage.setItem('ai-sketch-load-conversation', item.id);
-    router.push('/editor');
+  const handleApplyCode = async () => {
+    setIsApplyingCode(true);
+    try {
+      await new Promise(r => setTimeout(r, 300));
+      const s = getStrategy(format);
+      const result = s.validate(generatedCode);
+      if (result.valid) {
+        dispatchGenResult({ type: 'SET_RENDER_DATA', payload: result.data });
+        dispatchGenResult({ type: 'SET_JSON_ERROR', payload: null });
+      } else {
+        dispatchGenResult({ type: 'SET_JSON_ERROR', payload: result.error });
+      }
+    } finally {
+      setIsApplyingCode(false);
+    }
   };
 
   return (
-    <div className="h-screen flex flex-col bg-[var(--bg)] noise-overlay">
-      {/* Header - 可拖拽区域 */}
-      <header
-        className="h-14 flex items-center justify-between px-6 backdrop-blur-xl bg-[var(--bg-glass)] border-b border-[var(--border)] flex-shrink-0 select-none"
-        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-      >
-        <div className="flex items-center gap-2.5">
-          <AppIcon size={22} />
-          <span className="text-[12px] font-semibold tracking-tight text-[var(--fg)]">AI Sketch</span>
-        </div>
-        <div
-          className="flex items-center gap-1"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-        >
-          <Tooltip content={t('home.enterEditor')} side="bottom">
-            <button
-              id="onboarding-editor-btn"
-              onClick={() => router.push('/editor')}
-              className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5 hover:bg-[var(--accent-indigo)]/10 rounded-lg transition-colors duration-150"
-            >
-              <PenTool size={13} />
-              <span>{t('home.editor')}</span>
-            </button>
-          </Tooltip>
-          <Tooltip content={t('home.history')} side="bottom">
-            <button
-              id="onboarding-history-btn"
-              onClick={() => setIsHistoryOpen(true)}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
-            >
-              <History size={15} />
-            </button>
-          </Tooltip>
-          <Tooltip content={t('home.settings')} side="bottom">
-            <button
-              id="onboarding-settings-btn"
-              onClick={() => router.push('/settings')}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
-            >
-              <Settings size={15} />
-            </button>
-          </Tooltip>
-          <WindowControls />
-        </div>
-      </header>
+    <>
+      <div className="h-full flex flex-col relative overflow-hidden bg-[var(--bg)] noise-overlay">
+        {/* Decorative Blur Orbs */}
+        <div className="blur-orb blur-orb-indigo" style={{ width: 320, height: 320, top: '-60px', left: '-80px' }} />
+        <div className="blur-orb blur-orb-violet" style={{ width: 260, height: 260, bottom: '-40px', right: '10%' }} />
+        <div className="blur-orb blur-orb-cyan" style={{ width: 200, height: 200, top: '40%', right: '-40px' }} />
 
-      {/* Main */}
-      <main className="flex-1 flex items-center justify-center relative overflow-hidden">
-        <div className="relative z-10 w-full max-w-4xl px-6">
-          {/* Top: Icon + Title */}
-          <div className="text-center mb-10">
-            <div className="flex justify-center mb-5">
-              <AppIcon size={52} />
-            </div>
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-[var(--fg)] leading-[1.1] mb-3">
-              {t('home.hero.line1')}
-              <br />
-              <span className="bg-gradient-to-r from-[var(--accent-indigo)] via-[var(--accent-violet)] to-[var(--accent-cyan)] bg-clip-text text-transparent">
-                {t('home.hero.line2')}
-              </span>
-            </h1>
-            <p className="text-base text-[var(--muted)] max-w-lg mx-auto leading-relaxed">
-              {t('home.hero.subtitle')}
-            </p>
+        {/* 全局顶栏 */}
+        <EditorTopBar
+          onGoHome={() => {}} // 已经在首页，无需跳转
+          conversationId={conversation.conversationId}
+          onLoadConversation={conversation.loadConversation}
+          onNewConversation={conversation.newConversation}
+          onOpenConfig={() => setIsConfigManagerOpen(true)}
+          isConfigOpen={isConfigManagerOpen}
+          onVersionHistory={toggleVersionDrawer}
+          isVersionDrawerOpen={versionDrawerOpen}
+          onOpenSettings={() => router.push('/settings')}
+        />
+
+        {/* 主内容区域：侧边栏 + 画布 */}
+        <div className="flex-1 flex min-h-0">
+          {/* AI Copilot Panel (Left) */}
+          <div id="onboarding-chat-input" className="flex-shrink-0">
+          <AICopilotPanel
+            conversationId={conversation.conversationId}
+            messages={conversation.messages}
+            isStreaming={generation.isStreaming}
+            onSendMessage={generation.sendMessage}
+            onCancel={generation.cancelGeneration}
+            isGenerating={generation.isGenerating}
+            currentInput={currentInput}
+            currentChartType={currentChartType}
+            currentFormat={format}
+            onFormatChange={(f) => { setFormat(f); dispatchGenResult({ type: 'CLEAR' }); }}
+            onRegenerate={() => generation.regenerate(conversation.messages, currentChartType)}
+            onShowDiagram={handleShowDiagram}
+            apiError={generation.apiError}
+            onClearError={() => generation.setApiError(null)}
+            panelWidth={panelWidth}
+            onPanelWidthChange={handlePanelWidthChange}
+            collapsed={isPanelCollapsed}
+            generationMode={generationMode}
+            onGenerationModeChange={setGenerationMode}
+            contextEnabled={contextEnabled}
+            onContextEnabledChange={setContextEnabled}
+            onEditMessage={(id, content) => generation.editAndResend(id, content, conversation.messages, currentChartType)}
+          />
           </div>
 
-          {/* Prompt Box */}
-          <div id="onboarding-ai-prompt-box" className="mb-6">
-            <AIPromptBox />
-          </div>
-
-          {/* Recent Items — 固定高度容器，避免数据加载后布局跳动 */}
-          <div id="onboarding-recent" className="h-9 flex flex-wrap items-center justify-center gap-2">
-            {recentItems.length > 0 ? (
-              <div className="animate-fade-in flex flex-wrap items-center justify-center gap-2">
-                <span className="text-[11px] text-[var(--muted)]/50 mr-1">{t('home.recent')}</span>
-                {recentItems.slice(0, 3).map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleApplyConversation(item)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-[var(--muted)] bg-[var(--bg-glass)]/50 backdrop-blur border border-[var(--border)]/50 rounded-full hover:bg-[var(--card)] hover:text-[var(--fg)] hover:border-[var(--accent-indigo)]/30 transition-all duration-200"
-                  >
-                    <FileText size={11} className="text-[var(--accent-indigo)]/50" />
-                    <span className="max-w-[120px] truncate">{item.title}</span>
-                    <span className="text-[var(--muted)]/40">{timeAgo(item.updatedAt, t)}</span>
-                  </button>
-                ))}
+          {/* 分割线折叠按钮 */}
+          <div className="relative flex-shrink-0 w-3 flex items-center justify-center group cursor-pointer" onClick={() => setIsPanelCollapsed(prev => !prev)}>
+            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-[var(--border)]" />
+            <Tooltip key={String(isPanelCollapsed)} content={isPanelCollapsed ? '展开' : '收起'} side={isPanelCollapsed ? 'right' : 'bottom'}>
+              <div className="relative z-30 w-5 h-10 flex items-center justify-center rounded-md bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] opacity-0 group-hover:opacity-100 transition-all duration-200">
+                {isPanelCollapsed ? (
+                  <ChevronRight size={12} />
+                ) : (
+                  <ChevronLeft size={12} />
+                )}
               </div>
-            ) : null}
+            </Tooltip>
+          </div>
+
+          {/* Main Canvas Area */}
+          <div className="flex-1 flex flex-col relative">
+            {/* Floating AI Actions */}
+            <FloatingAIActions
+              onAction={aiActions.handleAIAction}
+              onActionsLoad={handleActionsLoad}
+              loadingAction={aiActions.aiActionLoading}
+              disabled={generation.isGenerating || !generatedCode}
+            />
+
+            {/* Canvas */}
+            <div id="onboarding-diagram-canvas" className="flex-1 min-h-0">
+              <DiagramCanvas format={format} data={renderData} isStreaming={generation.isStreaming} streamRendererRef={streamRendererRef} exportRef={canvasExportRef} />
+            </div>
+
+            {/* Bottom Context Panel */}
+            <div id="onboarding-code-editor" className="flex-shrink-0">
+            <BottomContextPanel
+              generatedCode={generatedCode}
+              format={format}
+              activeTab={bottomPanelTab}
+              onTabChange={setBottomPanelTab}
+              onExportAs={handleExportAs}
+              dynamicTabs={dynamicTabs}
+              onRemoveTab={handleRemoveDynamicTab}
+              availableActions={availableActions}
+            >
+              <CodeEditor
+                code={generatedCode}
+                onChange={(v) => dispatchGenResult({ type: 'SET_CODE', payload: v ?? '' })}
+                onApply={handleApplyCode}
+                onClear={() => dispatchGenResult({ type: 'SET_CODE', payload: '' })}
+                jsonError={jsonError}
+                onClearJsonError={() => dispatchGenResult({ type: 'SET_JSON_ERROR', payload: null })}
+                isGenerating={generation.isGenerating}
+                isApplyingCode={isApplyingCode}
+                language={strategy.codeLanguage}
+              />
+            </BottomContextPanel>
+            </div>
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Modals */}
-      <HistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} onApply={handleApplyConversation} />
-    </div>
+      <ConfigSelector isOpen={isConfigManagerOpen} onClose={() => setIsConfigManagerOpen(false)} onConfigSelect={handleConfigSelect} />
+
+      <VersionHistoryDrawer
+        open={versionDrawerOpen}
+        onClose={handleCloseVersionDrawer}
+        versions={versions}
+        currentVersionId={currentVersionId}
+        onSelectVersion={handleSelectVersion}
+      />
+    </>
+  );
+}
+
+export default function HomePage() {
+  const { t } = useLocale();
+  return (
+    <Suspense fallback={
+      <div className="h-full flex items-center justify-center bg-[var(--bg)] noise-overlay">
+        <div className="blur-orb blur-orb-indigo" style={{ width: 240, height: 240, top: '30%', left: '30%' }} />
+        <div className="blur-orb blur-orb-violet" style={{ width: 200, height: 200, bottom: '20%', right: '25%' }} />
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+          <div className="relative">
+            <div className="absolute inset-0 w-10 h-10 rounded-[16px] bg-gradient-to-br from-[var(--accent-indigo)] to-[var(--accent-violet)] blur-xl opacity-30 animate-pulse-glow" />
+            <div className="animate-pulse rounded-[16px] relative">
+              <AppIcon size={40} />
+            </div>
+          </div>
+          <p className="text-sm text-[var(--muted)] font-medium">{t('editor.loading')}</p>
+        </div>
+      </div>
+    }>
+      <EditorContent />
+    </Suspense>
   );
 }

@@ -21,41 +21,14 @@ export interface OnboardingStep {
   /** 分组标题（国际化 key，分组第一步显示） */
   groupTitleKey?: TranslationKey;
   /** 步骤所在的页面 */
-  page: 'home' | 'editor' | 'settings';
+  page: 'editor' | 'settings';
 }
 
 /**
- * 核心流程步骤（core 模式，7 步）
- * 介绍核心链路：首页输入 → 发送 → 进入编辑器 → 编辑器功能
+ * 核心流程步骤（core 模式，4 步）
+ * 介绍核心链路：编辑器输入 → 发送 → 查看图表 → 导出
  */
 export const CORE_STEPS: OnboardingStep[] = [
-  {
-    id: 'home-input',
-    target: '#onboarding-ai-prompt-box',
-    titleKey: 'onboarding.steps.home-input.title',
-    contentKey: 'onboarding.steps.home-input.content',
-    placement: 'bottom',
-    mode: 'core',
-    page: 'home',
-  },
-  {
-    id: 'home-send',
-    target: '#onboarding-send-btn',
-    titleKey: 'onboarding.steps.home-send.title',
-    contentKey: 'onboarding.steps.home-send.content',
-    placement: 'bottom',
-    mode: 'core',
-    page: 'home',
-  },
-  {
-    id: 'home-editor-btn',
-    target: '#onboarding-editor-btn',
-    titleKey: 'onboarding.steps.home-editor-btn.title',
-    contentKey: 'onboarding.steps.home-editor-btn.content',
-    placement: 'bottom',
-    mode: 'core',
-    page: 'home',
-  },
   {
     id: 'editor-chat',
     target: '#onboarding-chat-input',
@@ -84,10 +57,10 @@ export const CORE_STEPS: OnboardingStep[] = [
     page: 'editor',
   },
   {
-    id: 'editor-back',
+    id: 'editor-topbar',
     target: '#onboarding-back-to-home',
-    titleKey: 'onboarding.steps.editor-back.title',
-    contentKey: 'onboarding.steps.editor-back.content',
+    titleKey: 'onboarding.steps.editor-topbar.title',
+    contentKey: 'onboarding.steps.editor-topbar.content',
     placement: 'bottom',
     mode: 'core',
     page: 'editor',
@@ -96,62 +69,9 @@ export const CORE_STEPS: OnboardingStep[] = [
 
 /**
  * 完整流程步骤（full 模式）
- * 覆盖整个系统：首页、编辑器、设置
+ * 覆盖整个系统：编辑器、设置
  */
 export const FULL_STEPS: OnboardingStep[] = [
-  // ==================== 首页组 ====================
-  {
-    id: 'full-home-input',
-    target: '#onboarding-ai-prompt-box',
-    titleKey: 'onboarding.steps.home-input.title',
-    contentKey: 'onboarding.steps.home-input.content',
-    placement: 'bottom',
-    mode: 'full',
-    group: 'home',
-    groupTitleKey: 'onboarding.groups.home',
-    page: 'home',
-  },
-  {
-    id: 'full-home-send',
-    target: '#onboarding-send-btn',
-    titleKey: 'onboarding.steps.home-send.title',
-    contentKey: 'onboarding.steps.home-send.content',
-    placement: 'bottom',
-    mode: 'full',
-    group: 'home',
-    page: 'home',
-  },
-  {
-    id: 'full-home-recent',
-    target: '#onboarding-recent',
-    titleKey: 'onboarding.steps.home-recent.title',
-    contentKey: 'onboarding.steps.home-recent.content',
-    placement: 'top',
-    mode: 'full',
-    group: 'home',
-    page: 'home',
-  },
-  {
-    id: 'full-home-history',
-    target: '#onboarding-history-btn',
-    titleKey: 'onboarding.steps.home-history.title',
-    contentKey: 'onboarding.steps.home-history.content',
-    placement: 'bottom',
-    mode: 'full',
-    group: 'home',
-    page: 'home',
-  },
-  {
-    id: 'full-home-editor-btn',
-    target: '#onboarding-editor-btn',
-    titleKey: 'onboarding.steps.home-editor-btn.title',
-    contentKey: 'onboarding.steps.home-editor-btn.content',
-    placement: 'bottom',
-    mode: 'full',
-    group: 'home',
-    page: 'home',
-  },
-
   // ==================== 编辑器 - AI 对话区组 ====================
   {
     id: 'full-editor-chat',
@@ -264,16 +184,6 @@ export const FULL_STEPS: OnboardingStep[] = [
     page: 'editor',
   },
   {
-    id: 'full-config-btn',
-    target: '#onboarding-config-btn',
-    titleKey: 'onboarding.steps.config-btn.title',
-    contentKey: 'onboarding.steps.config-btn.content',
-    placement: 'bottom',
-    mode: 'full',
-    group: 'top-bar',
-    page: 'editor',
-  },
-  {
     id: 'full-version-history',
     target: '#onboarding-version-history',
     titleKey: 'onboarding.steps.version-history.title',
@@ -284,10 +194,10 @@ export const FULL_STEPS: OnboardingStep[] = [
     page: 'editor',
   },
   {
-    id: 'full-back-to-home',
-    target: '#onboarding-back-to-home',
-    titleKey: 'onboarding.steps.editor-back.title',
-    contentKey: 'onboarding.steps.editor-back.content',
+    id: 'full-config-btn',
+    target: '#onboarding-config-btn',
+    titleKey: 'onboarding.steps.config-btn.title',
+    contentKey: 'onboarding.steps.config-btn.content',
     placement: 'bottom',
     mode: 'full',
     group: 'top-bar',
@@ -296,17 +206,6 @@ export const FULL_STEPS: OnboardingStep[] = [
 
   // ==================== 设置页组 ====================
   {
-    id: 'full-settings-home-btn',
-    target: '#onboarding-settings-btn',
-    titleKey: 'onboarding.steps.home-settings.title',
-    contentKey: 'onboarding.steps.home-settings.content',
-    placement: 'bottom',
-    mode: 'full',
-    group: 'settings',
-    groupTitleKey: 'onboarding.groups.settings',
-    page: 'home',
-  },
-  {
     id: 'full-settings-appearance',
     target: '#onboarding-settings-appearance',
     titleKey: 'onboarding.steps.settings-appearance.title',
@@ -314,6 +213,7 @@ export const FULL_STEPS: OnboardingStep[] = [
     placement: 'right',
     mode: 'full',
     group: 'settings',
+    groupTitleKey: 'onboarding.groups.settings',
     page: 'settings',
   },
   {
