@@ -127,7 +127,7 @@ export function AboutSettings() {
                   sessionStorage.setItem('onboarding-restart', 'full');
                   router.push('/');
                 }}
-                className="px-4 py-2 text-sm font-medium text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-lg hover:bg-[var(--btn-primary-hover)] transition-colors"
+                className="px-4 py-2 text-sm font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg transition-colors"
               >
                 {t('onboarding.settings.restart')}
               </button>
