@@ -33,14 +33,18 @@ export function escapeMermaidNodeLabel(str: string): string {
 
 /**
  * 修复 Mermaid 节点标签中的特殊字符
- * 匹配模式：["..."] 或 [...]
+ * 匹配模式：
+ * - ["..."] - 标准节点标签
+ * - {...} - 菱形节点标签（如 PERM_CHECK{"..."}）
  * 注意：不转义 | 字符，因为这会破坏链接标签语法
  */
 export function fixMermaidNodeLabels(code: string): string {
   if (!code || typeof code !== 'string') return code;
 
-  // 匹配节点标签：["..."] 或 [...]
-  return code.replace(
+  let result = code;
+
+  // 1. 匹配节点标签：["..."]
+  result = result.replace(
     /\["([^"]*?)"\]/g,
     (match, content) => {
       // 检查是否已经转义过
@@ -52,6 +56,22 @@ export function fixMermaidNodeLabels(code: string): string {
       return `["${escaped}"]`;
     }
   );
+
+  // 2. 匹配菱形节点标签：{"..."}
+  result = result.replace(
+    /\{"([^"]*?)"\}/g,
+    (match, content) => {
+      // 检查是否已经转义过
+      if (content.includes('&lt;') || content.includes('&gt;')) {
+        return match;
+      }
+      // 转义特殊字符（不包括 |）
+      const escaped = escapeMermaidNodeLabel(content);
+      return `{"${escaped}"}`;
+    }
+  );
+
+  return result;
 }
 
 /**
