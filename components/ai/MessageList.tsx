@@ -152,10 +152,10 @@ export default function MessageList({
       {showScrollToBottom && (
         <button
           onClick={scrollToBottom}
-          className="sticky bottom-3 left-1/2 -translate-x-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-[var(--accent-indigo-light)] text-white shadow-lg hover:bg-[var(--accent-indigo)] hover:shadow-xl active:scale-95 transition-all duration-200 z-10"
+          className="sticky bottom-3 left-1/2 -translate-x-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm border border-[var(--border)] shadow-lg hover:bg-white hover:shadow-xl active:scale-95 transition-all duration-200 z-10"
           title={t('copilot.scrollToBottom')}
         >
-          <ChevronDown size={16} />
+          <ChevronDown size={16} className="text-[var(--fg)]" />
         </button>
       )}
     </div>
