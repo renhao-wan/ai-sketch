@@ -25,42 +25,60 @@ export interface OnboardingStep {
 }
 
 /**
- * 核心流程步骤（core 模式，4 步）
- * 介绍核心链路：编辑器输入 → 发送 → 查看图表 → 导出
+ * 核心流程步骤（core 模式，6 步）
+ * 介绍核心功能：输入 → 格式选择 → 生成 → 编辑 → 优化 → 管理
  */
 export const CORE_STEPS: OnboardingStep[] = [
   {
-    id: 'editor-chat',
+    id: 'core-chat',
     target: '#onboarding-chat-input',
-    titleKey: 'onboarding.steps.editor-chat.title',
-    contentKey: 'onboarding.steps.editor-chat.content',
+    titleKey: 'onboarding.steps.core-chat.title',
+    contentKey: 'onboarding.steps.core-chat.content',
     placement: 'right',
     mode: 'core',
     page: 'editor',
   },
   {
-    id: 'editor-canvas',
+    id: 'core-format',
+    target: '#onboarding-format-selector',
+    titleKey: 'onboarding.steps.core-format.title',
+    contentKey: 'onboarding.steps.core-format.content',
+    placement: 'right',
+    mode: 'core',
+    page: 'editor',
+  },
+  {
+    id: 'core-canvas',
     target: '#onboarding-diagram-canvas',
-    titleKey: 'onboarding.steps.editor-canvas.title',
-    contentKey: 'onboarding.steps.editor-canvas.content',
+    titleKey: 'onboarding.steps.core-canvas.title',
+    contentKey: 'onboarding.steps.core-canvas.content',
     placement: 'left',
     mode: 'core',
     page: 'editor',
   },
   {
-    id: 'editor-code',
+    id: 'core-code',
     target: '#onboarding-code-editor',
-    titleKey: 'onboarding.steps.editor-code.title',
-    contentKey: 'onboarding.steps.editor-code.content',
+    titleKey: 'onboarding.steps.core-code.title',
+    contentKey: 'onboarding.steps.core-code.content',
     placement: 'top',
     mode: 'core',
     page: 'editor',
   },
   {
-    id: 'editor-topbar',
+    id: 'core-toolbar',
+    target: '#onboarding-toolbar',
+    titleKey: 'onboarding.steps.core-toolbar.title',
+    contentKey: 'onboarding.steps.core-toolbar.content',
+    placement: 'left',
+    mode: 'core',
+    page: 'editor',
+  },
+  {
+    id: 'core-topbar',
     target: '#onboarding-back-to-home',
-    titleKey: 'onboarding.steps.editor-topbar.title',
-    contentKey: 'onboarding.steps.editor-topbar.content',
+    titleKey: 'onboarding.steps.core-topbar.title',
+    contentKey: 'onboarding.steps.core-topbar.content',
     placement: 'bottom',
     mode: 'core',
     page: 'editor',

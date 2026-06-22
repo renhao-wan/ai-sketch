@@ -231,7 +231,11 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       ...DEFAULT_STATE,
       isLoading: false,
     });
-  }, []);
+    // 确保回到编辑首页
+    if (pathname !== '/') {
+      router.push('/');
+    }
+  }, [pathname, router]);
 
   /**
    * 完成引导
