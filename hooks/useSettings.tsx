@@ -6,12 +6,10 @@ export type Theme = 'dark' | 'light' | 'ocean' | 'sakura' | 'emerald' | 'sunset'
 
 export interface Settings {
   theme: Theme;
-  glowEnabled: boolean;
 }
 
 const DEFAULT_SETTINGS: Settings = {
   theme: 'light',
-  glowEnabled: false,
 };
 
 const VALID_THEMES: Theme[] = ['dark', 'light', 'ocean', 'sakura', 'emerald', 'sunset'];
@@ -38,22 +36,20 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'get-all-preferences',
-            keys: ['preference_theme', 'preference_glow_enabled'],
+            keys: ['preference_theme'],
           }),
         });
         const data = await res.json();
 
         const savedTheme = data.preference_theme;
-        const savedGlow = data.preference_glow_enabled;
 
         const theme = (savedTheme && VALID_THEMES.includes(savedTheme as Theme))
           ? savedTheme as Theme
           : DEFAULT_SETTINGS.theme;
-        const glowEnabled = savedGlow === 'true';
 
         setSettings(prev => {
-          if (prev.theme === theme && prev.glowEnabled === glowEnabled) return prev;
-          return { theme, glowEnabled };
+          if (prev.theme === theme) return prev;
+          return { theme };
         });
       } catch {
         // 加载失败使用默认值
@@ -72,13 +68,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
     // 异步保存到数据库
-    const metaKey = key === 'theme' ? 'preference_theme' : 'preference_glow_enabled';
-    const metaValue = String(value);
-    fetch('/api/configs/actions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'set-preference', key: metaKey, value: metaValue }),
-    }).catch(() => { /* 忽略保存失败 */ });
+    if (key === 'theme') {
+      fetch('/api/configs/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'set-preference', key: 'preference_theme', value: String(value) }),
+      }).catch(() => { /* 忽略保存失败 */ });
+    }
   }, []);
 
   const resetPreferences = useCallback(() => {
@@ -89,11 +85,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'set-preference', key: 'preference_theme', value: 'light' }),
-    }).catch(() => {});
-    fetch('/api/configs/actions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'set-preference', key: 'preference_glow_enabled', value: 'false' }),
     }).catch(() => {});
   }, []);
 

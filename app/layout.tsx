@@ -1,7 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ClientProviders from "@/components/layout/ClientProviders";
-import GlowBackground from "@/components/ui/GlowBackground";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
@@ -29,7 +28,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen w-screen overflow-hidden bg-[var(--bg)]`}
       >
         <ClientProviders>
-          <GlowBackground />
           {children}
         </ClientProviders>
       </body>

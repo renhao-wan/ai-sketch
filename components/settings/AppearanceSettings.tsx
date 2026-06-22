@@ -103,36 +103,6 @@ export function AppearanceSettings() {
           ))}
         </div>
       </section>
-
-      {/* 光晕背景效果 */}
-      <section>
-        <h3 className="text-lg font-semibold text-[var(--fg)] mb-1">{t('settings.effects')}</h3>
-        <div className="flex items-center justify-between py-3">
-          <div>
-            <p className="text-sm font-medium text-[var(--fg)]">
-              {t('settings.glowEffect')}
-            </p>
-            <p className="text-xs text-[var(--muted)] mt-0.5">
-              {t('settings.glowEffectDesc')}
-            </p>
-          </div>
-          <button
-            role="switch"
-            aria-checked={settings.glowEnabled}
-            aria-label={t('settings.glowEffect')}
-            onClick={() => updateSetting('glowEnabled', !settings.glowEnabled)}
-            className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-              settings.glowEnabled
-                ? 'bg-[var(--accent-indigo)]'
-                : 'bg-[var(--muted)]/30'
-            }`}
-          >
-            <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-              settings.glowEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'
-            }`} />
-          </button>
-        </div>
-      </section>
     </div>
   );
 }
