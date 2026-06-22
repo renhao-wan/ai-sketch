@@ -43,12 +43,14 @@ function UserContent({ content, highlightQuery, onExpandChange }: { content: str
   const [expanded, setExpanded] = useState(false);
   const isLong = content.length > USER_TEXT_LIMIT;
 
+  // 使用 useEffect 监听 expanded 状态变化，避免在 setState 回调中调用外部函数
+  useEffect(() => {
+    onExpandChange?.(expanded);
+  }, [expanded, onExpandChange]);
+
   const toggle = useCallback(() => {
-    setExpanded(prev => {
-      onExpandChange?.(!prev);
-      return !prev;
-    });
-  }, [onExpandChange]);
+    setExpanded(prev => !prev);
+  }, []);
 
   if (!isLong) {
     return <p className="whitespace-pre-wrap break-words text-white">{highlightText(content, highlightQuery || '')}</p>;
