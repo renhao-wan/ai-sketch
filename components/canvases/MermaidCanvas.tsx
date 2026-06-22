@@ -5,6 +5,7 @@ import { useLocale } from '@/lib/locales';
 import { useZoomControls } from '@/hooks/useZoomControls';
 import { getMermaidThemeVariables, getCurrentTheme } from '@/lib/utils/theme-utils';
 import { svgToPng } from '@/lib/utils/export-diagram';
+import { preprocessMermaidCode } from '@/lib/diagram/mermaid-repair';
 import ZoomToolbar from './ZoomToolbar';
 import type { CanvasExportHandle } from './DiagramCanvas';
 
@@ -101,8 +102,11 @@ export default function MermaidCanvas({ code, isStreaming, exportRef }: MermaidC
       if (!mermaidInstance || !containerRef.current) return;
       if (currentRenderId !== renderIdRef.current) return;
 
+      // 预处理 Mermaid 代码，修复常见的语法问题
+      const processedCode = preprocessMermaidCode(code);
+
       const id = `mermaid-${crypto.randomUUID()}`;
-      const { svg, bindFunctions } = await mermaidInstance.render(id, code);
+      const { svg, bindFunctions } = await mermaidInstance.render(id, processedCode);
 
       if (currentRenderId !== renderIdRef.current) return;
       if (containerRef.current) {
