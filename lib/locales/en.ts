@@ -540,7 +540,6 @@ export const en: TranslationDict = {
   'shortcuts.category.format': 'Format Switching',
   'shortcuts.category.window': 'Window',
   'shortcuts.openSettings': 'Open Settings',
-  'shortcuts.goHome': 'Refresh Page',
   'shortcuts.newConversation': 'New Conversation',
   'shortcuts.openAbout': 'About',
   'shortcuts.openStorage': 'Storage Management',

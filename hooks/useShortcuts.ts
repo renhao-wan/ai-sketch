@@ -7,14 +7,6 @@ import type { Shortcut } from '@/lib/types/shortcuts';
 const DEFAULT_SHORTCUTS: Shortcut[] = [
   // 页面导航
   {
-    id: 'go-home',
-    keys: ['Alt', 'H'],
-    description: '刷新页面',
-    descriptionKey: 'shortcuts.goHome',
-    scope: 'global',
-    actionId: 'goHome',
-  },
-  {
     id: 'new-conversation',
     keys: ['Alt', 'N'],
     description: '新建对话',
@@ -246,7 +238,6 @@ function matchKeys(event: KeyboardEvent, keys: string[]): boolean {
 
 /** 快捷键动作回调类型 */
 interface ShortcutActions {
-  onGoHome?: () => void;
   onNewConversation?: () => void;
   onOpenSettings?: (tab?: string) => void;
   onSwitchFormat?: (format: 'excalidraw' | 'mermaid' | 'drawio') => void;
@@ -256,7 +247,6 @@ interface ShortcutActions {
 /** 动作 ID → 回调映射（构建一次，复用于每次按键） */
 function buildActionMap(actions: ShortcutActions): Record<string, (param?: string) => void> {
   return {
-    goHome: () => actions.onGoHome?.(),
     newConversation: () => actions.onNewConversation?.(),
     openSettings: (param) => actions.onOpenSettings?.(param),
     switchFormat: (param) => actions.onSwitchFormat?.(param as 'excalidraw' | 'mermaid' | 'drawio'),

@@ -68,13 +68,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
     // 异步保存到数据库
-    if (key === 'theme') {
-      fetch('/api/configs/actions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'set-preference', key: 'preference_theme', value: String(value) }),
-      }).catch(() => { /* 忽略保存失败 */ });
-    }
+    fetch('/api/configs/actions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'set-preference', key: 'preference_theme', value: String(value) }),
+    }).catch(() => { /* 忽略保存失败 */ });
   }, []);
 
   const resetPreferences = useCallback(() => {

@@ -538,7 +538,6 @@ export const zh = {
   'shortcuts.category.format': '格式切换',
   'shortcuts.category.window': '窗口控制',
   'shortcuts.openSettings': '打开设置',
-  'shortcuts.goHome': '刷新页面',
   'shortcuts.newConversation': '新建对话',
   'shortcuts.openAbout': '关于应用',
   'shortcuts.openStorage': '存储管理',

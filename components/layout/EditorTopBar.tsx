@@ -18,7 +18,6 @@ import * as api from '@/lib/api/client';
 import type { ConversationTag } from '@/lib/types';
 
 interface EditorTopBarProps {
-  onGoHome: () => void;
   conversationId: string | null;
   onLoadConversation: (id: string) => void;
   onNewConversation: () => void;
@@ -30,7 +29,6 @@ interface EditorTopBarProps {
 }
 
 export default function EditorTopBar({
-  onGoHome,
   conversationId,
   onLoadConversation,
   onNewConversation,
@@ -103,16 +101,13 @@ export default function EditorTopBar({
       {/* 左侧：Logo + 会话级操作 */}
       <div className="flex items-center gap-1 min-w-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         {/* Logo（品牌标识） */}
-        <Tooltip content={t('copilot.backHome')} side="bottom">
-          <button
-            id="onboarding-back-to-home"
-            onClick={onGoHome}
-            className="hover:opacity-80 transition-opacity duration-200 relative"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-indigo)] to-[var(--accent-violet)] rounded-lg blur-md opacity-20" />
-            <div className="relative"><AppIcon size={22} /></div>
-          </button>
-        </Tooltip>
+        <div
+          id="onboarding-back-to-home"
+          className="relative cursor-default"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-indigo)] to-[var(--accent-violet)] rounded-lg blur-md opacity-20" />
+          <div className="relative"><AppIcon size={22} /></div>
+        </div>
 
         {/* 分隔线：品牌标识 vs 功能操作 */}
         <div className="w-px h-5 bg-[var(--border)] mx-1.5" />

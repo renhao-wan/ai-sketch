@@ -213,7 +213,6 @@ function EditorContent() {
 
   // 注册快捷键
   useShortcuts({
-    onGoHome: () => {}, // 已经在首页，无需跳转
     onNewConversation: () => {
       conversation.newConversation();
       setGenerationMode('auto');
@@ -269,7 +268,6 @@ function EditorContent() {
 
         {/* 全局顶栏 */}
         <EditorTopBar
-          onGoHome={() => {}} // 已经在首页，无需跳转
           conversationId={conversation.conversationId}
           onLoadConversation={conversation.loadConversation}
           onNewConversation={conversation.newConversation}
