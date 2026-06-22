@@ -52,9 +52,10 @@ export function useZoomControls(options: UseZoomControlsOptions = {}) {
     }
   }, [minScale, maxScale]);
 
-  // 鼠标拖拽平移
+  // 鼠标拖拽平移（左键直接拖拽）
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button === 1 || (e.button === 0 && e.altKey)) {
+    // 左键点击开始平移
+    if (e.button === 0) {
       setIsPanning(true);
       panStart.current = { x: e.clientX - translate.x, y: e.clientY - translate.y };
     }
