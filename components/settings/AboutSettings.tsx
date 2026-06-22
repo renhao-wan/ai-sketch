@@ -81,7 +81,7 @@ export function AboutSettings() {
   }, [status, info, error, t, showNotification]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* 应用信息 */}
       <section>
         <div className="flex items-center gap-4 mb-6">
@@ -103,118 +103,118 @@ export function AboutSettings() {
         </p>
       </section>
 
-      {/* 引导与帮助 */}
-      <section className="space-y-4">
+      {/* 引导与帮助 & 版本更新 */}
+      <section>
         <h3 className="text-lg font-semibold text-[var(--fg)] mb-4 flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-[var(--accent-indigo)]" />
           {t('onboarding.settings.title')}
         </h3>
 
-        <div className="p-4 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium text-[var(--fg)]">
-                {t('onboarding.settings.restart')}
-              </h4>
-              <p className="text-sm text-[var(--muted)] mt-1">
-                {t('onboarding.settings.restartDesc')}
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                // 设置标记，首页加载完成后启动引导
-                sessionStorage.setItem('onboarding-restart', 'full');
-                router.push('/');
-              }}
-              className="px-4 py-2 text-sm font-medium text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-lg hover:bg-[var(--btn-primary-hover)] transition-colors"
-            >
-              {t('onboarding.settings.restart')}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* 版本更新 */}
-      <section>
-        <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]">
-          <div className="flex items-center gap-3">
-            <ArrowUpCircle size={18} className="text-[var(--accent-indigo)]" />
-            <div>
-              <p className="text-sm font-medium text-[var(--fg)]">{t('about.versionUpdate')}</p>
-              <p className="text-xs text-[var(--muted)]">v{APP_INFO.version}</p>
-            </div>
-          </div>
-
-          {/* 状态对应的操作区 */}
-          <div className="flex items-center gap-2">
-            {/* 已是最新 */}
-            {status === 'not-available' && (
-              <span className="flex items-center gap-1 text-xs text-green-600">
-                <Check size={12} />{t('about.upToDate')}
-              </span>
-            )}
-
-            {/* 有新版本 */}
-            {status === 'available' && (
-              <button
-                onClick={downloadUpdate}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-lg hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200"
-              >
-                <Download size={12} />
-                {t('update.download')} v{info?.version}
-              </button>
-            )}
-
-            {/* 下载中 */}
-            {status === 'downloading' && (
-              <div className="flex items-center gap-2">
-                <div className="w-20 h-1.5 bg-[var(--surface-warm-hover)] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[var(--accent-indigo)] rounded-full transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <span className="text-xs font-mono text-[var(--muted)]">{Math.round(progress)}%</span>
+        <div className="space-y-3">
+          <div className="p-4 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-[var(--fg)] mb-2">
+                  {t('onboarding.settings.restart')}
+                </h4>
+                <p className="text-sm text-[var(--muted)]">
+                  {t('onboarding.settings.restartDesc')}
+                </p>
               </div>
-            )}
-
-            {/* 下载完成 */}
-            {status === 'downloaded' && (
               <button
-                onClick={installUpdate}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 active:scale-[0.98] transition-all duration-200"
+                onClick={() => {
+                  // 设置标记，首页加载完成后启动引导
+                  sessionStorage.setItem('onboarding-restart', 'full');
+                  router.push('/');
+                }}
+                className="px-4 py-2 text-sm font-medium text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-lg hover:bg-[var(--btn-primary-hover)] transition-colors"
               >
-                <Check size={12} />
-                {t('update.install')}
+                {t('onboarding.settings.restart')}
               </button>
-            )}
+            </div>
+          </div>
 
-            {/* 错误 */}
-            {status === 'error' && (
-              <button
-                onClick={handleCheck}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-500 hover:bg-red-500/10 rounded-lg transition-all duration-200"
-              >
-                <RefreshCw size={12} />
-                {t('about.retry')}
-              </button>
-            )}
+          {/* 版本更新 */}
+          <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--surface-warm)] border border-[var(--border)]">
+            <div className="flex items-center gap-3">
+              <ArrowUpCircle size={18} className="text-[var(--accent-indigo)]" />
+              <div>
+                <p className="text-sm font-medium text-[var(--fg)]">{t('about.versionUpdate')}</p>
+                <p className="text-xs text-[var(--muted)]">v{APP_INFO.version}</p>
+              </div>
+            </div>
 
-            {/* 检查更新 */}
-            {(status === 'idle' || status === 'checking' || localChecking) && (
-              mounted && isElectron ? (
+            {/* 状态对应的操作区 */}
+            <div className="flex items-center gap-2">
+              {/* 已是最新 */}
+              {status === 'not-available' && (
+                <span className="flex items-center gap-1 text-xs text-green-600">
+                  <Check size={12} />{t('about.upToDate')}
+                </span>
+              )}
+
+              {/* 有新版本 */}
+              {status === 'available' && (
+                <button
+                  onClick={downloadUpdate}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--btn-primary-text)] bg-[var(--btn-primary)] rounded-lg hover:bg-[var(--btn-primary-hover)] active:scale-[0.98] transition-all duration-200"
+                >
+                  <Download size={12} />
+                  {t('update.download')} v{info?.version}
+                </button>
+              )}
+
+              {/* 下载中 */}
+              {status === 'downloading' && (
+                <div className="flex items-center gap-2">
+                  <div className="w-20 h-1.5 bg-[var(--surface-warm-hover)] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[var(--accent-indigo)] rounded-full transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-mono text-[var(--muted)]">{Math.round(progress)}%</span>
+                </div>
+              )}
+
+              {/* 下载完成 */}
+              {status === 'downloaded' && (
+                <button
+                  onClick={installUpdate}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 active:scale-[0.98] transition-all duration-200"
+                >
+                  <Check size={12} />
+                  {t('update.install')}
+                </button>
+              )}
+
+              {/* 错误 */}
+              {status === 'error' && (
                 <button
                   onClick={handleCheck}
-                  disabled={isChecking}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg transition-all duration-200 disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-500 hover:bg-red-500/10 rounded-lg transition-all duration-200"
                 >
-                  <RefreshCw size={12} className={isChecking ? 'animate-spin' : ''} />
-                  {isChecking ? t('about.checking') : t('about.checkUpdate')}
+                  <RefreshCw size={12} />
+                  {t('about.retry')}
                 </button>
-              ) : (
-                <span className="text-xs text-[var(--muted)]">{t('about.desktopOnly')}</span>
-              )
-            )}
+              )}
+
+              {/* 检查更新 */}
+              {(status === 'idle' || status === 'checking' || localChecking) && (
+                mounted && isElectron ? (
+                  <button
+                    onClick={handleCheck}
+                    disabled={isChecking}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/20 rounded-lg transition-all duration-200 disabled:opacity-50"
+                  >
+                    <RefreshCw size={12} className={isChecking ? 'animate-spin' : ''} />
+                    {isChecking ? t('about.checking') : t('about.checkUpdate')}
+                  </button>
+                ) : (
+                  <span className="text-xs text-[var(--muted)]">{t('about.desktopOnly')}</span>
+                )
+              )}
+            </div>
           </div>
         </div>
       </section>

@@ -69,7 +69,6 @@ export default function SettingsPage() {
 
   // 注册快捷键
   useShortcuts({
-    onGoHome: () => router.push('/'),
     onNewConversation: () => router.push('/'),
     onOpenSettings: (tab) => {
       if (tab) {
