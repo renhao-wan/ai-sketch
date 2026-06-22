@@ -268,7 +268,7 @@ export default function MermaidCanvas({ code, isStreaming, exportRef }: MermaidC
       {/* 图表容器 */}
       <div
         ref={wrapperRef}
-        className="w-full h-full overflow-auto"
+        className="w-full h-full overflow-hidden"
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
