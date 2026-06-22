@@ -7,7 +7,7 @@ import type { DiagramStrategy, ValidationResult } from '@/lib/types/diagram-stra
 import { EXCALIDRAW_SYSTEM_PROMPT, buildExcalidrawUserPrompt } from '@/lib/prompts/excalidraw';
 import { CHART_TYPES } from '@/lib/diagram/constants';
 import { optimizeExcalidrawCode } from '@/lib/diagram/optimize-arrows';
-import { repairJsonClosure, stripCodeFences, extractFirstJsonArray, fixUnquotedKeys, fixTrailingCommas, fixSingleQuotes, removeJsonComments, fixSpecialValues } from '@/lib/diagram/json-repair';
+import { repairJsonClosure, stripCodeFences, extractFirstJsonArray, fixUnquotedKeys, fixTrailingCommas, fixSingleQuotes, removeJsonComments, fixSpecialValues, fixCommaInsteadOfColon } from '@/lib/diagram/json-repair';
 import { createExportBlob, buildImagePrompt } from './helpers';
 
 /** 缓存 excalidraw 模块的 import promise，避免重复加载 */
@@ -43,12 +43,13 @@ class ExcalidrawStrategy implements DiagramStrategy {
     // Step 2: Apply all fixes in sequence
     const applyFixes = (code: string): string => {
       let result = code;
-      result = removeJsonComments(result);  // Remove comments first
-      result = fixSingleQuotes(result);     // Fix single quotes
-      result = fixSpecialValues(result);    // Fix NaN, Infinity, undefined
-      result = fixTrailingCommas(result);   // Fix trailing commas
-      result = fixUnquotedKeys(result);     // Fix unquoted keys
-      result = repairJsonClosure(result);   // Fix unclosed brackets/quotes
+      result = removeJsonComments(result);      // Remove comments first
+      result = fixSingleQuotes(result);         // Fix single quotes
+      result = fixSpecialValues(result);        // Fix NaN, Infinity, undefined
+      result = fixTrailingCommas(result);       // Fix trailing commas
+      result = fixCommaInsteadOfColon(result);  // Fix comma instead of colon
+      result = fixUnquotedKeys(result);         // Fix unquoted keys
+      result = repairJsonClosure(result);       // Fix unclosed brackets/quotes
       return result;
     };
 

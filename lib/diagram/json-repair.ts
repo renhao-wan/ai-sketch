@@ -128,6 +128,33 @@ export function fixUnquotedKeys(json: string): string {
 }
 
 /**
+ * Fix comma used instead of colon for key-value pairs.
+ * Converts patterns like `"id", "login-error"` to `"id": "login-error"`.
+ * This is a common LLM error where comma is used instead of colon.
+ */
+export function fixCommaInsteadOfColon(json: string): string {
+  if (!json || typeof json !== 'string') return json;
+
+  // Pattern: `"key", "value"` should be `"key": "value"`
+  // Also handles: `"key", 123` should be `"key": 123`
+  // And: `"key", true/false/null` should be `"key": true/false/null`
+
+  // This regex matches:
+  // 1. A closing double quote
+  // 2. Optional whitespace
+  // 3. A comma
+  // 4. Optional whitespace
+  // 5. Either a quote (for string value), digit (for number), or true/false/null (for boolean/null)
+  return json.replace(
+    /"(?:[^"\\]|\\.)*"\s*,\s*(?="(?:[^"\\]|\\.)*"|[0-9]|true|false|null)/g,
+    (match) => {
+      // Replace the comma with a colon
+      return match.replace(/,/, ':');
+    }
+  );
+}
+
+/**
  * Fix trailing commas in JSON arrays and objects.
  * Converts `[1, 2, 3,]` to `[1, 2, 3]` and `{"a": 1,}` to `{"a": 1}`.
  */
