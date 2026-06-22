@@ -7,7 +7,7 @@ import type { DiagramStrategy, ValidationResult } from '@/lib/types/diagram-stra
 import { EXCALIDRAW_SYSTEM_PROMPT, buildExcalidrawUserPrompt } from '@/lib/prompts/excalidraw';
 import { CHART_TYPES } from '@/lib/diagram/constants';
 import { optimizeExcalidrawCode } from '@/lib/diagram/optimize-arrows';
-import { repairJsonClosure, stripCodeFences, extractFirstJsonArray } from '@/lib/diagram/json-repair';
+import { repairJsonClosure, stripCodeFences, extractFirstJsonArray, fixUnquotedKeys } from '@/lib/diagram/json-repair';
 import { createExportBlob, buildImagePrompt } from './helpers';
 
 /** 缓存 excalidraw 模块的 import promise，避免重复加载 */
@@ -42,15 +42,24 @@ class ExcalidrawStrategy implements DiagramStrategy {
       JSON.parse(processed);
       return processed;
     } catch {
-      processed = fixUnescapedQuotes(processed);
+      // First repair failed, try fixing unquoted keys
+      processed = fixUnquotedKeys(processed);
       processed = repairJsonClosure(processed);
       try {
         JSON.parse(processed);
+        return processed;
       } catch {
-        // Second repair also failed — return original stripped code
-        return stripCodeFences(rawCode);
+        // Second repair failed, try fixing unescaped quotes
+        processed = fixUnescapedQuotes(processed);
+        processed = repairJsonClosure(processed);
+        try {
+          JSON.parse(processed);
+        } catch {
+          // Third repair also failed — return original stripped code
+          return stripCodeFences(rawCode);
+        }
+        return processed;
       }
-      return processed;
     }
   }
 

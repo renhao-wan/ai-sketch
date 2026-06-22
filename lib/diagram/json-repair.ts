@@ -7,6 +7,7 @@
  * - Closes unbalanced quotes/brackets/braces at the end
  * - Inserts missing '{' for array-of-object cases: ["k":1] -> [{"k":1}]
  * - Trims trailing comma before auto-appended closers
+ * - Fixes unquoted JSON keys (e.g., `y: 450` -> `"y": 450`)
  * - Falls back to jsonrepair (npm) if parsing still fails
  */
 
@@ -40,6 +41,102 @@ export function stripCodeFences(text: string): string {
   s = s.replace(/^```(?:json|javascript|js|mermaid|xml|html|markdown|md)?\s*\n?/i, '');
   s = s.replace(/\n?```\s*$/i, '');
   return s.trim();
+}
+
+/**
+ * Fix unquoted JSON keys.
+ * Converts patterns like `y: 450` or `id: "value"` to `"y": 450` or `"id": "value"`.
+ * Handles keys that are valid JavaScript identifiers (letters, digits, underscores, $).
+ */
+export function fixUnquotedKeys(json: string): string {
+  if (!json || typeof json !== 'string') return json;
+
+  // Pattern: match unquoted keys followed by colon
+  // This regex looks for:
+  // 1. A word boundary or start of object
+  // 2. An unquoted identifier (valid JS identifier)
+  // 3. Followed by optional whitespace and colon
+  // We need to be careful not to match inside strings
+
+  let result = '';
+  let inString = false;
+  let escape = false;
+  let i = 0;
+
+  while (i < json.length) {
+    const ch = json[i];
+
+    // Handle string content
+    if (inString) {
+      result += ch;
+      if (escape) {
+        escape = false;
+      } else if (ch === '\\') {
+        escape = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      i++;
+      continue;
+    }
+
+    // Start of string
+    if (ch === '"') {
+      result += ch;
+      inString = true;
+      i++;
+      continue;
+    }
+
+    // Check for unquoted key pattern
+    // Must be preceded by { or , (after optional whitespace)
+    if (ch === '{' || ch === ',') {
+      result += ch;
+      i++;
+
+      // Skip whitespace after { or ,
+      let ws = '';
+      while (i < json.length && /\s/.test(json[i])) {
+        ws += json[i];
+        i++;
+      }
+
+      // Check if we have an unquoted identifier followed by :
+      if (i < json.length && /[_A-Za-z$]/.test(json[i])) {
+        // Read the potential key
+        let key = '';
+        const keyStart = i;
+        while (i < json.length && /[_A-Za-z0-9$]/.test(json[i])) {
+          key += json[i];
+          i++;
+        }
+
+        // Skip whitespace after potential key
+        let wsAfterKey = '';
+        while (i < json.length && /\s/.test(json[i])) {
+          wsAfterKey += json[i];
+          i++;
+        }
+
+        // Check if followed by colon
+        if (i < json.length && json[i] === ':') {
+          // It's an unquoted key - add quotes
+          result += ws + '"' + key + '"' + wsAfterKey;
+        } else {
+          // Not a key, just an identifier - add as is
+          result += ws + key + wsAfterKey;
+        }
+      } else {
+        result += ws;
+      }
+      continue;
+    }
+
+    result += ch;
+    i++;
+  }
+
+  return result;
 }
 
 function trimTrailingComma(out: string): string {
