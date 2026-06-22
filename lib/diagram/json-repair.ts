@@ -155,6 +155,89 @@ export function fixCommaInsteadOfColon(json: string): string {
 }
 
 /**
+ * Fix colon used instead of comma to separate key-value pairs.
+ * Converts patterns like `"type": "rectangle": "id": "start"` to `"type": "rectangle", "id": "start"`.
+ * This is a common LLM error where colon is used instead of comma between key-value pairs.
+ */
+export function fixColonInsteadOfComma(json: string): string {
+  if (!json || typeof json !== 'string') return json;
+
+  let result = '';
+  let inString = false;
+  let escape = false;
+  let i = 0;
+
+  while (i < json.length) {
+    const ch = json[i];
+
+    // Handle string content
+    if (inString) {
+      result += ch;
+      if (escape) {
+        escape = false;
+      } else if (ch === '\\') {
+        escape = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      i++;
+      continue;
+    }
+
+    // Start of string
+    if (ch === '"') {
+      result += ch;
+      inString = true;
+      i++;
+      continue;
+    }
+
+    // Check for pattern: "value" : "key" :
+    if (ch === ':') {
+      // Look back to see if we just finished a value
+      let j = result.length - 1;
+      while (j >= 0 && /\s/.test(result[j])) j--;
+
+      // Check if the previous token was a closing quote, number, boolean, null, }, or ]
+      const prevChar = j >= 0 ? result[j] : '';
+      const isPrevValue = prevChar === '"' || /[0-9truefalsenull}\\\]]/.test(prevChar);
+
+      // Look ahead to see if the next token is a key (starts with ")
+      let k = i + 1;
+      while (k < json.length && /\s/.test(json[k])) k++;
+      const nextChar = k < json.length ? json[k] : '';
+      const isNextKey = nextChar === '"';
+
+      // If previous was a value and next is a key, this colon should be a comma
+      if (isPrevValue && isNextKey) {
+        // Check if this looks like a key-value separator
+        // by seeing if there's another colon after the next key
+        let tempK = k + 1;
+        // Skip the key string
+        while (tempK < json.length && json[tempK] !== '"') {
+          if (json[tempK] === '\\') tempK++; // Skip escaped chars
+          tempK++;
+        }
+        tempK++; // Skip closing quote
+        while (tempK < json.length && /\s/.test(json[tempK])) tempK++;
+
+        // If there's a colon after the key, then this colon should be a comma
+        if (tempK < json.length && json[tempK] === ':') {
+          result += ',';
+          i++;
+          continue;
+        }
+      }
+    }
+
+    result += ch;
+    i++;
+  }
+
+  return result;
+}
+
+/**
  * Fix trailing commas in JSON arrays and objects.
  * Converts `[1, 2, 3,]` to `[1, 2, 3]` and `{"a": 1,}` to `{"a": 1}`.
  */
