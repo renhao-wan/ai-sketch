@@ -21,6 +21,42 @@ complexity === 'complex'？
     └── 否 → 快速模式
 ```
 
+## 需求提取开关
+
+用户可以在生成模式下拉菜单中控制是否使用需求提取功能：
+
+- **开启（默认）**：使用 LLM 提取的需求描述生成图表
+- **关闭**：仍然进行需求提取（获取 complexity），但使用用户原始输入生成图表
+
+### 开关位置
+
+在输入框底部的生成模式下拉菜单中，有一个「需求提取」选项：
+
+```
+⚡ 快速
+🤖 自动
+🎯 高质量
+─────────
+✨ 需求提取 ON/OFF
+```
+
+### 关闭后的行为
+
+关闭需求提取后：
+1. **第一阶段不变**：仍然调用 LLM 进行需求提取，获取 complexity
+2. **第二阶段改变**：不使用 LLM 提取的 requirement，直接使用用户原始输入
+3. **模式判断不变**：仍然使用 LLM 的 complexity 来判断使用快速还是高质量模式
+
+```
+用户输入
+    ↓
+需求提取 LLM → { requirement, complexity }
+    ↓
+useRequirementExtraction = false？
+    ├── 是 → 使用用户原始输入 + complexity
+    └── 否 → 使用 requirement + complexity
+```
+
 ## 核心组件
 
 ### 1. 需求提取模块
@@ -45,6 +81,18 @@ export async function extractRequirements(
   signal?: AbortSignal,
 ): Promise<ExtractionResult>;
 ```
+
+### 2. 需求提取开关
+
+**文件**：
+- `components/ai/GenerationModeToggle.tsx`：UI 组件
+- `hooks/useGeneration.ts`：状态管理
+- `app/api/generate/route.ts`：后端逻辑
+
+**职责**：
+- 提供 UI 开关，让用户控制是否使用需求提取
+- 将开关状态传递给后端
+- 后端根据开关决定是否使用 LLM 提取的 requirement
 
 ### 2. System Prompt
 
@@ -108,7 +156,7 @@ const EXTRACTION_JSON_SCHEMA = {
     ↓
 API Route（POST /api/generate）
     ↓
-解析请求参数
+解析请求参数（包括 useRequirementExtraction）
     ↓
 加载 LLM 配置
     ↓
@@ -120,6 +168,7 @@ API Route（POST /api/generate）
     - 图片输入 → 跳过
     - 重新生成 → 跳过
     - 编辑模式 → 跳过
+    - 用户关闭需求提取 → 跳过
     - 其他 → 调用需求提取 LLM
     ↓
 需求提取 LLM（带 structured output）
@@ -128,12 +177,16 @@ API Route（POST /api/generate）
     - requirement: 提取后的需求描述
     - complexity: 复杂度评估
     ↓
+判断是否使用需求提取结果：
+    - useRequirementExtraction = true → 使用 requirement
+    - useRequirementExtraction = false → 使用用户原始输入
+    ↓
 模式判断：
     - auto 模式：基于 complexity 判断
     - quality 模式：强制使用高质量
     - fast 模式：强制使用快速
     ↓
-缓存检查（基于 requirement + mode 计算缓存键）
+缓存检查（基于 requirementForLLM + mode 计算缓存键）
     ↓
 缓存命中？
 ├── 是 → 直接返回缓存结果
@@ -171,6 +224,9 @@ catch 块：
 1. **图片输入**：图片有自己的处理管线（vision API 或 OCR）
 2. **重新生成**：使用原有的需求描述
 3. **编辑模式**：使用编辑后的需求描述
+4. **用户关闭需求提取**：用户在 UI 中关闭了需求提取开关
+
+**注意**：即使跳过需求提取，系统仍然会进行复杂度评估（基于用户原始输入的长度），用于自动模式的模式判断。
 
 ## 缓存策略
 
@@ -238,6 +294,16 @@ lib/llm/
     ├── anthropic.ts          # Anthropic provider（不支持 structured output）
     └── ollama.ts             # Ollama provider（继承 OpenAI）
 
+components/ai/
+├── GenerationModeToggle.tsx  # 生成模式切换组件（包含需求提取开关）
+├── ChatInput.tsx             # 输入框组件
+└── AICopilotPanel.tsx        # AI 面板组件
+
+hooks/
+└── useGeneration.ts          # 生成逻辑 hook（管理需求提取开关状态）
+
+app/page.tsx                  # 主页面（管理需求提取开关状态）
+
 app/api/generate/
 └── route.ts                  # API 路由（协调整个流程）
 ```
@@ -277,6 +343,25 @@ app/api/generate/
 ```
 
 **模式判断**：complex → 高质量模式
+
+### 需求提取开关示例
+
+**场景**：用户想要保留原始输入的完整性，不使用 LLM 提取的需求
+
+**输入**：
+```
+画一个用户登录流程图，包含：输入用户名密码、验证、成功跳转首页、失败显示错误
+```
+
+**开启需求提取**（默认）：
+- LLM 提取的需求：`创建用户登录流程图，包含以下步骤...`
+- 使用 LLM 提取的需求生成图表
+
+**关闭需求提取**：
+- LLM 仍然返回 `{ requirement: "...", complexity: "simple" }`
+- 但不使用 LLM 提取的 requirement
+- 直接使用用户原始输入：`画一个用户登录流程图，包含：输入用户名密码、验证、成功跳转首页、失败显示错误`
+- complexity 仍然用于模式判断（simple → 快速模式）
 
 ---
 
