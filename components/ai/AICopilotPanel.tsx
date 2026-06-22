@@ -33,6 +33,9 @@ interface AICopilotPanelProps {
   /** 上下文开关 */
   contextEnabled?: boolean;
   onContextEnabledChange?: (enabled: boolean) => void;
+  /** 需求提取开关 */
+  useRequirementExtraction?: boolean;
+  onRequirementExtractionChange?: (enabled: boolean) => void;
   /** 编辑消息 */
   onEditMessage?: (messageId: string, newContent: string) => void;
 }
@@ -58,6 +61,8 @@ export default function AICopilotPanel({
   onGenerationModeChange,
   contextEnabled = true,
   onContextEnabledChange,
+  useRequirementExtraction = true,
+  onRequirementExtractionChange,
   onEditMessage,
 }: AICopilotPanelProps) {
   const isCollapsed = collapsedProp ?? false;
@@ -112,6 +117,8 @@ export default function AICopilotPanel({
         onGenerationModeChange={onGenerationModeChange}
         contextEnabled={contextEnabled}
         onContextEnabledChange={onContextEnabledChange}
+        useRequirementExtraction={useRequirementExtraction}
+        onRequirementExtractionChange={onRequirementExtractionChange}
       />
     </div>
   );

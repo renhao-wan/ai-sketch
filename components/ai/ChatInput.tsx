@@ -40,6 +40,9 @@ interface ChatInputProps {
   /** 上下文开关 */
   contextEnabled?: boolean;
   onContextEnabledChange?: (enabled: boolean) => void;
+  /** 需求提取开关 */
+  useRequirementExtraction?: boolean;
+  onRequirementExtractionChange?: (enabled: boolean) => void;
 }
 
 export default function ChatInput({
@@ -56,6 +59,8 @@ export default function ChatInput({
   onGenerationModeChange,
   contextEnabled = true,
   onContextEnabledChange,
+  useRequirementExtraction = true,
+  onRequirementExtractionChange,
 }: ChatInputProps) {
   const { t } = useLocale();
   const [prompt, setPrompt] = useState(currentInput || '');
@@ -253,6 +258,8 @@ export default function ChatInput({
         <GenerationModeToggle
           value={generationMode}
           onChange={(m) => onGenerationModeChange?.(m)}
+          useRequirementExtraction={useRequirementExtraction}
+          onToggleRequirementExtraction={(enabled) => onRequirementExtractionChange?.(enabled)}
           disabled={isGenerating}
         />
         </div>

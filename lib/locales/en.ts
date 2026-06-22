@@ -621,6 +621,7 @@ export const en: TranslationDict = {
   'generation.mode.fastDesc': 'Single-step generation, fast',
   'generation.mode.autoDesc': 'Auto-select based on complexity',
   'generation.mode.qualityDesc': 'Multi-pass + self-check, highest quality',
+  'generation.requirementExtraction': 'Requirement Extraction',
 
   // Onboarding
   'onboarding.welcome.title': 'Welcome to AI Sketch!',

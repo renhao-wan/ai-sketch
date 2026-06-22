@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Zap, Bot, Target } from 'lucide-react';
+import { Zap, Bot, Target, Sparkles } from 'lucide-react';
 import Tooltip from '@/components/ui/Tooltip';
 import { useLocale } from '@/lib/locales';
 import type { GenerationMode } from '@/lib/generation/types';
@@ -9,6 +9,8 @@ import type { GenerationMode } from '@/lib/generation/types';
 interface GenerationModeToggleProps {
   value: GenerationMode;
   onChange: (mode: GenerationMode) => void;
+  useRequirementExtraction: boolean;
+  onToggleRequirementExtraction: (enabled: boolean) => void;
   disabled?: boolean;
 }
 
@@ -18,7 +20,13 @@ const modes: { value: GenerationMode; icon: typeof Zap; labelKey: string; descKe
   { value: 'quality', icon: Target, labelKey: 'generation.mode.quality', descKey: 'generation.mode.qualityDesc' },
 ];
 
-export default function GenerationModeToggle({ value, onChange, disabled }: GenerationModeToggleProps) {
+export default function GenerationModeToggle({
+  value,
+  onChange,
+  useRequirementExtraction,
+  onToggleRequirementExtraction,
+  disabled,
+}: GenerationModeToggleProps) {
   const { t } = useLocale();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -49,7 +57,8 @@ export default function GenerationModeToggle({ value, onChange, disabled }: Gene
       </Tooltip>
 
       {open && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 py-1 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] shadow-lg z-50 min-w-[120px]">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 py-1 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] shadow-lg z-50 min-w-[160px]">
+          {/* 生成模式选项 */}
           {modes.map(({ value: mode, icon: Icon, labelKey }) => (
             <button
               key={mode}
@@ -65,6 +74,26 @@ export default function GenerationModeToggle({ value, onChange, disabled }: Gene
               <span>{t(labelKey as Parameters<typeof t>[0])}</span>
             </button>
           ))}
+
+          {/* 分隔线 */}
+          <div className="mx-3 my-1 border-t border-[var(--border)]" />
+
+          {/* 需求提取开关 */}
+          <button
+            type="button"
+            onClick={() => onToggleRequirementExtraction(!useRequirementExtraction)}
+            className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors ${
+              useRequirementExtraction
+                ? 'text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5'
+                : 'text-[var(--fg-secondary)] hover:bg-[var(--surface-warm-hover)]'
+            }`}
+          >
+            <Sparkles size={13} />
+            <span>{t('generation.requirementExtraction')}</span>
+            <span className="ml-auto text-[10px] opacity-60">
+              {useRequirementExtraction ? 'ON' : 'OFF'}
+            </span>
+          </button>
         </div>
       )}
     </div>

@@ -84,6 +84,7 @@ function EditorContent() {
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
   const [generationMode, setGenerationMode] = useState<GenerationMode>('auto');
   const [contextEnabled, setContextEnabled] = useState(true);
+  const [useRequirementExtraction, setUseRequirementExtraction] = useState(true);
   const [dynamicTabs, setDynamicTabs] = useState<DynamicTab[]>([]);
   const [availableActions, setAvailableActions] = useState<ActionInfo[]>([]);
 
@@ -182,6 +183,7 @@ function EditorContent() {
     onChartTypeUpdate: setCurrentChartType,
     generationMode,
     contextEnabled,
+    useRequirementExtraction,
   });
 
   // 动态 Tab 管理
@@ -325,6 +327,8 @@ function EditorContent() {
             onGenerationModeChange={setGenerationMode}
             contextEnabled={contextEnabled}
             onContextEnabledChange={setContextEnabled}
+            useRequirementExtraction={useRequirementExtraction}
+            onRequirementExtractionChange={setUseRequirementExtraction}
             onEditMessage={(id, content) => generation.editAndResend(id, content, conversation.messages, currentChartType)}
           />
           </div>

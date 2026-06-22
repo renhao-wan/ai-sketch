@@ -26,6 +26,8 @@ interface UseGenerationOptions {
   generationMode?: 'fast' | 'auto' | 'quality';
   /** 是否启用上下文（默认 true） */
   contextEnabled?: boolean;
+  /** 是否使用需求提取（默认 true） */
+  useRequirementExtraction?: boolean;
 }
 
 /**
@@ -184,6 +186,7 @@ export function useGeneration(options: UseGenerationOptions) {
           editMode,
           mode: opts.generationMode || 'auto',
           skipContext: opts.contextEnabled === false,
+          useRequirementExtraction: opts.useRequirementExtraction ?? true,
         }),
         signal: controller.signal,
       });

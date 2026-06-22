@@ -619,6 +619,7 @@ export const zh = {
   'generation.mode.fastDesc': '单步生成，速度快',
   'generation.mode.autoDesc': '根据复杂度自动选择',
   'generation.mode.qualityDesc': '多轮生成 + 自检，质量最高',
+  'generation.requirementExtraction': '需求提取',
 
   // 新手引导
   'onboarding.welcome.title': '欢迎使用 AI Sketch！',

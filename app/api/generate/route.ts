@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     perfMark('Total');
 
     perfMark('Parse Request');
-    const { configId, config: configBody, userInput, chartType, format, conversationId, sourceType: frontendSourceType, regenerate: regen, editMode: edit, mode: requestMode, skipContext } = await request.json() as {
+    const { configId, config: configBody, userInput, chartType, format, conversationId, sourceType: frontendSourceType, regenerate: regen, editMode: edit, mode: requestMode, skipContext, useRequirementExtraction: useExtraction } = await request.json() as {
       configId?: string;
       config?: LLMConfig;
       userInput: string | { text?: string; image?: ImageData; images?: ImageData[] };
@@ -71,11 +71,13 @@ export async function POST(request: Request) {
       editMode?: boolean;
       mode?: GenerationMode;
       skipContext?: boolean;
+      useRequirementExtraction?: boolean;
     };
     const generationMode: GenerationMode = requestMode || 'auto';
     regenerate = regen ?? false;
     editMode = edit ?? false;
     activeConversationId = conversationId || null;
+    const useRequirementExtraction = useExtraction ?? true; // 默认开启需求提取
     perfEnd('Parse Request');
 
     let config: LLMConfig | undefined;
@@ -230,11 +232,11 @@ export async function POST(request: Request) {
     let requirementForLLM: string;
     let extractionResult: ExtractionResult | null = null;
 
-    // 跳过需求提取的情况：图片输入、重新生成、编辑模式
-    const skipExtraction = processedImages || imageDescription || regenerate || editMode;
+    // 跳过需求提取的情况：图片输入、重新生成、编辑模式、用户关闭需求提取
+    const skipExtraction = processedImages || imageDescription || regenerate || editMode || !useRequirementExtraction;
 
     if (skipExtraction) {
-      // 图片输入、重新生成、编辑模式，跳过需求提取
+      // 图片输入、重新生成、编辑模式、用户关闭需求提取，跳过需求提取
       requirementForLLM = imageDescription
         ? `[图片内容]\n${imageDescription}\n\n${userContent}`
         : userContent;
