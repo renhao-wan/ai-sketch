@@ -658,6 +658,8 @@ export const en: TranslationDict = {
   'onboarding.steps.tag-btn.content': 'Add tags to current session for categorization.',
   'onboarding.steps.config-btn.title': 'Config Switch',
   'onboarding.steps.config-btn.content': 'Quickly switch LLM configurations.',
+  'onboarding.steps.settings-btn.title': 'Settings',
+  'onboarding.steps.settings-btn.content': 'Click to enter settings page to configure LLM, appearance, shortcuts, etc.',
   'onboarding.steps.editor-back.title': 'Logo',
   'onboarding.steps.editor-back.content': 'AI Sketch brand identifier.',
   'onboarding.steps.editor-topbar.title': 'Top Bar',

@@ -656,6 +656,8 @@ export const zh = {
   'onboarding.steps.tag-btn.content': '为当前会话添加标签，方便分类管理。',
   'onboarding.steps.config-btn.title': '配置切换',
   'onboarding.steps.config-btn.content': '快速切换 LLM 配置。',
+  'onboarding.steps.settings-btn.title': '设置',
+  'onboarding.steps.settings-btn.content': '点击进入设置页面，配置 LLM、外观、快捷键等。',
   'onboarding.steps.editor-back.title': 'Logo',
   'onboarding.steps.editor-back.content': 'AI Sketch 的品牌标识。',
   'onboarding.steps.editor-topbar.title': '顶部栏',

@@ -203,6 +203,16 @@ export const FULL_STEPS: OnboardingStep[] = [
     group: 'top-bar',
     page: 'editor',
   },
+  {
+    id: 'full-settings-btn',
+    target: '#onboarding-settings-btn',
+    titleKey: 'onboarding.steps.settings-btn.title',
+    contentKey: 'onboarding.steps.settings-btn.content',
+    placement: 'bottom',
+    mode: 'full',
+    group: 'top-bar',
+    page: 'editor',
+  },
 
   // ==================== 设置页组 ====================
   {

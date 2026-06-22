@@ -221,6 +221,7 @@ export default function EditorTopBar({
         {/* 设置按钮 */}
         <Tooltip content={t('home.settings')} side="bottom">
           <button
+            id="onboarding-settings-btn"
             onClick={onOpenSettings}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] transition-colors duration-150"
           >
