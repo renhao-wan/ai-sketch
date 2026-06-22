@@ -17,11 +17,17 @@
 export function escapeMermaidNodeLabel(str: string): string {
   if (!str || typeof str !== 'string') return str;
 
-  // 转义特殊字符（但不包括 |，因为节点标签中的 | 需要特殊处理）
+  // 先检查是否已经转义过，避免重复转义
+  if (str.includes('&lt;') || str.includes('&gt;') || str.includes('&amp;') || str.includes('&quot;')) {
+    return str;
+  }
+
+  // 转义顺序很重要：先转义 &，再转义其他
+  // 这样 &lt; 不会被重复转义为 &amp;lt;
   return str
+    .replace(/&/g, '&amp;')  // & -> &amp; (必须最先)
     .replace(/</g, '&lt;')   // < -> &lt;
     .replace(/>/g, '&gt;')   // > -> &gt;
-    .replace(/&/g, '&amp;')  // & -> &amp; (需要在其他转义之后)
     .replace(/"/g, '&quot;'); // " -> &quot;
 }
 
