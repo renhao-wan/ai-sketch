@@ -140,6 +140,14 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     scope: 'global',
     actionId: 'openVersionHistory',
   },
+  {
+    id: 'toggle-panel',
+    keys: ['Alt', 'E'],
+    description: '收起/展开侧边栏',
+    descriptionKey: 'shortcuts.togglePanel',
+    scope: 'editor',
+    actionId: 'togglePanel',
+  },
   // 编辑操作（浏览器原生处理，仅用于展示）
   {
     id: 'send-message',
@@ -242,6 +250,7 @@ interface ShortcutActions {
   onOpenSettings?: (tab?: string) => void;
   onSwitchFormat?: (format: 'excalidraw' | 'mermaid' | 'drawio') => void;
   onOpenVersionHistory?: () => void;
+  onTogglePanel?: () => void;
 }
 
 /** 动作 ID → 回调映射（构建一次，复用于每次按键） */
@@ -251,6 +260,7 @@ function buildActionMap(actions: ShortcutActions): Record<string, (param?: strin
     openSettings: (param) => actions.onOpenSettings?.(param),
     switchFormat: (param) => actions.onSwitchFormat?.(param as 'excalidraw' | 'mermaid' | 'drawio'),
     openVersionHistory: () => actions.onOpenVersionHistory?.(),
+    togglePanel: () => actions.onTogglePanel?.(),
   };
 }
 

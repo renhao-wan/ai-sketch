@@ -16,7 +16,7 @@ const SHORTCUT_CATEGORIES: { id: string; labelKey: TranslationKey; icon: typeof 
     id: 'navigation',
     labelKey: 'shortcuts.category.navigation',
     icon: Navigation,
-    shortcutIds: ['new-conversation', 'open-history'],
+    shortcutIds: ['new-conversation', 'open-history', 'toggle-panel'],
   },
   {
     id: 'settings',

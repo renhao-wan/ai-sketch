@@ -105,6 +105,27 @@ function EditorContent() {
     setPanelWidth(Math.min(Math.max(w, minWidth), 600));
   }, [isElectron]);
 
+  /** 分割线区域的拖拽拉伸 */
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startWidth = panelWidth;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const delta = e.clientX - startX;
+      handlePanelWidthChange(startWidth + delta);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [panelWidth, handlePanelWidthChange]);
+
   // 会话管理 Hook
   const conversation = useConversation({
     onFormatChange: (f) => setFormat(f),
@@ -220,6 +241,7 @@ function EditorContent() {
     onOpenSettings: (tab) => router.push(tab ? `/settings?tab=${tab}` : '/settings'),
     onSwitchFormat: (f) => { setFormat(f); dispatchGenResult({ type: 'CLEAR' }); },
     onOpenVersionHistory: toggleVersionDrawer,
+    onTogglePanel: () => setIsPanelCollapsed(prev => !prev),
   });
 
   const handleShowDiagram = useCallback((content: string) => {
@@ -298,7 +320,6 @@ function EditorContent() {
             apiError={generation.apiError}
             onClearError={() => generation.setApiError(null)}
             panelWidth={panelWidth}
-            onPanelWidthChange={handlePanelWidthChange}
             collapsed={isPanelCollapsed}
             generationMode={generationMode}
             onGenerationModeChange={setGenerationMode}
@@ -308,17 +329,27 @@ function EditorContent() {
           />
           </div>
 
-          {/* 分割线折叠按钮 */}
-          <div className="relative flex-shrink-0 w-3 flex items-center justify-center group cursor-pointer" onClick={() => setIsPanelCollapsed(prev => !prev)}>
+          {/* 分割线 + 拉伸/折叠 */}
+          <div className="relative flex-shrink-0 w-3 flex items-center justify-center group">
+            {/* 视觉分割线 */}
             <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-[var(--border)]" />
-            <Tooltip key={String(isPanelCollapsed)} content={isPanelCollapsed ? '展开' : '收起'} side={isPanelCollapsed ? 'right' : 'bottom'}>
-              <div className="relative z-30 w-5 h-10 flex items-center justify-center rounded-md bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface-warm-hover)] opacity-0 group-hover:opacity-100 transition-all duration-200">
+            {/* 拉伸手柄：只做拖拽缩放 */}
+            <div
+              onMouseDown={handleResizeStart}
+              className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-2 cursor-col-resize z-10"
+            />
+            {/* 折叠/展开按钮：只做折叠 */}
+            <Tooltip key={String(isPanelCollapsed)} content={isPanelCollapsed ? '展开 (Alt+E)' : '收起 (Alt+E)'} side={isPanelCollapsed ? 'right' : 'bottom'}>
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsPanelCollapsed(prev => !prev); }}
+                className="relative z-30 w-5 h-10 flex items-center justify-center rounded-md bg-[var(--surface-warm)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--accent-indigo)] hover:border-[var(--accent-indigo)]/30 hover:bg-[var(--accent-indigo)]/5 shadow-sm opacity-60 hover:opacity-100 transition-all duration-200"
+              >
                 {isPanelCollapsed ? (
                   <ChevronRight size={12} />
                 ) : (
                   <ChevronLeft size={12} />
                 )}
-              </div>
+              </button>
             </Tooltip>
           </div>
 

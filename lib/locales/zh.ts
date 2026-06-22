@@ -549,6 +549,7 @@ export const zh = {
   'shortcuts.openAppearance': '外观设置',
   'shortcuts.openHistory': '历史记录',
   'shortcuts.openVersionHistory': '版本历史',
+  'shortcuts.togglePanel': '收起/展开侧边栏',
   'shortcuts.openAIActions': 'AI 操作设置',
   'shortcuts.sendMessage': '发送消息',
   'shortcuts.newline': '换行',

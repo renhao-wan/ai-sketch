@@ -1,6 +1,5 @@
 'use client';
 
-import { useCallback, type MouseEvent } from 'react';
 import { X } from 'lucide-react';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
@@ -24,7 +23,6 @@ interface AICopilotPanelProps {
   apiError: string | null;
   onClearError: () => void;
   panelWidth?: number;
-  onPanelWidthChange?: (width: number) => void;
   /** 从外部控制面板折叠状态 */
   collapsed?: boolean;
   /** @deprecated 折叠状态已由父组件通过 collapsed prop 控制 */
@@ -55,7 +53,6 @@ export default function AICopilotPanel({
   apiError,
   onClearError,
   panelWidth = 360,
-  onPanelWidthChange,
   collapsed: collapsedProp,
   generationMode = 'auto',
   onGenerationModeChange,
@@ -64,26 +61,6 @@ export default function AICopilotPanel({
   onEditMessage,
 }: AICopilotPanelProps) {
   const isCollapsed = collapsedProp ?? false;
-
-  const handleResizeStart = useCallback((e: MouseEvent) => {
-    if (!onPanelWidthChange) return;
-    e.preventDefault();
-    const startX = e.clientX;
-    const startWidth = panelWidth;
-
-    const onMouseMove = (e: globalThis.MouseEvent) => {
-      const delta = e.clientX - startX;
-      onPanelWidthChange(startWidth + delta);
-    };
-
-    const onMouseUp = () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-    };
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  }, [panelWidth, onPanelWidthChange]);
 
   if (isCollapsed) {
     return (
@@ -95,13 +72,6 @@ export default function AICopilotPanel({
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-[var(--bg-glass)] backdrop-blur-2xl relative z-10" style={{ width: panelWidth, minWidth: panelWidth }}>
-      {/* Resize Handle */}
-      {onPanelWidthChange && (
-        <div
-          onMouseDown={handleResizeStart}
-          className="absolute top-0 right-0 w-2 h-full cursor-col-resize z-20"
-        />
-      )}
 
       {/* Error Banner */}
       {apiError && (
