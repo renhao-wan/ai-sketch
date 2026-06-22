@@ -55,6 +55,130 @@ loadConvertFn().catch(() => { /* 预加载失败，组件内会重试 */ });
 const VALID = new Set(['rectangle','ellipse','diamond','text','arrow','line','freedraw','image','frame','webembed','magicframe']);
 const ARROW_TYPES = new Set(['arrow', 'line']);
 
+// ─── 元素预处理和验证 ───
+
+/**
+ * 验证并修复线性元素（arrow、line）的 points 数组
+ * Excalidraw 要求线性元素的 points 至少有 2 个点，且不能是空数组
+ */
+function normalizeLinearElement(el: Record<string, unknown>): Record<string, unknown> | null {
+  const type = el.type as string;
+  if (!ARROW_TYPES.has(type)) return el;
+
+  const points = el.points as Array<[number, number]> | undefined;
+
+  // 如果没有 points 或 points 为空，创建默认的两点
+  if (!points || !Array.isArray(points) || points.length < 2) {
+    const x = (el.x as number) || 0;
+    const y = (el.y as number) || 0;
+    const width = (el.width as number) || 100;
+    const height = (el.height as number) || 0;
+
+    return {
+      ...el,
+      points: [[0, 0], [width, height || 1]],
+      width: width,
+      height: height || 1,
+    };
+  }
+
+  // 确保 points 中的每个点都是有效的 [number, number] 元组
+  const validPoints: Array<[number, number]> = points.map(p => {
+    if (!Array.isArray(p) || p.length < 2) return [0, 0] as [number, number];
+    return [
+      typeof p[0] === 'number' && isFinite(p[0]) ? p[0] : 0,
+      typeof p[1] === 'number' && isFinite(p[1]) ? p[1] : 0,
+    ];
+  });
+
+  // 确保至少有 2 个不同的点
+  if (validPoints.length < 2) {
+    validPoints.push([100, 0]);
+  }
+
+  // 计算正确的 width 和 height
+  const xs = validPoints.map(p => p[0]);
+  const ys = validPoints.map(p => p[1]);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const width = Math.max(maxX - minX, 1);
+  const height = Math.max(maxY - minY, 1);
+
+  return {
+    ...el,
+    points: validPoints,
+    width,
+    height,
+  };
+}
+
+/**
+ * 验证并修复元素的绑定关系
+ * 如果绑定的元素不存在，移除绑定
+ */
+function validateBindings(el: Record<string, unknown>, validIds: Set<string>): Record<string, unknown> {
+  const type = el.type as string;
+  if (!ARROW_TYPES.has(type)) return el;
+
+  const result = { ...el };
+
+  // 验证 start binding
+  const start = el.start as Record<string, unknown> | undefined;
+  if (start?.id && !validIds.has(start.id as string)) {
+    // 绑定的元素不存在，移除绑定
+    const { id, ...rest } = start;
+    result.start = rest;
+  }
+
+  // 验证 end binding
+  const end = el.end as Record<string, unknown> | undefined;
+  if (end?.id && !validIds.has(end.id as string)) {
+    // 绑定的元素不存在，移除绑定
+    const { id, ...rest } = end;
+    result.end = rest;
+  }
+
+  return result;
+}
+
+/**
+ * 预处理元素数组，增加健壮性
+ * 1. 验证并修复线性元素的 points
+ * 2. 验证并修复绑定关系
+ * 3. 过滤掉完全无效的元素
+ */
+function preprocessElements(elements: ExcalidrawElement[]): ExcalidrawElement[] {
+  // 第一遍：收集所有有效的元素 ID
+  const validIds = new Set<string>();
+  for (const el of elements) {
+    if (el.type && VALID.has(el.type)) {
+      const id = (el as Record<string, unknown>).id as string;
+      if (id) validIds.add(id);
+    }
+  }
+
+  // 第二遍：预处理每个元素
+  const processed: ExcalidrawElement[] = [];
+  for (const el of elements) {
+    if (!el.type || !VALID.has(el.type)) continue;
+
+    let processedEl = el as Record<string, unknown>;
+
+    // 1. 验证并修复线性元素
+    processedEl = normalizeLinearElement(processedEl);
+    if (!processedEl) continue;
+
+    // 2. 验证并修复绑定关系
+    processedEl = validateBindings(processedEl, validIds);
+
+    processed.push(processedEl as ExcalidrawElement);
+  }
+
+  return processed;
+}
+
 // ─── Arrow position computation ───
 
 function getEdgeCenter(el: Record<string, unknown>, edge: string): { x: number; y: number } {
@@ -225,16 +349,16 @@ export default function ExcalidrawCanvas({ elements, isStreaming, exportRef }: P
       return;
     }
 
-    const valid = (elements as ExcalidrawElement[])
-      .filter(e => e.type && VALID.has(e.type));
-    if (!valid.length) return;
+    // 预处理元素：验证并修复线性元素和绑定关系
+    const preprocessed = preprocessElements(elements);
+    if (!preprocessed.length) return;
 
     let converted: ExcalidrawSceneElement[];
     try {
-      converted = convertFn(valid, { regenerateIds: true });
+      converted = convertFn(preprocessed, { regenerateIds: true });
     } catch {
       converted = [];
-      for (const el of valid) {
+      for (const el of preprocessed) {
         try { converted.push(...convertFn([el], { regenerateIds: true })); }
         catch (e) {
           // 收集失败的元素
