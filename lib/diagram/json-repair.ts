@@ -131,41 +131,23 @@ export function fixUnquotedKeys(json: string): string {
  * Fix comma used instead of colon for key-value pairs.
  * Converts patterns like `"id", "login-error"` to `"id": "login-error"`.
  * This is a common LLM error where comma is used instead of colon.
+ *
+ * Logic: Track whether we're expecting a key or a value.
+ * - After `{` or `,`: expect a key (or closing brace)
+ * - After `:`: expect a value
+ * - After a value: expect `,` or `}` or `]`
+ * If we see `,` when expecting a colon, replace it with `:`.
  */
 export function fixCommaInsteadOfColon(json: string): string {
-  if (!json || typeof json !== 'string') return json;
-
-  // Pattern: `"key", "value"` should be `"key": "value"`
-  // Also handles: `"key", 123` should be `"key": 123`
-  // And: `"key", true/false/null` should be `"key": true/false/null`
-
-  // This regex matches:
-  // 1. A closing double quote
-  // 2. Optional whitespace
-  // 3. A comma
-  // 4. Optional whitespace
-  // 5. Either a quote (for string value), digit (for number), or true/false/null (for boolean/null)
-  return json.replace(
-    /"(?:[^"\\]|\\.)*"\s*,\s*(?="(?:[^"\\]|\\.)*"|[0-9]|true|false|null)/g,
-    (match) => {
-      // Replace the comma with a colon
-      return match.replace(/,/, ':');
-    }
-  );
-}
-
-/**
- * Fix colon used instead of comma to separate key-value pairs.
- * Converts patterns like `"type": "rectangle": "id": "start"` to `"type": "rectangle", "id": "start"`.
- * This is a common LLM error where colon is used instead of comma between key-value pairs.
- */
-export function fixColonInsteadOfComma(json: string): string {
   if (!json || typeof json !== 'string') return json;
 
   let result = '';
   let inString = false;
   let escape = false;
   let i = 0;
+
+  // State tracking
+  let expect: 'key' | 'colon' | 'value' | 'comma-or-end' = 'key';
 
   while (i < json.length) {
     const ch = json[i];
@@ -179,6 +161,11 @@ export function fixColonInsteadOfComma(json: string): string {
         escape = true;
       } else if (ch === '"') {
         inString = false;
+        if (expect === 'key') {
+          expect = 'colon';
+        } else if (expect === 'value') {
+          expect = 'comma-or-end';
+        }
       }
       i++;
       continue;
@@ -192,44 +179,218 @@ export function fixColonInsteadOfComma(json: string): string {
       continue;
     }
 
-    // Check for pattern: "value" : "key" :
-    if (ch === ':') {
-      // Look back to see if we just finished a value
-      let j = result.length - 1;
-      while (j >= 0 && /\s/.test(result[j])) j--;
-
-      // Check if the previous token was a closing quote, number, boolean, null, }, or ]
-      const prevChar = j >= 0 ? result[j] : '';
-      const isPrevValue = prevChar === '"' || /[0-9truefalsenull}\\\]]/.test(prevChar);
-
-      // Look ahead to see if the next token is a key (starts with ")
-      let k = i + 1;
-      while (k < json.length && /\s/.test(json[k])) k++;
-      const nextChar = k < json.length ? json[k] : '';
-      const isNextKey = nextChar === '"';
-
-      // If previous was a value and next is a key, this colon should be a comma
-      if (isPrevValue && isNextKey) {
-        // Check if this looks like a key-value separator
-        // by seeing if there's another colon after the next key
-        let tempK = k + 1;
-        // Skip the key string
-        while (tempK < json.length && json[tempK] !== '"') {
-          if (json[tempK] === '\\') tempK++; // Skip escaped chars
-          tempK++;
-        }
-        tempK++; // Skip closing quote
-        while (tempK < json.length && /\s/.test(json[tempK])) tempK++;
-
-        // If there's a colon after the key, then this colon should be a comma
-        if (tempK < json.length && json[tempK] === ':') {
-          result += ',';
-          i++;
-          continue;
-        }
-      }
+    // Skip whitespace
+    if (/\s/.test(ch)) {
+      result += ch;
+      i++;
+      continue;
     }
 
+    // Handle structural characters
+    if (ch === '{' || ch === '[') {
+      result += ch;
+      expect = 'key';
+      i++;
+      continue;
+    }
+
+    if (ch === '}' || ch === ']') {
+      result += ch;
+      expect = 'comma-or-end';
+      i++;
+      continue;
+    }
+
+    if (ch === ',') {
+      if (expect === 'colon') {
+        // We expected a colon but got a comma
+        // Check if next token looks like a value
+        let k = i + 1;
+        while (k < json.length && /\s/.test(json[k])) k++;
+        if (k < json.length && (json[k] === '"' || /[0-9\-]/.test(json[k]) || json[k] === 't' || json[k] === 'f' || json[k] === 'n')) {
+          result += ':';
+          expect = 'value';
+        } else {
+          result += ch;
+          expect = 'key';
+        }
+      } else {
+        result += ch;
+        expect = 'key';
+      }
+      i++;
+      continue;
+    }
+
+    if (ch === ':') {
+      result += ch;
+      expect = 'value';
+      i++;
+      continue;
+    }
+
+    // Handle numbers, booleans, null
+    if (/[0-9\-]/.test(ch) || ch === 't' || ch === 'f' || ch === 'n') {
+      let token = '';
+      while (i < json.length && /[0-9a-zA-Z.\-+]/.test(json[i])) {
+        token += json[i];
+        i++;
+      }
+
+      if (expect === 'key') {
+        result += '"' + token + '"';
+        expect = 'colon';
+      } else {
+        result += token;
+        expect = 'comma-or-end';
+      }
+      continue;
+    }
+
+    // Default: just append
+    result += ch;
+    i++;
+  }
+
+  return result;
+}
+
+/**
+ * Fix colon used instead of comma to separate key-value pairs.
+ * Converts patterns like `"type": "rectangle": "id": "start"` to `"type": "rectangle", "id": "start"`.
+ * This is a common LLM error where colon is used instead of comma between key-value pairs.
+ *
+ * Logic: Track whether we're expecting a key or a value.
+ * - After `{` or `,`: expect a key (or closing brace)
+ * - After `:`: expect a value
+ * - After a value: expect `,` or `}` or `]`
+ * If we see `:` when expecting a comma, replace it with `,`.
+ */
+export function fixColonInsteadOfComma(json: string): string {
+  if (!json || typeof json !== 'string') return json;
+
+  let result = '';
+  let inString = false;
+  let escape = false;
+  let i = 0;
+
+  // State tracking: what are we expecting next?
+  // 'key' = expecting a key (after { or ,)
+  // 'colon' = expecting a colon (after a key)
+  // 'value' = expecting a value (after a :)
+  // 'comma-or-end' = expecting , or } or ] (after a value)
+  let expect: 'key' | 'colon' | 'value' | 'comma-or-end' = 'key';
+
+  while (i < json.length) {
+    const ch = json[i];
+
+    // Handle string content
+    if (inString) {
+      result += ch;
+      if (escape) {
+        escape = false;
+      } else if (ch === '\\') {
+        escape = true;
+      } else if (ch === '"') {
+        inString = false;
+        // After closing quote, update state
+        if (expect === 'key') {
+          expect = 'colon'; // Just read a key, expect colon
+        } else if (expect === 'value') {
+          expect = 'comma-or-end'; // Just read a string value
+        }
+      }
+      i++;
+      continue;
+    }
+
+    // Start of string
+    if (ch === '"') {
+      result += ch;
+      inString = true;
+      i++;
+      continue;
+    }
+
+    // Skip whitespace
+    if (/\s/.test(ch)) {
+      result += ch;
+      i++;
+      continue;
+    }
+
+    // Handle structural characters
+    if (ch === '{' || ch === '[') {
+      result += ch;
+      expect = 'key';
+      i++;
+      continue;
+    }
+
+    if (ch === '}' || ch === ']') {
+      result += ch;
+      expect = 'comma-or-end';
+      i++;
+      continue;
+    }
+
+    if (ch === ',') {
+      result += ch;
+      expect = 'key';
+      i++;
+      continue;
+    }
+
+    if (ch === ':') {
+      if (expect === 'colon') {
+        // This is a valid key-value separator
+        result += ch;
+        expect = 'value';
+      } else if (expect === 'comma-or-end') {
+        // We expected a comma but got a colon
+        // This is likely an error: "value": "key" should be "value", "key"
+        // Check if next token looks like a key
+        let k = i + 1;
+        while (k < json.length && /\s/.test(json[k])) k++;
+        if (k < json.length && json[k] === '"') {
+          // Looks like a key follows, replace colon with comma
+          result += ',';
+          expect = 'key';
+        } else {
+          // Not sure what this is, keep as is
+          result += ch;
+          expect = 'value';
+        }
+      } else {
+        // Unexpected colon, keep as is
+        result += ch;
+      }
+      i++;
+      continue;
+    }
+
+    // Handle numbers, booleans, null
+    if (/[0-9\-]/.test(ch) || ch === 't' || ch === 'f' || ch === 'n') {
+      // Read the full token
+      let token = '';
+      while (i < json.length && /[0-9a-zA-Z.\-+]/.test(json[i])) {
+        token += json[i];
+        i++;
+      }
+
+      if (expect === 'key') {
+        // Unquoted key - shouldn't happen in valid JSON, but handle it
+        result += '"' + token + '"';
+        expect = 'colon';
+      } else {
+        // Value
+        result += token;
+        expect = 'comma-or-end';
+      }
+      continue;
+    }
+
+    // Default: just append
     result += ch;
     i++;
   }
