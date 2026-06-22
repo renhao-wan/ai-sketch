@@ -263,9 +263,6 @@ export const en: TranslationDict = {
 
   // Diagram Canvas
   'canvas.emptyState': 'Describe a diagram and AI will generate it',
-  'canvas.emptyState.title': 'Design Diagrams with Natural Language',
-  'canvas.emptyState.subtitle': 'Enter a description in the AI chat panel on the left to generate professional diagrams',
-  'canvas.emptyState.hint': 'Press Enter to send, Shift+Enter for new line',
 
   // Excalidraw Canvas
 
