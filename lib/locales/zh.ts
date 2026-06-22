@@ -261,6 +261,9 @@ export const zh = {
 
   // Diagram Canvas
   'canvas.emptyState': '描述图表内容，AI 将为你生成',
+  'canvas.emptyState.title': '用自然语言设计图表',
+  'canvas.emptyState.subtitle': '在左侧 AI 对话区输入描述，即可生成专业图表',
+  'canvas.emptyState.hint': '按 Enter 发送，Shift+Enter 换行',
 
   // Excalidraw Canvas
 
