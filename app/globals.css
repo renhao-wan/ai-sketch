@@ -24,6 +24,7 @@
 
   /* Accent spectrum — plum + copper */
   --accent-indigo: #7C3AED;
+  --accent-indigo-light: #8B5CF6;
   --accent-violet: #A855F7;
   --accent-cyan: #D97706;
 
@@ -73,6 +74,7 @@
   --btn-primary-hover: #4338ca;
   --btn-primary-text: #ffffff;
   --accent-indigo: #7C3AED;
+  --accent-indigo-light: #8B5CF6;
   --accent-violet: #8b5cf6;
   --accent-cyan: #06b6d4;
   --surface-warm: rgba(238, 242, 255, 0.9);
@@ -106,6 +108,7 @@
   --btn-primary-hover: #0284c7;
   --btn-primary-text: #ffffff;
   --accent-indigo: #7C3AED;
+  --accent-indigo-light: #8B5CF6;
   --accent-violet: #8b5cf6;
   --accent-cyan: #06b6d4;
   --surface-warm: rgba(224, 242, 254, 0.9);
@@ -139,6 +142,7 @@
   --btn-primary-hover: #db2777;
   --btn-primary-text: #ffffff;
   --accent-indigo: #7C3AED;
+  --accent-indigo-light: #8B5CF6;
   --accent-violet: #8b5cf6;
   --accent-cyan: #06b6d4;
   --surface-warm: rgba(252, 231, 243, 0.9);
@@ -172,6 +176,7 @@
   --btn-primary-hover: #059669;
   --btn-primary-text: #ffffff;
   --accent-indigo: #7C3AED;
+  --accent-indigo-light: #8B5CF6;
   --accent-violet: #8b5cf6;
   --accent-cyan: #06b6d4;
   --surface-warm: rgba(209, 250, 229, 0.9);
@@ -205,6 +210,7 @@
   --btn-primary-hover: #ea580c;
   --btn-primary-text: #ffffff;
   --accent-indigo: #7C3AED;
+  --accent-indigo-light: #8B5CF6;
   --accent-violet: #8b5cf6;
   --accent-cyan: #06b6d4;
   --surface-warm: rgba(255, 247, 237, 0.9);

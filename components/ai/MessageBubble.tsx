@@ -168,7 +168,7 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, 
       <div className={`max-w-[80%] ${isUser ? 'items-end' : 'items-start'}`}>
         {/* 编辑模式 — 保留气泡外壳，内部替换为 textarea */}
         {isUser && isEditing ? (
-          <div className="px-3.5 py-2.5 rounded-2xl rounded-br-md bg-[var(--accent-indigo)] text-sm leading-relaxed">
+          <div className="px-3.5 py-2.5 rounded-2xl rounded-br-md bg-[var(--accent-indigo-light)] text-sm leading-relaxed">
             <textarea
               ref={editRef}
               value={editContent}
@@ -184,7 +184,7 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, 
                 fontSize: '0.875rem',
                 lineHeight: '1.625',
                 color: 'white',
-                background: 'rgba(255,255,255,0.12)',
+                background: 'rgba(255,255,255,0.15)',
                 resize: 'none',
                 outline: 'none',
                 whiteSpace: 'pre-wrap',
@@ -201,7 +201,7 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, 
               <button onClick={handleCancelEdit} className="flex items-center gap-1 px-2 py-1 text-[11px] text-white/70 hover:text-white rounded transition-colors">
                 <X size={12} />{t('common.cancel')}
               </button>
-              <button onClick={handleSubmitEdit} className="flex items-center gap-1 px-2 py-1 text-[11px] text-[var(--accent-indigo)] bg-white hover:bg-white/90 rounded transition-colors font-medium">
+              <button onClick={handleSubmitEdit} className="flex items-center gap-1 px-2 py-1 text-[11px] text-[var(--accent-indigo-light)] bg-white hover:bg-white/90 rounded transition-colors font-medium">
                 <Send size={12} />{t('copilot.send')}
               </button>
             </div>
@@ -211,7 +211,7 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreaming, 
             {/* Content */}
             <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
               isUser
-                ? 'bg-[var(--accent-indigo)] text-white rounded-br-md'
+                ? 'bg-[var(--accent-indigo-light)] text-white rounded-br-md'
                 : 'bg-[var(--surface-warm)] text-[var(--fg)] rounded-bl-md border border-[var(--border)]'
             }`}>
               {/* Image thumbnail(s) */}
