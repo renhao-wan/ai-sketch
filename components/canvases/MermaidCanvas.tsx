@@ -274,7 +274,7 @@ export default function MermaidCanvas({ code, isStreaming, exportRef }: MermaidC
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        style={{ cursor: isPanning ? 'grabbing' : 'default' }}
+        style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
       >
         {error ? (
           <div className="w-full h-full flex items-center justify-center p-6">
