@@ -51,13 +51,6 @@ export function stripCodeFences(text: string): string {
 export function fixUnquotedKeys(json: string): string {
   if (!json || typeof json !== 'string') return json;
 
-  // Pattern: match unquoted keys followed by colon
-  // This regex looks for:
-  // 1. A word boundary or start of object
-  // 2. An unquoted identifier (valid JS identifier)
-  // 3. Followed by optional whitespace and colon
-  // We need to be careful not to match inside strings
-
   let result = '';
   let inString = false;
   let escape = false;
@@ -89,7 +82,6 @@ export function fixUnquotedKeys(json: string): string {
     }
 
     // Check for unquoted key pattern
-    // Must be preceded by { or , (after optional whitespace)
     if (ch === '{' || ch === ',') {
       result += ch;
       i++;
@@ -103,9 +95,7 @@ export function fixUnquotedKeys(json: string): string {
 
       // Check if we have an unquoted identifier followed by :
       if (i < json.length && /[_A-Za-z$]/.test(json[i])) {
-        // Read the potential key
         let key = '';
-        const keyStart = i;
         while (i < json.length && /[_A-Za-z0-9$]/.test(json[i])) {
           key += json[i];
           i++;
@@ -120,15 +110,235 @@ export function fixUnquotedKeys(json: string): string {
 
         // Check if followed by colon
         if (i < json.length && json[i] === ':') {
-          // It's an unquoted key - add quotes
           result += ws + '"' + key + '"' + wsAfterKey;
         } else {
-          // Not a key, just an identifier - add as is
           result += ws + key + wsAfterKey;
         }
       } else {
         result += ws;
       }
+      continue;
+    }
+
+    result += ch;
+    i++;
+  }
+
+  return result;
+}
+
+/**
+ * Fix trailing commas in JSON arrays and objects.
+ * Converts `[1, 2, 3,]` to `[1, 2, 3]` and `{"a": 1,}` to `{"a": 1}`.
+ */
+export function fixTrailingCommas(json: string): string {
+  if (!json || typeof json !== 'string') return json;
+
+  // Match trailing comma followed by optional whitespace and closing bracket/brace
+  return json.replace(/,\s*([}\]])/g, '$1');
+}
+
+/**
+ * Replace single quotes with double quotes in JSON.
+ * Handles common LLM output where single quotes are used instead of double quotes.
+ * Preserves single quotes inside double-quoted strings.
+ */
+export function fixSingleQuotes(json: string): string {
+  if (!json || typeof json !== 'string') return json;
+
+  let result = '';
+  let inDoubleString = false;
+  let inSingleString = false;
+  let escape = false;
+
+  for (let i = 0; i < json.length; i++) {
+    const ch = json[i];
+
+    if (escape) {
+      result += ch;
+      escape = false;
+      continue;
+    }
+
+    if (ch === '\\') {
+      result += ch;
+      escape = true;
+      continue;
+    }
+
+    // Inside double-quoted string - preserve as is
+    if (inDoubleString) {
+      result += ch;
+      if (ch === '"') inDoubleString = false;
+      continue;
+    }
+
+    // Inside single-quoted string
+    if (inSingleString) {
+      if (ch === "'") {
+        // End of single-quoted string - convert to double quote
+        result += '"';
+        inSingleString = false;
+      } else if (ch === '"') {
+        // Escape double quotes inside single-quoted string
+        result += '\\"';
+      } else {
+        result += ch;
+      }
+      continue;
+    }
+
+    // Start of double-quoted string
+    if (ch === '"') {
+      result += ch;
+      inDoubleString = true;
+      continue;
+    }
+
+    // Start of single-quoted string - convert to double quote
+    if (ch === "'") {
+      result += '"';
+      inSingleString = true;
+      continue;
+    }
+
+    result += ch;
+  }
+
+  return result;
+}
+
+/**
+ * Remove single-line comments from JSON.
+ * Removes `// ...` comments that are not inside strings.
+ * Note: JSON does not support comments, but LLMs sometimes add them.
+ */
+export function removeJsonComments(json: string): string {
+  if (!json || typeof json !== 'string') return json;
+
+  let result = '';
+  let inString = false;
+  let escape = false;
+  let i = 0;
+
+  while (i < json.length) {
+    const ch = json[i];
+
+    // Handle string content
+    if (inString) {
+      result += ch;
+      if (escape) {
+        escape = false;
+      } else if (ch === '\\') {
+        escape = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      i++;
+      continue;
+    }
+
+    // Start of string
+    if (ch === '"') {
+      result += ch;
+      inString = true;
+      i++;
+      continue;
+    }
+
+    // Check for single-line comment
+    if (ch === '/' && i + 1 < json.length && json[i + 1] === '/') {
+      // Skip until end of line
+      while (i < json.length && json[i] !== '\n') {
+        i++;
+      }
+      continue;
+    }
+
+    // Check for multi-line comment
+    if (ch === '/' && i + 1 < json.length && json[i + 1] === '*') {
+      i += 2; // Skip /*
+      while (i < json.length - 1 && !(json[i] === '*' && json[i + 1] === '/')) {
+        i++;
+      }
+      i += 2; // Skip */
+      continue;
+    }
+
+    result += ch;
+    i++;
+  }
+
+  return result;
+}
+
+/**
+ * Replace NaN, Infinity, -Infinity, undefined with null.
+ * These are valid JavaScript values but not valid JSON.
+ */
+export function fixSpecialValues(json: string): string {
+  if (!json || typeof json !== 'string') return json;
+
+  // Replace NaN, Infinity, -Infinity, undefined with null
+  // Use word boundary to avoid matching inside strings
+  let result = '';
+  let inString = false;
+  let escape = false;
+  let i = 0;
+
+  while (i < json.length) {
+    const ch = json[i];
+
+    // Handle string content
+    if (inString) {
+      result += ch;
+      if (escape) {
+        escape = false;
+      } else if (ch === '\\') {
+        escape = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      i++;
+      continue;
+    }
+
+    // Start of string
+    if (ch === '"') {
+      result += ch;
+      inString = true;
+      i++;
+      continue;
+    }
+
+    // Check for special values
+    const remaining = json.slice(i);
+
+    // Match NaN
+    if (remaining.startsWith('NaN') && (i + 3 >= json.length || !/[_A-Za-z0-9$]/.test(json[i + 3]))) {
+      result += 'null';
+      i += 3;
+      continue;
+    }
+
+    // Match Infinity
+    if (remaining.startsWith('Infinity') && (i + 8 >= json.length || !/[_A-Za-z0-9$]/.test(json[i + 8]))) {
+      result += 'null';
+      i += 8;
+      continue;
+    }
+
+    // Match -Infinity
+    if (remaining.startsWith('-Infinity') && (i + 9 >= json.length || !/[_A-Za-z0-9$]/.test(json[i + 9]))) {
+      result += 'null';
+      i += 9;
+      continue;
+    }
+
+    // Match undefined
+    if (remaining.startsWith('undefined') && (i + 9 >= json.length || !/[_A-Za-z0-9$]/.test(json[i + 9]))) {
+      result += 'null';
+      i += 9;
       continue;
     }
 

@@ -7,7 +7,7 @@ import type { DiagramStrategy, ValidationResult } from '@/lib/types/diagram-stra
 import { EXCALIDRAW_SYSTEM_PROMPT, buildExcalidrawUserPrompt } from '@/lib/prompts/excalidraw';
 import { CHART_TYPES } from '@/lib/diagram/constants';
 import { optimizeExcalidrawCode } from '@/lib/diagram/optimize-arrows';
-import { repairJsonClosure, stripCodeFences, extractFirstJsonArray, fixUnquotedKeys } from '@/lib/diagram/json-repair';
+import { repairJsonClosure, stripCodeFences, extractFirstJsonArray, fixUnquotedKeys, fixTrailingCommas, fixSingleQuotes, removeJsonComments, fixSpecialValues } from '@/lib/diagram/json-repair';
 import { createExportBlob, buildImagePrompt } from './helpers';
 
 /** 缓存 excalidraw 模块的 import promise，避免重复加载 */
@@ -36,28 +36,36 @@ class ExcalidrawStrategy implements DiagramStrategy {
 
   postProcess(rawCode: string): string {
     if (!rawCode || typeof rawCode !== 'string') return rawCode;
+
+    // Step 1: Basic cleanup
     let processed = stripCodeFences(rawCode);
-    processed = repairJsonClosure(processed);
+
+    // Step 2: Apply all fixes in sequence
+    const applyFixes = (code: string): string => {
+      let result = code;
+      result = removeJsonComments(result);  // Remove comments first
+      result = fixSingleQuotes(result);     // Fix single quotes
+      result = fixSpecialValues(result);    // Fix NaN, Infinity, undefined
+      result = fixTrailingCommas(result);   // Fix trailing commas
+      result = fixUnquotedKeys(result);     // Fix unquoted keys
+      result = repairJsonClosure(result);   // Fix unclosed brackets/quotes
+      return result;
+    };
+
+    // Step 3: Try parsing with all fixes
+    processed = applyFixes(processed);
     try {
       JSON.parse(processed);
       return processed;
     } catch {
-      // First repair failed, try fixing unquoted keys
-      processed = fixUnquotedKeys(processed);
-      processed = repairJsonClosure(processed);
+      // First attempt failed, try with unescaped quotes fix
+      processed = fixUnescapedQuotes(processed);
+      processed = applyFixes(processed);
       try {
         JSON.parse(processed);
         return processed;
       } catch {
-        // Second repair failed, try fixing unescaped quotes
-        processed = fixUnescapedQuotes(processed);
-        processed = repairJsonClosure(processed);
-        try {
-          JSON.parse(processed);
-        } catch {
-          // Third repair also failed — return original stripped code
-          return stripCodeFences(rawCode);
-        }
+        // Second attempt failed, return best effort
         return processed;
       }
     }
