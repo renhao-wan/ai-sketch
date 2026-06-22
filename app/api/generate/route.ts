@@ -232,22 +232,29 @@ export async function POST(request: Request) {
     let requirementForLLM: string;
     let extractionResult: ExtractionResult | null = null;
 
-    // 跳过需求提取的情况：图片输入、重新生成、编辑模式、用户关闭需求提取
-    const skipExtraction = processedImages || imageDescription || regenerate || editMode || !useRequirementExtraction;
+    // 跳过需求提取的情况
+    const skipExtraction =
+      // 技术原因：图片有自己的处理管线
+      processedImages || imageDescription ||
+      // 业务原因：使用原有需求
+      regenerate || editMode;
 
     if (skipExtraction) {
-      // 图片输入、重新生成、编辑模式、用户关闭需求提取，跳过需求提取
+      // 图片输入、重新生成、编辑模式，跳过需求提取
       requirementForLLM = imageDescription
         ? `[图片内容]\n${imageDescription}\n\n${userContent}`
         : userContent;
       extractionResult = null;
     } else {
-      // 调用需求提取 LLM
+      // 调用需求提取 LLM（无论是否使用需求提取结果，都需要获取 complexity）
       perfMark('Requirement Extraction');
       try {
         extractionResult = await extractRequirements(userContent, config, combinedController.signal);
-        requirementForLLM = extractionResult.requirement;
-        console.log(`[Generate] Requirement extracted, length: ${requirementForLLM.length}, complexity: ${extractionResult.complexity}`);
+        // 根据用户偏好决定是否使用提取的需求
+        requirementForLLM = useRequirementExtraction
+          ? extractionResult.requirement
+          : userContent;
+        console.log(`[Generate] Requirement extracted, length: ${extractionResult.requirement.length}, complexity: ${extractionResult.complexity}`);
       } catch (error) {
         console.error('[Generate] 需求提取失败，降级使用原始输入:', error);
         // 降级：直接使用用户原始输入

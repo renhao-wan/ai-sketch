@@ -82,11 +82,42 @@ function EditorContent() {
   const [panelWidth, setPanelWidth] = useState(360);
   const [isElectron, setIsElectron] = useState(false);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
-  const [generationMode, setGenerationMode] = useState<GenerationMode>('auto');
-  const [contextEnabled, setContextEnabled] = useState(true);
-  const [useRequirementExtraction, setUseRequirementExtraction] = useState(true);
+
+  // 从 localStorage 读取持久化的设置
+  const [generationMode, setGenerationMode] = useState<GenerationMode>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('ai-sketch-generationMode') as GenerationMode) || 'auto';
+    }
+    return 'auto';
+  });
+  const [contextEnabled, setContextEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ai-sketch-contextEnabled') !== 'false';
+    }
+    return true;
+  });
+  const [useRequirementExtraction, setUseRequirementExtraction] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ai-sketch-useRequirementExtraction') !== 'false';
+    }
+    return true;
+  });
+
   const [dynamicTabs, setDynamicTabs] = useState<DynamicTab[]>([]);
   const [availableActions, setAvailableActions] = useState<ActionInfo[]>([]);
+
+  // 持久化设置到 localStorage
+  useEffect(() => {
+    localStorage.setItem('ai-sketch-generationMode', generationMode);
+  }, [generationMode]);
+
+  useEffect(() => {
+    localStorage.setItem('ai-sketch-contextEnabled', String(contextEnabled));
+  }, [contextEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('ai-sketch-useRequirementExtraction', String(useRequirementExtraction));
+  }, [useRequirementExtraction]);
 
   // Refs
   const streamRendererRef = useRef<StreamRendererRef | null>(null);
