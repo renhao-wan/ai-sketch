@@ -34,8 +34,10 @@ export function escapeMermaidNodeLabel(str: string): string {
 /**
  * 修复 Mermaid 节点标签中的特殊字符
  * 匹配模式：
- * - ["..."] - 标准节点标签
- * - {...} - 菱形节点标签（如 PERM_CHECK{"..."}）
+ * - ["..."] - 带引号的标准节点标签
+ * - [...] - 不带引号的标准节点标签
+ * - {"..."} - 带引号的菱形节点标签
+ * - {...} - 不带引号的菱形节点标签
  * 注意：不转义 | 字符，因为这会破坏链接标签语法
  */
 export function fixMermaidNodeLabels(code: string): string {
@@ -43,31 +45,72 @@ export function fixMermaidNodeLabels(code: string): string {
 
   let result = code;
 
-  // 1. 匹配节点标签：["..."]
+  // 1. 匹配带引号的节点标签：["..."]
   result = result.replace(
     /\["([^"]*?)"\]/g,
     (match, content) => {
-      // 检查是否已经转义过
       if (content.includes('&lt;') || content.includes('&gt;')) {
         return match;
       }
-      // 转义特殊字符（不包括 |）
       const escaped = escapeMermaidNodeLabel(content);
       return `["${escaped}"]`;
     }
   );
 
-  // 2. 匹配菱形节点标签：{"..."}
+  // 2. 匹配不带引号的节点标签：[...]
+  // 注意：需要排除链接标签 |...| 和箭头语法中的 ]
   result = result.replace(
-    /\{"([^"]*?)"\}/g,
+    /(?<![->])\[([^\]]*?)\]/g,
     (match, content) => {
-      // 检查是否已经转义过
+      // 排除链接标签
+      if (match.startsWith('|') || match.endsWith('|')) {
+        return match;
+      }
+      // 排除空内容
+      if (!content.trim()) {
+        return match;
+      }
+      // 检查是否需要转义（包含 < 或 > 或 &）
       if (content.includes('&lt;') || content.includes('&gt;')) {
         return match;
       }
-      // 转义特殊字符（不包括 |）
+      if (!content.includes('<') && !content.includes('>') && !content.includes('&')) {
+        return match;
+      }
+      const escaped = escapeMermaidNodeLabel(content);
+      return `[${escaped}]`;
+    }
+  );
+
+  // 3. 匹配带引号的菱形节点标签：{"..."}
+  result = result.replace(
+    /\{"([^"]*?)"\}/g,
+    (match, content) => {
+      if (content.includes('&lt;') || content.includes('&gt;')) {
+        return match;
+      }
       const escaped = escapeMermaidNodeLabel(content);
       return `{"${escaped}"}`;
+    }
+  );
+
+  // 4. 匹配不带引号的菱形节点标签：{...}
+  result = result.replace(
+    /\{([^}]*?)\}/g,
+    (match, content) => {
+      // 排除空内容
+      if (!content.trim()) {
+        return match;
+      }
+      // 检查是否需要转义（包含 < 或 > 或 &）
+      if (content.includes('&lt;') || content.includes('&gt;')) {
+        return match;
+      }
+      if (!content.includes('<') && !content.includes('>') && !content.includes('&')) {
+        return match;
+      }
+      const escaped = escapeMermaidNodeLabel(content);
+      return `{${escaped}}`;
     }
   );
 
@@ -94,8 +137,60 @@ export function fixMermaidSubgraphLabels(code: string): string {
 }
 
 /**
+ * 修复 Mermaid 链接标签中的特殊字符
+ * 匹配模式：|"..."| 和 |...|
+ */
+export function fixMermaidLinkLabels(code: string): string {
+  if (!code || typeof code !== 'string') return code;
+
+  let result = code;
+
+  // 匹配带引号的链接标签：|"..."|
+  result = result.replace(
+    /\|"([^"]*?)"\|/g,
+    (match, content) => {
+      if (content.includes('&lt;') || content.includes('&gt;')) {
+        return match;
+      }
+      if (!content.includes('<') && !content.includes('>') && !content.includes('&')) {
+        return match;
+      }
+      const escaped = escapeMermaidNodeLabel(content);
+      return `|"${escaped}"|`;
+    }
+  );
+
+  // 匹配不带引号的链接标签：|...|
+  // 注意：需要排除箭头语法中的 |，如 -->|
+  result = result.replace(
+    /\|([^|]+?)\|/g,
+    (match, content) => {
+      // 排除空内容
+      if (!content.trim()) {
+        return match;
+      }
+      // 排除箭头语法中的 |
+      if (match.startsWith('>') || match.startsWith('-')) {
+        return match;
+      }
+      // 检查是否需要转义（包含 < 或 > 或 &）
+      if (content.includes('&lt;') || content.includes('&gt;')) {
+        return match;
+      }
+      if (!content.includes('<') && !content.includes('>') && !content.includes('&')) {
+        return match;
+      }
+      const escaped = escapeMermaidNodeLabel(content);
+      return `|${escaped}|`;
+    }
+  );
+
+  return result;
+}
+
+/**
  * 修复常见的 Mermaid 语法错误
- * 1. 特殊字符转义（只转义节点标签，不转义链接标签）
+ * 1. 特殊字符转义（节点标签和链接标签）
  * 2. 移除不支持的语法
  * 3. 修复格式问题
  */
@@ -110,7 +205,10 @@ export function fixMermaidSyntax(code: string): string {
   // 2. 修复 subgraph 标签中的特殊字符
   result = fixMermaidSubgraphLabels(result);
 
-  // 3. 移除不支持的 style 语法（某些 Mermaid 版本不支持）
+  // 3. 修复链接标签中的特殊字符
+  result = fixMermaidLinkLabels(result);
+
+  // 4. 移除不支持的 style 语法（某些 Mermaid 版本不支持）
   result = result.replace(/style\s+\w+\s+fill:none,stroke:none/g, '');
 
   return result;
