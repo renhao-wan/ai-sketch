@@ -164,7 +164,7 @@ function preprocessElements(elements: ExcalidrawElement[]): ExcalidrawElement[] 
   for (const el of elements) {
     if (!el.type || !VALID.has(el.type)) continue;
 
-    let processedEl = el as Record<string, unknown>;
+    let processedEl: Record<string, unknown> | null = el as Record<string, unknown>;
 
     // 1. 验证并修复线性元素
     processedEl = normalizeLinearElement(processedEl);

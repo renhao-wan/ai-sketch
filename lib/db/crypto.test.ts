@@ -121,8 +121,8 @@ describe('encrypt / decrypt', () => {
   });
 
   it('解密无效格式应抛出错误', () => {
-    expect(() => decrypt('invalid')).toThrow('Invalid encrypted format');
-    expect(() => decrypt('ab:cd')).toThrow('Invalid encrypted format');
+    expect(() => decrypt('invalid')).toThrow('加密格式无效');
+    expect(() => decrypt('ab:cd')).toThrow('加密格式无效');
   });
 
   it('篡改密文应导致解密失败', () => {
