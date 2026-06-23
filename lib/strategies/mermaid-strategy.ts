@@ -7,6 +7,7 @@ import type { DiagramStrategy, ValidationResult } from '@/lib/types/diagram-stra
 import { MERMAID_SYSTEM_PROMPT, buildMermaidUserPrompt, MERMAID_TYPE_MAP } from '@/lib/prompts/mermaid';
 import { CHART_TYPES, getChartTypeName } from '@/lib/diagram/constants';
 import { stripCodeFences } from '@/lib/diagram/json-repair';
+import { preprocessMermaidCode } from '@/lib/diagram/mermaid-repair';
 import { createExportBlob, identityOptimize, buildImagePrompt } from './helpers';
 
 // Chart type to Mermaid diagram type mapping - now imported from prompts module
@@ -67,6 +68,9 @@ class MermaidStrategy implements DiagramStrategy {
       code = code.replace(/^flowchart/i, 'flowchart TD');
     }
 
+    // 5. 修复特殊字符（|, & 等）
+    code = preprocessMermaidCode(code);
+
     return code.trim();
   }
 
@@ -112,7 +116,9 @@ class MermaidStrategy implements DiagramStrategy {
         securityLevel: 'strict',
       });
       const id = `preview-${crypto.randomUUID()}`;
-      const { svg } = await mermaid.render(id, code.trim());
+      // 修复特殊字符后再渲染
+      const processedCode = preprocessMermaidCode(code.trim());
+      const { svg } = await mermaid.render(id, processedCode);
       if (!svg) return null;
       // 移除固定宽高，确保 SVG 能缩放适配容器
       return svg

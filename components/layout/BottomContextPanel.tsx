@@ -12,7 +12,6 @@ import { useLocale } from '@/lib/locales';
 import Tooltip from '@/components/ui/Tooltip';
 import type { ExportFormat } from '@/lib/utils/export-diagram';
 import { getIconComponent } from '@/lib/constants/ai-actions';
-import { preprocessMermaidCode } from '@/lib/diagram/mermaid-repair';
 
 import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github.min.css';
@@ -81,17 +80,12 @@ export default function BottomContextPanel({
   // 获取当前 tab 的内容
   const getCurrentContent = useCallback(() => {
     if (activeTab === 'code') {
-      const code = generatedCode || '';
-      // 对 Mermaid 格式进行修复，确保复制的代码可以直接渲染
-      if (format === 'mermaid' && code) {
-        return preprocessMermaidCode(code);
-      }
-      return code;
+      return generatedCode || '';
     }
     // 查找动态 tab 的内容
     const dynamicTab = dynamicTabs.find(tab => tab.id === activeTab);
     return dynamicTab?.content || '';
-  }, [activeTab, generatedCode, dynamicTabs, format]);
+  }, [activeTab, generatedCode, dynamicTabs]);
 
   // 获取当前操作的信息
   const getCurrentActionInfo = useCallback(() => {
