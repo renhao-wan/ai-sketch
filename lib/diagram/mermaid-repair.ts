@@ -14,22 +14,24 @@
  * 链接标签格式：|"标签文本"|
  * 节点标签格式：["标签文本"] 或 (标签文本) 等
  *
- * 重要：不转义 < 和 > 字符，因为它们在 Mermaid 的箭头语法中是必需的
- * 只转义 & 字符，不转义 " 字符（因为 " 是 Mermaid 标签的一部分）
+ * 重要：
+ * - 不转义 < 和 > 字符，因为它们在 Mermaid 的箭头语法中是必需的
+ * - 不转义 " 字符，因为它是 Mermaid 标签的一部分
+ * - 转义 & 字符（HTML 特殊字符）
+ * - 转义 | 字符（Mermaid 链接标签分隔符）
  */
 export function escapeMermaidNodeLabel(str: string): string {
   if (!str || typeof str !== 'string') return str;
 
   // 先检查是否已经转义过，避免重复转义
-  if (str.includes('&amp;')) {
+  if (str.includes('&amp;') || str.includes('&#124;')) {
     return str;
   }
 
-  // 只转义 & 字符，不转义 <, >, " 字符
-  // 因为 < 和 > 在 Mermaid 的箭头语法中是必需的（如 -->, <-->）
-  // 因为 " 是 Mermaid 标签的一部分（如 ["content"]）
+  // 转义特殊字符
   return str
-    .replace(/&/g, '&amp;');  // & -> &amp; (必须最先)
+    .replace(/&/g, '&amp;')   // & -> &amp; (必须最先)
+    .replace(/\|/g, '&#124;'); // | -> &#124; (HTML 实体)
 }
 
 /**
@@ -140,6 +142,7 @@ export function fixMermaidSubgraphLabels(code: string): string {
 /**
  * 修复 Mermaid 链接标签中的特殊字符
  * 匹配模式：|"..."| 和 |...|
+ * 注意：只转义链接标签内容中的特殊字符，不转义链接标签的开始和结束分隔符 |
  */
 export function fixMermaidLinkLabels(code: string): string {
   if (!code || typeof code !== 'string') return code;
@@ -147,13 +150,14 @@ export function fixMermaidLinkLabels(code: string): string {
   let result = code;
 
   // 匹配带引号的链接标签：|"..."|
+  // 只转义引号内的内容，不转义开始和结束的 |
   result = result.replace(
     /\|"([^"]*?)"\|/g,
     (match, content) => {
-      if (content.includes('&lt;') || content.includes('&gt;')) {
+      if (content.includes('&amp;') || content.includes('&#124;')) {
         return match;
       }
-      if (!content.includes('<') && !content.includes('>') && !content.includes('&')) {
+      if (!content.includes('&') && !content.includes('|')) {
         return match;
       }
       const escaped = escapeMermaidNodeLabel(content);
@@ -163,6 +167,7 @@ export function fixMermaidLinkLabels(code: string): string {
 
   // 匹配不带引号的链接标签：|...|
   // 注意：需要排除箭头语法中的 |，如 -->|
+  // 注意：只转义内容中的 |，不转义开始和结束的 |
   result = result.replace(
     /\|([^|]+?)\|/g,
     (match, content) => {
@@ -174,11 +179,11 @@ export function fixMermaidLinkLabels(code: string): string {
       if (match.startsWith('>') || match.startsWith('-')) {
         return match;
       }
-      // 检查是否需要转义（包含 < 或 > 或 &）
-      if (content.includes('&lt;') || content.includes('&gt;')) {
+      // 检查是否需要转义（包含 & 或 |）
+      if (content.includes('&amp;') || content.includes('&#124;')) {
         return match;
       }
-      if (!content.includes('<') && !content.includes('>') && !content.includes('&')) {
+      if (!content.includes('&') && !content.includes('|')) {
         return match;
       }
       const escaped = escapeMermaidNodeLabel(content);
