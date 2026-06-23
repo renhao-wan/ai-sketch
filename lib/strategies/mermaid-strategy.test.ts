@@ -54,6 +54,28 @@ describe('MermaidStrategy', () => {
     it('应处理空输入', () => {
       expect(mermaidStrategy.postProcess('')).toBe('');
     });
+
+    it('应修复 <<-->> 无效箭头语法', () => {
+      const input = 'graph TD\nA -->|"text <<-->> text"| B';
+      const result = mermaidStrategy.postProcess(input);
+      expect(result).not.toContain('<<-->>');
+      expect(result).toContain('<-->');
+    });
+
+    it('应修复 Unicode 全角尖括号箭头语法', () => {
+      const input = 'graph TD\nA -->|"text ＜＜--＞＞ text"| B';
+      const result = mermaidStrategy.postProcess(input);
+      expect(result).not.toContain('＜＜');
+      expect(result).not.toContain('＞＞');
+      expect(result).toContain('<-->');
+    });
+
+    it('应为链接标签中的 <--> 添加引号保护', () => {
+      const input = 'graph TD\nA -->|text <--> text| B';
+      const result = mermaidStrategy.postProcess(input);
+      // 链接标签中的 < 和 > 应被引号包裹
+      expect(result).toMatch(/\|"text <--> text"\|/);
+    });
   });
 
   describe('validate', () => {

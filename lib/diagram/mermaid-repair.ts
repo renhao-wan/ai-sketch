@@ -179,10 +179,16 @@ export function fixMermaidLinkLabels(code: string): string {
       if (match.startsWith('>') || match.startsWith('-')) {
         return match;
       }
-      // 检查是否需要转义（包含 & 或 |）
+      // 检查是否已经转义过
       if (content.includes('&amp;') || content.includes('&#124;')) {
         return match;
       }
+      // 如果内容包含 < 或 >（可能被 Mermaid 解析器误解为 HTML 标签），
+      // 用引号包裹内容以保护特殊字符
+      if (content.includes('<') || content.includes('>')) {
+        return `|"${content}"|`;
+      }
+      // 检查是否需要转义（包含 & 或 |）
       if (!content.includes('&') && !content.includes('|')) {
         return match;
       }
@@ -195,26 +201,64 @@ export function fixMermaidLinkLabels(code: string): string {
 }
 
 /**
+ * 修复无效的箭头语法
+ * 将无效的箭头语法（如 <<-->>）替换为有效的语法（如 <-->）
+ *
+ * 支持 Unicode 变体字符：
+ * - ASCII: < >
+ * - 全角: ＜ ＞ (U+FF1C, U+FF1E)
+ * - 小于/大于符号: ﹤ ﹥ (U+FE64, U+FE65)
+ * - 角引号: ⟨ ⟩ (U+27E8, U+27E9) — 部分字体中与尖括号相似
+ */
+export function fixInvalidArrows(code: string): string {
+  if (!code || typeof code !== 'string') return code;
+
+  // Unicode 变体字符的 < 和 > 模式（必须精确匹配一个字符）
+  const L = '[<＜﹤⟨]'; // 左尖括号（含 Unicode 变体）
+  const R = '[>＞﹥⟩]'; // 右尖括号（含 Unicode 变体）
+
+  let result = code;
+
+  // 修复 <<-->> 为 <-->
+  result = result.replace(new RegExp(`${L}${L}--${R}${R}`, 'g'), '<-->');
+
+  // 修复 <<->> 为 <-->
+  result = result.replace(new RegExp(`${L}${L}-${R}${R}`, 'g'), '<-->');
+
+  // 修复 <-->> 为 <-->
+  result = result.replace(new RegExp(`${L}--${R}${R}`, 'g'), '<-->');
+
+  // 修复 <<--> 为 <-->
+  result = result.replace(new RegExp(`${L}${L}--${R}`, 'g'), '<-->');
+
+  return result;
+}
+
+/**
  * 修复常见的 Mermaid 语法错误
  * 1. 特殊字符转义（节点标签和链接标签）
  * 2. 移除不支持的语法
  * 3. 修复格式问题
+ * 4. 修复无效的箭头语法
  */
 export function fixMermaidSyntax(code: string): string {
   if (!code || typeof code !== 'string') return code;
 
   let result = code;
 
-  // 1. 修复节点标签中的特殊字符
+  // 1. 修复无效的箭头语法
+  result = fixInvalidArrows(result);
+
+  // 2. 修复节点标签中的特殊字符
   result = fixMermaidNodeLabels(result);
 
-  // 2. 修复 subgraph 标签中的特殊字符
+  // 3. 修复 subgraph 标签中的特殊字符
   result = fixMermaidSubgraphLabels(result);
 
-  // 3. 修复链接标签中的特殊字符
+  // 4. 修复链接标签中的特殊字符
   result = fixMermaidLinkLabels(result);
 
-  // 4. 移除不支持的 style 语法（某些 Mermaid 版本不支持）
+  // 5. 移除不支持的 style 语法（某些 Mermaid 版本不支持）
   result = result.replace(/style\s+\w+\s+fill:none,stroke:none/g, '');
 
   return result;
