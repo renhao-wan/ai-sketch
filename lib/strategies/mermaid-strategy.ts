@@ -59,16 +59,24 @@ class MermaidStrategy implements DiagramStrategy {
       code = lines.slice(startIndex).join('\n');
     }
 
-    // 3. 修复箭头语法
+    // 3. 修复 end 关键字与下一个图表关键字之间缺少换行的问题
+    //    LLM 有时会生成 endflowchart、endsequenceDiagram 等无效 token
+    const MERMAID_KEYWORDS = VALID_STARTS.join('|');
+    code = code.replace(
+      new RegExp(`end(?!\\s)(${MERMAID_KEYWORDS})`, 'g'),
+      (match, kw) => `end\n${kw}`,
+    );
+
+    // 4. 修复箭头语法
     code = code.replace(/-- >/g, '-->');
     code = code.replace(/== >/g, '==>');
 
-    // 4. 确保 flowchart 方向声明存在
+    // 5. 确保 flowchart 方向声明存在
     if (code.trim().startsWith('flowchart') && !code.trim().match(/^flowchart\s+(TD|LR|TB|RL|BT)/i)) {
       code = code.replace(/^flowchart/i, 'flowchart TD');
     }
 
-    // 5. 修复特殊字符（|, & 等）
+    // 6. 修复特殊字符（|, & 等）
     code = preprocessMermaidCode(code);
 
     return code.trim();

@@ -76,6 +76,20 @@ describe('MermaidStrategy', () => {
       // 链接标签中的 < 和 > 应被引号包裹
       expect(result).toMatch(/\|"text <--> text"\|/);
     });
+
+    it('应修复 end 与下一个图表关键字之间缺少换行的问题', () => {
+      const input = 'flowchart TD\nsubgraph A["test"]\nA1-->A2\nendflowchart TD\nB1-->B2';
+      const result = mermaidStrategy.postProcess(input);
+      expect(result).not.toContain('endflowchart');
+      expect(result).toContain('end\nflowchart');
+    });
+
+    it('应修复 end 与 sequenceDiagram 之间缺少换行的问题', () => {
+      const input = 'flowchart TD\nA-->B\nendsequenceDiagram\nA->>B: hello';
+      const result = mermaidStrategy.postProcess(input);
+      expect(result).not.toContain('endsequenceDiagram');
+      expect(result).toContain('end\nsequenceDiagram');
+    });
   });
 
   describe('validate', () => {
