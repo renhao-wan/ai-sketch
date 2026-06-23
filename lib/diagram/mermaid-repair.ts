@@ -40,7 +40,7 @@ export function escapeMermaidNodeLabel(str: string): string {
  * - ["..."] - 带引号的标准节点标签
  * - [...] - 不带引号的标准节点标签
  * - {"..."} - 带引号的菱形节点标签
- * - {...} - 不带引号的菱形节点标签
+ * - {...} - 不带引号的菱形节点标签（需要添加引号）
  * 注意：不转义 | 字符，因为这会破坏链接标签语法
  */
 export function fixMermaidNodeLabels(code: string): string {
@@ -98,22 +98,22 @@ export function fixMermaidNodeLabels(code: string): string {
   );
 
   // 4. 匹配不带引号的菱形节点标签：{...}
+  // 注意：Mermaid 要求菱形节点的内容必须用引号包裹
+  // 注意：需要排除已经带引号的菱形节点 {"..."}
   result = result.replace(
-    /\{([^}]*?)\}/g,
+    /\{([^}"']*)\}/g,
     (match, content) => {
       // 排除空内容
       if (!content.trim()) {
         return match;
       }
-      // 检查是否需要转义（包含 < 或 > 或 &）
-      if (content.includes('&lt;') || content.includes('&gt;')) {
+      // 排除已经转义过的内容
+      if (content.includes('&amp;') || content.includes('&#124;')) {
         return match;
       }
-      if (!content.includes('<') && !content.includes('>') && !content.includes('&')) {
-        return match;
-      }
+      // 转义并添加引号
       const escaped = escapeMermaidNodeLabel(content);
-      return `{${escaped}}`;
+      return `{"${escaped}"}`;
     }
   );
 
