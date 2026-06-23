@@ -6,6 +6,9 @@ import type { AIActionType } from '@/lib/prompts/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
 import { stripCodeFences } from '@/lib/diagram/json-repair';
 
+/** 允许的 AI 操作白名单 */
+const ALLOWED_ACTIONS: AIActionType[] = ['layout', 'beautify', 'simplify', 'explain'];
+
 interface AIActionRequest {
   code: string;
   format: DiagramFormat;
@@ -20,6 +23,10 @@ export async function POST(request: Request) {
 
     if (!code || !format || !action) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
+    }
+
+    if (!ALLOWED_ACTIONS.includes(action)) {
+      return NextResponse.json({ error: `不支持的操作: ${action}` }, { status: 400 });
     }
 
     // 获取 LLM 配置

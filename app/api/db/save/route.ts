@@ -9,7 +9,7 @@ import { saveToDisk, hasUnsavedChanges } from '@/lib/db/index';
 export async function POST() {
   try {
     if (hasUnsavedChanges()) {
-      saveToDisk();
+      await saveToDisk();
     }
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -454,10 +454,11 @@ class ConfigManager {
     requestSave();
   }
 
-  /** 重置所有全局设置（proxy、retries、active_config_id） */
+  /** 重置所有全局设置（proxy、retries）但保留 active_config_id 和初始化标记 */
   async resetMeta(): Promise<void> {
     const db = await getDb();
-    db.run("DELETE FROM meta");
+    // 保留关键元数据：活跃配置和初始化标记
+    db.run("DELETE FROM meta WHERE key NOT IN ('active_config_id', 'canvas_actions_initialized')");
     requestSave();
   }
 }

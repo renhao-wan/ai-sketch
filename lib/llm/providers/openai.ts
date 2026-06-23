@@ -58,7 +58,6 @@ export class OpenAIProvider implements LLMProvider {
         }
         return undefined;
       },
-      skipLine: (trimmed) => trimmed === 'data: [DONE]',
     };
   }
 

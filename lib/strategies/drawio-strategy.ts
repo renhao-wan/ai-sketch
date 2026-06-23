@@ -184,15 +184,36 @@ class DrawioStrategy implements DiagramStrategy {
   }
 
   mergeCode(existing: string, incoming: string): string {
-    const cellRegex = /<mxCell[^>]*\/>/g;
-    const incomingCells = incoming.match(cellRegex) || [];
-    if (incomingCells.length === 0) return existing;
+    // 提取 <root> 标签内的所有内容（包括自闭合和非自闭合的 mxCell）
+    const rootMatch = incoming.match(/<root>([\s\S]*?)<\/root>/);
+    if (!rootMatch) return existing;
+
+    const incomingContent = rootMatch[1].trim();
+    if (!incomingContent) return existing;
+
+    // 提取已有代码中所有 mxCell 的 id，用于去重
+    const existingIdRegex = /<mxCell[^>]*\bid="([^"]+)"/g;
+    const existingIds = new Set<string>();
+    let match;
+    while ((match = existingIdRegex.exec(existing)) !== null) {
+      existingIds.add(match[1]);
+    }
+
+    // 从 incoming 中过滤掉已存在的 mxCell（按 id 去重）
+    const cellRegex = /<mxCell[^>]*(?:\/>|>[\s\S]*?<\/mxCell>)/g;
+    const incomingCells = incomingContent.match(cellRegex) || [];
+    const newCells = incomingCells.filter(cell => {
+      const idMatch = cell.match(/\bid="([^"]+)"/);
+      return !idMatch || !existingIds.has(idMatch[1]);
+    });
+
+    if (newCells.length === 0) return existing;
 
     const insertPoint = existing.lastIndexOf('</root>');
     if (insertPoint === -1) return existing;
 
     return existing.slice(0, insertPoint)
-      + incomingCells.join('\n  ')
+      + newCells.join('\n  ')
       + '\n' + existing.slice(insertPoint);
   }
 }

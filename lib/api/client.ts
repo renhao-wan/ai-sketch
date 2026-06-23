@@ -146,19 +146,6 @@ export async function setCacheTtl(ttlDays: number): Promise<{ success: boolean; 
   });
 }
 
-// ── Migration ──
-
-export async function migrateFromLocalStorage(data: {
-  configs?: LLMConfig[];
-  activeConfigId?: string;
-}): Promise<{ migrated: { configs: number } }> {
-  return request('/api/migrate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-}
-
 // ── Conversation operations ──
 
 export async function fetchConversations(params?: {

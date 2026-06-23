@@ -146,15 +146,22 @@ class MermaidStrategy implements DiagramStrategy {
     const issues: string[] = [];
     const lines = code.split('\n').filter(l => l.trim());
 
-    const hasDirection = lines.some(l =>
-      /^(graph|flowchart)\s+(TD|TB|BT|RL|LR)/i.test(l.trim()),
-    );
-    if (!hasDirection) {
-      issues.push('缺少方向声明（TD/TB/RL/LR）');
+    // 仅对 flowchart/graph 类型检查方向声明
+    const firstLineLower = lines[0]?.trim().toLowerCase() || '';
+    const isFlowchart = firstLineLower.startsWith('graph') || firstLineLower.startsWith('flowchart');
+    if (isFlowchart) {
+      const hasDirection = lines.some(l =>
+        /^(graph|flowchart)\s+(TD|TB|BT|RL|LR)/i.test(l.trim()),
+      );
+      if (!hasDirection) {
+        issues.push('缺少方向声明（TD/TB/RL/LR）');
+      }
     }
 
     const validStarters = ['graph', 'flowchart', 'sequenceDiagram', 'classDiagram',
-      'stateDiagram', 'erDiagram', 'gantt', 'pie', 'mindmap'];
+      'stateDiagram', 'erDiagram', 'gantt', 'pie', 'mindmap', 'journey',
+      'timeline', 'block-beta', 'sankey-beta', 'xychart-beta',
+      'requirementDiagram', 'gitGraph', 'C4Context', 'C4Container', 'C4Component'];
     const firstLine = lines[0]?.trim().toLowerCase() || '';
     const hasValidStarter = validStarters.some(s => firstLine.startsWith(s.toLowerCase()));
     if (!hasValidStarter) {

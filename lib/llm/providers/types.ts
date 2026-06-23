@@ -11,8 +11,6 @@ export interface SSEExtractors {
   extractContent: (json: Record<string, unknown>) => string | undefined;
   /** 检查是否应该停止（返回错误消息，undefined 表示继续） */
   checkStop?: (json: Record<string, unknown>) => string | undefined;
-  /** 跳过特定行 */
-  skipLine?: (trimmed: string) => boolean;
 }
 
 /** LLM Provider 接口 */

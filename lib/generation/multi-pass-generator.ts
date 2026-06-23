@@ -39,7 +39,7 @@ export async function executeMultiPass(
       step.type, step.description, format,
       userInput, contextMessages, accumulatedCode,
       step.dependencies.map(d => {
-        if (d < 0 || d >= i || !stepResults[d]) {
+        if (d < 0 || d >= i || stepResults[d] === undefined) {
           console.warn(`[MultiPass] 步骤 ${i} 的依赖索引 ${d} 无效，跳过`);
           return '';
         }

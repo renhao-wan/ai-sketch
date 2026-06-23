@@ -12,7 +12,7 @@ import { useNotification } from '@/lib/contexts/NotificationContext';
 /** 应用信息（从 package.json 读取） */
 const APP_INFO = {
   name: 'AI Sketch',
-  version: '0.1.0',
+  version: '0.2.0',
   description: 'AI 驱动的图表生成 Web 应用，支持 Excalidraw JSON、Mermaid、Draw.io XML 三种格式。',
   author: {
     name: 'Renhao Wan',

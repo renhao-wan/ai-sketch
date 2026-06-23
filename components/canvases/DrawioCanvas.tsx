@@ -914,17 +914,20 @@ export default function DrawioCanvas({ code, exportRef }: DrawioCanvasProps) {
               ctx.drawImage(img, 0, 0, width, height);
               canvas.toBlob(
                 (blob) => {
+                  URL.revokeObjectURL(img.src);
                   if (blob) resolve(blob);
                   else reject(new Error('Canvas 转换失败'));
                 },
                 'image/png'
               );
             } catch (e) {
+              URL.revokeObjectURL(img.src);
               reject(new Error('Canvas 导出失败: ' + (e as Error).message));
             }
           };
 
           img.onerror = () => {
+            URL.revokeObjectURL(img.src);
             reject(new Error('SVG 图片加载失败'));
           };
 

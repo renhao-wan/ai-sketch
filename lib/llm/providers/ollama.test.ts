@@ -89,12 +89,6 @@ describe('OllamaProvider', () => {
       const { checkStop } = provider.getSSEExtractors();
       expect(checkStop!({ choices: [{ finish_reason: 'stop' }] })).toBeUndefined();
     });
-
-    it('应跳过 [DONE]', () => {
-      const { skipLine } = provider.getSSEExtractors();
-      expect(skipLine!('data: [DONE]')).toBe(true);
-      expect(skipLine!('data: {"choices":[]}')).toBe(false);
-    });
   });
 
   describe('processMessage', () => {

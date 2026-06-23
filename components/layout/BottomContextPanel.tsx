@@ -177,6 +177,16 @@ export default function BottomContextPanel({
     }
   };
 
+  // 使用 ref 追踪 resize 监听器，确保组件卸载时清理
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      // 组件卸载时清理残留的 resize 监听器
+      resizeCleanupRef.current?.();
+    };
+  }, []);
+
   const handleMouseDown = (e: MouseEvent) => {
     setIsResizing(true);
     e.preventDefault();
@@ -191,6 +201,12 @@ export default function BottomContextPanel({
 
     const onMouseUp = () => {
       setIsResizing(false);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      resizeCleanupRef.current = null;
+    };
+
+    resizeCleanupRef.current = () => {
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
     };

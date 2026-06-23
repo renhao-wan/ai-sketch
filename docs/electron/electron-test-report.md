@@ -44,7 +44,7 @@ pnpm electron:build
 5. ✅ 打包 Electron 应用
 
 **生成产物：**
-- 安装包：`dist/AI Sketch Setup 0.1.0.exe` (259 MB)
+- 安装包：`dist/AI Sketch Setup 0.2.0.exe` (259 MB)
 - 解压目录：`dist/win-unpacked/`
 - 更新配置：`dist/latest.yml`
 
@@ -63,7 +63,7 @@ pnpm electron:build
 ### 测试结果：📝 需要手动验证
 
 **测试步骤：**
-1. 安装打包后的应用 `AI Sketch Setup 0.1.0.exe`
+1. 安装打包后的应用 `AI Sketch Setup 0.2.0.exe`
 2. 使用应用创建一些数据（对话、配置等）
 3. 通过 Windows 控制面板或设置卸载应用
 4. 验证是否弹出询问删除数据的对话框

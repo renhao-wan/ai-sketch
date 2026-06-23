@@ -198,9 +198,14 @@ class ExcalidrawStrategy implements DiagramStrategy {
     try {
       const existingArr = JSON.parse(this.postProcess(existing));
       const incomingArr = JSON.parse(this.postProcess(incoming));
-      const existingElements = Array.isArray(existingArr) ? existingArr : (existingArr.elements || []);
-      const incomingElements = Array.isArray(incomingArr) ? incomingArr : (incomingArr.elements || []);
-      return JSON.stringify([...existingElements, ...incomingElements]);
+      const existingElements: Record<string, unknown>[] = Array.isArray(existingArr) ? existingArr : (existingArr.elements || []);
+      const incomingElements: Record<string, unknown>[] = Array.isArray(incomingArr) ? incomingArr : (incomingArr.elements || []);
+
+      // 按 id 去重：保留 existing 中的元素，incoming 中只添加不存在的
+      const existingIds = new Set(existingElements.map(el => el.id as string));
+      const newElements = incomingElements.filter(el => !existingIds.has(el.id as string));
+
+      return JSON.stringify([...existingElements, ...newElements]);
     } catch (e) {
       console.warn('[ExcalidrawStrategy] 合并失败，保留已有代码:', (e as Error).message);
       return existing;

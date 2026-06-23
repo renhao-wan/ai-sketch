@@ -65,9 +65,10 @@ const actionHandlers: Record<string, ActionHandler> = {
   },
 
   'set-proxy': async (body) => {
+    const enabled = body.proxyEnabled === true || body.proxyEnabled === 'true';
     await configManager.setProxy(
       getString(body, 'proxyUrl') || 'http://127.0.0.1:7890',
-      !!body.proxyEnabled,
+      enabled,
     );
     return { success: true };
   },

@@ -34,7 +34,6 @@ interface SSEProcessorOptions {
   signal?: AbortSignal;
   extractContent: (json: Record<string, unknown>) => string | undefined;
   checkStop?: (json: Record<string, unknown>) => string | undefined;
-  skipLine?: (trimmed: string) => boolean;
 }
 
 /**

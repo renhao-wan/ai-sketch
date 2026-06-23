@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   lint:
-    name: ESLint
+    name: Lint & Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -31,8 +31,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Audit dependencies
-        run: pnpm audit --audit-level=high || true
-
       - name: Run ESLint
         run: pnpm lint
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
