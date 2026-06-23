@@ -13,22 +13,23 @@
  * 注意：只转义节点标签中的特殊字符，不转义链接标签中的
  * 链接标签格式：|"标签文本"|
  * 节点标签格式：["标签文本"] 或 (标签文本) 等
+ *
+ * 重要：不转义 < 和 > 字符，因为它们在 Mermaid 的箭头语法中是必需的
+ * 只转义 & 字符，不转义 " 字符（因为 " 是 Mermaid 标签的一部分）
  */
 export function escapeMermaidNodeLabel(str: string): string {
   if (!str || typeof str !== 'string') return str;
 
   // 先检查是否已经转义过，避免重复转义
-  if (str.includes('&lt;') || str.includes('&gt;') || str.includes('&amp;') || str.includes('&quot;')) {
+  if (str.includes('&amp;')) {
     return str;
   }
 
-  // 转义顺序很重要：先转义 &，再转义其他
-  // 这样 &lt; 不会被重复转义为 &amp;lt;
+  // 只转义 & 字符，不转义 <, >, " 字符
+  // 因为 < 和 > 在 Mermaid 的箭头语法中是必需的（如 -->, <-->）
+  // 因为 " 是 Mermaid 标签的一部分（如 ["content"]）
   return str
-    .replace(/&/g, '&amp;')  // & -> &amp; (必须最先)
-    .replace(/</g, '&lt;')   // < -> &lt;
-    .replace(/>/g, '&gt;')   // > -> &gt;
-    .replace(/"/g, '&quot;'); // " -> &quot;
+    .replace(/&/g, '&amp;');  // & -> &amp; (必须最先)
 }
 
 /**
