@@ -239,14 +239,19 @@ export async function POST(request: Request) {
       // 业务原因：使用原有需求
       regenerate || editMode;
 
+    // 判断是否需要调用 LLM
+    const needComplexity = generationMode === 'auto';  // 自动模式需要 complexity 来判断模式
+    const needRequirement = useRequirementExtraction;   // 用户开启需求提取需要 requirement
+    const shouldCallLLM = !skipExtraction && (needComplexity || needRequirement);
+
     if (skipExtraction) {
       // 图片输入、重新生成、编辑模式，跳过需求提取
       requirementForLLM = imageDescription
         ? `[图片内容]\n${imageDescription}\n\n${userContent}`
         : userContent;
       extractionResult = null;
-    } else {
-      // 调用需求提取 LLM（无论是否使用需求提取结果，都需要获取 complexity）
+    } else if (shouldCallLLM) {
+      // 需要 complexity 或 requirement，调用 LLM
       perfMark('Requirement Extraction');
       try {
         extractionResult = await extractRequirements(userContent, config, combinedController.signal);
@@ -262,6 +267,11 @@ export async function POST(request: Request) {
         extractionResult = null;
       }
       perfEnd('Requirement Extraction');
+    } else {
+      // 不需要 complexity 也不需要 requirement，跳过 LLM
+      console.log(`[Generate] Skipping requirement extraction (mode=${generationMode}, useExtraction=${useRequirementExtraction})`);
+      requirementForLLM = userContent;
+      extractionResult = null;
     }
 
     // ── 判断实际执行的模式（基于 LLM 的复杂度评估）──
