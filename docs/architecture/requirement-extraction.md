@@ -219,14 +219,40 @@ catch 块：
 
 ## 跳过需求提取的情况
 
-以下情况会跳过需求提取，直接使用原始输入：
+以下情况会跳过需求提取 LLM 调用，直接使用原始输入：
+
+### 技术原因
 
 1. **图片输入**：图片有自己的处理管线（vision API 或 OCR）
+
+### 业务原因
+
 2. **重新生成**：使用原有的需求描述
 3. **编辑模式**：使用编辑后的需求描述
-4. **用户关闭需求提取**：用户在 UI 中关闭了需求提取开关
 
-**注意**：即使跳过需求提取，系统仍然会进行复杂度评估（基于用户原始输入的长度），用于自动模式的模式判断。
+### 不需要 LLM 结果的情况
+
+4. **用户关闭需求提取 + 快速/高质量模式**：不需要 complexity（用户已指定模式），也不需要 requirement（用户关闭了需求提取）
+
+**注意**：当用户关闭需求提取但选择自动模式时，仍然会调用 LLM 获取 complexity，用于判断使用快速还是高质量模式。
+
+### LLM 调用决策逻辑
+
+```typescript
+// 判断是否需要调用 LLM
+const needComplexity = generationMode === 'auto';  // 自动模式需要 complexity 来判断模式
+const needRequirement = useRequirementExtraction;   // 用户开启需求提取需要 requirement
+const shouldCallLLM = !skipExtraction && (needComplexity || needRequirement);
+```
+
+| 场景 | generationMode | useRequirementExtraction | 是否调用 LLM | 原因 |
+|------|----------------|-------------------------|--------------|------|
+| 1 | auto | true | ✅ 调用 | 需要 complexity + requirement |
+| 2 | auto | false | ✅ 调用 | 需要 complexity（用于模式判断） |
+| 3 | fast | true | ✅ 调用 | 需要 requirement |
+| 4 | fast | false | ❌ 不调用 | 不需要 complexity，不需要 requirement |
+| 5 | quality | true | ✅ 调用 | 需要 requirement |
+| 6 | quality | false | ❌ 不调用 | 不需要 complexity，不需要 requirement |
 
 ## 缓存策略
 
@@ -251,7 +277,17 @@ catch 块：
 - **缓存命中**：无额外延迟
 - **缓存未命中**：增加一次 LLM 调用（约 2-5 秒）
 
-### 优化建议
+### 优化策略
+
+#### 1. 避免不必要的 LLM 调用
+
+通过 `shouldCallLLM` 逻辑，避免在不需要 complexity 和 requirement 时调用 LLM：
+
+- **节省延迟**：约 2-5 秒
+- **节省 Token**：约 500-1000 tokens
+- **节省成本**：约 $0.001-0.002（取决于模型）
+
+#### 2. 其他优化建议
 
 1. **使用更轻量的模型**：需求提取不需要很强的模型能力
 2. **缓存需求提取结果**：基于原始输入缓存提取结果
