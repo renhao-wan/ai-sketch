@@ -66,6 +66,8 @@
 | POST | `/api/cache/clear` | 清除缓存 |
 | GET | `/api/cache/ttl` | 获取缓存 TTL |
 | PUT | `/api/cache/ttl` | 设置缓存 TTL |
+| GET | `/api/cache/level` | 获取缓存档位（strict/normal/loose） |
+| PUT | `/api/cache/level` | 设置缓存档位 |
 
 ### Vision API
 

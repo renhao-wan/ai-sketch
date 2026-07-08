@@ -1,6 +1,6 @@
 # LLM 响应缓存
 
-本文档说明 AI Sketch 的 LLM 响应缓存系统架构，包括 L1/L2 分层设计、缓存键生成、淘汰策略和失效机制。
+本文档说明 AI Sketch 的 LLM 响应缓存系统架构，包括 L1/L2 分层设计、三档缓存键生成、淘汰策略和失效机制。
 
 ---
 
@@ -26,6 +26,7 @@
                           │
                    ┌──────▼──────┐
                    │  写入 L1+L2  │
+                   │  (三键存储)  │
                    └─────────────┘
 ```
 
@@ -42,7 +43,7 @@ L1 使用 `Map` 的迭代顺序实现 LRU：`get()` 命中时将条目移到末�
 ## L2：SQLite 持久缓存
 
 - **实现**：`lib/db/cache-manager.ts` — `CacheManager` 类
-- **存储**：`response_cache` 表
+- **存储**：`response_cache` 表（三键存储）
 - **容量**：100MB 体积上限
 - **TTL**：默认 7 天，可通过 `meta` 表的 `cache_ttl_days` 键配置
 - **淘汰策略**：LRU（按 `last_used_at` 排序）
@@ -63,7 +64,9 @@ L1 使用 `Map` 的迭代顺序实现 LRU：`get()` 命中时将条目移到末�
 
 ```sql
 CREATE TABLE response_cache (
-  id TEXT PRIMARY KEY,              -- 缓存键（SHA-256 哈希，16 位 hex）
+  id TEXT PRIMARY KEY,              -- 严格键（6 因素 SHA-256，16 位 hex）
+  mid_key TEXT NOT NULL DEFAULT '', -- 中等键（4 因素 SHA-256，16 位 hex）
+  loose_key TEXT NOT NULL DEFAULT '', -- 宽松键（2 因素 SHA-256，16 位 hex）
   config_name TEXT NOT NULL DEFAULT '',  -- LLM 配置名称
   model TEXT NOT NULL DEFAULT '',        -- AI 模型标识
   response TEXT NOT NULL,           -- 生成的图表代码
@@ -74,13 +77,25 @@ CREATE TABLE response_cache (
 
 CREATE INDEX idx_response_cache_last_used ON response_cache(last_used_at DESC);
 CREATE INDEX idx_response_cache_config ON response_cache(config_name, model);
+CREATE INDEX idx_response_cache_mid_key ON response_cache(mid_key);
+CREATE INDEX idx_response_cache_loose_key ON response_cache(loose_key);
 ```
 
 ## 缓存键生成
 
 **实现**：`lib/cache/cache-key.ts`
 
-缓存键由以下因素组合后取 SHA-256 哈希（前 16 位 hex）：
+采用**三档缓存**设计，每条缓存记录同时存储三个键：
+
+| 档位 | 键字段 | 因素数量 | 匹配因素 |
+|------|--------|----------|----------|
+| 严格（strict） | `id` | 6 | prompt + format + chartType + model + configName + mode |
+| 中等（normal） | `mid_key` | 4 | prompt + format + chartType + model |
+| 宽松（loose） | `loose_key` | 2 | prompt + format |
+
+每个因素取值后用 `|` 拼接，再取 SHA-256 哈希（前 16 位 hex）。
+
+### 因素说明
 
 | 因素 | 说明 |
 |------|------|
@@ -89,12 +104,13 @@ CREATE INDEX idx_response_cache_config ON response_cache(config_name, model);
 | `chartType` | 图表类型（流程图、架构图等） |
 | `model` | AI 模型名称 |
 | `configName` | LLM 配置名称 |
-| `contextHash` | 多轮对话上下文哈希（可选，取最近 6 条消息） |
 | `mode` | 生成模式（fast / auto / quality，可选） |
 
-### 多轮对话支持
+### 档位切换
 
-`buildContextHash()` 对最近 6 条消息的内容取 SHA-256 哈希（前 8 位 hex），作为缓存键的一部分。这使得多轮对话中的重复请求也能命中缓存，同时避免全量上下文导致命中率过低。
+档位存储在 `meta` 表的 `cache_level` 键（值为 `strict` / `normal` / `loose`），默认为 `normal`。切换档位时：
+- 清空 L1 内存缓存（避免命中不同档位的缓存）
+- L2 缓存无需清理（每条记录已存储三个键，任意档位均可命中）
 
 ## Inflight 请求去重
 
@@ -103,23 +119,26 @@ CREATE INDEX idx_response_cache_config ON response_cache(config_name, model);
 ```typescript
 private inflight = new Map<string, Promise<string | null>>();
 
-async getOrFetch(cacheKey, fetcher, metadata) {
-  const existing = this.inflight.get(cacheKey);
+async getOrFetch(keys, fetcher, metadata) {
+  const level = await this.getLevel();
+  const lookupKey = this.getKeyByLevel(keys, level);
+
+  const existing = this.inflight.get(lookupKey);
   if (existing) return existing;  // 复用已有请求
 
   const promise = (async () => {
     try {
-      const cached = await this.get(cacheKey);
+      const cached = await this.get(keys, level);
       if (cached) return cached;
       const result = await fetcher();
-      if (result) await this.set(cacheKey, result, metadata);
+      if (result) await this.set(keys, result, metadata);
       return result;
     } finally {
-      this.inflight.delete(cacheKey);  // 清理
+      this.inflight.delete(lookupKey);  // 清理
     }
   })();
 
-  this.inflight.set(cacheKey, promise);
+  this.inflight.set(lookupKey, promise);
   return promise;
 }
 ```
@@ -148,8 +167,9 @@ async getOrFetch(cacheKey, fetcher, metadata) {
 | 操作 | L1 行为 |
 |------|---------|
 | `clearAll()` | `l1.clear()` — 全部清空 |
-| `clearByConfig()` | `l1.clear()` — 无法按条件过滤，全清 |
+| `clearByConfig()` | `l1.deleteIf()` — 按 metadata 精确清除 |
 | `clearExpired()` | `l1.clear()` — 避免过期条目残留 |
+| `setLevel()` | `l1.clear()` — 切换档位时清空 |
 
 ## 命中率统计
 
@@ -170,33 +190,35 @@ async getOrFetch(cacheKey, fetcher, metadata) {
 
 1. **图片输入** — 图片 base64 体积大，不缓存
 2. **重新生成** — 用户主动点击"重新生成"时跳过缓存
-
-多轮对话**支持缓存**（通过 contextHash 匹配）。
+3. **编辑模式** — 用户编辑消息后重新生成时跳过缓存
 
 ## API 端点
 
 | 端点 | 方法 | 用途 |
 |------|------|------|
-| `/api/cache/stats` | GET | 获取缓存统计（entries, totalSizeBytes, hits, misses, hitRate, ttlDays） |
+| `/api/cache/stats` | GET | 获取缓存统计（entries, totalSizeBytes, hits, misses, hitRate, ttlDays, level） |
 | `/api/cache/clear` | POST | 清除缓存（支持 all / expired / byConfig） |
 | `/api/cache/ttl` | GET | 获取当前 TTL（天） |
 | `/api/cache/ttl` | PUT | 设置 TTL `{ ttlDays: number }` |
+| `/api/cache/level` | GET | 获取当前缓存档位（strict / normal / loose） |
+| `/api/cache/level` | PUT | 设置缓存档位 `{ level: 'strict' | 'normal' | 'loose' }` |
 
 ## 文件清单
 
 | 文件 | 职责 |
 |------|------|
 | `lib/cache/memory-cache.ts` | L1 内存缓存（泛型 LRU Map） |
-| `lib/cache/cache-key.ts` | 统一缓存键生成（包含 `buildCacheKey` 和 `buildContextHash`） |
-| `lib/db/cache-manager.ts` | L1/L2 协调器，缓存 CRUD，含 inflight 去重 |
-| `lib/db/index.ts` | 数据库初始化，response_cache 表定义 |
+| `lib/cache/cache-key.ts` | 三档缓存键生成（`buildCacheKeys`、`CacheLevel` 类型） |
+| `lib/db/cache-manager.ts` | L1/L2 协调器，三键存储/查找/清除，含 inflight 去重和档位管理 |
+| `lib/db/index.ts` | 数据库初始化，response_cache 表定义（含三键字段和索引） |
 | `lib/db/config-manager.ts` | 配置变更时触发缓存失效 |
 | `app/api/generate/route.ts` | 生成路由，集成缓存查找/写入 |
 | `app/api/cache/stats/route.ts` | 缓存统计 API |
 | `app/api/cache/clear/route.ts` | 缓存清理 API |
 | `app/api/cache/ttl/route.ts` | TTL 配置 API |
-| `components/settings/StorageSettings.tsx` | 缓存管理 UI（集成在存储管理中） |
+| `app/api/cache/level/route.ts` | 缓存档位配置 API |
+| `components/settings/StorageSettings.tsx` | 缓存管理 UI（含档位三选一开关） |
 
 ---
 
-*最后更新：2026-06-17*
+*最后更新：2026-07-08*
