@@ -92,10 +92,12 @@ async function initDb(): Promise<Database> {
   db.run(`CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at DESC)`);
 
-  // AI 响应缓存表
+  // AI 响应缓存表（三键存储：严格/中等/宽松）
   db.run(`
     CREATE TABLE IF NOT EXISTS response_cache (
       id TEXT PRIMARY KEY,
+      mid_key TEXT NOT NULL DEFAULT '',
+      loose_key TEXT NOT NULL DEFAULT '',
       config_name TEXT NOT NULL DEFAULT '',
       model TEXT NOT NULL DEFAULT '',
       response TEXT NOT NULL,
@@ -106,6 +108,8 @@ async function initDb(): Promise<Database> {
   `);
   db.run(`CREATE INDEX IF NOT EXISTS idx_response_cache_last_used ON response_cache(last_used_at DESC)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_response_cache_config ON response_cache(config_name, model)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_response_cache_mid_key ON response_cache(mid_key)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_response_cache_loose_key ON response_cache(loose_key)`);
 
   // Vision API 配置表
   db.run(`

@@ -489,6 +489,16 @@ export const en: TranslationDict = {
   'cache.howItWorks': 'Chart generation requests with identical input and configuration are automatically cached.',
   'cache.whenHit': 'Cache hits when: same description, chart format, chart type, AI model, and config.',
   'cache.whenNoHit': 'Not cached: image uploads, regenerate clicks, or model/config changes.',
+  'cache.levelSettings': 'Cache Level',
+  'cache.levelLabel': 'Cache Match Precision',
+  'cache.levelDesc': 'Adjust cache hit strictness. Looser levels have higher hit rates but may return similar rather than exact results',
+  'cache.levelStrict': 'Strict',
+  'cache.levelStrictDesc': '6-factor exact match',
+  'cache.levelNormal': 'Normal',
+  'cache.levelNormalDesc': '4-factor match (recommended)',
+  'cache.levelLoose': 'Loose',
+  'cache.levelLooseDesc': '2-factor match',
+  'cache.levelSaved': 'Cache level updated',
 
   // Proxy settings
   'proxy.enable': 'Use Proxy',

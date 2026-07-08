@@ -44,11 +44,15 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
   const [misses, setMisses] = useState(0);
   const [hitRate, setHitRate] = useState(0);
   const [ttlDays, setTtlDays] = useState(7);
+  const [cacheLevel, setCacheLevel] = useState<'strict' | 'normal' | 'loose'>('normal');
   const [statsLoading, setStatsLoading] = useState(true);
 
   // ── TTL settings ──
   const [ttlInput, setTtlInput] = useState(7);
   const [isSavingTtl, setIsSavingTtl] = useState(false);
+
+  // ── Level settings ──
+  const [isSavingLevel, setIsSavingLevel] = useState(false);
 
   // ── Operation states ──
   const [isResettingPreferences, setIsResettingPreferences] = useState(false);
@@ -110,10 +114,11 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
   /** 加载所有统计数据 */
   const loadStats = useCallback(async () => {
     try {
-      const [convResult, configResult, statsResult] = await Promise.all([
+      const [convResult, configResult, statsResult, levelResult] = await Promise.all([
         api.fetchConversationCount(),
         api.fetchConfigs(),
         api.fetchCacheStats(),
+        api.fetchCacheLevel(),
       ]);
       setConversationCount(convResult.count);
       setConfigCount(configResult.configs.length);
@@ -125,6 +130,7 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
       setHitRate(statsResult.hitRate);
       setTtlDays(statsResult.ttlDays);
       setTtlInput(statsResult.ttlDays);
+      setCacheLevel(levelResult.level);
     } catch (err) {
       console.error('Failed to load storage stats:', err);
     } finally {
@@ -348,7 +354,21 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
     }
   };
 
-  const isAnyOperationInProgress = isResettingPreferences || isClearingConversations || isClearingConfigs || isResettingAll || isClearingAllCache || isClearingExpired || isClearingByConfig || isSavingTtl;
+  const handleSaveLevel = async (newLevel: 'strict' | 'normal' | 'loose') => {
+    setIsSavingLevel(true);
+    try {
+      await api.setCacheLevel(newLevel);
+      setCacheLevel(newLevel);
+      showNotification('', t('cache.levelSaved'), 'success');
+    } catch (err) {
+      console.error('Save level failed:', err);
+      showNotification('', t('settings.operationFailed'), 'error');
+    } finally {
+      setIsSavingLevel(false);
+    }
+  };
+
+  const isAnyOperationInProgress = isResettingPreferences || isClearingConversations || isClearingConfigs || isResettingAll || isClearingAllCache || isClearingExpired || isClearingByConfig || isSavingTtl || isSavingLevel;
 
   return (
     <div className="space-y-8">
@@ -572,7 +592,81 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
         </div>
       </section>
 
-      {/* ── Section 4: 数据清理与重置 ── */}
+      {/* ── Section 4: 缓存档位设置 ── */}
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <BarChart3 size={18} className="text-[var(--accent-indigo)]" />
+          <h3 className="text-lg font-semibold text-[var(--fg)]">{t('cache.levelSettings')}</h3>
+        </div>
+        <div className="p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)]">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-sm font-medium text-[var(--fg)]">{t('cache.levelLabel')}</p>
+              <p className="text-xs text-[var(--muted)] mt-1">{t('cache.levelDesc')}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {/* 严格模式 */}
+            <button
+              onClick={() => handleSaveLevel('strict')}
+              disabled={isAnyOperationInProgress}
+              className={`relative p-3 rounded-xl border-2 transition-all duration-200 ${
+                cacheLevel === 'strict'
+                  ? 'border-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5'
+                  : 'border-[var(--border)] hover:border-[var(--accent-indigo)]/30'
+              } ${isSavingLevel ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              {cacheLevel === 'strict' && (
+                <div className="absolute top-2 right-2">
+                  <Check size={14} className="text-[var(--accent-indigo)]" />
+                </div>
+              )}
+              <p className="text-sm font-semibold text-[var(--fg)] mb-1">{t('cache.levelStrict')}</p>
+              <p className="text-xs text-[var(--muted)]">{t('cache.levelStrictDesc')}</p>
+            </button>
+
+            {/* 中等模式 */}
+            <button
+              onClick={() => handleSaveLevel('normal')}
+              disabled={isAnyOperationInProgress}
+              className={`relative p-3 rounded-xl border-2 transition-all duration-200 ${
+                cacheLevel === 'normal'
+                  ? 'border-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5'
+                  : 'border-[var(--border)] hover:border-[var(--accent-indigo)]/30'
+              } ${isSavingLevel ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              {cacheLevel === 'normal' && (
+                <div className="absolute top-2 right-2">
+                  <Check size={14} className="text-[var(--accent-indigo)]" />
+                </div>
+              )}
+              <p className="text-sm font-semibold text-[var(--fg)] mb-1">{t('cache.levelNormal')}</p>
+              <p className="text-xs text-[var(--muted)]">{t('cache.levelNormalDesc')}</p>
+            </button>
+
+            {/* 宽松模式 */}
+            <button
+              onClick={() => handleSaveLevel('loose')}
+              disabled={isAnyOperationInProgress}
+              className={`relative p-3 rounded-xl border-2 transition-all duration-200 ${
+                cacheLevel === 'loose'
+                  ? 'border-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5'
+                  : 'border-[var(--border)] hover:border-[var(--accent-indigo)]/30'
+              } ${isSavingLevel ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              {cacheLevel === 'loose' && (
+                <div className="absolute top-2 right-2">
+                  <Check size={14} className="text-[var(--accent-indigo)]" />
+                </div>
+              )}
+              <p className="text-sm font-semibold text-[var(--fg)] mb-1">{t('cache.levelLoose')}</p>
+              <p className="text-xs text-[var(--muted)]">{t('cache.levelLooseDesc')}</p>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Section 5: 数据清理与重置 ── */}
       <section>
         <div className="flex items-center gap-2 mb-4">
           <Database size={18} className="text-[var(--accent-indigo)]" />

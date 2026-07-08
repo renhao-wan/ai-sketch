@@ -3,7 +3,7 @@ import { callLLM } from '@/lib/llm/client';
 import { configManager } from '@/lib/db/config-manager';
 import { conversationManager } from '@/lib/db/conversation-manager';
 import { cacheManager } from '@/lib/db/cache-manager';
-import { buildCacheKey } from '@/lib/cache/cache-key';
+import { buildCacheKeys } from '@/lib/cache/cache-key';
 import { getStrategy } from '@/lib/strategies/registry';
 import type { LLMConfig, LLMMessage, ImageData } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
@@ -290,14 +290,14 @@ export async function POST(request: Request) {
       effectiveMode = 'quality';
     }
 
-    // ── 检查缓存（基于提取后的需求和实际模式，不含对话上下文以提高命中率）──
+    // ── 检查缓存（基于提取后的需求和实际模式，三键存储）──
     const shouldCache = !processedImages && !regenerate && !editMode;
-    let cacheKeyValue: string | null = null;
+    let cacheKeys: { strict: string; normal: string; loose: string } | null = null;
     let cachedResponse: string | null = null;
 
     if (shouldCache) {
-      // 使用提取后的需求和实际模式计算缓存键（不含上下文哈希）
-      cacheKeyValue = await buildCacheKey({
+      // 使用提取后的需求和实际模式计算三档缓存键
+      cacheKeys = await buildCacheKeys({
         prompt: strategy.getUserPrompt(requirementForLLM, chartType),
         format: diagramFormat,
         chartType,
@@ -307,11 +307,12 @@ export async function POST(request: Request) {
       });
 
       perfMark('Cache Lookup');
-      cachedResponse = await cacheManager.get(cacheKeyValue);
+      const level = await cacheManager.getLevel();
+      cachedResponse = await cacheManager.get(cacheKeys, level);
       perfEnd('Cache Lookup');
 
       if (cachedResponse) {
-        console.log('[Generate] Cache hit');
+        console.log(`[Generate] Cache hit (level: ${level})`);
       }
     }
 
@@ -432,9 +433,9 @@ export async function POST(request: Request) {
             const processedCode = strategy.postProcess(accumulatedCode);
             optimizedCode = strategy.optimize(processedCode);
 
-            // 保存到缓存
-            if (cacheKeyValue) {
-              await cacheManager.set(cacheKeyValue, optimizedCode, {
+            // 保存到缓存（三键存储）
+            if (cacheKeys) {
+              await cacheManager.set(cacheKeys, optimizedCode, {
                 configName: config.name || config.type,
                 model: config.model,
               });

@@ -1,22 +1,30 @@
 /**
- * L1/L2 分层缓存协调器
+ * L1/L2 分层缓存协调器（三键存储版）
  *
  * L1：内存缓存（MemoryCache），50 条目 / 1MB，LRU 淘汰
  * L2：SQLite 持久化缓存（response_cache 表），100MB 上限，7 天 TTL
  *
+ * 三键存储：
+ * - 严格键（id）：6 因素完整匹配
+ * - 中等键（mid_key）：4 因素匹配
+ * - 宽松键（loose_key）：2 因素匹配
+ *
  * 额外特性：
  * - Inflight 请求去重（防止并发重复请求穿透到 LLM）
  * - 命中/未命中统计持久化到 meta 表
- * - TTL 可通过 meta 表动态配置
+ * - TTL 和档位可通过 meta 表动态配置
  */
 
 import { MemoryCache } from '@/lib/cache/memory-cache';
+import type { CacheLevel } from '@/lib/cache/cache-key';
 import { getDb, requestSave } from './index';
 
 // ── 接口定义 ──
 
 interface CacheEntry {
   id: string;
+  midKey: string;
+  looseKey: string;
   configName: string;
   model: string;
   response: string;
@@ -32,6 +40,7 @@ interface CacheStats {
   misses: number;
   hitRate: number;
   ttlDays: number;
+  level: CacheLevel;
 }
 
 // ── 辅助函数 ──
@@ -40,6 +49,8 @@ interface CacheStats {
 function rowToCacheEntry(row: Record<string, unknown>): CacheEntry {
   return {
     id: row.id as string,
+    midKey: row.mid_key as string,
+    looseKey: row.loose_key as string,
     configName: row.config_name as string,
     model: row.model as string,
     response: row.response as string,
@@ -53,6 +64,9 @@ function rowToCacheEntry(row: Record<string, unknown>): CacheEntry {
 
 /** 默认 TTL（天） */
 const DEFAULT_TTL_DAYS = 7;
+
+/** 默认档位 */
+const DEFAULT_LEVEL: CacheLevel = 'normal';
 
 /** L2 最大体积（字节）：100MB */
 const MAX_SIZE_BYTES = 100 * 1024 * 1024;
@@ -81,6 +95,9 @@ class CacheManager {
   /** TTL 内存缓存（毫秒），避免每次 L2 查询都访问 DB */
   private ttlCacheMs: number | null = null;
 
+  /** 档位内存缓存 */
+  private levelCache: CacheLevel | null = null;
+
   /** loadStats 是否已执行 */
   private statsLoaded = false;
 
@@ -98,15 +115,20 @@ class CacheManager {
   /**
    * 获取缓存（L1 → L2 查找）
    * 命中时更新统计和 L2 使用时间；L2 命中时回填 L1
+   * @param keys 三档缓存键
+   * @param level 当前档位
    */
-  async get(cacheKey: string): Promise<string | null> {
+  async get(keys: { strict: string; normal: string; loose: string }, level: CacheLevel): Promise<string | null> {
     // 确保历史统计已加载（首次调用时从 DB 加载）
     if (!this.statsLoaded) {
       await this.ensureStatsLoaded();
     }
 
+    // 根据档位选择查找键
+    const lookupKey = this.getKeyByLevel(keys, level);
+
     // L1 查找
-    const l1Value = this.l1.get(cacheKey);
+    const l1Value = this.l1.get(lookupKey);
     if (l1Value !== undefined) {
       this.hits++;
       this.maybePersistStats();
@@ -115,14 +137,33 @@ class CacheManager {
 
     // L2 查找
     const db = await getDb();
-    const stmt = db.prepare('SELECT id, response, created_at FROM response_cache WHERE id = ?');
-    stmt.bind([cacheKey]);
-
     let entry: CacheEntry | null = null;
-    if (stmt.step()) {
-      entry = rowToCacheEntry(stmt.getAsObject() as Record<string, unknown>);
+
+    if (level === 'strict') {
+      // 严格模式：精确匹配 id
+      const stmt = db.prepare('SELECT * FROM response_cache WHERE id = ?');
+      stmt.bind([lookupKey]);
+      if (stmt.step()) {
+        entry = rowToCacheEntry(stmt.getAsObject() as Record<string, unknown>);
+      }
+      stmt.free();
+    } else if (level === 'normal') {
+      // 中等模式：精确匹配 mid_key
+      const stmt = db.prepare('SELECT * FROM response_cache WHERE mid_key = ? ORDER BY last_used_at DESC LIMIT 1');
+      stmt.bind([lookupKey]);
+      if (stmt.step()) {
+        entry = rowToCacheEntry(stmt.getAsObject() as Record<string, unknown>);
+      }
+      stmt.free();
+    } else {
+      // 宽松模式：精确匹配 loose_key
+      const stmt = db.prepare('SELECT * FROM response_cache WHERE loose_key = ? ORDER BY last_used_at DESC LIMIT 1');
+      stmt.bind([lookupKey]);
+      if (stmt.step()) {
+        entry = rowToCacheEntry(stmt.getAsObject() as Record<string, unknown>);
+      }
+      stmt.free();
     }
-    stmt.free();
 
     if (!entry) {
       this.misses++;
@@ -134,7 +175,7 @@ class CacheManager {
     const now = Date.now();
     const ttlMs = (await this.getTtl()) * 24 * 60 * 60 * 1000;
     if (now - entry.createdAt > ttlMs) {
-      db.run('DELETE FROM response_cache WHERE id = ?', [cacheKey]);
+      db.run('DELETE FROM response_cache WHERE id = ?', [entry.id]);
       requestSave();
       this.misses++;
       this.maybePersistStats();
@@ -144,12 +185,12 @@ class CacheManager {
     // 更新 L2 使用时间和次数
     db.run(
       'UPDATE response_cache SET last_used_at = ?, use_count = use_count + 1 WHERE id = ?',
-      [now, cacheKey],
+      [now, entry.id],
     );
     requestSave();
 
-    // 回填 L1
-    this.l1.set(cacheKey, entry.response);
+    // 回填 L1（使用查找键）
+    this.l1.set(lookupKey, entry.response);
 
     this.hits++;
     this.maybePersistStats();
@@ -159,9 +200,12 @@ class CacheManager {
   /**
    * 写入缓存（同时写入 L1 和 L2）
    * 如果已存在则更新，否则插入
+   * @param keys 三档缓存键
+   * @param response 响应内容
+   * @param metadata 元数据
    */
   async set(
-    cacheKey: string,
+    keys: { strict: string; normal: string; loose: string },
     response: string,
     metadata: { configName: string; model: string },
   ): Promise<void> {
@@ -170,28 +214,30 @@ class CacheManager {
       await this.ensureStatsLoaded();
     }
 
-    // 写入 L1（附带 metadata 以便按配置精确清除）
-    this.l1.set(cacheKey, response, { configName: metadata.configName, model: metadata.model });
+    // 写入 L1（使用三个键都可以命中）
+    this.l1.set(keys.strict, response, { configName: metadata.configName, model: metadata.model });
+    this.l1.set(keys.normal, response, { configName: metadata.configName, model: metadata.model });
+    this.l1.set(keys.loose, response, { configName: metadata.configName, model: metadata.model });
 
     // 写入 L2
     const db = await getDb();
     const now = Date.now();
 
-    // 检查是否已存在
+    // 检查是否已存在（用严格键检查）
     const checkStmt = db.prepare('SELECT id FROM response_cache WHERE id = ?');
-    checkStmt.bind([cacheKey]);
+    checkStmt.bind([keys.strict]);
     const exists = checkStmt.step();
     checkStmt.free();
 
     if (exists) {
       db.run(
-        'UPDATE response_cache SET response = ?, config_name = ?, model = ?, last_used_at = ?, use_count = use_count + 1 WHERE id = ?',
-        [response, metadata.configName, metadata.model, now, cacheKey],
+        'UPDATE response_cache SET response = ?, config_name = ?, model = ?, mid_key = ?, loose_key = ?, last_used_at = ?, use_count = use_count + 1 WHERE id = ?',
+        [response, metadata.configName, metadata.model, keys.normal, keys.loose, now, keys.strict],
       );
     } else {
       db.run(
-        'INSERT INTO response_cache (id, config_name, model, response, created_at, last_used_at, use_count) VALUES (?, ?, ?, ?, ?, ?, 1)',
-        [cacheKey, metadata.configName, metadata.model, response, now, now],
+        'INSERT INTO response_cache (id, mid_key, loose_key, config_name, model, response, created_at, last_used_at, use_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)',
+        [keys.strict, keys.normal, keys.loose, metadata.configName, metadata.model, response, now, now],
       );
     }
 
@@ -204,12 +250,15 @@ class CacheManager {
    * 多个并发请求同一个 cacheKey 时，只执行一次 fetcher
    */
   async getOrFetch(
-    cacheKey: string,
+    keys: { strict: string; normal: string; loose: string },
     fetcher: () => Promise<string | null>,
     metadata: { configName: string; model: string },
   ): Promise<string | null> {
+    const level = await this.getLevel();
+    const lookupKey = this.getKeyByLevel(keys, level);
+
     // 检查是否有进行中的请求
-    const existing = this.inflight.get(cacheKey);
+    const existing = this.inflight.get(lookupKey);
     if (existing) {
       return existing;
     }
@@ -218,7 +267,7 @@ class CacheManager {
     const promise = (async () => {
       try {
         // 先查缓存
-        const cached = await this.get(cacheKey);
+        const cached = await this.get(keys, level);
         if (cached !== null) {
           return cached;
         }
@@ -226,15 +275,15 @@ class CacheManager {
         // 缓存未命中，执行 fetcher
         const result = await fetcher();
         if (result !== null) {
-          await this.set(cacheKey, result, metadata);
+          await this.set(keys, result, metadata);
         }
         return result;
       } finally {
-        this.inflight.delete(cacheKey);
+        this.inflight.delete(lookupKey);
       }
     })();
 
-    this.inflight.set(cacheKey, promise);
+    this.inflight.set(lookupKey, promise);
     return promise;
   }
 
@@ -324,8 +373,9 @@ class CacheManager {
     const total = this.hits + this.misses;
     const hitRate = total > 0 ? this.hits / total : 0;
     const ttlDays = await this.getTtl();
+    const level = await this.getLevel();
 
-    return { entries, totalSizeBytes, hits: this.hits, misses: this.misses, hitRate, ttlDays };
+    return { entries, totalSizeBytes, hits: this.hits, misses: this.misses, hitRate, ttlDays, level };
   }
 
   /** 获取缓存 TTL（天），优先使用内存缓存 */
@@ -350,6 +400,36 @@ class CacheManager {
     const db = await getDb();
     db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('cache_ttl_days', ?)", [String(days)]);
     this.ttlCacheMs = days * 24 * 60 * 60 * 1000;
+    requestSave();
+  }
+
+  /** 获取缓存档位，优先使用内存缓存 */
+  async getLevel(): Promise<CacheLevel> {
+    if (this.levelCache !== null) {
+      return this.levelCache;
+    }
+    const db = await getDb();
+    const stmt = db.prepare("SELECT value FROM meta WHERE key = 'cache_level'");
+    let level = DEFAULT_LEVEL;
+    if (stmt.step()) {
+      const row = stmt.getAsObject() as Record<string, unknown>;
+      const val = row.value as string;
+      if (val === 'strict' || val === 'normal' || val === 'loose') {
+        level = val;
+      }
+    }
+    stmt.free();
+    this.levelCache = level;
+    return level;
+  }
+
+  /** 设置缓存档位，同步更新内存缓存 */
+  async setLevel(level: CacheLevel): Promise<void> {
+    const db = await getDb();
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('cache_level', ?)", [level]);
+    this.levelCache = level;
+    // 切换档位时清空 L1，避免命中不同档位的缓存
+    this.l1.clear();
     requestSave();
   }
 
@@ -433,6 +513,15 @@ class CacheManager {
   }
 
   // ── 内部方法 ──
+
+  /** 根据档位选择查找键 */
+  private getKeyByLevel(keys: { strict: string; normal: string; loose: string }, level: CacheLevel): string {
+    switch (level) {
+      case 'strict': return keys.strict;
+      case 'normal': return keys.normal;
+      case 'loose': return keys.loose;
+    }
+  }
 
   /**
    * 清理逻辑：

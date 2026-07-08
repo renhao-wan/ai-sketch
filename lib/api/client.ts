@@ -110,6 +110,7 @@ export async function fetchCacheStats(): Promise<{
   misses: number;
   hitRate: number;
   ttlDays: number;
+  level: 'strict' | 'normal' | 'loose';
 }> {
   return request('/api/cache/stats');
 }
@@ -143,6 +144,20 @@ export async function setCacheTtl(ttlDays: number): Promise<{ success: boolean; 
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ttlDays }),
+  });
+}
+
+/** 获取缓存档位 */
+export async function fetchCacheLevel(): Promise<{ level: 'strict' | 'normal' | 'loose' }> {
+  return request('/api/cache/level');
+}
+
+/** 设置缓存档位 */
+export async function setCacheLevel(level: 'strict' | 'normal' | 'loose'): Promise<{ success: boolean; level: string }> {
+  return request('/api/cache/level', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ level }),
   });
 }
 
