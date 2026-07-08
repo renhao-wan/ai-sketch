@@ -487,6 +487,7 @@ export const zh = {
   'cache.howItWorks': '相同输入和配置的图表生成请求会自动命中缓存，无需等待 AI 重新生成。',
   'cache.whenHit': '命中条件：相同的描述文本、图表格式、图表类型、AI 模型和配置。',
   'cache.whenNoHit': '不缓存的情况：上传图片、点击重新生成、更换模型或配置。',
+  'cache.configSettings': '缓存配置',
   'cache.levelSettings': '缓存档位',
   'cache.levelLabel': '缓存匹配精度',
   'cache.levelDesc': '调节缓存命中的严格程度，档位越宽松命中率越高，但可能返回相似而非完全相同的结果',

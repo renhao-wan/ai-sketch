@@ -53,6 +53,7 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
 
   // ── Level settings ──
   const [isSavingLevel, setIsSavingLevel] = useState(false);
+  const previousLevelRef = useRef(cacheLevel);
 
   // ── Operation states ──
   const [isResettingPreferences, setIsResettingPreferences] = useState(false);
@@ -355,12 +356,15 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
   };
 
   const handleSaveLevel = async (newLevel: 'strict' | 'normal' | 'loose') => {
+    if (newLevel === cacheLevel || isSavingLevel) return;
+    previousLevelRef.current = cacheLevel;
+    setCacheLevel(newLevel);
     setIsSavingLevel(true);
     try {
       await api.setCacheLevel(newLevel);
-      setCacheLevel(newLevel);
       showNotification('', t('cache.levelSaved'), 'success');
     } catch (err) {
+      setCacheLevel(previousLevelRef.current);
       console.error('Save level failed:', err);
       showNotification('', t('settings.operationFailed'), 'error');
     } finally {
@@ -368,7 +372,7 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
     }
   };
 
-  const isAnyOperationInProgress = isResettingPreferences || isClearingConversations || isClearingConfigs || isResettingAll || isClearingAllCache || isClearingExpired || isClearingByConfig || isSavingTtl || isSavingLevel;
+  const isAnyOperationInProgress = isResettingPreferences || isClearingConversations || isClearingConfigs || isResettingAll || isClearingAllCache || isClearingExpired || isClearingByConfig || isSavingTtl;
 
   return (
     <div className="space-y-8">
@@ -560,113 +564,107 @@ export default function StorageSettings({ isVisible = true }: StorageSettingsPro
         </div>
       </section>
 
-      {/* ── Section 3: TTL 设置 ── */}
+      {/* ── Section 3: 缓存配置 ── */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <Clock size={18} className="text-[var(--accent-indigo)]" />
-          <h3 className="text-lg font-semibold text-[var(--fg)]">{t('cache.ttlSettings')}</h3>
+          <Settings size={18} className="text-[var(--accent-indigo)]" />
+          <h3 className="text-lg font-semibold text-[var(--fg)]">{t('cache.configSettings')}</h3>
         </div>
-        <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)]">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-[var(--fg)]" htmlFor="cache-ttl-input">
-              {t('cache.ttlLabel')}
-            </label>
-            <input
-              id="cache-ttl-input"
-              type="number"
-              min={1}
-              max={365}
-              value={ttlInput}
-              onChange={(e) => setTtlInput(Math.max(1, Math.min(365, Number(e.target.value))))}
-              className="w-20 px-3 py-2 text-sm rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] text-center focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)]"
-            />
-            <span className="text-sm text-[var(--muted)]">{t('cache.days')}</span>
+        <div className="space-y-3">
+          {/* TTL 设置 */}
+          <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)]">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-[var(--fg)]" htmlFor="cache-ttl-input">
+                {t('cache.ttlLabel')}
+              </label>
+              <input
+                id="cache-ttl-input"
+                type="number"
+                min={1}
+                max={365}
+                value={ttlInput}
+                onChange={(e) => setTtlInput(Math.max(1, Math.min(365, Number(e.target.value))))}
+                className="w-20 px-3 py-2 text-sm rounded-xl border border-[var(--border)] bg-[var(--surface-warm)] text-[var(--fg)] text-center focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent-indigo)]/20 focus:border-[var(--accent-indigo)]"
+              />
+              <span className="text-sm text-[var(--muted)]">{t('cache.days')}</span>
+            </div>
+            <button
+              onClick={handleSaveTtl}
+              disabled={isAnyOperationInProgress || ttlInput === ttlDays}
+              className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span>{isSavingTtl ? t('common.loading') : t('common.save')}</span>
+            </button>
           </div>
-          <button
-            onClick={handleSaveTtl}
-            disabled={isAnyOperationInProgress || ttlInput === ttlDays}
-            className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-[var(--accent-indigo)] bg-[var(--accent-indigo)]/10 hover:bg-[var(--accent-indigo)]/15 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span>{isSavingTtl ? t('common.loading') : t('common.save')}</span>
-          </button>
-        </div>
-      </section>
 
-      {/* ── Section 4: 缓存档位设置 ── */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <BarChart3 size={18} className="text-[var(--accent-indigo)]" />
-          <h3 className="text-lg font-semibold text-[var(--fg)]">{t('cache.levelSettings')}</h3>
-        </div>
-        <div className="p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)]">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-sm font-medium text-[var(--fg)]">{t('cache.levelLabel')}</p>
-              <p className="text-xs text-[var(--muted)] mt-1">{t('cache.levelDesc')}</p>
+          {/* 档位设置 */}
+          <div className="p-4 rounded-xl bg-[var(--surface-warm-hover)] border border-[var(--border)]">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-medium text-[var(--fg)]">{t('cache.levelLabel')}</p>
+                <p className="text-xs text-[var(--muted)] mt-1">{t('cache.levelDesc')}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {/* 严格模式 */}
+              <button
+                onClick={() => handleSaveLevel('strict')}
+                className={`relative p-3 rounded-xl border-2 cursor-pointer ${
+                  cacheLevel === 'strict'
+                    ? 'border-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5'
+                    : 'border-[var(--border)] hover:border-[var(--accent-indigo)]/30'
+                }`}
+              >
+                {cacheLevel === 'strict' && (
+                  <div className="absolute top-2 right-2">
+                    <Check size={14} className="text-[var(--accent-indigo)]" />
+                  </div>
+                )}
+                <p className="text-sm font-semibold text-[var(--fg)] mb-1">{t('cache.levelStrict')}</p>
+                <p className="text-xs text-[var(--muted)]">{t('cache.levelStrictDesc')}</p>
+              </button>
+
+              {/* 中等模式 */}
+              <button
+                onClick={() => handleSaveLevel('normal')}
+                className={`relative p-3 rounded-xl border-2 cursor-pointer ${
+                  cacheLevel === 'normal'
+                    ? 'border-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5'
+                    : 'border-[var(--border)] hover:border-[var(--accent-indigo)]/30'
+                }`}
+              >
+                {cacheLevel === 'normal' && (
+                  <div className="absolute top-2 right-2">
+                    <Check size={14} className="text-[var(--accent-indigo)]" />
+                  </div>
+                )}
+                <p className="text-sm font-semibold text-[var(--fg)] mb-1">{t('cache.levelNormal')}</p>
+                <p className="text-xs text-[var(--muted)]">{t('cache.levelNormalDesc')}</p>
+              </button>
+
+              {/* 宽松模式 */}
+              <button
+                onClick={() => handleSaveLevel('loose')}
+                className={`relative p-3 rounded-xl border-2 cursor-pointer ${
+                  cacheLevel === 'loose'
+                    ? 'border-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5'
+                    : 'border-[var(--border)] hover:border-[var(--accent-indigo)]/30'
+                }`}
+              >
+                {cacheLevel === 'loose' && (
+                  <div className="absolute top-2 right-2">
+                    <Check size={14} className="text-[var(--accent-indigo)]" />
+                  </div>
+                )}
+                <p className="text-sm font-semibold text-[var(--fg)] mb-1">{t('cache.levelLoose')}</p>
+                <p className="text-xs text-[var(--muted)]">{t('cache.levelLooseDesc')}</p>
+              </button>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            {/* 严格模式 */}
-            <button
-              onClick={() => handleSaveLevel('strict')}
-              disabled={isAnyOperationInProgress}
-              className={`relative p-3 rounded-xl border-2 transition-all duration-200 ${
-                cacheLevel === 'strict'
-                  ? 'border-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5'
-                  : 'border-[var(--border)] hover:border-[var(--accent-indigo)]/30'
-              } ${isSavingLevel ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-            >
-              {cacheLevel === 'strict' && (
-                <div className="absolute top-2 right-2">
-                  <Check size={14} className="text-[var(--accent-indigo)]" />
-                </div>
-              )}
-              <p className="text-sm font-semibold text-[var(--fg)] mb-1">{t('cache.levelStrict')}</p>
-              <p className="text-xs text-[var(--muted)]">{t('cache.levelStrictDesc')}</p>
-            </button>
-
-            {/* 中等模式 */}
-            <button
-              onClick={() => handleSaveLevel('normal')}
-              disabled={isAnyOperationInProgress}
-              className={`relative p-3 rounded-xl border-2 transition-all duration-200 ${
-                cacheLevel === 'normal'
-                  ? 'border-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5'
-                  : 'border-[var(--border)] hover:border-[var(--accent-indigo)]/30'
-              } ${isSavingLevel ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-            >
-              {cacheLevel === 'normal' && (
-                <div className="absolute top-2 right-2">
-                  <Check size={14} className="text-[var(--accent-indigo)]" />
-                </div>
-              )}
-              <p className="text-sm font-semibold text-[var(--fg)] mb-1">{t('cache.levelNormal')}</p>
-              <p className="text-xs text-[var(--muted)]">{t('cache.levelNormalDesc')}</p>
-            </button>
-
-            {/* 宽松模式 */}
-            <button
-              onClick={() => handleSaveLevel('loose')}
-              disabled={isAnyOperationInProgress}
-              className={`relative p-3 rounded-xl border-2 transition-all duration-200 ${
-                cacheLevel === 'loose'
-                  ? 'border-[var(--accent-indigo)] bg-[var(--accent-indigo)]/5'
-                  : 'border-[var(--border)] hover:border-[var(--accent-indigo)]/30'
-              } ${isSavingLevel ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-            >
-              {cacheLevel === 'loose' && (
-                <div className="absolute top-2 right-2">
-                  <Check size={14} className="text-[var(--accent-indigo)]" />
-                </div>
-              )}
-              <p className="text-sm font-semibold text-[var(--fg)] mb-1">{t('cache.levelLoose')}</p>
-              <p className="text-xs text-[var(--muted)]">{t('cache.levelLooseDesc')}</p>
-            </button>
-          </div>
         </div>
       </section>
 
-      {/* ── Section 5: 数据清理与重置 ── */}
+      {/* ── Section 4: 数据清理与重置 ── */}
       <section>
         <div className="flex items-center gap-2 mb-4">
           <Database size={18} className="text-[var(--accent-indigo)]" />
