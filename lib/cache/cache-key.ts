@@ -4,7 +4,6 @@
  */
 
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
-import type { LLMMessage } from '@/lib/types';
 
 interface CacheKeyInput {
   prompt: string;
@@ -12,7 +11,6 @@ interface CacheKeyInput {
   chartType: string;
   model: string;
   configName: string;
-  contextHash?: string;
   mode?: string;
 }
 
@@ -27,7 +25,7 @@ async function sha256(str: string): Promise<string> {
 
 /**
  * 构建缓存键
- * 所有可能影响 LLM 输出的因素都应包含在内
+ * 所有可能影响 LLM 输出的因素都应包含在内（不含对话上下文，提高命中率）
  */
 export async function buildCacheKey(input: CacheKeyInput): Promise<string> {
   const parts = [
@@ -36,25 +34,7 @@ export async function buildCacheKey(input: CacheKeyInput): Promise<string> {
     input.chartType,
     input.model,
     input.configName,
-    input.contextHash ?? '',
     input.mode ?? '',
   ].join('|');
   return sha256(parts);
-}
-
-/**
- * 构建多轮对话上下文哈希
- * 取最近 N 条消息的内容做哈希，避免全量上下文导致命中率过低
- *
- * @param messages 完整消息列表
- * @param maxMessages 取最近几条（默认 6）
- */
-export async function buildContextHash(
-  messages: LLMMessage[],
-  maxMessages = 6,
-): Promise<string> {
-  const recent = messages.slice(-maxMessages);
-  const content = recent.map(m => `${m.role}:${typeof m.content === 'string' ? m.content : '[multimodal]'}`).join('\n');
-  const hash = await sha256(content);
-  return hash.substring(0, 16);
 }

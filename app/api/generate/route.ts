@@ -3,7 +3,7 @@ import { callLLM } from '@/lib/llm/client';
 import { configManager } from '@/lib/db/config-manager';
 import { conversationManager } from '@/lib/db/conversation-manager';
 import { cacheManager } from '@/lib/db/cache-manager';
-import { buildCacheKey, buildContextHash } from '@/lib/cache/cache-key';
+import { buildCacheKey } from '@/lib/cache/cache-key';
 import { getStrategy } from '@/lib/strategies/registry';
 import type { LLMConfig, LLMMessage, ImageData } from '@/lib/types';
 import type { DiagramFormat } from '@/lib/types/diagram-strategy';
@@ -290,24 +290,19 @@ export async function POST(request: Request) {
       effectiveMode = 'quality';
     }
 
-    // ── 检查缓存（基于提取后的需求和实际模式）──
+    // ── 检查缓存（基于提取后的需求和实际模式，不含对话上下文以提高命中率）──
     const shouldCache = !processedImages && !regenerate && !editMode;
     let cacheKeyValue: string | null = null;
     let cachedResponse: string | null = null;
 
     if (shouldCache) {
-      const contextHash = contextMessages.length > 1
-        ? await buildContextHash(contextMessages)
-        : undefined;
-
-      // 使用提取后的需求和实际模式计算缓存键
+      // 使用提取后的需求和实际模式计算缓存键（不含上下文哈希）
       cacheKeyValue = await buildCacheKey({
         prompt: strategy.getUserPrompt(requirementForLLM, chartType),
         format: diagramFormat,
         chartType,
         model: config.model,
         configName: config.name || config.type,
-        contextHash,
         mode: effectiveMode,
       });
 
